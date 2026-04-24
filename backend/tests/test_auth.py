@@ -46,3 +46,53 @@ async def test_register_under_18_without_parent_email_rejected(client):
         "currency_code": "GBP",
     })
     assert response.status_code == 422
+
+
+LOGIN_URL = "/auth/login"
+LOGOUT_URL = "/auth/logout"
+REFRESH_URL = "/auth/refresh"
+
+_BASE_USER = {
+    "password": "SecurePass123!",
+    "dob": "2006-01-01",
+    "country_code": "US",
+    "currency_code": "USD",
+    "parent_email": "parent@example.com",
+}
+
+
+async def _register_and_login(client, email: str, username: str):
+    await client.post(REGISTER_URL, json={**_BASE_USER, "email": email, "username": username})
+    return await client.post(LOGIN_URL, json={"email": email, "password": "SecurePass123!"})
+
+
+async def test_login_success_sets_cookies(client):
+    response = await _register_and_login(client, "login@example.com", "loginuser")
+    assert response.status_code == 200
+    assert "access_token" in response.cookies
+    assert "refresh_token" in response.cookies
+
+
+async def test_login_wrong_password_rejected(client):
+    await client.post(REGISTER_URL, json={**_BASE_USER, "email": "wrongpw@example.com", "username": "wrongpwu"})
+    response = await client.post(LOGIN_URL, json={"email": "wrongpw@example.com", "password": "BadPassword"})
+    assert response.status_code == 401
+
+
+async def test_logout_clears_cookies(client):
+    await _register_and_login(client, "logout@example.com", "logoutuser")
+    response = await client.post(LOGOUT_URL)
+    assert response.status_code == 200
+    assert response.cookies.get("access_token", "") == ""
+
+
+async def test_refresh_issues_new_cookies(client):
+    await _register_and_login(client, "refresh@example.com", "refreshuser")
+    response = await client.post(REFRESH_URL)
+    assert response.status_code == 200
+    assert "access_token" in response.cookies
+
+
+async def test_refresh_without_cookie_rejected(client):
+    response = await client.post(REFRESH_URL)
+    assert response.status_code == 401

@@ -34,22 +34,53 @@ class SecurityHeadersMiddleware:
 
         async def send_with_headers(message: dict) -> None:
             if message["type"] == "http.response.start":
-                headers = dict(message.get("headers", []))
-                headers[b"x-content-type-options"] = b"nosniff"
-                headers[b"x-frame-options"] = b"DENY"
-                headers[b"referrer-policy"] = b"strict-origin-when-cross-origin"
-                headers[b"content-security-policy"] = (
+                # Preserve existing headers including multi-valued ones (e.g., Set-Cookie)
+                existing_headers = message.get("headers", [])
+                headers_dict = {}
+                headers_list = []
+
+                # Add existing headers to the list, preserving multi-valued headers
+                for name, value in existing_headers:
+                    headers_list.append((name, value))
+                    # Track single-valued headers for override checking
+                    if name not in (b"set-cookie",):
+                        headers_dict[name] = value
+
+                # Add new security headers (these are single-valued)
+                headers_dict[b"x-content-type-options"] = b"nosniff"
+                headers_dict[b"x-frame-options"] = b"DENY"
+                headers_dict[b"referrer-policy"] = b"strict-origin-when-cross-origin"
+                headers_dict[b"content-security-policy"] = (
                     b"default-src 'self'; script-src 'self'; "
                     b"style-src 'self' 'unsafe-inline'; "
                     b"img-src 'self' data:; frame-ancestors 'none'"
                 )
                 if self.environment != "development":
-                    headers[b"strict-transport-security"] = (
+                    headers_dict[b"strict-transport-security"] = (
                         b"max-age=31536000; includeSubDomains"
                     )
+
+                # Replace single-valued headers in the list
+                final_headers = []
+                added_keys = set()
+                for name, value in headers_list:
+                    if name not in (b"set-cookie",):
+                        # Skip old values of single-valued headers
+                        if name not in added_keys:
+                            final_headers.append((name, headers_dict.get(name, value)))
+                            added_keys.add(name)
+                    else:
+                        # Preserve multi-valued headers like Set-Cookie
+                        final_headers.append((name, value))
+
+                # Add any new headers that weren't in the original list
+                for name, value in headers_dict.items():
+                    if name not in added_keys:
+                        final_headers.append((name, value))
+
                 message = {
                     **message,
-                    "headers": list(headers.items()),
+                    "headers": final_headers,
                 }
             await send(message)
 
