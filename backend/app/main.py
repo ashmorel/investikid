@@ -1,13 +1,59 @@
+from typing import Callable
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.core.config import settings
 
 limiter = Limiter(key_func=get_remote_address)
+
+from app.routers import auth as auth_router
+
+
+class SecurityHeadersMiddleware:
+    """Pure ASGI middleware that injects security headers into every response.
+
+    Unlike BaseHTTPMiddleware this does not spawn a background task so it is
+    compatible with asyncpg connections shared across a request.
+    """
+
+    def __init__(self, app: ASGIApp, environment: str = "production") -> None:
+        self.app = app
+        self.environment = environment
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_with_headers(message: dict) -> None:
+            if message["type"] == "http.response.start":
+                headers = dict(message.get("headers", []))
+                headers[b"x-content-type-options"] = b"nosniff"
+                headers[b"x-frame-options"] = b"DENY"
+                headers[b"referrer-policy"] = b"strict-origin-when-cross-origin"
+                headers[b"content-security-policy"] = (
+                    b"default-src 'self'; script-src 'self'; "
+                    b"style-src 'self' 'unsafe-inline'; "
+                    b"img-src 'self' data:; frame-ancestors 'none'"
+                )
+                if self.environment != "development":
+                    headers[b"strict-transport-security"] = (
+                        b"max-age=31536000; includeSubDomains"
+                    )
+                message = {
+                    **message,
+                    "headers": list(headers.items()),
+                }
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
 
 
 def create_app() -> FastAPI:
@@ -25,25 +71,13 @@ def create_app() -> FastAPI:
         allow_headers=["Content-Type"],
     )
 
-    @application.middleware("http")
-    async def security_headers(request: Request, call_next):
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data:; frame-ancestors 'none'"
-        )
-        if settings.environment != "development":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
-        return response
+    application.add_middleware(SecurityHeadersMiddleware, environment=settings.environment)
 
     @application.get("/health")
     async def health():
         return JSONResponse({"status": "ok"})
+
+    application.include_router(auth_router.router)
 
     return application
 
