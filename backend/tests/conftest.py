@@ -30,8 +30,12 @@ async def db_session():
     async with _TestSession() as clean_session:
         from sqlalchemy import delete, text
         from app.models.user import RefreshToken, UserProgress, User
+        from app.models.content import LessonCompletion, Lesson, Module
         try:
             await clean_session.execute(delete(RefreshToken))
+            await clean_session.execute(delete(LessonCompletion))
+            await clean_session.execute(delete(Lesson))
+            await clean_session.execute(delete(Module))
             await clean_session.execute(delete(UserProgress))
             await clean_session.execute(delete(User))
             await clean_session.commit()
