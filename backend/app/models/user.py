@@ -1,0 +1,54 @@
+import uuid
+from datetime import date, datetime, timezone
+
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.core.database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    dob: Mapped[date] = mapped_column(Date, nullable=False)
+    country_code: Mapped[str] = mapped_column(String(2), nullable=False)
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    topic_path: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    parent_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    parent_consent_given_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    progress: Mapped["UserProgress"] = relationship(
+        "UserProgress", back_populates="user", uselist=False
+    )
+
+
+class UserProgress(Base):
+    __tablename__ = "user_progress"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    xp: Mapped[int] = mapped_column(default=0, nullable=False)
+    level: Mapped[int] = mapped_column(default=1, nullable=False)
+    streak_count: Mapped[int] = mapped_column(default=0, nullable=False)
+    last_activity_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    virtual_coins: Mapped[int] = mapped_column(default=0, nullable=False)
+
+    user: Mapped["User"] = relationship("User", back_populates="progress")
