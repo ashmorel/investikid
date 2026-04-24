@@ -1,4 +1,4 @@
-from app.models.user import User, UserProgress  # noqa: F401
+from app.models.user import User, UserProgress, RefreshToken  # noqa: F401
 from app.models.content import Module, Lesson, LessonCompletion  # noqa: F401
 from app.models.gamification import Badge, UserBadge, Challenge, UserChallenge  # noqa: F401
 from app.models.simulator import Portfolio, Holding, Trade  # noqa: F401

@@ -26,6 +26,18 @@ async def create_test_tables():
 
 @pytest_asyncio.fixture
 async def db_session():
+    # Clean up before test to ensure isolation
+    async with _TestSession() as clean_session:
+        from sqlalchemy import delete, text
+        from app.models.user import RefreshToken, UserProgress, User
+        try:
+            await clean_session.execute(delete(RefreshToken))
+            await clean_session.execute(delete(UserProgress))
+            await clean_session.execute(delete(User))
+            await clean_session.commit()
+        except Exception:
+            await clean_session.rollback()
+
     async with _TestSession() as session:
         yield session
         await session.rollback()
@@ -37,6 +49,11 @@ async def client(db_session):
         yield db_session
 
     app.dependency_overrides[get_session] = override_get_session
+    # Reset rate-limiter state between tests so per-test rate limits are independent.
+    try:
+        app.state.limiter.reset()
+    except Exception:
+        pass
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()

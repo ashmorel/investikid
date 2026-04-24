@@ -17,6 +17,9 @@ _BASE = {
 async def _register_and_login(client, email="me@example.com", username="meuser"):
     await client.post(REGISTER_URL, json={**_BASE, "email": email, "username": username})
     await client.post(LOGIN_URL, json={"email": email, "password": "SecurePass123!"})
+    csrf = client.cookies.get("csrf_token")
+    if csrf:
+        client.headers["X-CSRF-Token"] = csrf
 
 
 async def test_get_profile_authenticated(client):

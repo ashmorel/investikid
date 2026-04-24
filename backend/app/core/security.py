@@ -1,3 +1,4 @@
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -9,6 +10,10 @@ from jose import JWTError, jwt
 from app.core.config import settings
 
 _ph = PasswordHasher()
+
+# Pre-computed at import time so dummy_verify() runs in constant time on
+# every call (no hashing work during a login miss).
+_DUMMY_HASH = _ph.hash("dummy_password_for_timing")
 
 
 def hash_password(password: str) -> str:
@@ -22,19 +27,47 @@ def verify_password(plain: str, hashed: str) -> bool:
         return False
 
 
+def dummy_verify() -> None:
+    """Run a verify against a pre-computed dummy hash to equalise timing
+    between the 'user not found' and 'wrong password' paths.
+    """
+    try:
+        _ph.verify(_DUMMY_HASH, "dummy_password_for_timing_mismatch")
+    except VerifyMismatchError:
+        pass
+
+
 def create_token(data: dict[str, Any], expires_delta: timedelta) -> str:
     payload = data.copy()
     payload["exp"] = datetime.now(timezone.utc) + expires_delta
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
-def decode_token(token: str) -> dict[str, Any]:
+def decode_token(token: str, expected_type: str | None = None) -> dict[str, Any]:
     try:
-        return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
     except JWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         ) from exc
+
+    token_type = payload.get("type")
+    if expected_type is not None:
+        if token_type != expected_type:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
+            )
+    else:
+        # Reject refresh tokens from being used where an access token is expected.
+        if token_type == "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
+            )
+    return payload
+
+
+def generate_csrf_token() -> str:
+    return secrets.token_urlsafe(32)
 
 
 def get_token_from_cookie(request: Request) -> str:

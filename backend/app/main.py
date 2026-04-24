@@ -3,16 +3,14 @@ from typing import Callable
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.core.config import settings
-
-limiter = Limiter(key_func=get_remote_address)
-
+from app.core.csrf import CSRFMiddleware
+from app.core.rate_limit import limiter
 from app.routers import auth as auth_router
 from app.routers import users as users_router
 
@@ -93,6 +91,15 @@ def create_app() -> FastAPI:
     application.state.limiter = limiter
     application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+    # Middleware execution order note: add_middleware wraps the app, so the
+    # LAST middleware added runs OUTERMOST (first on request, last on response).
+    # We want CORS outermost (preflight handling, CORS headers on errors),
+    # CSRF next (reject state-changing requests early), and
+    # SecurityHeaders innermost so its response hook observes and augments
+    # every response — including the 403 from CSRF and any CORS-handled
+    # responses that pass through the stack.
+    application.add_middleware(SecurityHeadersMiddleware, environment=settings.environment)
+    application.add_middleware(CSRFMiddleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=(
@@ -100,10 +107,8 @@ def create_app() -> FastAPI:
         ),
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Content-Type"],
+        allow_headers=["Content-Type", "X-CSRF-Token"],
     )
-
-    application.add_middleware(SecurityHeadersMiddleware, environment=settings.environment)
 
     @application.get("/health")
     async def health():

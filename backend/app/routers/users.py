@@ -16,10 +16,18 @@ async def get_current_user(
     session: AsyncSession = Depends(get_session),
 ) -> User:
     token = get_token_from_cookie(request)
-    payload = decode_token(token)
-    user = await session.get(User, uuid.UUID(payload["sub"]))
+    payload = decode_token(token, expected_type=None)
+    try:
+        user_id = uuid.UUID(payload["sub"])
+    except (ValueError, KeyError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        ) from exc
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     return user
 
 

@@ -1,4 +1,5 @@
-from datetime import timedelta
+import uuid
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
@@ -6,16 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_session
-from app.main import limiter
+from app.core.rate_limit import limiter
 from app.core.security import (
     create_token,
     decode_token,
-    get_token_from_cookie,
+    dummy_verify,
+    generate_csrf_token,
     hash_password,
     verify_password,
 )
 from app.models.audit import AuditLog
-from app.models.user import User, UserProgress
+from app.models.user import RefreshToken, User, UserProgress
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 from app.schemas.user import UserProfile
 
@@ -23,37 +25,75 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 _COOKIE_OPTS = dict(httponly=True, samesite="lax")
 
+MAX_FAILED_LOGINS = 5
+LOCKOUT_DURATION = timedelta(minutes=15)
 
-def _set_auth_cookies(response: Response, user_id: str, secure: bool) -> None:
+
+def _set_access_cookie(response: Response, user_id: str, secure: bool) -> None:
     access = create_token(
         {"sub": user_id},
         timedelta(minutes=settings.access_token_expire_minutes),
     )
-    refresh = create_token(
-        {"sub": user_id, "type": "refresh"},
-        timedelta(days=settings.refresh_token_expire_days),
-    )
     response.set_cookie(
         "access_token", access,
         max_age=settings.access_token_expire_minutes * 60,
-        secure=secure, **_COOKIE_OPTS,
+        secure=secure, path="/", **_COOKIE_OPTS,
+    )
+
+
+async def _issue_refresh_token(
+    session: AsyncSession,
+    response: Response,
+    user_id: uuid.UUID,
+    secure: bool,
+) -> None:
+    jti = uuid.uuid4()
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(days=settings.refresh_token_expire_days)
+    session.add(RefreshToken(
+        jti=jti,
+        user_id=user_id,
+        expires_at=expires_at,
+    ))
+    token = create_token(
+        {"sub": str(user_id), "type": "refresh", "jti": str(jti)},
+        timedelta(days=settings.refresh_token_expire_days),
     )
     response.set_cookie(
-        "refresh_token", refresh,
+        "refresh_token", token,
         max_age=settings.refresh_token_expire_days * 86400,
-        secure=secure, **_COOKIE_OPTS,
+        secure=secure, path="/", **_COOKIE_OPTS,
+    )
+
+
+def _set_csrf_cookie(response: Response, secure: bool) -> None:
+    response.set_cookie(
+        "csrf_token", generate_csrf_token(),
+        max_age=settings.refresh_token_expire_days * 86400,
+        httponly=False,  # JS must read it
+        samesite="lax",
+        secure=secure,
+        path="/",
     )
 
 
 @router.post("/register", response_model=UserProfile, status_code=201)
+@limiter.limit("5/minute")
 async def register(
     request: Request,
     payload: RegisterRequest,
+    response: Response,
     session: AsyncSession = Depends(get_session),
 ):
     existing = await session.scalar(select(User).where(User.email == payload.email))
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+    existing_username = await session.scalar(
+        select(User).where(User.username == payload.username)
+    )
+    if existing_username:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
 
     user = User(
         email=payload.email,
@@ -76,6 +116,8 @@ async def register(
     ))
     await session.commit()
     await session.refresh(user)
+    secure = settings.environment != "development"
+    _set_csrf_cookie(response, secure)
     return user
 
 
@@ -88,11 +130,35 @@ async def login(
     session: AsyncSession = Depends(get_session),
 ):
     user = await session.scalar(select(User).where(User.email == payload.email))
-    if not user or not verify_password(payload.password, user.password_hash):
+    if not user:
+        # Equalise timing against the wrong-password branch.
+        dummy_verify()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+    now = datetime.now(timezone.utc)
+
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+    if user.locked_until is not None and user.locked_until > now:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+    if not verify_password(payload.password, user.password_hash):
+        user.failed_login_count += 1
+        if user.failed_login_count >= MAX_FAILED_LOGINS:
+            user.locked_until = now + LOCKOUT_DURATION
+            user.failed_login_count = 0
+        await session.commit()
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+    if user.failed_login_count > 0 or user.locked_until is not None:
+        user.failed_login_count = 0
+        user.locked_until = None
+
     secure = settings.environment != "development"
-    _set_auth_cookies(response, str(user.id), secure)
+    _set_access_cookie(response, str(user.id), secure)
+    await _issue_refresh_token(session, response, user.id, secure)
+    _set_csrf_cookie(response, secure)
     session.add(AuditLog(
         user_id=user.id,
         event_type="login",
@@ -103,20 +169,79 @@ async def login(
 
 
 @router.post("/logout")
-async def logout(response: Response):
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
+async def logout(
+    request: Request,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
+):
+    secure = settings.environment != "development"
+    token = request.cookies.get("refresh_token")
+    if token:
+        try:
+            payload = decode_token(token, expected_type="refresh")
+            jti_str = payload.get("jti")
+            if jti_str:
+                jti = uuid.UUID(jti_str)
+                rt = await session.scalar(
+                    select(RefreshToken).where(RefreshToken.jti == jti)
+                )
+                if rt is not None and rt.revoked_at is None:
+                    rt.revoked_at = datetime.now(timezone.utc)
+                    await session.commit()
+        except Exception:
+            # Logout is best-effort; still clear cookies.
+            pass
+    response.delete_cookie(
+        "access_token", httponly=True, samesite="lax", secure=secure, path="/"
+    )
+    response.delete_cookie(
+        "refresh_token", httponly=True, samesite="lax", secure=secure, path="/"
+    )
+    response.delete_cookie(
+        "csrf_token", httponly=False, samesite="lax", secure=secure, path="/"
+    )
     return {"message": "logged out"}
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(request: Request, response: Response):
+async def refresh(
+    request: Request,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
+):
     token = request.cookies.get("refresh_token")
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token")
-    payload = decode_token(token)
-    if payload.get("type") != "refresh":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
+    payload = decode_token(token, expected_type="refresh")
+
+    jti_str = payload.get("jti")
+    sub = payload.get("sub")
+    if not jti_str or not sub:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    try:
+        jti = uuid.UUID(jti_str)
+        user_id = uuid.UUID(sub)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        ) from exc
+
+    rt = await session.scalar(select(RefreshToken).where(RefreshToken.jti == jti))
+    now = datetime.now(timezone.utc)
+    if rt is None or rt.revoked_at is not None or rt.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    # Compare as aware datetimes.
+    expires_at = rt.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at <= now:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    rt.revoked_at = now
+
     secure = settings.environment != "development"
-    _set_auth_cookies(response, payload["sub"], secure)
+    _set_access_cookie(response, str(user_id), secure)
+    await _issue_refresh_token(session, response, user_id, secure)
+    _set_csrf_cookie(response, secure)
+    await session.commit()
     return TokenResponse()
