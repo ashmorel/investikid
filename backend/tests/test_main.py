@@ -18,3 +18,9 @@ async def test_security_headers_present():
         response = await client.get("/health")
     assert response.headers.get("x-content-type-options") == "nosniff"
     assert response.headers.get("x-frame-options") == "DENY"
+
+
+@pytest.mark.asyncio
+async def test_health_via_fixture(client):
+    response = await client.get("/health")
+    assert response.status_code == 200
