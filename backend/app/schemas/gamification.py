@@ -1,0 +1,33 @@
+import uuid
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict
+
+
+class BadgeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    name: str
+    description: str
+    icon_url: str
+    earned_at: datetime | None = None
+
+
+class ChallengeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    title: str
+    description: str
+    type: str
+    target_value: int
+    xp_reward: int
+    starts_at: datetime
+    ends_at: datetime
+    is_premium: bool
+    progress: int = 0
+    completed_at: datetime | None = None
+
+
+class LeaderboardEntry(BaseModel):
+    username: str
+    country_code: str
+    xp_this_week: int

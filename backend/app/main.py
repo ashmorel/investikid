@@ -13,6 +13,7 @@ from app.core.csrf import CSRFMiddleware
 from app.core.rate_limit import limiter
 from app.routers import auth as auth_router
 from app.routers import content as content_router
+from app.routers import gamification as gamification_router
 from app.routers import users as users_router
 
 
@@ -118,6 +119,7 @@ def create_app() -> FastAPI:
     application.include_router(auth_router.router)
     application.include_router(users_router.router)
     application.include_router(content_router.router)
+    application.include_router(gamification_router.router)
 
     return application
 

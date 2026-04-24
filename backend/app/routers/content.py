@@ -149,6 +149,21 @@ async def complete_lesson(
     xp_awarded, already = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today
     )
+
+    from app.services.gamification_service import (
+        evaluate_and_award_badges,
+        update_challenge_progress,
+    )
+
+    if not already:
+        await update_challenge_progress(
+            session, current_user.id, "lessons_completed", increment=1
+        )
+        await update_challenge_progress(
+            session, current_user.id, "xp_earned", increment=xp_awarded
+        )
+        await evaluate_and_award_badges(session, current_user.id, progress)
+
     await session.commit()
     await session.refresh(progress)
 
