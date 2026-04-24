@@ -70,3 +70,42 @@ async def evaluate_and_award_badges(
     if newly_earned:
         await session.flush()
     return newly_earned
+
+
+from datetime import datetime, timezone
+from app.models.gamification import Challenge, UserChallenge
+
+
+async def update_challenge_progress(
+    session: AsyncSession,
+    user_id,
+    event_type: str,
+    increment: int,
+) -> list[Challenge]:
+    """Advance any active challenges matching event_type. Returns newly completed challenges.
+    Caller commits.
+    """
+    now = datetime.now(timezone.utc)
+    active = (await session.scalars(
+        select(Challenge).where(
+            Challenge.type == event_type,
+            Challenge.starts_at <= now,
+            Challenge.ends_at > now,
+        )
+    )).all()
+
+    newly_completed: list[Challenge] = []
+    for challenge in active:
+        uc = await session.get(UserChallenge, (user_id, challenge.id))
+        if uc is None:
+            uc = UserChallenge(user_id=user_id, challenge_id=challenge.id, progress=0)
+            session.add(uc)
+        if uc.completed_at is not None:
+            continue
+        uc.progress = uc.progress + increment
+        if uc.progress >= challenge.target_value:
+            uc.completed_at = now
+            newly_completed.append(challenge)
+    if active:
+        await session.flush()
+    return newly_completed

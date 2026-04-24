@@ -31,11 +31,16 @@ async def db_session():
         from sqlalchemy import delete, text
         from app.models.user import RefreshToken, UserProgress, User
         from app.models.content import LessonCompletion, Lesson, Module
+        from app.models.gamification import UserBadge, UserChallenge, Badge, Challenge
         try:
             await clean_session.execute(delete(RefreshToken))
             await clean_session.execute(delete(LessonCompletion))
             await clean_session.execute(delete(Lesson))
             await clean_session.execute(delete(Module))
+            await clean_session.execute(delete(UserBadge))
+            await clean_session.execute(delete(UserChallenge))
+            await clean_session.execute(delete(Badge))
+            await clean_session.execute(delete(Challenge))
             await clean_session.execute(delete(UserProgress))
             await clean_session.execute(delete(User))
             await clean_session.commit()
