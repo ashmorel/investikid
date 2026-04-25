@@ -23,7 +23,12 @@ from typing import Iterable
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
-_DEFAULT_EXEMPT_PATHS = frozenset({"/auth/login", "/auth/register", "/health"})
+_DEFAULT_EXEMPT_PATHS = frozenset({
+    "/auth/login", "/auth/register", "/health",
+    "/consent/decide",
+})
+# Path prefixes that bypass CSRF (for dynamic segments like /consent/request/{id})
+_DEFAULT_EXEMPT_PREFIXES = ("/consent/request/",)
 
 
 class CSRFMiddleware:
@@ -31,11 +36,13 @@ class CSRFMiddleware:
         self,
         app: ASGIApp,
         exempt_paths: Iterable[str] | None = None,
+        exempt_prefixes: Iterable[str] | None = None,
         cookie_name: str = "csrf_token",
         header_name: str = "x-csrf-token",
     ) -> None:
         self.app = app
         self.exempt_paths = frozenset(exempt_paths) if exempt_paths is not None else _DEFAULT_EXEMPT_PATHS
+        self.exempt_prefixes = tuple(exempt_prefixes) if exempt_prefixes is not None else _DEFAULT_EXEMPT_PREFIXES
         self.cookie_name = cookie_name
         self.header_name = header_name.lower().encode("latin-1")
 
@@ -50,7 +57,7 @@ class CSRFMiddleware:
             return
 
         path = scope.get("path", "")
-        if path in self.exempt_paths:
+        if path in self.exempt_paths or any(path.startswith(p) for p in self.exempt_prefixes):
             await self.app(scope, receive, send)
             return
 
