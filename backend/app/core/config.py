@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     sendgrid_api_key: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    email_backend: str = "logging"  # "logging" | "sendgrid"
+    app_base_url: str = "http://localhost:8000"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
