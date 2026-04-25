@@ -33,7 +33,10 @@ async def db_session():
         from app.models.content import LessonCompletion, Lesson, Module
         from app.models.gamification import UserBadge, UserChallenge, Badge, Challenge
         from app.models.simulator import Trade, Holding, Portfolio
+        from app.models.consent import OneTimeToken, SentEmail
         try:
+            await clean_session.execute(delete(OneTimeToken))
+            await clean_session.execute(delete(SentEmail))
             await clean_session.execute(delete(Trade))
             await clean_session.execute(delete(Holding))
             await clean_session.execute(delete(Portfolio))
