@@ -24,3 +24,24 @@ async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_factory() as session:
         yield session
+
+
+from sqlalchemy import event
+from sqlalchemy.orm import Session as _SyncSession, with_loader_criteria
+
+
+def _install_soft_delete_filter():
+    from app.models.user import User
+
+    @event.listens_for(_SyncSession, "do_orm_execute")
+    def _add_filtering_criteria(execute_state):
+        if not execute_state.is_select:
+            return
+        if execute_state.execution_options.get("include_deleted"):
+            return
+        execute_state.statement = execute_state.statement.options(
+            with_loader_criteria(User, User.deleted_at.is_(None), include_aliases=True)
+        )
+
+
+_install_soft_delete_filter()

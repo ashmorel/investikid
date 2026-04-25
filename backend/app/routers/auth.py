@@ -177,7 +177,14 @@ async def login(
     now = datetime.now(timezone.utc)
 
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        if user.parent_consent_given_at is None and user.consent_declined_at is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account pending parental consent",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account access denied"
+        )
 
     if user.locked_until is not None and user.locked_until > now:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
