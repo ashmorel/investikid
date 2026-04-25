@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from typing import Union
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
@@ -18,8 +19,15 @@ from app.core.security import (
 )
 from app.models.audit import AuditLog
 from app.models.user import RefreshToken, User, UserProgress
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
+from app.schemas.auth import LoginRequest, PendingConsentResponse, RegisterRequest, TokenResponse
 from app.schemas.user import UserProfile
+from app.services.consent_service import age_in_years, needs_parental_consent
+from app.services.email import get_email_sender
+from app.services.tokens import (
+    CONSENT_AUDIENCE,
+    CONSENT_EXPIRY,
+    issue_one_time_token,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -77,7 +85,7 @@ def _set_csrf_cookie(response: Response, secure: bool) -> None:
     )
 
 
-@router.post("/register", response_model=UserProfile, status_code=201)
+@router.post("/register", response_model=Union[UserProfile, PendingConsentResponse], status_code=201)
 @limiter.limit("5/minute")
 async def register(
     request: Request,
@@ -95,6 +103,15 @@ async def register(
     if existing_username:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
 
+    today = date.today()
+    needs_consent = needs_parental_consent(payload.dob, payload.country_code, today)
+
+    if needs_consent and not payload.parent_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Parent email required for users under the consent threshold",
+        )
+
     user = User(
         email=payload.email,
         username=payload.username,
@@ -104,6 +121,7 @@ async def register(
         currency_code=payload.currency_code,
         topic_path=payload.topic_path,
         parent_email=str(payload.parent_email) if payload.parent_email else None,
+        is_active=not needs_consent,
     )
     session.add(user)
     await session.flush()
@@ -114,6 +132,27 @@ async def register(
         event_type="register",
         ip_address=request.client.host if request.client else None,
     ))
+
+    if needs_consent:
+        age = age_in_years(payload.dob, today)
+        token = await issue_one_time_token(
+            session, purpose=CONSENT_AUDIENCE,
+            email=str(payload.parent_email), subject_id=user.id,
+            expires_in=CONSENT_EXPIRY,
+        )
+        link = f"{settings.app_base_url}/consent/verify?token={token}"
+        await get_email_sender().send(
+            session, str(payload.parent_email), "consent_request",
+            {
+                "child_username": user.username,
+                "age": age,
+                "country_code": user.country_code,
+                "link": link,
+            },
+        )
+        await session.commit()
+        return PendingConsentResponse(user_id=user.id)
+
     await session.commit()
     await session.refresh(user)
     secure = settings.environment != "development"

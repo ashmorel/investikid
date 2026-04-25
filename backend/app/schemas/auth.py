@@ -1,4 +1,5 @@
 import re
+import uuid
 from datetime import date as date_type
 from typing import Self
 
@@ -113,3 +114,8 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     token_type: str = "bearer"
     message: str = "authenticated"
+
+
+class PendingConsentResponse(BaseModel):
+    status: str = "pending_consent"
+    user_id: uuid.UUID
