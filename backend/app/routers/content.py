@@ -21,6 +21,10 @@ from app.services.content_service import (
     is_module_accessible,
     streak_after_activity,
 )
+from app.services.gamification_service import (
+    evaluate_and_award_badges,
+    update_challenge_progress,
+)
 
 router = APIRouter(tags=["content"])
 
@@ -148,11 +152,6 @@ async def complete_lesson(
     today = datetime.now(timezone.utc).date()
     xp_awarded, already = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today
-    )
-
-    from app.services.gamification_service import (
-        evaluate_and_award_badges,
-        update_challenge_progress,
     )
 
     if not already:

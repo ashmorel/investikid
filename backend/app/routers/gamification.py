@@ -92,6 +92,6 @@ async def weekly_leaderboard(
     )
     rows = (await session.execute(stmt)).all()
     return [
-        LeaderboardEntry(username=u, country_code=c, xp_this_week=int(x))
+        LeaderboardEntry(username=u, country_code=c, xp_this_week=x)
         for u, c, x in rows
     ]

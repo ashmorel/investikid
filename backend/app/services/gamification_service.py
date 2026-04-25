@@ -1,10 +1,11 @@
+from datetime import datetime, timezone
 from typing import TypedDict
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import LessonCompletion
-from app.models.gamification import Badge, UserBadge
+from app.models.gamification import Badge, Challenge, UserBadge, UserChallenge
 from app.models.simulator import Portfolio, Trade
 from app.models.user import UserProgress
 
@@ -70,10 +71,6 @@ async def evaluate_and_award_badges(
     if newly_earned:
         await session.flush()
     return newly_earned
-
-
-from datetime import datetime, timezone
-from app.models.gamification import Challenge, UserChallenge
 
 
 async def update_challenge_progress(
