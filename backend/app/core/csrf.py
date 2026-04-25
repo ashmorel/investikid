@@ -26,6 +26,7 @@ _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 _DEFAULT_EXEMPT_PATHS = frozenset({
     "/auth/login", "/auth/register", "/health",
     "/consent/decide",
+    "/parent/auth/request", "/parent/auth/logout",
 })
 # Path prefixes that bypass CSRF (for dynamic segments like /consent/request/{id})
 _DEFAULT_EXEMPT_PREFIXES = ("/consent/request/",)
