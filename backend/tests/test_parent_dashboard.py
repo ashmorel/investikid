@@ -82,3 +82,13 @@ async def test_erasure_sets_deleted_at(client, db_session):
     assert user.deleted_at is not None
     assert user.deletion_requested_at is not None
     assert user.is_active is False
+
+
+async def test_freeze_deleted_child_returns_410(client, db_session):
+    await _setup(client, db_session, child_email="kid11@example.com", child_username="kid11")
+    children = (await client.get("/parent/children")).json()
+    cid = children[0]["user_id"]
+    erasure = await client.post(f"/parent/children/{cid}/erasure")
+    assert erasure.status_code == 200
+    r = await client.post(f"/parent/children/{cid}/freeze", json={"frozen": True})
+    assert r.status_code == 410
