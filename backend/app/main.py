@@ -15,6 +15,7 @@ from app.routers import auth as auth_router
 from app.routers import consent as consent_router
 from app.routers import content as content_router
 from app.routers import gamification as gamification_router
+from app.routers import parent as parent_router
 from app.routers import parent_auth as parent_auth_router
 from app.routers import simulator as simulator_router
 from app.routers import users as users_router
@@ -126,6 +127,7 @@ def create_app() -> FastAPI:
     application.include_router(gamification_router.router)
     application.include_router(simulator_router.router)
     application.include_router(parent_auth_router.router)
+    application.include_router(parent_router.router)
 
     return application
 

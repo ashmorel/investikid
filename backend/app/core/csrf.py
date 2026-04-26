@@ -29,7 +29,9 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/parent/auth/request", "/parent/auth/logout",
 })
 # Path prefixes that bypass CSRF (for dynamic segments like /consent/request/{id})
-_DEFAULT_EXEMPT_PREFIXES = ("/consent/request/",)
+# /parent/children/ is exempted because parent_session is the auth mechanism and
+# there is no CSRF token flow in the browserless parent magic-link journey yet.
+_DEFAULT_EXEMPT_PREFIXES = ("/consent/request/", "/parent/children/")
 
 
 class CSRFMiddleware:
