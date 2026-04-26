@@ -10,6 +10,11 @@ from app.services.tokens import PARENT_MAGIC_AUDIENCE, issue_one_time_token
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
+def _csrf_headers(client) -> dict:
+    csrf = client.cookies.get("csrf_token")
+    return {"X-CSRF-Token": csrf} if csrf else {}
+
+
 async def _setup(client, db_session, parent_email="dad@example.com",
                  child_email="kid7@example.com", child_username="kid7"):
     """Create child + parent magic-link session in client cookies."""
@@ -46,7 +51,11 @@ async def test_freeze_toggles_is_active(client, db_session):
     await _setup(client, db_session, child_email="kid8@example.com", child_username="kid8")
     children = (await client.get("/parent/children")).json()
     cid = children[0]["user_id"]
-    r = await client.post(f"/parent/children/{cid}/freeze", json={"frozen": True})
+    r = await client.post(
+        f"/parent/children/{cid}/freeze",
+        json={"frozen": True},
+        headers=_csrf_headers(client),
+    )
     assert r.status_code == 200
     user = await db_session.scalar(
         select(User).where(User.id == uuid.UUID(cid))
@@ -64,7 +73,11 @@ async def test_freeze_other_parents_child_404(client, db_session):
     })
     other = await db_session.scalar(select(User).where(User.email == "stranger@example.com"))
     await _setup(client, db_session, child_email="kid9@example.com", child_username="kid9")
-    r = await client.post(f"/parent/children/{other.id}/freeze", json={"frozen": True})
+    r = await client.post(
+        f"/parent/children/{other.id}/freeze",
+        json={"frozen": True},
+        headers=_csrf_headers(client),
+    )
     assert r.status_code == 404
 
 
@@ -72,7 +85,10 @@ async def test_erasure_sets_deleted_at(client, db_session):
     await _setup(client, db_session, child_email="kid10@example.com", child_username="kid10")
     children = (await client.get("/parent/children")).json()
     cid = children[0]["user_id"]
-    r = await client.post(f"/parent/children/{cid}/erasure")
+    r = await client.post(
+        f"/parent/children/{cid}/erasure",
+        headers=_csrf_headers(client),
+    )
     assert r.status_code == 200
     user = await db_session.scalar(
         select(User).where(User.id == uuid.UUID(cid))
@@ -88,7 +104,14 @@ async def test_freeze_deleted_child_returns_410(client, db_session):
     await _setup(client, db_session, child_email="kid11@example.com", child_username="kid11")
     children = (await client.get("/parent/children")).json()
     cid = children[0]["user_id"]
-    erasure = await client.post(f"/parent/children/{cid}/erasure")
+    erasure = await client.post(
+        f"/parent/children/{cid}/erasure",
+        headers=_csrf_headers(client),
+    )
     assert erasure.status_code == 200
-    r = await client.post(f"/parent/children/{cid}/freeze", json={"frozen": True})
+    r = await client.post(
+        f"/parent/children/{cid}/freeze",
+        json={"frozen": True},
+        headers=_csrf_headers(client),
+    )
     assert r.status_code == 410

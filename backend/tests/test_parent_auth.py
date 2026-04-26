@@ -42,6 +42,7 @@ async def test_magic_callback_sets_cookie(client, db_session):
     r = await client.get(f"/parent/auth/callback?token={token}")
     assert r.status_code == 200
     assert client.cookies.get("parent_session") is not None
+    assert client.cookies.get("csrf_token") is not None
 
 
 async def test_magic_callback_replay_410(client, db_session):
@@ -64,6 +65,8 @@ async def test_logout_clears_cookie(client, db_session):
     )
     await db_session.commit()
     await client.get(f"/parent/auth/callback?token={token}")
-    r = await client.post("/parent/auth/logout")
+    csrf = client.cookies.get("csrf_token")
+    assert csrf is not None
+    r = await client.post("/parent/auth/logout", headers={"X-CSRF-Token": csrf})
     assert r.status_code == 200
     assert not client.cookies.get("parent_session")
