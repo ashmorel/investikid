@@ -3,10 +3,7 @@ import { Toaster } from '@/components/ui/toaster';
 import ConsentVerify from '@/pages/ConsentVerify';
 import ParentLogin from '@/pages/ParentLogin';
 import ParentAuthCallback from '@/pages/ParentAuthCallback';
-
-function Placeholder({ name }: { name: string }) {
-  return <div className="p-6"><h1 className="text-2xl font-semibold">{name}</h1></div>;
-}
+import ParentDashboard from '@/pages/ParentDashboard';
 
 export default function App() {
   return (
@@ -16,7 +13,7 @@ export default function App() {
         <Route path="/consent/verify" element={<ConsentVerify />} />
         <Route path="/parent/login" element={<ParentLogin />} />
         <Route path="/parent/auth/callback" element={<ParentAuthCallback />} />
-        <Route path="/parent" element={<Placeholder name="ParentDashboard" />} />
+        <Route path="/parent" element={<ParentDashboard />} />
         <Route path="*" element={<div className="p-6">Not found</div>} />
       </Routes>
       <Toaster />
