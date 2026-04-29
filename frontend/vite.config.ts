@@ -11,8 +11,20 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/auth': 'http://localhost:8000',
-      '/consent': 'http://localhost:8000',
-      '/parent': 'http://localhost:8000',
+      '/consent': {
+        target: 'http://localhost:8000',
+        bypass(req) {
+          // Let browser navigation (text/html) fall through to index.html (SPA routing).
+          // Only proxy JSON API calls.
+          if (req.headers.accept?.includes('text/html')) return '/index.html';
+        },
+      },
+      '/parent': {
+        target: 'http://localhost:8000',
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return '/index.html';
+        },
+      },
       '/health': 'http://localhost:8000',
     },
   },
