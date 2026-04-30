@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '@/api/client';
 
-export function useAuthGuard(error: unknown) {
+export function useParentAuthGuard(error: unknown) {
   const navigate = useNavigate();
   useEffect(() => {
     if (error instanceof ApiError && error.status === 401) {

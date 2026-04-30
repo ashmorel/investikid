@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { parentApi, type Child } from '@/api/parent';
-import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { useParentAuthGuard } from '@/hooks/useParentAuthGuard';
 import { ChildCard } from '@/components/ChildCard';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ErrorBanner';
@@ -10,7 +10,7 @@ export default function ParentDashboard() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['children'], queryFn: parentApi.listChildren });
-  useAuthGuard(q.error);
+  useParentAuthGuard(q.error);
 
   const logout = useMutation({
     mutationFn: parentApi.logout,
