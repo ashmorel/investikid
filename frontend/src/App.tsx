@@ -6,6 +6,7 @@ import ParentAuthCallback from '@/pages/ParentAuthCallback';
 import ParentDashboard from '@/pages/ParentDashboard';
 import Login from '@/pages/child/Login';
 import Signup from '@/pages/child/Signup';
+import PendingConsent from '@/pages/child/PendingConsent';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/parent" element={<ParentDashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/pending-consent" element={<PendingConsent />} />
         <Route path="*" element={<div className="p-6">Not found</div>} />
       </Routes>
       <Toaster />
