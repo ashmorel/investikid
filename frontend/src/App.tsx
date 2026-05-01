@@ -4,6 +4,7 @@ import ConsentVerify from '@/pages/ConsentVerify';
 import ParentLogin from '@/pages/ParentLogin';
 import ParentAuthCallback from '@/pages/ParentAuthCallback';
 import ParentDashboard from '@/pages/ParentDashboard';
+import Login from '@/pages/child/Login';
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/parent/login" element={<ParentLogin />} />
         <Route path="/parent/auth/callback" element={<ParentAuthCallback />} />
         <Route path="/parent" element={<ParentDashboard />} />
+        <Route path="/login" element={<Login />} />
         <Route path="*" element={<div className="p-6">Not found</div>} />
       </Routes>
       <Toaster />
