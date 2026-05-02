@@ -66,12 +66,9 @@ export default function Signup() {
         parent_email: needsConsent ? parentEmail : undefined,
         topic_path: topic,
       };
-      const resp = await authApi.register(body);
-      // Over-threshold: register only sets csrf cookie; auto-login to get auth cookies.
-      if (resp && (resp as any).status !== 'pending_consent') {
-        await authApi.login(email, password);
-      }
-      return resp;
+      // Over-threshold: backend register sets auth + csrf cookies directly.
+      // Under-threshold: backend returns { status: 'pending_consent' } (no cookies).
+      return await authApi.register(body);
     },
     onSuccess: async (resp) => {
       if (resp && (resp as any).status === 'pending_consent') {
