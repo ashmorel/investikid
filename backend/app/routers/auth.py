@@ -153,10 +153,12 @@ async def register(
         await session.commit()
         return PendingConsentResponse(user_id=user.id)
 
+    secure = settings.environment != "development"
+    _set_access_cookie(response, str(user.id), secure)
+    await _issue_refresh_token(session, response, user.id, secure)
+    _set_csrf_cookie(response, secure)
     await session.commit()
     await session.refresh(user)
-    secure = settings.environment != "development"
-    _set_csrf_cookie(response, secure)
     return user
 
 

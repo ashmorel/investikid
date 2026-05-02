@@ -1,9 +1,7 @@
 import re
 import uuid
 from datetime import date as date_type
-from typing import Self
-
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 _COUNTRY_RE = re.compile(r"^[A-Z]{2}$")
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
@@ -88,17 +86,10 @@ class RegisterRequest(BaseModel):
             raise ValueError("topic_path may only contain [a-z0-9_/-]")
         return v
 
-    @model_validator(mode="after")
-    def require_parent_email_for_minors(self) -> Self:
-        from datetime import date as d
-        today = d.today()
-        age = (
-            today.year - self.dob.year
-            - ((today.month, today.day) < (self.dob.month, self.dob.day))
-        )
-        if age < 18 and not self.parent_email:
-            raise ValueError("parent_email is required for users under 18")
-        return self
+    # Note: `parent_email` requirement for under-threshold minors is enforced in
+    # the /auth/register router using the consent threshold (13 or 16 in select EU
+    # countries) rather than a flat <18 schema check, so over-threshold teens can
+    # self-register.
 
 
 class LoginRequest(BaseModel):

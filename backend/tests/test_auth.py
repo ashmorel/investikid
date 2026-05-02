@@ -36,7 +36,8 @@ async def test_register_duplicate_email_rejected(client):
     assert response.status_code == 409
 
 
-async def test_register_under_18_without_parent_email_rejected(client):
+async def test_register_under_threshold_without_parent_email_rejected(client):
+    """Under-threshold (GB <13) without parent_email → router rejects with 400."""
     response = await client.post(REGISTER_URL, json={
         "email": "young@example.com",
         "username": "younguser",
@@ -45,7 +46,20 @@ async def test_register_under_18_without_parent_email_rejected(client):
         "country_code": "GB",
         "currency_code": "GBP",
     })
-    assert response.status_code == 422
+    assert response.status_code == 400
+
+
+async def test_register_over_threshold_without_parent_email_succeeds(client):
+    """Over-threshold teen (US 14) self-registers without parent_email."""
+    response = await client.post(REGISTER_URL, json={
+        "email": "teen@example.com",
+        "username": "teenuser",
+        "password": "SecurePass123!",
+        "dob": "2012-01-01",
+        "country_code": "US",
+        "currency_code": "USD",
+    })
+    assert response.status_code == 201
 
 
 LOGIN_URL = "/auth/login"
