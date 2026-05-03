@@ -69,3 +69,10 @@ class UpdatePreferencesRequest(BaseModel):
         if not _TOPIC_RE.match(v):
             raise ValueError("topic_path may only contain [a-z0-9_/-]")
         return v
+
+
+class UserProgressOut(BaseModel):
+    xp: int
+    level: int
+    streak_count: int
+    last_activity_date: date | None

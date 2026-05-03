@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.security import decode_token, get_token_from_cookie
-from app.models.user import User
-from app.schemas.user import UpdatePreferencesRequest, UserProfile
+from app.models.user import User, UserProgress
+from app.schemas.user import UpdatePreferencesRequest, UserProfile, UserProgressOut
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -55,3 +55,19 @@ async def update_preferences(
     await session.commit()
     await session.refresh(current_user)
     return current_user
+
+
+@router.get("/me/progress", response_model=UserProgressOut)
+async def get_progress(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    progress = await session.get(UserProgress, current_user.id)
+    if progress is None:
+        return UserProgressOut(xp=0, level=1, streak_count=0, last_activity_date=None)
+    return UserProgressOut(
+        xp=progress.xp,
+        level=progress.level,
+        streak_count=progress.streak_count,
+        last_activity_date=progress.last_activity_date,
+    )
