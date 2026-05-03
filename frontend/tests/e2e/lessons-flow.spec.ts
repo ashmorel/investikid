@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { uniq } from './helpers';
 
-async function registerOverThresholdUS(page, username: string) {
+async function registerOverThresholdUS(page: Page, username: string) {
   await page.goto('/signup');
   await page.getByLabel('Date of birth').fill('2010-01-01');
   await page.getByLabel('Country').selectOption('US');
