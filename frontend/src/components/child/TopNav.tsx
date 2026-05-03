@@ -9,7 +9,7 @@ import { ProfileMenu } from './ProfileMenu';
 import { cn } from '@/lib/utils';
 
 const COMING_SOON: ReadonlyArray<{ label: string }> = [
-  { label: 'Lessons' }, { label: 'Simulator' }, { label: 'Stats' },
+  { label: 'Simulator' }, { label: 'Stats' },
 ];
 
 export function TopNav({ username }: { username: string }) {
@@ -25,11 +25,16 @@ export function TopNav({ username }: { username: string }) {
                 'px-3 py-1.5 text-sm rounded-md hover:bg-muted',
                 isActive && 'bg-muted font-medium',
               )}>Home</NavLink>
+            <NavLink to="/lessons"
+              className={({ isActive }) => cn(
+                'px-3 py-1.5 text-sm rounded-md hover:bg-muted',
+                isActive && 'bg-muted font-medium',
+              )}>Lessons</NavLink>
             {COMING_SOON.map((item) => (
               <Tooltip key={item.label}>
                 <TooltipTrigger asChild>
                   <button
-                    type="button" aria-disabled="true"
+                    type="button" disabled aria-disabled="true"
                     className="cursor-not-allowed px-3 py-1.5 text-sm text-muted-foreground"
                   >{item.label}</button>
                 </TooltipTrigger>

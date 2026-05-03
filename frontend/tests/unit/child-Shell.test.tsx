@@ -53,8 +53,8 @@ describe('Shell', () => {
     );
     renderAt('/home');
     await screen.findByText('Home Inside Shell');
-    const lessons = screen.getByRole('button', { name: 'Lessons' });
-    expect(lessons).toHaveAttribute('aria-disabled', 'true');
+    const simulator = screen.getByRole('button', { name: 'Simulator' });
+    expect(simulator).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('logout from profile menu navigates to /login', async () => {

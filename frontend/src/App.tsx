@@ -5,6 +5,9 @@ import Login from '@/pages/child/Login';
 import Signup from '@/pages/child/Signup';
 import PendingConsent from '@/pages/child/PendingConsent';
 import Home from '@/pages/child/Home';
+import Lessons from '@/pages/child/Lessons';
+import Module from '@/pages/child/Module';
+import Lesson from '@/pages/child/Lesson';
 import ConsentVerify from '@/pages/ConsentVerify';
 import ParentLogin from '@/pages/ParentLogin';
 import ParentAuthCallback from '@/pages/ParentAuthCallback';
@@ -29,6 +32,9 @@ export default function App() {
         {/* Authed child routes inside Shell */}
         <Route element={<Shell />}>
           <Route path="/home" element={<Home />} />
+          <Route path="/lessons" element={<Lessons />} />
+          <Route path="/lessons/:moduleId" element={<Module />} />
+          <Route path="/lessons/:moduleId/:lessonId" element={<Lesson />} />
         </Route>
 
         {/* Existing parent + consent routes (untouched) */}
