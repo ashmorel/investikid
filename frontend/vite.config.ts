@@ -12,8 +12,18 @@ export default defineConfig({
     proxy: {
       '/auth': 'http://localhost:8000',
       '/users': 'http://localhost:8000',
-      '/modules': 'http://localhost:8000',
-      '/lessons': 'http://localhost:8000',
+      '/modules': {
+        target: 'http://localhost:8000',
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return '/index.html';
+        },
+      },
+      '/lessons': {
+        target: 'http://localhost:8000',
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return '/index.html';
+        },
+      },
       '/consent': {
         target: 'http://localhost:8000',
         bypass(req) {

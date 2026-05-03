@@ -21,7 +21,7 @@ test('happy: over-threshold US 14 → /home', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/home$/);
   await expect(
-    page.getByRole('heading', { name: new RegExp(`Welcome, ${username}`, 'i') }),
+    page.getByRole('heading', { name: new RegExp(`Welcome back, ${username}`, 'i') }),
   ).toBeVisible();
 });
 
