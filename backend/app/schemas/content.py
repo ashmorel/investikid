@@ -37,6 +37,7 @@ class LessonSummary(BaseModel):
 
     id: uuid.UUID
     type: LessonType
+    title: str
     xp_reward: int
     order_index: int
     completed: bool = False

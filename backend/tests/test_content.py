@@ -181,3 +181,29 @@ async def test_complete_lesson_requires_csrf(client, db_session):
     client.headers.pop("X-CSRF-Token", None)
     response = await client.post(f"/lessons/{l.id}/complete", json={})
     assert response.status_code == 403
+
+
+async def test_lesson_summary_includes_derived_title(client, db_session):
+    module = Module(topic="stocks", title="Title Test", country_codes=[], is_premium=False, order_index=10)
+    db_session.add(module)
+    await db_session.flush()
+
+    db_session.add_all([
+        Lesson(module_id=module.id, type="card", order_index=0, xp_reward=10,
+               content_json={"title": "Card title", "body": "b"}),
+        Lesson(module_id=module.id, type="quiz", order_index=1, xp_reward=10,
+               content_json={"question": "Quiz question?", "choices": ["a", "b"], "answer_index": 0, "explanation": "e"}),
+        Lesson(module_id=module.id, type="scenario", order_index=2, xp_reward=10,
+               content_json={"prompt": "Scenario prompt", "choices": [{"label": "x", "outcome": "o"}], "correct_index": 0}),
+        Lesson(module_id=module.id, type="video", order_index=3, xp_reward=10,
+               content_json={"youtube_id": "abc", "caption": "Caption text"}),
+        Lesson(module_id=module.id, type="video", order_index=4, xp_reward=10,
+               content_json={"youtube_id": "def"}),  # no caption
+    ])
+    await db_session.commit()
+
+    await _register_and_login(client, email="ts@example.com", username="tsuser", country_code="GB")
+    response = await client.get(f"/modules/{module.id}/lessons")
+    assert response.status_code == 200
+    titles = [lesson["title"] for lesson in response.json()]
+    assert titles == ["Card title", "Quiz question?", "Scenario prompt", "Caption text", "Video lesson"]

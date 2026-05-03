@@ -47,3 +47,16 @@ def streak_after_activity(
     if (today - last).days == 1:
         return current + 1, today
     return 1, today
+
+
+def derive_lesson_title(lesson_type: str, content_json: dict) -> str:
+    """Derive a human-readable lesson title from content_json by type."""
+    if lesson_type == "card":
+        return content_json.get("title") or "Card lesson"
+    if lesson_type == "quiz":
+        return content_json.get("question") or "Quiz"
+    if lesson_type == "scenario":
+        return content_json.get("prompt") or "Scenario"
+    if lesson_type == "video":
+        return content_json.get("caption") or "Video lesson"
+    return "Lesson"

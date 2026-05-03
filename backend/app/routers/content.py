@@ -18,6 +18,7 @@ from app.schemas.content import (
 )
 from app.services.content_service import (
     compute_level,
+    derive_lesson_title,
     is_module_accessible,
     streak_after_activity,
 )
@@ -98,7 +99,11 @@ async def list_lessons(
 
     return [
         LessonSummary(
-            id=l.id, type=l.type, xp_reward=l.xp_reward, order_index=l.order_index,
+            id=l.id,
+            type=l.type,
+            title=derive_lesson_title(l.type, l.content_json or {}),
+            xp_reward=l.xp_reward,
+            order_index=l.order_index,
             completed=l.id in completed_ids,
         )
         for l in lessons
