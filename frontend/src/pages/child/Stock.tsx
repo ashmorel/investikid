@@ -5,6 +5,8 @@ import { simulatorApi, type TradeRequest, type QuoteOut, type PortfolioOut } fro
 import { ApiError } from '@/api/client';
 import { StockHeader } from '@/components/child/simulator/StockHeader';
 import { StockChart } from '@/components/child/simulator/StockChart';
+import { ChartGuide } from '@/components/child/simulator/ChartGuide';
+import { StockNewsSection } from '@/components/child/simulator/StockNews';
 import { TradeForm } from '@/components/child/simulator/TradeForm';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,6 +16,7 @@ export default function Stock() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [chartPeriod, setChartPeriod] = useState('1mo');
 
   const quoteQ = useQuery<QuoteOut | null, ApiError>({
     queryKey: ['quote', exchange, ticker],
@@ -90,7 +93,16 @@ export default function Stock() {
       />
 
       <div className="my-4">
-        <StockChart exchange={quote.exchange} ticker={quote.ticker} currency={quote.currency} />
+        <StockChart
+          exchange={quote.exchange}
+          ticker={quote.ticker}
+          currency={quote.currency}
+          onPeriodChange={setChartPeriod}
+        />
+      </div>
+
+      <div className="mb-4">
+        <ChartGuide exchange={quote.exchange} ticker={quote.ticker} period={chartPeriod} />
       </div>
 
       <TradeForm
@@ -104,6 +116,10 @@ export default function Stock() {
         isSubmitting={tradeMutation.isPending}
         submitError={submitError}
       />
+
+      <div className="mt-6">
+        <StockNewsSection exchange={quote.exchange} ticker={quote.ticker} />
+      </div>
     </div>
   );
 }

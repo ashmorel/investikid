@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { Newspaper } from 'lucide-react';
-import { simulatorApi, type StockNews } from '@/api/simulator';
+import { Newspaper, Sparkles } from 'lucide-react';
+import { simulatorApi, type StockNews, type NewsSummary } from '@/api/simulator';
 
 function timeAgo(dateStr: string): string {
   if (!dateStr) return '';
@@ -46,6 +46,47 @@ function NewsCard({ item }: { item: StockNews }) {
   );
 }
 
+function AiSummary() {
+  const { data, isLoading } = useQuery<NewsSummary | null>({
+    queryKey: ['news-summary'],
+    queryFn: () => simulatorApi.getNewsSummary(),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="mb-4 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-amber-50 p-4">
+        <div className="flex items-center gap-2 text-purple-700">
+          <Sparkles className="h-4 w-4 animate-pulse" />
+          <span className="text-sm font-medium">AI is reading the news for you…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data || !data.summary) return null;
+
+  return (
+    <div className="mb-4 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-amber-50 p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-purple-600" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-purple-700">AI Summary</span>
+      </div>
+      <p className="text-sm leading-relaxed text-gray-700">{data.summary}</p>
+      {data.tickers_mentioned.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {data.tickers_mentioned.map((t) => (
+            <span key={t} className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MarketNews() {
   const { data, isLoading } = useQuery<StockNews[] | null>({
     queryKey: ['market-news'],
@@ -70,6 +111,7 @@ export function MarketNews() {
         <Newspaper className="h-5 w-5 text-amber-600" />
         <h2 className="text-lg font-semibold text-gray-800">News for Your Stocks</h2>
       </div>
+      <AiSummary />
       <div className="-mx-1 divide-y divide-gray-100">
         {data.map((item, i) => (
           <NewsCard key={`${item.related_ticker}-${i}`} item={item} />

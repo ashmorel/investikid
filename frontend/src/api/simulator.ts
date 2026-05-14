@@ -83,6 +83,11 @@ export type StockNews = {
   related_exchange: string;
 };
 
+export type NewsSummary = {
+  summary: string;
+  tickers_mentioned: string[];
+};
+
 export const simulatorApi = {
   searchMarket: (q: string, refresh = false) =>
     apiFetch<QuoteOut[]>(`/market/search?q=${encodeURIComponent(q)}${refresh ? '&refresh=true' : ''}`),
@@ -110,4 +115,16 @@ export const simulatorApi = {
 
   getMarketNews: () =>
     apiFetch<StockNews[]>('/market/news'),
+
+  getNewsSummary: () =>
+    apiFetch<NewsSummary>('/market/news-summary'),
+
+  getStockNews: (exchange: string, ticker: string) =>
+    apiFetch<StockNews[]>(`/market/news/${exchange}/${ticker}`),
+
+  getStockNewsSummary: (exchange: string, ticker: string) =>
+    apiFetch<NewsSummary>(`/market/news-summary/${exchange}/${ticker}`),
+
+  getChartGuide: (exchange: string, ticker: string, period = '1mo') =>
+    apiFetch<NewsSummary>(`/market/chart-guide/${exchange}/${ticker}?period=${period}`),
 };

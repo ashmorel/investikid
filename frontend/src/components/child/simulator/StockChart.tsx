@@ -24,10 +24,16 @@ type Props = {
   exchange: string;
   ticker: string;
   currency: string;
+  onPeriodChange?: (period: string) => void;
 };
 
-export function StockChart({ exchange, ticker, currency }: Props) {
+export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props) {
   const [period, setPeriod] = useState('1mo');
+
+  const handlePeriodChange = (p: string) => {
+    setPeriod(p);
+    onPeriodChange?.(p);
+  };
 
   const { data, isLoading } = useQuery<PricePoint[] | null>({
     queryKey: ['stock-history', exchange, ticker, period],
@@ -60,7 +66,7 @@ export function StockChart({ exchange, ticker, currency }: Props) {
         {PERIODS.map((p) => (
           <button
             key={p.key}
-            onClick={() => setPeriod(p.key)}
+            onClick={() => handlePeriodChange(p.key)}
             className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
               period === p.key
                 ? 'bg-amber-500 text-white'

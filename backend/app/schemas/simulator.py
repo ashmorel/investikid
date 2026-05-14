@@ -89,3 +89,8 @@ class StockNewsOut(BaseModel):
     thumbnail: str
     related_ticker: str
     related_exchange: str
+
+
+class NewsSummaryOut(BaseModel):
+    summary: str
+    tickers_mentioned: list[str]

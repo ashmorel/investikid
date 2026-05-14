@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,6 +14,7 @@ from app.schemas.simulator import (
     ExchangeMoversOut,
     HoldingOut,
     MarketMoverOut,
+    NewsSummaryOut,
     PortfolioOut,
     PortfolioSnapshot,
     PricePointOut,
@@ -21,6 +23,7 @@ from app.schemas.simulator import (
     TradeOut,
     TradeRequest,
 )
+from app.services.llm_client import LLMError, get_llm_client
 from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
@@ -131,6 +134,192 @@ async def get_market_news(
     ticker_pairs = [(h.ticker, h.exchange) for h in holdings]
     items = provider.get_news(ticker_pairs)
     return [StockNewsOut(**i.__dict__) for i in items]
+
+
+@router.get("/market/news-summary", response_model=NewsSummaryOut)
+async def get_news_summary(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_news"):
+        return NewsSummaryOut(summary="No news available right now.", tickers_mentioned=[])
+
+    portfolio = await session.scalar(
+        select(Portfolio).where(Portfolio.user_id == current_user.id)
+    )
+    if not portfolio:
+        return NewsSummaryOut(summary="Start investing to see personalised news!", tickers_mentioned=[])
+
+    holdings = (await session.scalars(
+        select(Holding).where(Holding.portfolio_id == portfolio.id)
+    )).all()
+    if not holdings:
+        return NewsSummaryOut(summary="Buy some stocks and news about them will appear here!", tickers_mentioned=[])
+
+    ticker_pairs = [(h.ticker, h.exchange) for h in holdings]
+    items = provider.get_news(ticker_pairs)
+    if not items:
+        return NewsSummaryOut(summary="No recent news for your stocks.", tickers_mentioned=[])
+
+    age = (date.today() - current_user.dob).days // 365
+    tickers = list({i.related_ticker for i in items})
+
+    headlines = "\n".join(
+        f"- [{i.related_ticker}] {i.title}: {i.summary}" for i in items[:12]
+    )
+
+    system_prompt = (
+        f"You are a friendly financial news reporter for a {age}-year-old. "
+        "Write a short, engaging summary of the news headlines below. "
+        "Rules:\n"
+        "- Use simple language appropriate for the reader's age\n"
+        "- For ages 8-11: use very simple words, short sentences, explain any business terms\n"
+        "- For ages 12-14: can use slightly more complex language but still explain jargon\n"
+        "- For ages 15+: can use normal language but keep it accessible\n"
+        "- Focus on what matters to someone who owns these stocks\n"
+        "- Keep it to 2-4 sentences\n"
+        "- Be encouraging and educational, never scary about losses\n"
+        "- Never give investment advice\n"
+        "- Mention the stock tickers when relevant"
+    )
+
+    llm = get_llm_client(premium=False)
+    try:
+        summary = await llm.complete(
+            system_prompt=system_prompt,
+            messages=[{"role": "user", "content": f"Here are today's headlines about my stocks:\n{headlines}"}],
+            temperature=0.5,
+            max_tokens=200,
+        )
+    except LLMError:
+        summary = "Couldn't generate a summary right now — check back soon!"
+
+    return NewsSummaryOut(summary=summary.strip(), tickers_mentioned=tickers)
+
+
+@router.get("/market/news/{exchange}/{ticker}", response_model=list[StockNewsOut])
+async def get_stock_news(
+    exchange: str,
+    ticker: str,
+    _current: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_news"):
+        return []
+    items = provider.get_news([(ticker, exchange)])
+    return [StockNewsOut(**i.__dict__) for i in items]
+
+
+@router.get("/market/news-summary/{exchange}/{ticker}", response_model=NewsSummaryOut)
+async def get_stock_news_summary(
+    exchange: str,
+    ticker: str,
+    current_user: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_news"):
+        return NewsSummaryOut(summary="", tickers_mentioned=[])
+    items = provider.get_news([(ticker, exchange)])
+    if not items:
+        return NewsSummaryOut(summary="", tickers_mentioned=[])
+
+    age = (date.today() - current_user.dob).days // 365
+    headlines = "\n".join(f"- {i.title}: {i.summary}" for i in items[:8])
+
+    system_prompt = (
+        f"You are a friendly financial news reporter for a {age}-year-old "
+        f"who owns shares in {ticker}. "
+        "Write a short, engaging summary of what's happening with this stock. "
+        "Rules:\n"
+        "- Use simple language appropriate for the reader's age\n"
+        "- For ages 8-11: very simple words, short sentences, explain business terms\n"
+        "- For ages 12-14: slightly more complex but still explain jargon\n"
+        "- For ages 15+: normal language but keep it accessible\n"
+        "- Focus on what this news means for someone who owns this stock\n"
+        "- Keep it to 2-3 sentences\n"
+        "- Be encouraging and educational, never scary about losses\n"
+        "- Never give investment advice"
+    )
+
+    llm = get_llm_client(premium=False)
+    try:
+        summary = await llm.complete(
+            system_prompt=system_prompt,
+            messages=[{"role": "user", "content": f"Recent news about {ticker}:\n{headlines}"}],
+            temperature=0.5,
+            max_tokens=200,
+        )
+    except LLMError:
+        summary = ""
+
+    return NewsSummaryOut(summary=summary.strip(), tickers_mentioned=[ticker])
+
+
+@router.get("/market/chart-guide/{exchange}/{ticker}", response_model=NewsSummaryOut)
+async def get_chart_guide(
+    exchange: str,
+    ticker: str,
+    period: str = "1mo",
+    current_user: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    age = (date.today() - current_user.dob).days // 365
+
+    if not hasattr(provider, "get_history"):
+        return NewsSummaryOut(summary="", tickers_mentioned=[])
+
+    points = provider.get_history(ticker, exchange, period)
+    if len(points) < 2:
+        return NewsSummaryOut(summary="", tickers_mentioned=[])
+
+    start = points[0].close
+    end = points[-1].close
+    change_pct = ((end - start) / start * 100) if start > 0 else 0
+    high = max(p.high for p in points)
+    low = min(p.low for p in points)
+    avg_vol = sum(p.volume for p in points) / len(points)
+
+    stats = (
+        f"Ticker: {ticker}, Period: {period}\n"
+        f"Start price: {start:.2f}, End price: {end:.2f}, Change: {change_pct:+.1f}%\n"
+        f"Period high: {high:.2f}, Period low: {low:.2f}\n"
+        f"Average daily volume: {avg_vol:,.0f} shares\n"
+        f"Number of data points: {len(points)}"
+    )
+
+    system_prompt = (
+        f"You are a friendly investing teacher for a {age}-year-old. "
+        f"Look at the chart data for {ticker} and teach the reader something useful. "
+        "Rules:\n"
+        "- Use simple language appropriate for the reader's age\n"
+        "- For ages 8-11: very simple, use analogies they'd understand\n"
+        "- For ages 12-14: can use more detail but explain terms\n"
+        "- For ages 15+: can be more technical\n"
+        "- Pick ONE of these to teach about (whichever is most relevant to this chart):\n"
+        "  * What the green/red colour means and why prices go up or down\n"
+        "  * What 'volume' means and why lots of trading can signal big news\n"
+        "  * What the high and low of a period tell you about volatility\n"
+        "  * How to compare short-term vs long-term trends using different periods\n"
+        "  * What it means when a stock price changes a lot vs a little\n"
+        "- Keep it to 2-3 sentences\n"
+        "- Reference the actual numbers from this stock's chart\n"
+        "- End with a question that makes the reader think\n"
+        "- Never give investment advice"
+    )
+
+    llm = get_llm_client(premium=False)
+    try:
+        summary = await llm.complete(
+            system_prompt=system_prompt,
+            messages=[{"role": "user", "content": f"Here's the chart data:\n{stats}"}],
+            temperature=0.7,
+            max_tokens=250,
+        )
+    except LLMError:
+        summary = ""
+
+    return NewsSummaryOut(summary=summary.strip(), tickers_mentioned=[ticker])
 
 
 @router.get("/portfolio", response_model=PortfolioOut)
