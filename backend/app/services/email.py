@@ -1,3 +1,4 @@
+import asyncio
 from typing import Protocol
 
 import resend
@@ -130,7 +131,7 @@ class ResendEmailSender:
             "html": html,
             "text": plain,
         }
-        await resend.Emails.send_async(params)
+        await asyncio.to_thread(resend.Emails.send, params)
 
 
 def get_email_sender() -> EmailSender:

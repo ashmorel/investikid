@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -52,21 +52,19 @@ async def test_resend_sender_calls_api_and_persists(db_session):
         "link": "http://localhost:5173/consent/verify?token=tok123",
     }
 
-    with patch("app.services.email.resend") as mock_resend:
-        mock_resend.Emails.send_async = AsyncMock(return_value={"id": "msg_123"})
-
+    with patch("app.services.email.asyncio.to_thread", return_value={"id": "msg_123"}) as mock_to_thread:
         await sender.send(db_session, "parent@example.com", "consent_request", context)
 
-        # Verify resend was called once with correct params
-        mock_resend.Emails.send_async.assert_called_once()
-        call_params = mock_resend.Emails.send_async.call_args[0][0]
+        mock_to_thread.assert_called_once()
+        call_args = mock_to_thread.call_args
+        assert call_args[0][0].__name__ == "send"
+        call_params = call_args[0][1]
         assert call_params["from"] == "test@example.com"
         assert call_params["to"] == ["parent@example.com"]
         assert call_params["subject"] == "Approve your child's Invest-Ed account"
         assert "bob" in call_params["html"]
         assert "bob" in call_params["text"]
 
-    # Verify SentEmail record was created
     from sqlalchemy import func, select
 
     from app.models.consent import SentEmail
@@ -86,11 +84,10 @@ async def test_resend_sender_raises_on_api_error(db_session):
         "link": "http://localhost:5173/parent/auth/callback?token=tok456",
     }
 
-    with patch("app.services.email.resend") as mock_resend:
-        mock_resend.Emails.send_async = AsyncMock(
-            side_effect=Exception("Resend API error")
-        )
-
+    with patch(
+        "app.services.email.asyncio.to_thread",
+        side_effect=Exception("Resend API error"),
+    ):
         with pytest.raises(Exception, match="Resend API error"):
             await sender.send(
                 db_session, "parent@example.com", "parent_magic_link", context

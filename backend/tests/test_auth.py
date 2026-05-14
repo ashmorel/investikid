@@ -225,18 +225,15 @@ async def test_login_locks_after_five_wrong_passwords(client):
     assert r.status_code == 401
 
 
-async def test_inactive_user_cannot_access_me(client):
+async def test_inactive_user_cannot_access_me(client, db_session):
     await _register_and_login(client, "inactive@example.com", "inactiveuser")
-    # Flip is_active in the DB directly.
     from sqlalchemy import update
 
     from app.models.user import User
-    from tests.conftest import _TestSession
-    async with _TestSession() as s:
-        await s.execute(
-            update(User).where(User.email == "inactive@example.com").values(is_active=False)
-        )
-        await s.commit()
+    await db_session.execute(
+        update(User).where(User.email == "inactive@example.com").values(is_active=False)
+    )
+    await db_session.flush()
 
     r = await client.get("/users/me")
     assert r.status_code == 401

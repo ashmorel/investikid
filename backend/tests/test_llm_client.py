@@ -9,8 +9,9 @@ from app.services.llm_client import (
     get_llm_client,
 )
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
-@pytest.mark.asyncio
+
 async def test_openai_client_complete():
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
@@ -30,7 +31,6 @@ async def test_openai_client_complete():
         mock_instance.chat.completions.create.assert_awaited_once()
 
 
-@pytest.mark.asyncio
 async def test_anthropic_client_complete():
     mock_response = MagicMock()
     mock_response.content = [MagicMock()]
@@ -50,7 +50,6 @@ async def test_anthropic_client_complete():
         mock_instance.messages.create.assert_awaited_once()
 
 
-@pytest.mark.asyncio
 async def test_openai_client_raises_llm_error_on_failure():
     with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
         mock_instance = AsyncMock()
