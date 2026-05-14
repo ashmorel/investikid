@@ -1,7 +1,4 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Menu } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ProfileMenu } from './ProfileMenu';
 import { cn } from '@/lib/utils';
 
@@ -17,7 +14,7 @@ export function TopNav({ username }: { username: string }) {
     <header className="sticky top-0 z-10 border-b border-amber-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
         <Link to="/home" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-content rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-center text-sm font-extrabold text-white">IE</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-center text-sm font-extrabold text-white">IE</span>
           <span className="text-lg font-extrabold text-gray-900">Invest-Ed</span>
         </Link>
 
@@ -33,25 +30,7 @@ export function TopNav({ username }: { username: string }) {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left">
-              <nav className="mt-6 flex flex-col gap-1" aria-label="Primary mobile">
-                {NAV_LINKS.map(({ to, label }) => (
-                  <NavLink key={to} to={to}
-                    className={({ isActive }) => cn(
-                      'rounded-lg px-3 py-2 text-sm font-semibold',
-                      isActive ? 'bg-amber-50 text-amber-600' : 'text-gray-600 hover:bg-amber-50',
-                    )}>{label}</NavLink>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
+        <div className="ml-auto">
           <ProfileMenu username={username} />
         </div>
       </div>

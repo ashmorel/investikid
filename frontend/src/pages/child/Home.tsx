@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useChildSession } from '@/hooks/useChildSession';
 import { useProgress } from '@/hooks/useProgress';
@@ -91,9 +92,11 @@ export default function Home() {
           <span>{xpInLevel} / {xpForNext} XP</span>
         </div>
         <div className="h-2.5 w-full overflow-hidden rounded-full bg-amber-100">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all"
-            style={{ width: `${(xpInLevel / xpForNext) * 100}%` }}
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
+            initial={{ width: 0 }}
+            animate={{ width: `${(xpInLevel / xpForNext) * 100}%` }}
+            transition={{ duration: 0.8, delay: 0.2 }}
           />
         </div>
       </div>

@@ -114,3 +114,30 @@ async def test_trade_awards_first_trade_badge(client, db_session):
 
     badges = (await client.get("/users/me/badges")).json()
     assert any(b["name"] == "First Trade" for b in badges)
+
+
+async def test_portfolio_history_empty_when_no_trades(client):
+    await _login(client, email="hist@example.com", username="histuser")
+    r = await client.get("/portfolio/history")
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+async def test_portfolio_history_returns_snapshots_after_trades(client):
+    await _login(client, email="hist2@example.com", username="hist2user")
+    # Make two trades
+    await client.post("/portfolio/trades", json={"ticker": "VOD", "exchange": "LSE", "type": "buy", "shares": "10"})
+    await client.post("/portfolio/trades", json={"ticker": "BP", "exchange": "LSE", "type": "buy", "shares": "5"})
+
+    r = await client.get("/portfolio/history")
+    assert r.status_code == 200
+    history = r.json()
+    assert len(history) >= 1
+    # Each entry has date and value
+    for entry in history:
+        assert "date" in entry
+        assert "value" in entry
+        assert isinstance(entry["value"], (int, float))
+    # The last entry's value should match current portfolio total_value
+    pf = (await client.get("/portfolio")).json()
+    assert abs(history[-1]["value"] - float(pf["total_value"])) < 0.02

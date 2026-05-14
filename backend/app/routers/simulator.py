@@ -1,3 +1,4 @@
+from collections import defaultdict
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,6 +12,7 @@ from app.routers.users import get_current_user
 from app.schemas.simulator import (
     HoldingOut,
     PortfolioOut,
+    PortfolioSnapshot,
     QuoteOut,
     TradeOut,
     TradeRequest,
@@ -153,3 +155,78 @@ async def list_trades(
         select(Trade).where(Trade.portfolio_id == portfolio.id).order_by(Trade.executed_at.desc())
     )).all()
     return list(trades)
+
+
+@router.get("/portfolio/history", response_model=list[PortfolioSnapshot])
+async def portfolio_history(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    provider=Depends(get_price_provider),
+):
+    portfolio = await session.scalar(
+        select(Portfolio).where(Portfolio.user_id == current_user.id)
+    )
+    if not portfolio:
+        return []
+
+    trades = (
+        await session.scalars(
+            select(Trade)
+            .where(Trade.portfolio_id == portfolio.id)
+            .order_by(Trade.executed_at.asc())
+        )
+    ).all()
+
+    if not trades:
+        return []
+
+    # Build ticker→exchange map from holdings
+    all_holdings = (await session.scalars(
+        select(Holding).where(Holding.portfolio_id == portfolio.id)
+    )).all()
+    ticker_exchange: dict[str, str] = {h.ticker: h.exchange for h in all_holdings}
+
+    shares_held: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+    cash = portfolio.virtual_cash
+    # Reconstruct starting cash by reversing all trades
+    for t in trades:
+        cost = t.price * t.shares
+        if t.type == "buy":
+            cash += cost
+        else:
+            cash -= cost
+
+    snapshots: list[PortfolioSnapshot] = []
+    seen_dates: set[str] = set()
+
+    for t in trades:
+        cost = t.price * t.shares
+        if t.type == "buy":
+            cash -= cost
+            shares_held[t.ticker] += t.shares
+        else:
+            cash += cost
+            shares_held[t.ticker] -= t.shares
+
+        date_str = t.executed_at.date().isoformat()
+        holding_value = Decimal("0")
+        for ticker, qty in shares_held.items():
+            if qty <= 0:
+                continue
+            exchange = ticker_exchange.get(ticker, "")
+            try:
+                q = provider.get_quote(ticker, exchange)
+                holding_value += q.price * qty
+            except Exception:
+                holding_value += t.price * qty
+
+        snapshot = PortfolioSnapshot(
+            date=date_str, value=float((cash + holding_value).quantize(Decimal("0.01")))
+        )
+        if date_str in seen_dates:
+            snapshots[-1] = snapshot
+        else:
+            seen_dates.add(date_str)
+            snapshots.append(snapshot)
+
+    return snapshots

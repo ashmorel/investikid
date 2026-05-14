@@ -53,8 +53,8 @@ describe('Shell', () => {
     );
     renderAt('/home');
     await screen.findByText('Home Inside Shell');
-    const stats = screen.getByRole('link', { name: 'Stats' });
-    expect(stats).toHaveAttribute('href', '/stats');
+    const statsLinks = screen.getAllByRole('link', { name: 'Stats' });
+    expect(statsLinks.some(el => el.getAttribute('href') === '/stats')).toBe(true);
   });
 
   it('logout from profile menu navigates to /login', async () => {

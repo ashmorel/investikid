@@ -43,8 +43,8 @@ describe('HoldingsTable', () => {
 
   it('renders empty state when no holdings', () => {
     renderTable([]);
-    expect(screen.getByText(/haven't bought any stocks/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /browsing the market/i })).toHaveAttribute('href', '/simulator/market');
+    expect(screen.getByText(/No stocks yet!/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Browse Market/i })).toHaveAttribute('href', '/simulator/market');
   });
 
   it('includes EduTooltip for Unrealized P/L column header', () => {

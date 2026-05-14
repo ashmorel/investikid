@@ -1,11 +1,14 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useChildSession } from '@/hooks/useChildSession';
 import { useChildAuthGuard } from '@/hooks/useChildAuthGuard';
 import { TopNav } from './TopNav';
+import { BottomTabBar } from './BottomTabBar';
 
 export function Shell() {
   const session = useChildSession();
   useChildAuthGuard(session.error);
+  const location = useLocation();
 
   if (session.isLoading) {
     return (
@@ -23,9 +26,19 @@ export function Shell() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
       <TopNav username={session.data.username} />
-      <main>
-        <Outlet />
-      </main>
+      <AnimatePresence mode="wait">
+        <motion.main
+          key={location.pathname}
+          className="pb-20 md:pb-0"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.15 }}
+        >
+          <Outlet />
+        </motion.main>
+      </AnimatePresence>
+      <BottomTabBar />
     </div>
   );
 }
