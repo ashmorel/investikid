@@ -5,7 +5,6 @@ import re
 import uuid
 from typing import Any
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -40,9 +39,18 @@ _SYSTEM_PROMPT_TEMPLATE = (
 )
 
 _SKILL_INSTRUCTIONS = {
-    "low": "The student is a beginner. Use very simple words, short sentences, and lots of encouragement. Give examples they can relate to (pocket money, toys, snacks).",
-    "medium": "The student has some understanding. Give clear explanations with relatable examples. Encourage them to think about why.",
-    "high": "The student is doing well. Challenge them with deeper questions. Ask 'what if' scenarios to deepen understanding.",
+    "low": (
+        "The student is a beginner. Use very simple words, short sentences, and lots of encouragement."
+        " Give examples they can relate to (pocket money, toys, snacks)."
+    ),
+    "medium": (
+        "The student has some understanding. Give clear explanations with relatable examples."
+        " Encourage them to think about why."
+    ),
+    "high": (
+        "The student is doing well. Challenge them with deeper questions."
+        " Ask 'what if' scenarios to deepen understanding."
+    ),
 }
 
 # Patterns that suggest financial advice

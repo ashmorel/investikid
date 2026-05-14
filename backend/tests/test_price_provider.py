@@ -1,7 +1,11 @@
 from decimal import Decimal
+
 import pytest
+
 from app.services.price_provider import (
-    StaticPriceProvider, PriceQuote, TickerNotAvailableError,
+    PriceQuote,
+    StaticPriceProvider,
+    TickerNotAvailableError,
 )
 
 

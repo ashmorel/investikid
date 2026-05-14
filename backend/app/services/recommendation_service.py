@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import func, select
@@ -9,7 +9,6 @@ from app.models.content import Lesson, LessonCompletion, Module
 from app.models.skill_profile import TopicMastery, WeakConcept
 from app.models.user import User
 from app.services.content_service import is_module_accessible
-
 
 TOPIC_PREREQUISITES: dict[str, list[str]] = {
     "stocks": [],
@@ -87,7 +86,7 @@ async def get_recommendations(
     )
     completed_lessons: dict[uuid.UUID, int] = dict(completed_counts_result.all())
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     scored: list[dict[str, Any]] = []
 
     for m in modules:
@@ -164,7 +163,7 @@ async def get_recommendations(
         completed_ids_result = await session.scalars(
             select(LessonCompletion.lesson_id).where(
                 LessonCompletion.user_id == user.id,
-                LessonCompletion.lesson_id.in_([l.id for l in lessons]),
+                LessonCompletion.lesson_id.in_([lesson.id for lesson in lessons]),
             )
         )
         completed_ids = set(completed_ids_result.all())

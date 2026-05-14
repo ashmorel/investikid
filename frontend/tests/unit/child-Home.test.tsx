@@ -41,38 +41,46 @@ describe('Home', () => {
       '/users/me': meBody('kid42'),
       '/users/me/progress': { xp: 320, level: 4, streak_count: 5, last_activity_date: '2026-05-02' },
       '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false },
+        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
       ],
       '/modules/mod-1/lessons': [
         { id: 'L1', type: 'card', title: 'L1 title', xp_reward: 10, order_index: 0, completed: true },
         { id: 'L2', type: 'quiz', title: 'L2 title', xp_reward: 25, order_index: 1, completed: false },
       ],
+      '/recommendations': {
+        next_quest: { module_id: 'mod-1', lesson_id: 'L2', reason: 'Continue where you left off' },
+        suggested_modules: [],
+      },
     });
     renderHome();
-    expect(await screen.findByText(/Welcome back, kid42/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Level 4/i)).toBeInTheDocument();
-    expect(screen.getByText(/320 XP/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Hey kid42/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Level 4/i)).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/320 XP/i).length).toBeGreaterThanOrEqual(1);
     await waitFor(() =>
       expect(screen.getByText(/L2 title/i)).toBeInTheDocument(),
     );
-    expect(screen.getByRole('link', { name: /resume/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Resume/i })).toHaveAttribute(
       'href', '/lessons/mod-1/L2',
     );
   });
 
-  it('shows "Start learning" copy when user has zero completions', async () => {
+  it('shows "Start" copy when user has zero completions', async () => {
     mockJsonRoute({
       '/users/me': meBody(),
       '/users/me/progress': { xp: 0, level: 1, streak_count: 0, last_activity_date: null },
       '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false },
+        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
       ],
       '/modules/mod-1/lessons': [
         { id: 'L1', type: 'card', title: 'L1', xp_reward: 10, order_index: 0, completed: false },
       ],
+      '/recommendations': {
+        next_quest: { module_id: 'mod-1', lesson_id: 'L1', reason: 'Start your first quest' },
+        suggested_modules: [],
+      },
     });
     renderHome();
-    expect(await screen.findByRole('link', { name: /start learning/i })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /Start/i })).toBeInTheDocument();
   });
 
   it('shows all-done message when every lesson is complete', async () => {
@@ -80,13 +88,17 @@ describe('Home', () => {
       '/users/me': meBody(),
       '/users/me/progress': { xp: 100, level: 2, streak_count: 1, last_activity_date: '2026-05-02' },
       '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false },
+        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
       ],
       '/modules/mod-1/lessons': [
         { id: 'L1', type: 'card', title: 'L1', xp_reward: 10, order_index: 0, completed: true },
       ],
+      '/recommendations': {
+        next_quest: null,
+        suggested_modules: [],
+      },
     });
     renderHome();
-    expect(await screen.findByText(/completed all available modules/i)).toBeInTheDocument();
+    expect(await screen.findByText(/completed all available quests/i)).toBeInTheDocument();
   });
 });

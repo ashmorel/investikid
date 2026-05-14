@@ -1,5 +1,4 @@
-import uuid
-from datetime import date, datetime, timezone, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 import pytest_asyncio
@@ -80,7 +79,7 @@ async def test_weak_concepts_boost_topic(db_session, seeded):
     db_session.add(TopicMastery(
         user_id=user.id, topic="stocks", mastery_score=0.8,
         quizzes_attempted=5, quizzes_correct=4,
-        last_activity_at=datetime.now(timezone.utc) - timedelta(days=3),
+        last_activity_at=datetime.now(UTC) - timedelta(days=3),
     ))
     await db_session.flush()
     # Add weak concept in budgeting
@@ -115,7 +114,7 @@ async def test_completed_modules_ranked_last(db_session, seeded):
     db_session.add(TopicMastery(
         user_id=user.id, topic="stocks", mastery_score=1.0,
         quizzes_attempted=1, quizzes_correct=1,
-        last_activity_at=datetime.now(timezone.utc),
+        last_activity_at=datetime.now(UTC),
     ))
     await db_session.flush()
 

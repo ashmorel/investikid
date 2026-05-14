@@ -1,6 +1,7 @@
-import pytest_asyncio
 from datetime import date
-from httpx import AsyncClient, ASGITransport
+
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core.config import settings
@@ -29,15 +30,16 @@ async def create_test_tables():
 async def db_session():
     # Clean up before test to ensure isolation
     async with _TestSession() as clean_session:
-        from sqlalchemy import delete, text
-        from app.models.user import RefreshToken, UserProgress, User
-        from app.models.content import LessonCompletion, Lesson, Module
-        from app.models.gamification import UserBadge, UserChallenge, Badge, Challenge
-        from app.models.simulator import Trade, Holding, Portfolio
+        from sqlalchemy import delete
+
         from app.models.consent import OneTimeToken, SentEmail
-        from app.models.skill_profile import TopicMastery, WeakConcept
+        from app.models.content import Lesson, LessonCompletion, Module
+        from app.models.gamification import Badge, Challenge, UserBadge, UserChallenge
         from app.models.generated_content import GeneratedContent
+        from app.models.simulator import Holding, Portfolio, Trade
+        from app.models.skill_profile import TopicMastery, WeakConcept
         from app.models.tutor import TutorConversation
+        from app.models.user import RefreshToken, User, UserProgress
         try:
             await clean_session.execute(delete(OneTimeToken))
             await clean_session.execute(delete(SentEmail))

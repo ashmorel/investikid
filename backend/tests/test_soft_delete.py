@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -38,7 +38,7 @@ async def test_soft_deleted_user_login_blocked(client, db_session):
         select(User).where(User.email == "del@example.com")
         .execution_options(include_deleted=True)
     )
-    user.deleted_at = datetime.now(timezone.utc)
+    user.deleted_at = datetime.now(UTC)
     await db_session.commit()
     client.cookies.clear()
     r = await client.post("/auth/login", json={
@@ -54,7 +54,7 @@ async def test_get_current_user_blocks_after_soft_delete(client, db_session):
         select(User).where(User.email == "del2@example.com")
         .execution_options(include_deleted=True)
     )
-    user.deleted_at = datetime.now(timezone.utc)
+    user.deleted_at = datetime.now(UTC)
     await db_session.commit()
     r = await client.get("/users/me")
     assert r.status_code == 401

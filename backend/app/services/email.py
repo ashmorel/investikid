@@ -70,10 +70,12 @@ def _render_html(template: str, context: dict) -> str:
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         "</head>"
-        '<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">'
+        "<body style=\"margin:0;padding:0;background-color:#f4f4f5;"
+        "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;\">"
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
         '<tr><td align="center" style="padding:40px 20px;">'
-        '<table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:8px;overflow:hidden;">'
+        '<table role="presentation" width="100%"'
+        ' style="max-width:480px;background:#ffffff;border-radius:8px;overflow:hidden;">'
         '<tr><td style="padding:32px 24px;">'
         f'<h1 style="margin:0 0 16px;font-size:20px;color:#111827;">{heading}</h1>'
         f'<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">{body_text}</p>'

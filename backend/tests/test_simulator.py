@@ -1,5 +1,6 @@
-import pytest
 from decimal import Decimal
+
+import pytest
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -15,7 +16,10 @@ _USER_BASE = {
 
 
 async def _login(client, email="trader@example.com", username="trader", country_code="GB", currency_code="GBP"):
-    payload = {**_USER_BASE, "email": email, "username": username, "country_code": country_code, "currency_code": currency_code}
+    payload = {
+        **_USER_BASE, "email": email, "username": username,
+        "country_code": country_code, "currency_code": currency_code,
+    }
     await client.post(REGISTER_URL, json=payload)
     await client.post(LOGIN_URL, json={"email": email, "password": "SecurePass123!"})
     csrf = client.cookies.get("csrf_token")
@@ -57,7 +61,9 @@ async def test_buy_trade_decreases_cash_adds_holding(client):
 async def test_sell_trade_increases_cash_removes_holding(client):
     await _login(client)
     await client.post("/portfolio/trades", json={"ticker": "VOD", "exchange": "LSE", "type": "buy", "shares": "10"})
-    r = await client.post("/portfolio/trades", json={"ticker": "VOD", "exchange": "LSE", "type": "sell", "shares": "10"})
+    r = await client.post(
+        "/portfolio/trades", json={"ticker": "VOD", "exchange": "LSE", "type": "sell", "shares": "10"}
+    )
     assert r.status_code == 201
     pf = (await client.get("/portfolio")).json()
     assert Decimal(pf["virtual_cash"]) == Decimal("1000.00")
@@ -66,7 +72,9 @@ async def test_sell_trade_increases_cash_removes_holding(client):
 
 async def test_insufficient_funds_rejected(client):
     await _login(client)
-    r = await client.post("/portfolio/trades", json={"ticker": "VOD", "exchange": "LSE", "type": "buy", "shares": "100000"})
+    r = await client.post(
+        "/portfolio/trades", json={"ticker": "VOD", "exchange": "LSE", "type": "buy", "shares": "100000"}
+    )
     assert r.status_code == 400
 
 

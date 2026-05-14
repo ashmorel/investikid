@@ -3,9 +3,10 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import select
 
-from app.models.consent import OneTimeToken, SentEmail
+from app.models.consent import SentEmail
 from app.services.tokens import (
-    PARENT_MAGIC_AUDIENCE, issue_one_time_token,
+    PARENT_MAGIC_AUDIENCE,
+    issue_one_time_token,
 )
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")

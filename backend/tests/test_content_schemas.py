@@ -1,5 +1,6 @@
 import uuid
-from app.schemas.content import ModuleOut, LessonOut
+
+from app.schemas.content import LessonOut, ModuleOut
 
 
 def test_module_out_accepts_orm_like_dict():
@@ -19,5 +20,5 @@ def test_lesson_out_preserves_content_json():
         content_json={"body": "hello"}, xp_reward=10, order_index=0,
         completed=False, locked=False,
     )
-    l = LessonOut.model_validate(data)
-    assert l.content_json == {"body": "hello"}
+    lesson_out = LessonOut.model_validate(data)
+    assert lesson_out.content_json == {"body": "hello"}

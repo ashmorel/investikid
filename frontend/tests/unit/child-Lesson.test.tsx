@@ -51,7 +51,7 @@ describe('Lesson shell', () => {
     expect(await screen.findByRole('heading', { name: /CardT/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Got it/ }));
     await waitFor(() => expect(screen.getByText(/\+10 XP/)).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: /Next lesson/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Next Quest/ })).toHaveAttribute(
       'href', '/lessons/mod-1/L2',
     );
   });

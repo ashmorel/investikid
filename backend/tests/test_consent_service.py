@@ -1,7 +1,9 @@
 from datetime import date
 
 from app.services.consent_service import (
-    age_in_years, consent_threshold, needs_parental_consent,
+    age_in_years,
+    consent_threshold,
+    needs_parental_consent,
 )
 
 

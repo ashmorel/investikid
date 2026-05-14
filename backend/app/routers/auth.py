@@ -1,6 +1,5 @@
 import uuid
-from datetime import date, datetime, timedelta, timezone
-from typing import Union
+from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
@@ -56,7 +55,7 @@ async def _issue_refresh_token(
     secure: bool,
 ) -> None:
     jti = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expires_at = now + timedelta(days=settings.refresh_token_expire_days)
     session.add(RefreshToken(
         jti=jti,
@@ -85,7 +84,7 @@ def _set_csrf_cookie(response: Response, secure: bool) -> None:
     )
 
 
-@router.post("/register", response_model=Union[UserProfile, PendingConsentResponse], status_code=201)
+@router.post("/register", response_model=UserProfile | PendingConsentResponse, status_code=201)
 @limiter.limit("5/minute")
 async def register(
     request: Request,
@@ -176,7 +175,7 @@ async def login(
         dummy_verify()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if not user.is_active:
         if user.parent_consent_given_at is None and user.consent_declined_at is None:
@@ -234,7 +233,7 @@ async def logout(
                     select(RefreshToken).where(RefreshToken.jti == jti)
                 )
                 if rt is not None and rt.revoked_at is None:
-                    rt.revoked_at = datetime.now(timezone.utc)
+                    rt.revoked_at = datetime.now(UTC)
                     await session.commit()
         except Exception:
             # Logout is best-effort; still clear cookies.
@@ -275,13 +274,13 @@ async def refresh(
         ) from exc
 
     rt = await session.scalar(select(RefreshToken).where(RefreshToken.jti == jti))
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if rt is None or rt.revoked_at is not None or rt.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     # Compare as aware datetimes.
     expires_at = rt.expires_at
     if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
+        expires_at = expires_at.replace(tzinfo=UTC)
     if expires_at <= now:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 

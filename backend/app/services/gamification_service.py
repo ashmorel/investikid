@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TypedDict
 
 from sqlalchemy import func, select
@@ -82,7 +82,7 @@ async def update_challenge_progress(
     """Advance any active challenges matching event_type. Returns newly completed challenges.
     Caller commits.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     active = (await session.scalars(
         select(Challenge).where(
             Challenge.type == event_type,

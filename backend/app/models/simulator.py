@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import DateTime, ForeignKey, Numeric, String, UniqueConstraint
@@ -55,5 +55,5 @@ class Trade(Base):
     shares: Mapped[Decimal] = mapped_column(Numeric(12, 6), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False)
     executed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )

@@ -14,6 +14,7 @@ export default function ParentAuthCallback() {
   const [state, setState] = useState<State>('pending');
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- setting 'gone' synchronously when token is missing avoids an unnecessary async round-trip
     if (!token) { setState('gone'); return; }
     parentApi.magicCallback(token)
       .then(() => navigate('/parent', { replace: true }))

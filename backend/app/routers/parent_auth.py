@@ -10,10 +10,15 @@ from app.routers.auth import _set_csrf_cookie
 from app.schemas.parent import ParentMagicLinkRequest
 from app.services.email import get_email_sender
 from app.services.tokens import (
-    PARENT_MAGIC_AUDIENCE, PARENT_MAGIC_EXPIRY,
-    TokenAlreadyUsed, TokenExpired, TokenInvalid,
-    consume_one_time_token, decode_parent_session,
-    issue_one_time_token, issue_parent_session,
+    PARENT_MAGIC_AUDIENCE,
+    PARENT_MAGIC_EXPIRY,
+    TokenAlreadyUsed,
+    TokenExpired,
+    TokenInvalid,
+    consume_one_time_token,
+    decode_parent_session,
+    issue_one_time_token,
+    issue_parent_session,
 )
 
 router = APIRouter(prefix="/parent/auth", tags=["parent_auth"])

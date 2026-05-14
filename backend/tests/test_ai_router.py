@@ -4,10 +4,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 import pytest_asyncio
 
-from app.models.content import Lesson, Module
-from app.models.skill_profile import TopicMastery
-from app.models.user import User, UserProgress
 from app.core.security import hash_password
+from app.models.content import Lesson, Module
+from app.models.user import User, UserProgress
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 

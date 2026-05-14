@@ -1,4 +1,3 @@
-import uuid
 from datetime import date
 from unittest.mock import AsyncMock, patch
 
@@ -9,7 +8,6 @@ from app.models.content import Lesson, Module
 from app.models.skill_profile import TopicMastery
 from app.models.user import User
 from app.services.tutor_service import (
-    TutorLimitReached,
     TutorInputTooLong,
     chat,
     safety_filter,

@@ -1,5 +1,6 @@
 import uuid
 from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 
 LessonType = Literal["card", "quiz", "scenario", "video"]

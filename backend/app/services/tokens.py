@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from jose import JWTError, jwt
 from sqlalchemy import update
@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.consent import OneTimeToken
-
 
 CONSENT_AUDIENCE = "consent"
 PARENT_MAGIC_AUDIENCE = "parent_magic"
@@ -39,7 +38,7 @@ async def issue_one_time_token(
     expires_in: timedelta,
 ) -> str:
     jti = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expires_at = now + expires_in
     record = OneTimeToken(
         jti=jti, purpose=purpose, subject_id=subject_id,
@@ -76,7 +75,7 @@ async def consume_one_time_token(
     except (ValueError, KeyError) as exc:
         raise TokenInvalid("missing jti") from exc
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     result = await session.execute(
         update(OneTimeToken)
         .where(OneTimeToken.jti == jti, OneTimeToken.consumed_at.is_(None))
@@ -93,7 +92,7 @@ async def consume_one_time_token(
 
 
 def issue_parent_session(email: str) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": email,
         "aud": PARENT_SESSION_AUDIENCE,

@@ -71,7 +71,7 @@ export default function Signup() {
       return await authApi.register(body);
     },
     onSuccess: async (resp) => {
-      if (resp && (resp as any).status === 'pending_consent') {
+      if (resp && typeof resp === 'object' && 'status' in resp && (resp as { status: string }).status === 'pending_consent') {
         navigate(`/pending-consent?email=${encodeURIComponent(email)}`, { replace: true });
         return;
       }

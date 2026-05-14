@@ -1,7 +1,9 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, timezone
+
+from app.models.content import Lesson, Module
 from app.models.gamification import Badge, Challenge
-from app.models.content import Module, Lesson
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -41,7 +43,7 @@ async def _seed(db_session):
     )
     db_session.add(first_lesson_badge)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     monday = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
     end = monday + timedelta(days=7)
     challenge = Challenge(
@@ -81,8 +83,8 @@ async def test_challenge_completion_sets_completed_at(client, db_session):
     lessons, _, challenge = await _seed(db_session)
     await _login(client)
 
-    for l in lessons:
-        await client.post(f"/lessons/{l.id}/complete", json={})
+    for lesson in lessons:
+        await client.post(f"/lessons/{lesson.id}/complete", json={})
     r = await client.get("/challenges")
     body = [c for c in r.json() if c["id"] == str(challenge.id)]
     assert body[0]["progress"] == 3

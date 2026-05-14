@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.gamification import Badge, Challenge
-
 
 _BADGES = [
     {"name": "First Step", "description": "Complete your first lesson",
@@ -21,7 +20,7 @@ _BADGES = [
 
 
 def _challenges_for_week() -> list[dict]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     monday = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
     end = monday + timedelta(days=7)
     return [

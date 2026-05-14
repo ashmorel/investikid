@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
@@ -53,6 +53,6 @@ class LessonCompletion(Base):
         UUID(as_uuid=True), ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False
     )
     completed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
     )
     score: Mapped[float | None] = mapped_column(Float, nullable=True)

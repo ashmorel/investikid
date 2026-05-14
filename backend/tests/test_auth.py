@@ -229,6 +229,7 @@ async def test_inactive_user_cannot_access_me(client):
     await _register_and_login(client, "inactive@example.com", "inactiveuser")
     # Flip is_active in the DB directly.
     from sqlalchemy import update
+
     from app.models.user import User
     from tests.conftest import _TestSession
     async with _TestSession() as s:

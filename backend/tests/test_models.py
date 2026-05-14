@@ -1,3 +1,6 @@
+from app.models.audit import AuditLog
+from app.models.content import Lesson, Module
+from app.models.simulator import Portfolio
 from app.models.user import User, UserProgress
 
 
@@ -13,13 +16,6 @@ def test_user_progress_model_columns():
     cols = {c.key for c in UserProgress.__table__.columns}
     assert {"user_id", "xp", "level", "streak_count",
             "last_activity_date", "virtual_coins"}.issubset(cols)
-
-
-from app.models.content import Module, Lesson, LessonCompletion
-from app.models.gamification import Badge, UserBadge, Challenge, UserChallenge
-from app.models.simulator import Portfolio, Holding, Trade
-from app.models.cosmetics import CosmeticItem, UserCosmetic
-from app.models.audit import AuditLog
 
 
 def test_module_columns():

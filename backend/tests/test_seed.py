@@ -1,6 +1,7 @@
 import pytest
-from sqlalchemy import select, func
-from app.models.content import Module, Lesson
+from sqlalchemy import func, select
+
+from app.models.content import Lesson, Module
 from app.seed.content import seed_modules_and_lessons
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")

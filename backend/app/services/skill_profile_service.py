@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -23,7 +23,7 @@ async def update_mastery_on_completion(
     the last_activity_at timestamp is updated.
     """
     mastery = await session.get(TopicMastery, (user_id, topic))
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if mastery is None:
         mastery = TopicMastery(

@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from datetime import date
-from typing import Sequence
 
 # XP thresholds per level (index = level-1 → threshold to reach NEXT level).
 # Exponential-ish curve from the spec: Piggy Bank (1) → ... → Investment Pro (7).

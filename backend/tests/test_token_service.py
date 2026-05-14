@@ -2,14 +2,17 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select
 
-from app.models.consent import OneTimeToken
 from app.services.tokens import (
-    CONSENT_AUDIENCE, PARENT_MAGIC_AUDIENCE,
-    TokenAlreadyUsed, TokenExpired, TokenInvalid,
-    consume_one_time_token, decode_parent_session,
-    issue_one_time_token, issue_parent_session,
+    CONSENT_AUDIENCE,
+    PARENT_MAGIC_AUDIENCE,
+    TokenAlreadyUsed,
+    TokenExpired,
+    TokenInvalid,
+    consume_one_time_token,
+    decode_parent_session,
+    issue_one_time_token,
+    issue_parent_session,
 )
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")

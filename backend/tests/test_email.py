@@ -1,7 +1,8 @@
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from app.services.email import _render_html
+import pytest
+
+from app.services.email import ResendEmailSender, _render_html
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -41,9 +42,6 @@ def test_render_html_unknown_template():
         _render_html("nonexistent", {})
 
 
-from app.services.email import ResendEmailSender
-
-
 async def test_resend_sender_calls_api_and_persists(db_session):
     sender = ResendEmailSender(api_key="re_fake", from_email="test@example.com")
 
@@ -69,7 +67,8 @@ async def test_resend_sender_calls_api_and_persists(db_session):
         assert "bob" in call_params["text"]
 
     # Verify SentEmail record was created
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
+
     from app.models.consent import SentEmail
     count = await db_session.scalar(select(func.count()).select_from(SentEmail))
     assert count == 1

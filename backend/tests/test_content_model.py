@@ -1,9 +1,9 @@
-import pytest
-import uuid
 from datetime import date
+
+import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.models.content import LessonCompletion, Module, Lesson
+from app.models.content import Lesson, LessonCompletion, Module
 from app.models.user import User
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")

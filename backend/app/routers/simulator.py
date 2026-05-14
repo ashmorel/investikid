@@ -5,21 +5,29 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
-from app.models.simulator import Portfolio, Holding, Trade
+from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
 from app.schemas.simulator import (
-    QuoteOut, PortfolioOut, HoldingOut, TradeRequest, TradeOut,
+    HoldingOut,
+    PortfolioOut,
+    QuoteOut,
+    TradeOut,
+    TradeRequest,
 )
 from app.services.gamification_service import (
-    evaluate_and_award_badges, update_challenge_progress,
+    evaluate_and_award_badges,
+    update_challenge_progress,
 )
 from app.services.price_provider import (
-    StaticPriceProvider, TickerNotAvailableError,
+    StaticPriceProvider,
+    TickerNotAvailableError,
 )
 from app.services.simulator_service import (
-    get_or_create_portfolio, execute_trade,
-    InsufficientFundsError, InsufficientSharesError,
+    InsufficientFundsError,
+    InsufficientSharesError,
+    execute_trade,
+    get_or_create_portfolio,
 )
 
 router = APIRouter(tags=["simulator"])
@@ -39,7 +47,10 @@ async def search_market(
     provider=Depends(get_price_provider),
 ):
     results = provider.search(q)
-    return [QuoteOut(ticker=r.ticker, exchange=r.exchange, name=r.name, price=r.price, currency=r.currency) for r in results]
+    return [
+        QuoteOut(ticker=r.ticker, exchange=r.exchange, name=r.name, price=r.price, currency=r.currency)
+        for r in results
+    ]
 
 
 @router.get("/market/quote/{exchange}/{ticker}", response_model=QuoteOut)

@@ -1,8 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.content import Module, Lesson
-
+from app.models.content import Lesson, Module
 
 _MODULES = [
     {

@@ -1,4 +1,5 @@
 import pytest
+
 from app.services.gamification_service import is_badge_earned
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")

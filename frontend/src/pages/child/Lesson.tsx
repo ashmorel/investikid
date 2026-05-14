@@ -53,6 +53,7 @@ export default function Lesson() {
   // CompletionPanel from the previous lesson doesn't flash on screen.
   useEffect(() => {
     complete.reset();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting UI state when lessonId changes is intentional; avoids stale panel showing on lesson navigation
     setShowPractice(false);
     setShowEddie(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps

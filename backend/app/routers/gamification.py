@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
@@ -48,7 +48,7 @@ async def list_active_challenges(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     challenges = (await session.scalars(
         select(Challenge)
         .where(Challenge.starts_at <= now, Challenge.ends_at > now)
@@ -84,7 +84,7 @@ async def weekly_leaderboard(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     monday = (now - timedelta(days=now.weekday())).replace(
         hour=0, minute=0, second=0, microsecond=0
     )

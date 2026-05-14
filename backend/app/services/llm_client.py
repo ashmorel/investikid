@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import AsyncIterator, Literal, Protocol
+from collections.abc import AsyncIterator
+from typing import Literal, Protocol
 
-from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
 
 from app.core.config import settings
 

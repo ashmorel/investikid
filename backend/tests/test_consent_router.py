@@ -2,7 +2,6 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select
 
 from app.models.user import User
 from app.services.tokens import CONSENT_AUDIENCE, issue_one_time_token

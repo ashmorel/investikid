@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from jose import JWTError, jwt
@@ -13,9 +13,13 @@ from app.schemas.consent import ChildSummary, ConsentDecision
 from app.services.consent_service import age_in_years
 from app.services.email import get_email_sender
 from app.services.tokens import (
-    CONSENT_AUDIENCE, CONSENT_EXPIRY,
-    TokenAlreadyUsed, TokenExpired, TokenInvalid,
-    consume_one_time_token, issue_one_time_token,
+    CONSENT_AUDIENCE,
+    CONSENT_EXPIRY,
+    TokenAlreadyUsed,
+    TokenExpired,
+    TokenInvalid,
+    consume_one_time_token,
+    issue_one_time_token,
 )
 
 router = APIRouter(tags=["consent"])
@@ -72,7 +76,7 @@ async def decide_consent(
     if user is None:
         raise _gone("User no longer exists")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if payload.decision == "approve":
         user.parent_consent_given_at = now
         user.is_active = True

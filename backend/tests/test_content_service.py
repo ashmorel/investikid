@@ -1,7 +1,11 @@
-import pytest
 from datetime import date
+
+import pytest
+
 from app.services.content_service import (
-    compute_level, is_module_accessible, streak_after_activity,
+    compute_level,
+    is_module_accessible,
+    streak_after_activity,
 )
 
 

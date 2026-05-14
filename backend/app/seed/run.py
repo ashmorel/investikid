@@ -1,5 +1,6 @@
 """CLI: python -m app.seed.run — seeds starter content (idempotent)."""
 import asyncio
+
 from app.core.database import async_session_factory
 from app.seed.content import seed_modules_and_lessons
 from app.seed.gamification import seed_badges_and_challenges

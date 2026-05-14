@@ -17,8 +17,8 @@ from __future__ import annotations
 
 import json
 import secrets
+from collections.abc import Iterable
 from http.cookies import SimpleCookie
-from typing import Iterable
 
 from starlette.types import ASGIApp, Receive, Scope, Send
 

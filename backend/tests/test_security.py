@@ -1,7 +1,9 @@
-import pytest
 from datetime import timedelta
+
+import pytest
 from fastapi import HTTPException
-from app.core.security import hash_password, verify_password, create_token, decode_token
+
+from app.core.security import create_token, decode_token, hash_password, verify_password
 
 
 def test_hash_and_verify_password():

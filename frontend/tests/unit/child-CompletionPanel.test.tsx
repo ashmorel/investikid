@@ -12,10 +12,10 @@ describe('CompletionPanel', () => {
         <CompletionPanel result={baseResult} moduleId="m" nextLessonId="L2" />
       </MemoryRouter>,
     );
-    expect(screen.getByText(/Great work/)).toBeInTheDocument();
+    expect(screen.getByText(/Quest Complete!/)).toBeInTheDocument();
     expect(screen.getByText(/\+25 XP/)).toBeInTheDocument();
     expect(screen.getByText(/Total: 320 XP/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Next lesson/ })).toHaveAttribute('href', '/lessons/m/L2');
+    expect(screen.getByRole('link', { name: /Next Quest/ })).toHaveAttribute('href', '/lessons/m/L2');
   });
 
   it('omits Next lesson link and shows Back to module when no next', () => {
@@ -24,7 +24,7 @@ describe('CompletionPanel', () => {
         <CompletionPanel result={baseResult} moduleId="m" nextLessonId={null} />
       </MemoryRouter>,
     );
-    expect(screen.queryByRole('link', { name: /Next lesson/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Next Quest/ })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Back to module/ })).toHaveAttribute('href', '/lessons/m');
   });
 

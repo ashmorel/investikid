@@ -64,8 +64,8 @@ async def test_get_progress_zero_defaults_for_brand_new_user(client, db_session)
 
 async def test_get_progress_reflects_lesson_completion(client, db_session):
     from datetime import date
+
     from app.models.content import Lesson, Module
-    from app.models.user import User, UserProgress
 
     await _register_and_login(client, email="lp@example.com", username="lpuser")
     module = Module(topic="stocks", title="P", country_codes=[], is_premium=False, order_index=0)

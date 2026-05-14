@@ -1,6 +1,7 @@
 import re
 import uuid
 from datetime import date as date_type
+
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 _COUNTRY_RE = re.compile(r"^[A-Z]{2}$")

@@ -56,9 +56,9 @@ async def test_list_modules_unauthenticated(client):
 
 async def test_list_lessons_includes_completed_flag(client, db_session):
     gb_free, _, _, _ = await _seed_modules(db_session)
-    l1 = Lesson(module_id=gb_free.id, type="card", content_json={"title": "Hi"}, xp_reward=10, order_index=0)
-    l2 = Lesson(module_id=gb_free.id, type="quiz", content_json={"q": "?"}, xp_reward=25, order_index=1)
-    db_session.add_all([l1, l2])
+    lesson1 = Lesson(module_id=gb_free.id, type="card", content_json={"title": "Hi"}, xp_reward=10, order_index=0)
+    lesson2 = Lesson(module_id=gb_free.id, type="quiz", content_json={"q": "?"}, xp_reward=25, order_index=1)
+    db_session.add_all([lesson1, lesson2])
     await db_session.commit()
 
     await _register_and_login(client)
@@ -66,14 +66,14 @@ async def test_list_lessons_includes_completed_flag(client, db_session):
     assert response.status_code == 200
     lessons = response.json()
     assert len(lessons) == 2
-    assert all("completed" in l for l in lessons)
+    assert all("completed" in item for item in lessons)
     assert lessons[0]["order_index"] == 0
 
 
 async def test_list_lessons_blocked_on_inaccessible_module(client, db_session):
     _, _, _, gb_premium = await _seed_modules(db_session)
-    l = Lesson(module_id=gb_premium.id, type="card", content_json={}, xp_reward=10, order_index=0)
-    db_session.add(l)
+    lesson = Lesson(module_id=gb_premium.id, type="card", content_json={}, xp_reward=10, order_index=0)
+    db_session.add(lesson)
     await db_session.commit()
 
     await _register_and_login(client)
@@ -83,12 +83,12 @@ async def test_list_lessons_blocked_on_inaccessible_module(client, db_session):
 
 async def test_get_lesson_returns_content(client, db_session):
     gb_free, _, _, _ = await _seed_modules(db_session)
-    l = Lesson(module_id=gb_free.id, type="card", content_json={"body": "hello"}, xp_reward=10, order_index=0)
-    db_session.add(l)
+    lesson = Lesson(module_id=gb_free.id, type="card", content_json={"body": "hello"}, xp_reward=10, order_index=0)
+    db_session.add(lesson)
     await db_session.commit()
 
     await _register_and_login(client)
-    response = await client.get(f"/lessons/{l.id}")
+    response = await client.get(f"/lessons/{lesson.id}")
     assert response.status_code == 200
     assert response.json()["content_json"] == {"body": "hello"}
 
@@ -101,23 +101,25 @@ async def test_get_lesson_not_found(client):
 
 async def test_get_lesson_blocked_on_inaccessible_module(client, db_session):
     _, _, _, gb_premium = await _seed_modules(db_session)
-    l = Lesson(module_id=gb_premium.id, type="card", content_json={"secret": "hidden"}, xp_reward=10, order_index=0)
-    db_session.add(l)
+    lesson = Lesson(
+        module_id=gb_premium.id, type="card", content_json={"secret": "hidden"}, xp_reward=10, order_index=0
+    )
+    db_session.add(lesson)
     await db_session.commit()
 
     await _register_and_login(client)
-    response = await client.get(f"/lessons/{l.id}")
+    response = await client.get(f"/lessons/{lesson.id}")
     assert response.status_code == 403
 
 
 async def test_complete_lesson_awards_xp(client, db_session):
     gb_free, _, _, _ = await _seed_modules(db_session)
-    l = Lesson(module_id=gb_free.id, type="card", content_json={}, xp_reward=10, order_index=0)
-    db_session.add(l)
+    lesson = Lesson(module_id=gb_free.id, type="card", content_json={}, xp_reward=10, order_index=0)
+    db_session.add(lesson)
     await db_session.commit()
 
     await _register_and_login(client)
-    response = await client.post(f"/lessons/{l.id}/complete", json={})
+    response = await client.post(f"/lessons/{lesson.id}/complete", json={})
     assert response.status_code == 200
     body = response.json()
     assert body["xp_awarded"] == 10
@@ -129,13 +131,13 @@ async def test_complete_lesson_awards_xp(client, db_session):
 
 async def test_complete_lesson_idempotent(client, db_session):
     gb_free, _, _, _ = await _seed_modules(db_session)
-    l = Lesson(module_id=gb_free.id, type="card", content_json={}, xp_reward=10, order_index=0)
-    db_session.add(l)
+    lesson = Lesson(module_id=gb_free.id, type="card", content_json={}, xp_reward=10, order_index=0)
+    db_session.add(lesson)
     await db_session.commit()
 
     await _register_and_login(client)
-    r1 = await client.post(f"/lessons/{l.id}/complete", json={})
-    r2 = await client.post(f"/lessons/{l.id}/complete", json={})
+    r1 = await client.post(f"/lessons/{lesson.id}/complete", json={})
+    r2 = await client.post(f"/lessons/{lesson.id}/complete", json={})
     assert r1.status_code == 200 and r2.status_code == 200
     assert r2.json()["already_completed"] is True
     assert r2.json()["xp_awarded"] == 0
@@ -153,8 +155,8 @@ async def test_complete_lesson_levels_up(client, db_session):
 
     await _register_and_login(client)
     responses = []
-    for l in lessons:
-        r = await client.post(f"/lessons/{l.id}/complete", json={})
+    for lesson in lessons:
+        r = await client.post(f"/lessons/{lesson.id}/complete", json={})
         responses.append(r.json())
     assert responses[-1]["total_xp"] == 150
     assert responses[-1]["level"] == 2
@@ -162,24 +164,24 @@ async def test_complete_lesson_levels_up(client, db_session):
 
 async def test_complete_lesson_premium_gated(client, db_session):
     _, _, _, gb_premium = await _seed_modules(db_session)
-    l = Lesson(module_id=gb_premium.id, type="card", content_json={}, xp_reward=10, order_index=0)
-    db_session.add(l)
+    lesson = Lesson(module_id=gb_premium.id, type="card", content_json={}, xp_reward=10, order_index=0)
+    db_session.add(lesson)
     await db_session.commit()
 
     await _register_and_login(client)
-    response = await client.post(f"/lessons/{l.id}/complete", json={})
+    response = await client.post(f"/lessons/{lesson.id}/complete", json={})
     assert response.status_code == 403
 
 
 async def test_complete_lesson_requires_csrf(client, db_session):
     gb_free, _, _, _ = await _seed_modules(db_session)
-    l = Lesson(module_id=gb_free.id, type="card", content_json={}, xp_reward=10, order_index=0)
-    db_session.add(l)
+    lesson = Lesson(module_id=gb_free.id, type="card", content_json={}, xp_reward=10, order_index=0)
+    db_session.add(lesson)
     await db_session.commit()
 
     await _register_and_login(client)
     client.headers.pop("X-CSRF-Token", None)
-    response = await client.post(f"/lessons/{l.id}/complete", json={})
+    response = await client.post(f"/lessons/{lesson.id}/complete", json={})
     assert response.status_code == 403
 
 
@@ -192,9 +194,11 @@ async def test_lesson_summary_includes_derived_title(client, db_session):
         Lesson(module_id=module.id, type="card", order_index=0, xp_reward=10,
                content_json={"title": "Card title", "body": "b"}),
         Lesson(module_id=module.id, type="quiz", order_index=1, xp_reward=10,
-               content_json={"question": "Quiz question?", "choices": ["a", "b"], "answer_index": 0, "explanation": "e"}),
+               content_json={"question": "Quiz question?", "choices": ["a", "b"],
+                              "answer_index": 0, "explanation": "e"}),
         Lesson(module_id=module.id, type="scenario", order_index=2, xp_reward=10,
-               content_json={"prompt": "Scenario prompt", "choices": [{"label": "x", "outcome": "o"}], "correct_index": 0}),
+               content_json={"prompt": "Scenario prompt",
+                              "choices": [{"label": "x", "outcome": "o"}], "correct_index": 0}),
         Lesson(module_id=module.id, type="video", order_index=3, xp_reward=10,
                content_json={"youtube_id": "abc", "caption": "Caption text"}),
         Lesson(module_id=module.id, type="video", order_index=4, xp_reward=10,

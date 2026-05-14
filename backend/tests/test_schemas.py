@@ -1,7 +1,4 @@
-import pytest
 from datetime import date
-
-from pydantic import ValidationError
 
 from app.schemas.auth import RegisterRequest
 

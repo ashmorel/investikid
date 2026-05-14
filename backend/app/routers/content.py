@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -95,7 +95,7 @@ async def list_lessons(
         completions_result = await session.scalars(
             select(LessonCompletion.lesson_id).where(
                 LessonCompletion.user_id == current_user.id,
-                LessonCompletion.lesson_id.in_([l.id for l in lessons]),
+                LessonCompletion.lesson_id.in_([lesson.id for lesson in lessons]),
             )
         )
         completed_ids = set(completions_result.all())
@@ -104,14 +104,14 @@ async def list_lessons(
 
     return [
         LessonSummary(
-            id=l.id,
-            type=l.type,
-            title=derive_lesson_title(l.type, l.content_json or {}),
-            xp_reward=l.xp_reward,
-            order_index=l.order_index,
-            completed=l.id in completed_ids,
+            id=lesson.id,
+            type=lesson.type,
+            title=derive_lesson_title(lesson.type, lesson.content_json or {}),
+            xp_reward=lesson.xp_reward,
+            order_index=lesson.order_index,
+            completed=lesson.id in completed_ids,
         )
-        for l in lessons
+        for lesson in lessons
     ]
 
 
@@ -164,7 +164,7 @@ async def complete_lesson(
         session.add(progress)
         await session.flush()
 
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     xp_awarded, already = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today
     )
@@ -223,7 +223,7 @@ async def _award_completion(
 
     completion = LessonCompletion(
         user_id=user_id, lesson_id=lesson.id, score=score,
-        completed_at=datetime.now(timezone.utc),
+        completed_at=datetime.now(UTC),
     )
     session.add(completion)
     try:

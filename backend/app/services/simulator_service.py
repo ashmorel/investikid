@@ -3,10 +3,9 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.simulator import Portfolio, Holding, Trade
+from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import User
 from app.services.price_provider import PriceQuote
-
 
 _STARTING_CASH: dict[str, Decimal] = {
     "GBP": Decimal("1000.00"),

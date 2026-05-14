@@ -1,11 +1,13 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, with_loader_criteria
+from sqlalchemy.orm import Session as _SyncSession
 
 from app.core.config import settings
 
@@ -24,10 +26,6 @@ async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_factory() as session:
         yield session
-
-
-from sqlalchemy import event
-from sqlalchemy.orm import Session as _SyncSession, with_loader_criteria
 
 _soft_delete_installed = False
 

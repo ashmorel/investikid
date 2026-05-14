@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -74,7 +74,7 @@ async def erase_child(
     child = await _get_owned_child(session, parent_email, user_id)
     if child.deleted_at is not None:
         return {"status": "already_deleted"}
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     child.deletion_requested_at = now
     child.deleted_at = now
     child.is_active = False

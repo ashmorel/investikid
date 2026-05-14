@@ -1,5 +1,6 @@
 import pytest
-from sqlalchemy import select, func
+from sqlalchemy import func, select
+
 from app.models.gamification import Badge, Challenge
 from app.seed.gamification import seed_badges_and_challenges
 
