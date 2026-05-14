@@ -50,7 +50,7 @@ describe('CompletionPanel', () => {
 
   it('does not fire confetti when already completed', async () => {
     const confetti = (await import('canvas-confetti')).default;
-    (confetti as ReturnType<typeof vi.fn>).mockClear();
+    (confetti as unknown as ReturnType<typeof vi.fn>).mockClear();
     render(
       <MemoryRouter>
         <CompletionPanel result={{ ...baseResult, already_completed: true, xp_awarded: 0 }} moduleId="m" nextLessonId={null} />

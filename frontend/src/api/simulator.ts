@@ -44,6 +44,11 @@ export type TradeOut = {
   executed_at: string;
 };
 
+export type PortfolioSnapshot = {
+  date: string;
+  value: number;
+};
+
 export const simulatorApi = {
   searchMarket: (q: string) =>
     apiFetch<QuoteOut[]>(`/market/search?q=${encodeURIComponent(q)}`),
@@ -60,4 +65,6 @@ export const simulatorApi = {
       method: 'POST',
       body: JSON.stringify(req),
     }),
+
+  getPortfolioHistory: () => apiFetch<PortfolioSnapshot[]>('/portfolio/history'),
 };
