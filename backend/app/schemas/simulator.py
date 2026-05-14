@@ -50,3 +50,8 @@ class TradeOut(BaseModel):
     shares: Decimal
     price: Decimal
     executed_at: datetime
+
+
+class PortfolioSnapshot(BaseModel):
+    date: str
+    value: float
