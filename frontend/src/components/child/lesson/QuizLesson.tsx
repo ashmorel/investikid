@@ -34,7 +34,7 @@ export function QuizLesson({ contentJson, onComplete, illustration, onShowEddie 
             <li key={i}>
               <label
                 className={cn(
-                  'flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3 transition-colors',
+                  'flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3 transition-all active:scale-[0.98]',
                   !submitted && selected === i && 'border-amber-400 bg-amber-50',
                   !submitted && selected !== i && 'border-gray-200',
                   showCorrect && 'border-green-500 bg-green-50',

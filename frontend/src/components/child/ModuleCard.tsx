@@ -34,7 +34,7 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
   return (
     <Link
       to={`/lessons/${module.id}`}
-      className="flex flex-col items-center gap-2 rounded-2xl border-2 border-amber-200 bg-white p-4 text-center transition hover:border-amber-400 hover:shadow-md"
+      className="flex flex-col items-center gap-2 rounded-2xl border-2 border-amber-200 bg-white p-4 text-center transition-all duration-200 hover:-translate-y-1 hover:border-amber-400 hover:shadow-md"
     >
       <span className="text-4xl">{module.icon}</span>
       <h3 className="font-bold text-sm text-gray-900">{module.title}</h3>
