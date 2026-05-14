@@ -87,7 +87,7 @@ async def test_insufficient_shares_rejected(client):
 async def test_unknown_ticker_rejected(client):
     await _login(client)
     r = await client.post("/portfolio/trades", json={"ticker": "NOPE", "exchange": "LSE", "type": "buy", "shares": "1"})
-    assert r.status_code == 403  # not in free tier
+    assert r.status_code == 404  # ticker not found in static provider
 
 
 async def test_trade_history_listed_newest_first(client):

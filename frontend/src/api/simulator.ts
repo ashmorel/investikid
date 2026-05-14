@@ -49,9 +49,18 @@ export type PortfolioSnapshot = {
   value: number;
 };
 
+export type PricePoint = {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+};
+
 export const simulatorApi = {
-  searchMarket: (q: string) =>
-    apiFetch<QuoteOut[]>(`/market/search?q=${encodeURIComponent(q)}`),
+  searchMarket: (q: string, refresh = false) =>
+    apiFetch<QuoteOut[]>(`/market/search?q=${encodeURIComponent(q)}${refresh ? '&refresh=true' : ''}`),
 
   getQuote: (exchange: string, ticker: string) =>
     apiFetch<QuoteOut>(`/market/quote/${exchange}/${ticker}`),
@@ -67,4 +76,7 @@ export const simulatorApi = {
     }),
 
   getPortfolioHistory: () => apiFetch<PortfolioSnapshot[]>('/portfolio/history'),
+
+  getStockHistory: (exchange: string, ticker: string, period = '1mo') =>
+    apiFetch<PricePoint[]>(`/market/history/${exchange}/${ticker}?period=${period}`),
 };

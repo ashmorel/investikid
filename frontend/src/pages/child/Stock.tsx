@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { simulatorApi, type TradeRequest, type QuoteOut, type PortfolioOut } from '@/api/simulator';
 import { ApiError } from '@/api/client';
 import { StockHeader } from '@/components/child/simulator/StockHeader';
+import { StockChart } from '@/components/child/simulator/StockChart';
 import { TradeForm } from '@/components/child/simulator/TradeForm';
 import { useToast } from '@/hooks/use-toast';
 
@@ -87,6 +88,10 @@ export default function Stock() {
         existingShares={existingHolding?.shares ?? null}
         existingAvgPrice={existingHolding?.avg_buy_price ?? null}
       />
+
+      <div className="my-4">
+        <StockChart exchange={quote.exchange} ticker={quote.ticker} currency={quote.currency} />
+      </div>
 
       <TradeForm
         ticker={quote.ticker}

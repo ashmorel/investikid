@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from app.core.config import settings
 from app.core.database import Base, get_session
 from app.main import app
+from app.routers.simulator import get_price_provider
+from app.services.price_provider import StaticPriceProvider
 
 settings.email_backend = "logging"
 
@@ -101,6 +103,7 @@ async def client(db_session):
         yield db_session
 
     app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_price_provider] = lambda: StaticPriceProvider()
     try:
         app.state.limiter.reset()
     except Exception:

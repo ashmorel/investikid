@@ -55,3 +55,12 @@ class TradeOut(BaseModel):
 class PortfolioSnapshot(BaseModel):
     date: str
     value: float
+
+
+class PricePointOut(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: int

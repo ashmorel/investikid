@@ -13,6 +13,7 @@ from app.schemas.simulator import (
     HoldingOut,
     PortfolioOut,
     PortfolioSnapshot,
+    PricePointOut,
     QuoteOut,
     TradeOut,
     TradeRequest,
@@ -22,7 +23,7 @@ from app.services.gamification_service import (
     update_challenge_progress,
 )
 from app.services.price_provider import (
-    StaticPriceProvider,
+    LivePriceProvider,
     TickerNotAvailableError,
 )
 from app.services.simulator_service import (
@@ -34,7 +35,7 @@ from app.services.simulator_service import (
 
 router = APIRouter(tags=["simulator"])
 
-_price_provider = StaticPriceProvider()
+_price_provider = LivePriceProvider()
 
 
 def get_price_provider():
@@ -45,9 +46,12 @@ def get_price_provider():
 @router.get("/market/search", response_model=list[QuoteOut])
 async def search_market(
     q: str,
+    refresh: bool = False,
     _current: User = Depends(get_current_user),
     provider=Depends(get_price_provider),
 ):
+    if refresh and hasattr(provider, "clear_cache"):
+        provider.clear_cache()
     results = provider.search(q)
     return [
         QuoteOut(ticker=r.ticker, exchange=r.exchange, name=r.name, price=r.price, currency=r.currency)
@@ -67,6 +71,23 @@ async def get_quote(
     except TickerNotAvailableError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Ticker not available")
     return QuoteOut(ticker=q.ticker, exchange=q.exchange, name=q.name, price=q.price, currency=q.currency)
+
+
+@router.get("/market/history/{exchange}/{ticker}", response_model=list[PricePointOut])
+async def get_stock_history(
+    exchange: str,
+    ticker: str,
+    period: str = "1mo",
+    _current: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_history"):
+        return []
+    points = provider.get_history(ticker, exchange, period)
+    return [
+        PricePointOut(date=p.date, open=p.open, high=p.high, low=p.low, close=p.close, volume=p.volume)
+        for p in points
+    ]
 
 
 @router.get("/portfolio", response_model=PortfolioOut)
