@@ -10,11 +10,14 @@ from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
 from app.schemas.simulator import (
+    ExchangeMoversOut,
     HoldingOut,
+    MarketMoverOut,
     PortfolioOut,
     PortfolioSnapshot,
     PricePointOut,
     QuoteOut,
+    StockNewsOut,
     TradeOut,
     TradeRequest,
 )
@@ -88,6 +91,46 @@ async def get_stock_history(
         PricePointOut(date=p.date, open=p.open, high=p.high, low=p.low, close=p.close, volume=p.volume)
         for p in points
     ]
+
+
+@router.get("/market/movers", response_model=dict[str, ExchangeMoversOut])
+async def get_market_movers(
+    _current: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_market_movers"):
+        return {}
+    raw = provider.get_market_movers()
+    return {
+        exchange: ExchangeMoversOut(
+            winners=[MarketMoverOut(**m.__dict__) for m in data.get("winners", [])],
+            losers=[MarketMoverOut(**m.__dict__) for m in data.get("losers", [])],
+        )
+        for exchange, data in raw.items()
+    }
+
+
+@router.get("/market/news", response_model=list[StockNewsOut])
+async def get_market_news(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_news"):
+        return []
+    portfolio = await session.scalar(
+        select(Portfolio).where(Portfolio.user_id == current_user.id)
+    )
+    if not portfolio:
+        return []
+    holdings = (await session.scalars(
+        select(Holding).where(Holding.portfolio_id == portfolio.id)
+    )).all()
+    if not holdings:
+        return []
+    ticker_pairs = [(h.ticker, h.exchange) for h in holdings]
+    items = provider.get_news(ticker_pairs)
+    return [StockNewsOut(**i.__dict__) for i in items]
 
 
 @router.get("/portfolio", response_model=PortfolioOut)

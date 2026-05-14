@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, Search } from 'lucide-react';
 import { simulatorApi, type QuoteOut } from '@/api/simulator';
 import { EduTooltip } from '@/components/child/simulator/EduTooltip';
+import { MarketMovers } from '@/components/child/simulator/MarketMovers';
+import { MarketNews } from '@/components/child/simulator/MarketNews';
 import { formatCurrency } from '@/lib/currency';
 
 const EXCHANGE_BADGE_COLORS: Record<string, string> = {
@@ -127,6 +129,13 @@ export default function Market() {
       <div aria-live="polite" className="sr-only">
         {stocks.length} stocks available
       </div>
+
+      {!isSearching && (
+        <div className="mt-4 space-y-4">
+          <MarketMovers />
+          <MarketNews />
+        </div>
+      )}
 
       {stocks.length === 0 ? (
         <p className="mt-6 text-center text-sm text-muted-foreground">

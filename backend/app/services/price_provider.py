@@ -32,6 +32,28 @@ class PricePoint:
     volume: int
 
 
+@dataclass(frozen=True)
+class MarketMover:
+    ticker: str
+    exchange: str
+    name: str
+    price: Decimal
+    currency: str
+    change_percent: float
+
+
+@dataclass(frozen=True)
+class StockNewsItem:
+    title: str
+    summary: str
+    publisher: str
+    url: str
+    published: str
+    thumbnail: str
+    related_ticker: str
+    related_exchange: str
+
+
 class PriceProvider(Protocol):
     def get_quote(self, ticker: str, exchange: str) -> PriceQuote: ...
     def search(self, query: str) -> list[PriceQuote]: ...
@@ -152,6 +174,12 @@ class StaticPriceProvider:
         return True
 
     def get_history(self, ticker: str, exchange: str, period: str = "1mo") -> list[PricePoint]:
+        return []
+
+    def get_market_movers(self) -> dict[str, dict[str, list[MarketMover]]]:
+        return {}
+
+    def get_news(self, holdings: list[tuple[str, str]]) -> list[StockNewsItem]:
         return []
 
 
@@ -318,3 +346,103 @@ class LivePriceProvider:
 
         self._history_cache[cache_key] = (points, time.monotonic())
         return points
+
+    def get_market_movers(self) -> dict[str, dict[str, list[MarketMover]]]:
+        cache_key = "_movers"
+        cached = self._history_cache.get(cache_key)
+        if cached and (time.monotonic() - cached[1]) < _CACHE_TTL:
+            return cached[0]
+
+        result: dict[str, dict[str, list[MarketMover]]] = {}
+
+        for screener_key, label in [("day_gainers", "winners"), ("day_losers", "losers")]:
+            try:
+                data = yf.screen(screener_key, count=25)
+                quotes = data.get("quotes", [])
+            except Exception:
+                logger.warning("yfinance screener %s failed", screener_key)
+                continue
+
+            by_exchange: dict[str, list[MarketMover]] = {}
+            for item in quotes:
+                symbol = item.get("symbol", "")
+                raw_exchange = item.get("exchange", "")
+                exchange = _parse_exchange(raw_exchange, symbol)
+                name = item.get("shortName") or item.get("longName") or symbol
+                price_val = item.get("regularMarketPrice", 0)
+                change_pct = item.get("regularMarketChangePercent", 0)
+                currency = item.get("currency", "USD")
+                if currency in ("GBp", "GBX"):
+                    price_val = price_val / 100
+                    currency = "GBP"
+
+                display_ticker = symbol
+                for suffix in sorted(_SUFFIX_TO_EXCHANGE.keys(), key=len, reverse=True):
+                    if suffix and symbol.endswith(suffix):
+                        display_ticker = symbol[: -len(suffix)]
+                        break
+
+                mover = MarketMover(
+                    ticker=display_ticker,
+                    exchange=exchange,
+                    name=name,
+                    price=Decimal(str(round(price_val, 2))),
+                    currency=currency,
+                    change_percent=round(change_pct, 2),
+                )
+                by_exchange.setdefault(exchange, []).append(mover)
+
+            for exchange, movers in by_exchange.items():
+                result.setdefault(exchange, {})[label] = movers[:5]
+
+        self._history_cache[cache_key] = (result, time.monotonic())
+        return result
+
+    def get_news(self, holdings: list[tuple[str, str]]) -> list[StockNewsItem]:
+        cache_key = "_news:" + ",".join(f"{t}:{e}" for t, e in sorted(holdings))
+        cached = self._history_cache.get(cache_key)
+        if cached and (time.monotonic() - cached[1]) < _CACHE_TTL:
+            return cached[0]
+
+        items: list[StockNewsItem] = []
+        seen_titles: set[str] = set()
+
+        for ticker, exchange in holdings:
+            yf_symbol = _to_yahoo_symbol(ticker, exchange)
+            try:
+                news = yf.Ticker(yf_symbol).news or []
+            except Exception:
+                logger.warning("yfinance news failed for %s", yf_symbol)
+                continue
+
+            for article in news[:5]:
+                content = article.get("content", {})
+                title = content.get("title", "")
+                if not title or title in seen_titles:
+                    continue
+                seen_titles.add(title)
+
+                thumbnail_url = ""
+                thumb = content.get("thumbnail")
+                if thumb and thumb.get("resolutions"):
+                    thumbnail_url = thumb["resolutions"][0].get("url", "")
+
+                provider = content.get("provider", {})
+                publisher = provider.get("displayName", "") if isinstance(provider, dict) else ""
+                canonical = content.get("canonicalUrl", {})
+                url = canonical.get("url", "") if isinstance(canonical, dict) else ""
+
+                items.append(StockNewsItem(
+                    title=title,
+                    summary=content.get("summary", "")[:200],
+                    publisher=publisher,
+                    url=url,
+                    published=content.get("pubDate", ""),
+                    thumbnail=thumbnail_url,
+                    related_ticker=ticker,
+                    related_exchange=exchange,
+                ))
+
+        items.sort(key=lambda x: x.published, reverse=True)
+        self._history_cache[cache_key] = (items[:20], time.monotonic())
+        return items[:20]

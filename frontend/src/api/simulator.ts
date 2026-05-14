@@ -58,6 +58,31 @@ export type PricePoint = {
   volume: number;
 };
 
+export type MarketMover = {
+  ticker: string;
+  exchange: string;
+  name: string;
+  price: string;
+  currency: string;
+  change_percent: number;
+};
+
+export type ExchangeMovers = {
+  winners: MarketMover[];
+  losers: MarketMover[];
+};
+
+export type StockNews = {
+  title: string;
+  summary: string;
+  publisher: string;
+  url: string;
+  published: string;
+  thumbnail: string;
+  related_ticker: string;
+  related_exchange: string;
+};
+
 export const simulatorApi = {
   searchMarket: (q: string, refresh = false) =>
     apiFetch<QuoteOut[]>(`/market/search?q=${encodeURIComponent(q)}${refresh ? '&refresh=true' : ''}`),
@@ -79,4 +104,10 @@ export const simulatorApi = {
 
   getStockHistory: (exchange: string, ticker: string, period = '1mo') =>
     apiFetch<PricePoint[]>(`/market/history/${exchange}/${ticker}?period=${period}`),
+
+  getMarketMovers: () =>
+    apiFetch<Record<string, ExchangeMovers>>('/market/movers'),
+
+  getMarketNews: () =>
+    apiFetch<StockNews[]>('/market/news'),
 };

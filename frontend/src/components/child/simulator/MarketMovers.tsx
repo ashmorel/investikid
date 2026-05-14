@@ -1,0 +1,92 @@
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import { simulatorApi, type ExchangeMovers, type MarketMover } from '@/api/simulator';
+import { formatCurrency } from '@/lib/currency';
+
+function MoverRow({ mover, rank }: { mover: MarketMover; rank: number }) {
+  const isPositive = mover.change_percent >= 0;
+  return (
+    <Link
+      to={`/simulator/stock/${mover.exchange}/${mover.ticker}`}
+      className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-amber-50"
+    >
+      <span className="w-5 text-center text-xs font-medium text-muted-foreground">{rank}</span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{mover.ticker}</p>
+        <p className="truncate text-xs text-muted-foreground">{mover.name}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-sm font-medium">{formatCurrency(mover.price, mover.currency)}</p>
+        <p className={`text-xs font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          {isPositive ? '+' : ''}{mover.change_percent.toFixed(2)}%
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeMovers }) {
+  if (!data.winners.length && !data.losers.length) return null;
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{exchange}</h3>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {data.winners.length > 0 && (
+          <div className="rounded-xl border-2 border-green-200 bg-white p-3">
+            <div className="mb-2 flex items-center gap-1.5 text-green-700">
+              <TrendingUp className="h-4 w-4" />
+              <span className="text-xs font-semibold uppercase tracking-wide">Top Gainers</span>
+            </div>
+            <div className="-mx-1 divide-y divide-gray-100">
+              {data.winners.map((m, i) => <MoverRow key={`${m.exchange}-${m.ticker}`} mover={m} rank={i + 1} />)}
+            </div>
+          </div>
+        )}
+        {data.losers.length > 0 && (
+          <div className="rounded-xl border-2 border-red-200 bg-white p-3">
+            <div className="mb-2 flex items-center gap-1.5 text-red-700">
+              <TrendingDown className="h-4 w-4" />
+              <span className="text-xs font-semibold uppercase tracking-wide">Top Losers</span>
+            </div>
+            <div className="-mx-1 divide-y divide-gray-100">
+              {data.losers.map((m, i) => <MoverRow key={`${m.exchange}-${m.ticker}`} mover={m} rank={i + 1} />)}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function MarketMovers() {
+  const { data, isLoading } = useQuery<Record<string, ExchangeMovers> | null>({
+    queryKey: ['market-movers'],
+    queryFn: () => simulatorApi.getMarketMovers(),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border-2 border-amber-200 bg-white p-4">
+        <p className="text-sm text-muted-foreground">Loading market movers…</p>
+      </div>
+    );
+  }
+
+  if (!data || Object.keys(data).length === 0) return null;
+
+  const exchanges = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
+
+  return (
+    <div className="rounded-2xl border-2 border-amber-200 bg-white p-4">
+      <h2 className="mb-4 text-lg font-semibold text-gray-800">Today's Market Movers</h2>
+      <div className="space-y-5">
+        {exchanges.map(([exchange, movers]) => (
+          <ExchangeSection key={exchange} exchange={exchange} data={movers} />
+        ))}
+      </div>
+    </div>
+  );
+}

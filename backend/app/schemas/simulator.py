@@ -64,3 +64,28 @@ class PricePointOut(BaseModel):
     low: float
     close: float
     volume: int
+
+
+class MarketMoverOut(BaseModel):
+    ticker: str
+    exchange: str
+    name: str
+    price: Decimal
+    currency: str
+    change_percent: float
+
+
+class ExchangeMoversOut(BaseModel):
+    winners: list[MarketMoverOut] = []
+    losers: list[MarketMoverOut] = []
+
+
+class StockNewsOut(BaseModel):
+    title: str
+    summary: str
+    publisher: str
+    url: str
+    published: str
+    thumbnail: str
+    related_ticker: str
+    related_exchange: str
