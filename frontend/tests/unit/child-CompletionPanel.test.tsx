@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { CompletionPanel } from '@/components/child/lesson/CompletionPanel';
 
-const baseResult = { xp_awarded: 25, already_completed: false, total_xp: 320, level: 4, streak_count: 5 };
+const baseResult = { xp_awarded: 25, already_completed: false, total_xp: 320, level: 4, streak_count: 5, practice_available: false };
 
 describe('CompletionPanel', () => {
   it('shows xp awarded, totals, and Next lesson link when next exists', () => {

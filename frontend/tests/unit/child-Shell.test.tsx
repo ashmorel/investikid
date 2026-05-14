@@ -47,14 +47,14 @@ describe('Shell', () => {
     await waitFor(() => expect(screen.getByText('Login Page')).toBeInTheDocument());
   });
 
-  it('disabled nav items have aria-disabled', async () => {
+  it('Stats link is active in nav', async () => {
     (globalThis.fetch as any).mockResolvedValue(
       new Response(JSON.stringify(ME), { status: 200 }),
     );
     renderAt('/home');
     await screen.findByText('Home Inside Shell');
-    const simulator = screen.getByRole('button', { name: 'Simulator' });
-    expect(simulator).toHaveAttribute('aria-disabled', 'true');
+    const stats = screen.getByRole('link', { name: 'Stats' });
+    expect(stats).toHaveAttribute('href', '/stats');
   });
 
   it('logout from profile menu navigates to /login', async () => {

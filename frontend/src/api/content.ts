@@ -1,6 +1,6 @@
 import { apiFetch } from './client';
 
-export type ModuleTopic = 'stocks' | 'savings' | 'real_estate';
+export type ModuleTopic = 'stocks' | 'savings' | 'real_estate' | 'budgeting' | 'risk' | 'crypto' | 'taxes' | 'debt' | 'entrepreneurship';
 export type LessonType = 'card' | 'quiz' | 'scenario' | 'video';
 
 export type ModuleOut = {
@@ -10,6 +10,7 @@ export type ModuleOut = {
   country_codes: string[];
   is_premium: boolean;
   order_index: number;
+  icon: string;
   locked: boolean;
 };
 
@@ -39,6 +40,7 @@ export type LessonCompletionResult = {
   total_xp: number;
   level: number;
   streak_count: number;
+  practice_available: boolean;
 };
 
 export type Progress = {

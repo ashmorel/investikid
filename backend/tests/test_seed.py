@@ -12,8 +12,8 @@ async def test_seed_creates_starter_content(db_session):
 
     module_count = await db_session.scalar(select(func.count()).select_from(Module))
     lesson_count = await db_session.scalar(select(func.count()).select_from(Lesson))
-    assert module_count >= 3
-    assert lesson_count >= 6
+    assert module_count >= 12
+    assert lesson_count >= 49
 
 
 async def test_seed_is_idempotent(db_session):

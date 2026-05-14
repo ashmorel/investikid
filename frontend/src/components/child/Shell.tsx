@@ -9,8 +9,8 @@ export function Shell() {
 
   if (session.isLoading) {
     return (
-      <div className="min-h-screen">
-        <header className="h-14 border-b" aria-busy="true" />
+      <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
+        <header className="h-14 border-b border-amber-200" aria-busy="true" />
         <p className="mx-auto mt-6 max-w-2xl px-4 text-sm text-muted-foreground">Loading…</p>
       </div>
     );
@@ -21,7 +21,7 @@ export function Shell() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
       <TopNav username={session.data.username} />
       <main>
         <Outlet />

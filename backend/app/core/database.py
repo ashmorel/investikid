@@ -29,8 +29,15 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 from sqlalchemy import event
 from sqlalchemy.orm import Session as _SyncSession, with_loader_criteria
 
+_soft_delete_installed = False
+
 
 def _install_soft_delete_filter():
+    global _soft_delete_installed
+    if _soft_delete_installed:
+        return
+    _soft_delete_installed = True
+
     from app.models.user import User
 
     @event.listens_for(_SyncSession, "do_orm_execute")
@@ -44,4 +51,9 @@ def _install_soft_delete_filter():
         )
 
 
-_install_soft_delete_filter()
+# Defer to avoid circular import when Alembic loads models before app.
+# The app's create_app() or first session use will trigger it.
+try:
+    _install_soft_delete_filter()
+except ImportError:
+    pass

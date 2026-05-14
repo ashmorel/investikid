@@ -38,8 +38,9 @@ export default function Lessons() {
 
   return (
     <div className="mx-auto max-w-5xl p-6">
-      <h1 className="text-2xl font-semibold">Lessons</h1>
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+      <h1 className="text-2xl font-extrabold text-gray-900">Lessons</h1>
+      <p className="mt-1 text-sm text-gray-500">{modules.length} modules · {modules.reduce((acc, m) => acc + (lessonsByModuleId.get(m.id)?.length ?? 0), 0)} quests</p>
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
         {modules.map((m) => {
           const lessons = lessonsByModuleId.get(m.id) ?? [];
           const completedCount = lessons.filter((l) => l.completed).length;

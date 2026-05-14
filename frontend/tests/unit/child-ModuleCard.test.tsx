@@ -5,7 +5,7 @@ import { ModuleCard } from '@/components/child/ModuleCard';
 
 const baseModule = {
   id: 'mod-1', topic: 'stocks' as const, title: 'What is a Stock?',
-  country_codes: [], is_premium: false, order_index: 0, locked: false,
+  country_codes: [], is_premium: false, order_index: 0, icon: '📈', locked: false,
 };
 
 describe('ModuleCard', () => {

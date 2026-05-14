@@ -12,6 +12,17 @@ class BadgeOut(BaseModel):
     earned_at: datetime | None = None
 
 
+class BadgeDefinitionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    name: str
+    description: str
+    icon_url: str
+    condition_type: str
+    condition_value: int
+    earned_at: None = None
+
+
 class ChallengeOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID

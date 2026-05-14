@@ -11,6 +11,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from app.core.config import settings
 from app.core.csrf import CSRFMiddleware
 from app.core.rate_limit import limiter
+from app.routers import ai as ai_router
 from app.routers import auth as auth_router
 from app.routers import consent as consent_router
 from app.routers import content as content_router
@@ -128,6 +129,7 @@ def create_app() -> FastAPI:
     application.include_router(simulator_router.router)
     application.include_router(parent_auth_router.router)
     application.include_router(parent_router.router)
+    application.include_router(ai_router.router)
 
     return application
 

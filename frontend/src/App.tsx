@@ -8,6 +8,10 @@ import Home from '@/pages/child/Home';
 import Lessons from '@/pages/child/Lessons';
 import Module from '@/pages/child/Module';
 import Lesson from '@/pages/child/Lesson';
+import Simulator from '@/pages/child/Simulator';
+import Market from '@/pages/child/Market';
+import Stock from '@/pages/child/Stock';
+import Stats from '@/pages/child/Stats';
 import ConsentVerify from '@/pages/ConsentVerify';
 import ParentLogin from '@/pages/ParentLogin';
 import ParentAuthCallback from '@/pages/ParentAuthCallback';
@@ -35,6 +39,10 @@ export default function App() {
           <Route path="/lessons" element={<Lessons />} />
           <Route path="/lessons/:moduleId" element={<Module />} />
           <Route path="/lessons/:moduleId/:lessonId" element={<Lesson />} />
+          <Route path="/simulator" element={<Simulator />} />
+          <Route path="/simulator/market" element={<Market />} />
+          <Route path="/simulator/stock/:exchange/:ticker" element={<Stock />} />
+          <Route path="/stats" element={<Stats />} />
         </Route>
 
         {/* Existing parent + consent routes (untouched) */}

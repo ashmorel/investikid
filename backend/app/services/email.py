@@ -1,5 +1,6 @@
 from typing import Protocol
 
+import resend
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.consent import SentEmail
@@ -33,6 +34,62 @@ def _render(template: str, context: dict) -> str:
     raise ValueError(f"Unknown template: {template}")
 
 
+_SUBJECT = {
+    "consent_request": "Approve your child's Invest-Ed account",
+    "parent_magic_link": "Sign in to Invest-Ed",
+}
+
+
+def _email_subject(template: str) -> str:
+    return _SUBJECT.get(template, "Invest-Ed")
+
+
+def _render_html(template: str, context: dict) -> str:
+    if template == "consent_request":
+        heading = f"Approve {context['child_username']}'s Invest-Ed account"
+        body_text = (
+            f"{context['child_username']} (age {context['age']}, {context['country_code']}) "
+            f"signed up for Invest-Ed and listed you as their parent."
+        )
+        cta_label = "Approve Account"
+        cta_url = context["link"]
+        footer = "If you didn't expect this, you can ignore this email. Link expires in 24 hours."
+    elif template == "parent_magic_link":
+        heading = "Sign in to Invest-Ed"
+        body_text = "Click below to access your parent dashboard."
+        cta_label = "Sign In"
+        cta_url = context["link"]
+        footer = "Link expires in 15 minutes."
+    else:
+        raise ValueError(f"Unknown template: {template}")
+
+    return (
+        '<!DOCTYPE html>'
+        '<html lang="en">'
+        "<head>"
+        '<meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        "</head>"
+        '<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">'
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+        '<tr><td align="center" style="padding:40px 20px;">'
+        '<table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:8px;overflow:hidden;">'
+        '<tr><td style="padding:32px 24px;">'
+        f'<h1 style="margin:0 0 16px;font-size:20px;color:#111827;">{heading}</h1>'
+        f'<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">{body_text}</p>'
+        '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">'
+        '<tr><td align="center" style="border-radius:6px;background-color:#2563eb;">'
+        f'<a href="{cta_url}" target="_blank" '
+        'style="display:inline-block;padding:12px 24px;font-size:15px;'
+        f'font-weight:600;color:#ffffff;text-decoration:none;">{cta_label}</a>'
+        "</td></tr></table>"
+        f'<p style="margin:24px 0 0;font-size:13px;color:#6b7280;">{footer}</p>'
+        "</td></tr></table>"
+        "</td></tr></table>"
+        "</body></html>"
+    )
+
+
 class LoggingEmailSender:
     """Persists every send to sent_emails. Used for dev + tests."""
 
@@ -44,15 +101,41 @@ class LoggingEmailSender:
         await session.flush()
 
 
-class SendGridEmailSender:
+class ResendEmailSender:
+    """Sends real emails via Resend API. Also persists to sent_emails for audit."""
+
+    def __init__(self, api_key: str, from_email: str) -> None:
+        self._api_key = api_key
+        self._from_email = from_email
+
     async def send(
         self, session: AsyncSession, to: str, template: str, context: dict
     ) -> None:
-        raise NotImplementedError("SendGrid backend not yet wired")
+        plain = _render(template, context)
+        html = _render_html(template, context)
+        subject = _email_subject(template)
+
+        # Persist audit record (same as LoggingEmailSender)
+        session.add(SentEmail(to_email=to, template=template, body=plain))
+        await session.flush()
+
+        # Send via Resend
+        resend.api_key = self._api_key
+        params: resend.Emails.SendParams = {
+            "from": self._from_email,
+            "to": [to],
+            "subject": subject,
+            "html": html,
+            "text": plain,
+        }
+        await resend.Emails.send_async(params)
 
 
 def get_email_sender() -> EmailSender:
     from app.core.config import settings
-    if settings.email_backend == "sendgrid":
-        return SendGridEmailSender()
+    if settings.email_backend == "resend":
+        return ResendEmailSender(
+            api_key=settings.resend_api_key,
+            from_email=settings.email_from,
+        )
     return LoggingEmailSender()

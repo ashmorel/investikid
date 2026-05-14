@@ -1,4 +1,5 @@
 import pytest_asyncio
+from datetime import date
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -34,6 +35,9 @@ async def db_session():
         from app.models.gamification import UserBadge, UserChallenge, Badge, Challenge
         from app.models.simulator import Trade, Holding, Portfolio
         from app.models.consent import OneTimeToken, SentEmail
+        from app.models.skill_profile import TopicMastery, WeakConcept
+        from app.models.generated_content import GeneratedContent
+        from app.models.tutor import TutorConversation
         try:
             await clean_session.execute(delete(OneTimeToken))
             await clean_session.execute(delete(SentEmail))
@@ -41,6 +45,8 @@ async def db_session():
             await clean_session.execute(delete(Holding))
             await clean_session.execute(delete(Portfolio))
             await clean_session.execute(delete(RefreshToken))
+            await clean_session.execute(delete(TutorConversation))
+            await clean_session.execute(delete(GeneratedContent))
             await clean_session.execute(delete(LessonCompletion))
             await clean_session.execute(delete(Lesson))
             await clean_session.execute(delete(Module))
@@ -48,6 +54,8 @@ async def db_session():
             await clean_session.execute(delete(UserChallenge))
             await clean_session.execute(delete(Badge))
             await clean_session.execute(delete(Challenge))
+            await clean_session.execute(delete(WeakConcept))
+            await clean_session.execute(delete(TopicMastery))
             await clean_session.execute(delete(UserProgress))
             await clean_session.execute(delete(User))
             await clean_session.commit()
@@ -57,6 +65,56 @@ async def db_session():
     async with _TestSession() as session:
         yield session
         await session.rollback()
+
+
+@pytest_asyncio.fixture
+async def user_with_module(db_session):
+    """Shared fixture: creates a user, module, quiz lesson and card lesson for skill profile tests."""
+    from app.models.content import Lesson, Module
+    from app.models.user import User
+
+    user = User(
+        email="skill@example.com",
+        username="skillkid",
+        password_hash="x",
+        dob=date(2012, 1, 1),
+        country_code="GB",
+        currency_code="GBP",
+    )
+    db_session.add(user)
+    module = Module(
+        topic="budgeting",
+        title="Budgeting Basics",
+        country_codes=[],
+        is_premium=False,
+        order_index=0,
+        icon="💰",
+    )
+    db_session.add(module)
+    await db_session.flush()
+
+    quiz = Lesson(
+        module_id=module.id,
+        type="quiz",
+        xp_reward=25,
+        order_index=0,
+        content_json={
+            "question": "What is the 50/30/20 rule?",
+            "choices": ["A", "B", "C"],
+            "answer_index": 1,
+            "explanation": "It splits income into needs, wants, savings.",
+        },
+    )
+    card = Lesson(
+        module_id=module.id,
+        type="card",
+        xp_reward=10,
+        order_index=1,
+        content_json={"title": "What is a budget?", "body": "A plan for your money."},
+    )
+    db_session.add_all([quiz, card])
+    await db_session.flush()
+    return user, module, quiz, card
 
 
 @pytest_asyncio.fixture

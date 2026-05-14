@@ -38,6 +38,45 @@ export default defineConfig({
           if (req.headers.accept?.includes('text/html')) return '/index.html';
         },
       },
+      '/market': {
+        target: 'http://localhost:8000',
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return '/index.html';
+        },
+      },
+      '/portfolio': {
+        target: 'http://localhost:8000',
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return '/index.html';
+        },
+      },
+      '/challenges': {
+        target: 'http://localhost:8000',
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return '/index.html';
+        },
+      },
+      '/leaderboard': {
+        target: 'http://localhost:8000',
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return '/index.html';
+        },
+      },
+      '/badges': {
+        target: 'http://localhost:8000',
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return '/index.html';
+        },
+      },
+      '/tutor': {
+        target: 'http://localhost:8000',
+      },
+      '/recommendations': {
+        target: 'http://localhost:8000',
+      },
+      '/profile/mastery': {
+        target: 'http://localhost:8000',
+      },
       '/health': 'http://localhost:8000',
     },
   },

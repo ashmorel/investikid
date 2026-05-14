@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { TopNav } from '@/components/child/TopNav';
 
 describe('TopNav', () => {
-  it('renders Home and Lessons as links, Simulator and Stats as Coming-soon', () => {
+  it('renders Home, Lessons, Simulator, and Stats as links', () => {
     const qc = new QueryClient();
     render(
       <QueryClientProvider client={qc}>
@@ -16,7 +16,7 @@ describe('TopNav', () => {
     );
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/home');
     expect(screen.getByRole('link', { name: 'Lessons' })).toHaveAttribute('href', '/lessons');
-    expect(screen.getByRole('button', { name: 'Simulator' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Stats' })).toBeDisabled();
+    expect(screen.getByRole('link', { name: 'Simulator' })).toHaveAttribute('href', '/simulator');
+    expect(screen.getByRole('link', { name: 'Stats' })).toHaveAttribute('href', '/stats');
   });
 });

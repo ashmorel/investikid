@@ -26,6 +26,11 @@ from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
 )
+from app.services.skill_profile_service import (
+    record_weak_concept,
+    reinforce_concept,
+    update_mastery_on_completion,
+)
 
 router = APIRouter(tags=["content"])
 
@@ -68,7 +73,7 @@ async def list_modules(
         out.append(ModuleOut(
             id=m.id, topic=m.topic, title=m.title,
             country_codes=m.country_codes, is_premium=m.is_premium,
-            order_index=m.order_index, locked=not accessible,
+            order_index=m.order_index, icon=m.icon, locked=not accessible,
         ))
     return out
 
@@ -146,7 +151,12 @@ async def complete_lesson(
     if not lesson:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
 
-    await _get_accessible_module(lesson.module_id, current_user, session)
+    module = await _get_accessible_module(lesson.module_id, current_user, session)
+    # Capture scalar attributes early before session expires ORM objects
+    topic = module.topic
+    lesson_type = lesson.type
+    lesson_content = lesson.content_json or {}
+    is_quiz = lesson_type in ("quiz", "scenario")
 
     progress = await session.get(UserProgress, current_user.id)
     if not progress:
@@ -168,12 +178,35 @@ async def complete_lesson(
         )
         await evaluate_and_award_badges(session, current_user.id, progress)
 
+    # Update skill profile
+    correct = payload.score is not None and payload.score >= 0.5 if is_quiz else None
+
+    if not already:
+        await update_mastery_on_completion(
+            session, current_user.id, topic, is_quiz=is_quiz, correct=correct,
+        )
+
+        if is_quiz and correct is False:
+            concept = derive_lesson_title(lesson_type, lesson_content)
+            await record_weak_concept(session, current_user.id, topic, concept)
+        elif is_quiz and correct is True:
+            concept = derive_lesson_title(lesson_type, lesson_content)
+            await reinforce_concept(session, current_user.id, topic, concept)
+
     await session.commit()
     await session.refresh(progress)
+
+    practice_available = (
+        not already
+        and is_quiz
+        and payload.score is not None
+        and payload.score < 0.5
+    )
 
     return LessonCompletionResult(
         xp_awarded=xp_awarded, already_completed=already,
         total_xp=progress.xp, level=progress.level, streak_count=progress.streak_count,
+        practice_available=practice_available,
     )
 
 

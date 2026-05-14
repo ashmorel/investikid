@@ -1,0 +1,75 @@
+import { BookOpen, Flame, Lock, Star, TrendingUp } from 'lucide-react';
+import type { BadgeDefinition, EarnedBadge } from '@/api/gamification';
+import { cn } from '@/lib/utils';
+
+type Props = {
+  allBadges: BadgeDefinition[];
+  earnedBadges: EarnedBadge[];
+};
+
+const CONDITION_ICONS: Record<string, React.ElementType> = {
+  lesson_count: BookOpen,
+  streak_days: Flame,
+  trade_count: TrendingUp,
+  total_xp: Star,
+};
+
+function formatEarnedDate(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / 86_400_000);
+
+  if (diffDays === 0) return 'Earned today';
+  if (diffDays === 1) return 'Earned yesterday';
+  if (diffDays < 30) return `Earned ${diffDays} days ago`;
+  return `Earned ${date.toLocaleDateString()}`;
+}
+
+export function BadgeGrid({ allBadges, earnedBadges }: Props) {
+  const earnedById = new Map(earnedBadges.map((b) => [b.id, b]));
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {allBadges.map((badge) => {
+        const earned = earnedById.get(badge.id);
+        const Icon = CONDITION_ICONS[badge.condition_type] ?? Star;
+
+        return (
+          <div
+            key={badge.id}
+            className={cn(
+              'relative rounded-lg border p-4',
+              earned ? 'bg-card' : 'bg-muted/50 opacity-60',
+            )}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={cn(
+                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+                  earned ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+                )}
+              >
+                <Icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{badge.name}</p>
+                <p className="text-sm text-muted-foreground">{badge.description}</p>
+                {earned ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatEarnedDate(earned.earned_at)}
+                  </p>
+                ) : (
+                  <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground" aria-label="locked">
+                    <Lock className="h-3 w-3" />
+                    Locked
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

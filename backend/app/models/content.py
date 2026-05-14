@@ -19,6 +19,7 @@ class Module(Base):
     )
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    icon: Mapped[str] = mapped_column(String(10), nullable=False, server_default="📚")
 
     lessons: Mapped[list["Lesson"]] = relationship("Lesson", back_populates="module")
 

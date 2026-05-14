@@ -14,28 +14,21 @@ export function StatsBar({ xp, level, streakCount, lastActivityDate, today }: Pr
   const active = isStreakActive(lastActivityDate, now);
   return (
     <div className="flex flex-wrap gap-2" role="group" aria-label="Your progress">
-      <Chip>Level {level}</Chip>
-      <Chip>{xp} XP</Chip>
-      <Chip
-        className={cn(!active && 'opacity-50')}
+      <span className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-1.5 text-sm font-bold text-white">
+        ⭐ Level {level}
+      </span>
+      <span className="rounded-full bg-blue-100 px-4 py-1.5 text-sm font-bold text-blue-800">
+        {xp} XP
+      </span>
+      <span
+        className={cn(
+          'rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-800',
+          !active && 'opacity-50',
+        )}
         aria-label={active ? 'streak active' : 'streak inactive'}
       >
-        🔥 {streakCount}-day
-      </Chip>
+        🔥 {streakCount}-day streak
+      </span>
     </div>
-  );
-}
-
-function Chip({ children, className, ...rest }: React.HTMLAttributes<HTMLSpanElement>) {
-  return (
-    <span
-      className={cn(
-        'rounded-full border bg-card px-3 py-1 text-sm font-medium',
-        className,
-      )}
-      {...rest}
-    >
-      {children}
-    </span>
   );
 }

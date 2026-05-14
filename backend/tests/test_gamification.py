@@ -105,3 +105,18 @@ async def test_badges_list_empty_for_new_user(client):
     r = await client.get("/users/me/badges")
     assert r.status_code == 200
     assert r.json() == []
+
+
+async def test_all_badges_returns_definitions(client, db_session):
+    """GET /badges returns all badge definitions with earned_at=None."""
+    await _seed(db_session)
+    await _login(client)
+    r = await client.get("/badges")
+    assert r.status_code == 200
+    badges = r.json()
+    assert len(badges) == 1  # _seed creates one badge
+    b = badges[0]
+    assert b["name"] == "First Step"
+    assert b["condition_type"] == "lesson_count"
+    assert b["condition_value"] == 1
+    assert b["earned_at"] is None

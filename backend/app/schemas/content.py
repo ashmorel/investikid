@@ -3,7 +3,10 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 LessonType = Literal["card", "quiz", "scenario", "video"]
-ModuleTopic = Literal["stocks", "savings", "real_estate"]
+ModuleTopic = Literal[
+    "stocks", "savings", "real_estate", "budgeting", "risk",
+    "crypto", "taxes", "debt", "entrepreneurship",
+]
 
 
 class ModuleOut(BaseModel):
@@ -15,6 +18,7 @@ class ModuleOut(BaseModel):
     country_codes: list[str]
     is_premium: bool
     order_index: int
+    icon: str = "📚"
     locked: bool = False
 
 
@@ -53,3 +57,4 @@ class LessonCompletionResult(BaseModel):
     total_xp: int
     level: int
     streak_count: int
+    practice_available: bool = False

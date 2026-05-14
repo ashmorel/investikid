@@ -9,7 +9,7 @@ from app.models.content import Lesson, LessonCompletion
 from app.models.gamification import Badge, Challenge, UserBadge, UserChallenge
 from app.models.user import User
 from app.routers.users import get_current_user
-from app.schemas.gamification import BadgeOut, ChallengeOut, LeaderboardEntry
+from app.schemas.gamification import BadgeDefinitionOut, BadgeOut, ChallengeOut, LeaderboardEntry
 
 router = APIRouter(tags=["gamification"])
 
@@ -32,6 +32,15 @@ async def list_my_badges(
         )
         for b, earned_at in rows
     ]
+
+
+@router.get("/badges", response_model=list[BadgeDefinitionOut])
+async def list_all_badges(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    badges = (await session.scalars(select(Badge).order_by(Badge.name))).all()
+    return badges
 
 
 @router.get("/challenges", response_model=list[ChallengeOut])
