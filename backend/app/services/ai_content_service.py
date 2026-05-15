@@ -82,7 +82,7 @@ async def generate_practice_quiz(
         if 0 <= wrong_answer_index < len(choices):
             user_message += f"\nThe student chose: {choices[wrong_answer_index]} (wrong)"
 
-    client = get_llm_client(premium=premium)
+    client = get_llm_client(tier="premium" if premium else "standard")
 
     for attempt in range(2):
         try:
