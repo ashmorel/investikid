@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 import pytest_asyncio
 
-from app.core.config import settings
 from app.models.content import Lesson, Module
 from app.models.generated_content import GeneratedContent
 from app.models.user import User
@@ -74,7 +73,7 @@ async def test_generate_practice_quiz_uses_cache(db_session, lesson_fixture):
             "answer_index": 0,
             "explanation": "Cached.",
         },
-        model_used=settings.llm_free_model,
+        model_used="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
     )
     db_session.add(cached)
     await db_session.flush()

@@ -8,10 +8,9 @@ from pydantic import BaseModel, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.models.content import Lesson
 from app.models.generated_content import GeneratedContent
-from app.services.llm_client import LLMError, get_llm_client
+from app.services.llm_client import LLMError, get_llm_client, get_model_name
 
 
 class PracticeQuizSchema(BaseModel):
@@ -61,7 +60,7 @@ async def generate_practice_quiz(
     wrong_answer_index: int | None = None,
 ) -> dict[str, Any]:
     """Generate or serve a cached practice quiz for a lesson concept."""
-    model_name = settings.llm_premium_model if premium else settings.llm_free_model
+    model_name = get_model_name("premium" if premium else "standard")
 
     # Check cache
     cached = await session.scalar(
