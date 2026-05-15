@@ -141,3 +141,40 @@ async def test_portfolio_history_returns_snapshots_after_trades(client):
     # The last entry's value should match current portfolio total_value
     pf = (await client.get("/portfolio")).json()
     assert abs(history[-1]["value"] - float(pf["total_value"])) < 0.02
+
+
+async def test_time_machine_returns_periods(client):
+    await _login(client)
+    r = await client.get("/market/time-machine/NASDAQ/AAPL")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ticker"] == "AAPL"
+    assert isinstance(body["periods"], list)
+    # Static provider may return empty periods (no max history) — just check shape
+    assert "fun_fact" in body
+
+
+async def test_time_machine_unknown_ticker(client):
+    await _login(client, email="tm2@example.com", username="tm2")
+    r = await client.get("/market/time-machine/NASDAQ/ZZZZZZ")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["periods"] == []
+
+
+async def test_tips_returns_list(client):
+    await _login(client, email="tips@example.com", username="tipster")
+    r = await client.get("/market/tips")
+    assert r.status_code == 200
+    tips = r.json()
+    assert len(tips) == 6
+    assert tips[0]["id"] == "price-vs-value"
+    assert tips[0]["title"] == "Price Doesn't Equal Value"
+    assert "example_ticker" in tips[0]
+
+
+async def test_chart_coach_requires_auth(client):
+    r = await client.post("/market/chart-coach", json={
+        "ticker": "AAPL", "exchange": "NASDAQ", "period": "1mo", "message": "What does this chart show?"
+    })
+    assert r.status_code == 403
