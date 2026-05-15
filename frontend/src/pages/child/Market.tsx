@@ -6,6 +6,7 @@ import { simulatorApi, type QuoteOut } from '@/api/simulator';
 import { EduTooltip } from '@/components/child/simulator/EduTooltip';
 import { MarketMovers } from '@/components/child/simulator/MarketMovers';
 import { MarketNews } from '@/components/child/simulator/MarketNews';
+import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { formatCurrency } from '@/lib/currency';
 
 const EXCHANGE_BADGE_COLORS: Record<string, string> = {
@@ -133,6 +134,7 @@ export default function Market() {
       {!isSearching && (
         <div className="mt-4 space-y-4">
           <MarketMovers />
+          <InvestingTips />
           <MarketNews />
         </div>
       )}
