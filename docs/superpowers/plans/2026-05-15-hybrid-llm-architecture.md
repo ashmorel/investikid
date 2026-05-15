@@ -938,3 +938,174 @@ cd invest-ed/backend && grep -rn "llm_free_" app/ tests/ --include="*.py"
 ```
 
 Expected: No results (all references to `llm_free_api_key`, `llm_free_base_url`, `llm_free_model` have been removed).
+
+---
+
+### Task 8: LLM-Generated Investing Tips with Cache
+
+**Files:**
+- Modify: `backend/app/routers/simulator.py`
+- Modify: `backend/tests/test_simulator.py`
+
+Currently the `/market/tips` endpoint returns a hardcoded list of 6 tips (`_INVESTING_TIPS`). This task replaces it with LLM-generated tips using the `lite` tier, cached globally for 1 hour. The hardcoded list becomes the fallback if the LLM call fails.
+
+- [ ] **Step 1: Write failing test for dynamic tips**
+
+Add to `tests/test_simulator.py`:
+
+```python
+async def test_tips_returns_llm_generated_tips(client, auth_cookies):
+    """Tips endpoint returns LLM-generated tips when available."""
+    resp = await client.get("/api/simulator/market/tips", cookies=auth_cookies)
+    assert resp.status_code == 200
+    tips = resp.json()
+    assert len(tips) >= 1
+    for tip in tips:
+        assert "id" in tip
+        assert "title" in tip
+        assert "description" in tip
+        assert "example_ticker" in tip
+        assert "example_exchange" in tip
+```
+
+- [ ] **Step 2: Run test to verify it passes (existing behavior)**
+
+Run:
+```bash
+cd invest-ed/backend && python -m pytest tests/test_simulator.py::test_tips_returns_llm_generated_tips -v
+```
+
+Expected: PASS (the existing hardcoded tips satisfy this contract too).
+
+- [ ] **Step 3: Replace hardcoded tips with LLM generation + cache**
+
+In `app/routers/simulator.py`, make these changes:
+
+Add `time` and `json` imports at the top if not already present:
+```python
+import json
+import time
+```
+
+Replace the entire `_INVESTING_TIPS` list and `get_investing_tips` endpoint with:
+
+```python
+_FALLBACK_TIPS = [
+    InvestingTipOut(
+        id="price-vs-value",
+        title="Price Doesn't Equal Value",
+        description=(
+            "A $10 stock can grow just as much as a $1,000 stock. What matters is the percentage change, "
+            "not the dollar amount. A stock going from $10 to $15 is the same 50% gain as one going from "
+            "$1,000 to $1,500!"
+        ),
+        example_ticker="F",
+        example_exchange="NYSE",
+    ),
+    InvestingTipOut(
+        id="time-in-market",
+        title="Time in the Market",
+        description=(
+            "The longer you hold, the more likely you are to see gains. Even after big drops, patient "
+            "investors usually recover. Trying to time the market is nearly impossible — time IN the market "
+            "is what counts."
+        ),
+        example_ticker="MSFT",
+        example_exchange="NASDAQ",
+    ),
+    InvestingTipOut(
+        id="diversification",
+        title="Don't Put All Your Eggs in One Basket",
+        description=(
+            "Spreading your money across different companies and industries protects you if one has a bad "
+            "year. This is called diversification — it's one of the most important rules of investing!"
+        ),
+        example_ticker="JNJ",
+        example_exchange="NYSE",
+    ),
+]
+
+_TIPS_PROMPT = (
+    "You are writing short investing tips for kids aged 8-16 learning about the stock market.\n\n"
+    "Generate 6 different investing tips. Each tip should:\n"
+    "- Have a short catchy title (under 8 words)\n"
+    "- Have a 2-3 sentence description that explains the concept simply\n"
+    "- Include an example stock ticker and exchange from well-known companies kids would recognise\n"
+    "- Be educational, encouraging, and never give real investment advice\n"
+    "- Cover different concepts (don't repeat themes)\n\n"
+    "Return JSON: [{\"id\": \"slug-id\", \"title\": \"...\", \"description\": \"...\", "
+    "\"example_ticker\": \"AAPL\", \"example_exchange\": \"NASDAQ\"}]\n\n"
+    "Only return the JSON array, nothing else."
+)
+
+_tips_cache: dict[str, tuple[float, list[InvestingTipOut]]] = {}
+_TIPS_CACHE_TTL = 3600  # 1 hour
+
+
+async def _generate_tips() -> list[InvestingTipOut]:
+    """Generate investing tips via LLM with in-memory cache."""
+    cache_key = "global"
+    now = time.time()
+
+    cached = _tips_cache.get(cache_key)
+    if cached and (now - cached[0]) < _TIPS_CACHE_TTL:
+        return cached[1]
+
+    try:
+        llm = get_llm_client(tier="lite")
+        raw = await llm.complete(
+            system_prompt=_TIPS_PROMPT,
+            messages=[{"role": "user", "content": "Generate 6 fresh investing tips for young learners."}],
+            temperature=0.9,
+            max_tokens=800,
+            response_format="json",
+        )
+        items = json.loads(raw)
+        tips = [InvestingTipOut(**item) for item in items]
+        if len(tips) >= 3:
+            _tips_cache[cache_key] = (now, tips)
+            return tips
+    except Exception:
+        pass
+
+    return _FALLBACK_TIPS
+
+
+@router.get("/market/tips", response_model=list[InvestingTipOut])
+async def get_investing_tips(
+    _current: User = Depends(get_current_user),
+):
+    return await _generate_tips()
+```
+
+Key decisions:
+- `temperature=0.9` for variety between generations
+- `response_format="json"` to get structured output
+- Validates response has at least 3 tips before caching (rejects garbage)
+- Falls back to `_FALLBACK_TIPS` (3 curated tips) if LLM fails or returns invalid JSON
+- In-memory cache (not Redis) — Redis isn't wired up yet and this is a single-key cache
+
+- [ ] **Step 4: Run ruff check**
+
+Run:
+```bash
+cd invest-ed/backend && ruff check app/routers/simulator.py
+```
+
+Expected: Clean.
+
+- [ ] **Step 5: Run all simulator tests**
+
+Run:
+```bash
+cd invest-ed/backend && python -m pytest tests/test_simulator.py -v
+```
+
+Expected: All pass (tests mock the LLM layer; the tips test checks the response shape).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add app/routers/simulator.py tests/test_simulator.py
+git commit -m "feat: generate investing tips via LLM with 1hr global cache"
+```
