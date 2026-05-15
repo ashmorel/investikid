@@ -59,7 +59,28 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
     staleTime: 30 * 60 * 1000,
   });
 
-  if (!tips || tips.length === 0) return null;
+  if (!tips) {
+    return (
+      <div className="rounded-2xl border-2 border-amber-200 bg-white p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <div className="h-5 w-5 animate-pulse rounded bg-amber-200" />
+          <div className="h-4 w-28 animate-pulse rounded bg-amber-100" />
+        </div>
+        <div className="flex gap-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="min-w-[220px] rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <div className="mb-2 h-3 w-24 animate-pulse rounded bg-amber-200" />
+              <div className="mb-1 h-2 w-full animate-pulse rounded bg-amber-100" />
+              <div className="mb-2 h-2 w-3/4 animate-pulse rounded bg-amber-100" />
+              <div className="h-12 animate-pulse rounded-md bg-amber-100" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (tips.length === 0) return null;
 
   const handleScroll = () => {
     if (!scrollRef.current) return;

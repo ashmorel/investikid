@@ -38,7 +38,19 @@ export function InvestmentTimeMachine({ exchange, ticker }: Props) {
   if (isLoading) {
     return (
       <div className="rounded-2xl border-2 border-purple-200 bg-white p-4">
-        <p className="text-sm text-muted-foreground">Calculating historical returns…</p>
+        <div className="mb-3 flex items-center gap-2">
+          <div className="h-5 w-5 animate-pulse rounded bg-purple-200" />
+          <div className="h-4 w-40 animate-pulse rounded bg-purple-100" />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-xl bg-purple-50 p-3 text-center">
+              <div className="mx-auto h-3 w-16 animate-pulse rounded bg-purple-200" />
+              <div className="mx-auto my-2 h-6 w-20 animate-pulse rounded bg-purple-200" />
+              <div className="mx-auto h-3 w-10 animate-pulse rounded bg-purple-100" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

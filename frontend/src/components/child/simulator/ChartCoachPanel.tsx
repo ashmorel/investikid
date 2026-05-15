@@ -94,6 +94,13 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
               </div>
             </div>
           )}
+          {sendMessage.isError && (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+                Something went wrong. Try sending your message again.
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
