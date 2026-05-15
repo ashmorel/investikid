@@ -12,7 +12,7 @@ from app.models.content import Lesson
 from app.models.skill_profile import TopicMastery
 from app.models.tutor import TutorConversation
 from app.models.user import User
-from app.services.llm_client import get_llm_client
+from app.services.llm_client import get_llm_client, get_model_name
 
 
 class TutorLimitReached(Exception):
@@ -106,7 +106,7 @@ async def chat(
     if conversation_id:
         conversation = await session.get(TutorConversation, conversation_id)
 
-    model_name = settings.llm_premium_model if premium else settings.llm_free_model
+    model_name = get_model_name("premium" if premium else "standard")
 
     if conversation is None:
         conversation = TutorConversation(
@@ -144,7 +144,7 @@ async def chat(
     history.append({"role": "user", "content": message})
 
     # Call LLM
-    client = get_llm_client(premium=premium)
+    client = get_llm_client(tier="premium" if premium else "standard")
     raw_response = await client.complete(
         system_prompt=system_prompt,
         messages=history,
