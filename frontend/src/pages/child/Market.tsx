@@ -37,13 +37,10 @@ export default function Market() {
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
-    if (query.trim().length === 0) {
-      setDebouncedQuery('');
-      return;
-    }
+    const trimmed = query.trim();
     debounceRef.current = setTimeout(() => {
-      setDebouncedQuery(query.trim());
-    }, 400);
+      setDebouncedQuery(trimmed);
+    }, trimmed.length === 0 ? 0 : 400);
     return () => clearTimeout(debounceRef.current);
   }, [query]);
 
