@@ -1,3 +1,7 @@
+import json
+import time
+from collections import defaultdict
+from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -8,19 +12,36 @@ from app.core.database import get_session
 from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
+from app.schemas.ai import TutorChatResponse
 from app.schemas.simulator import (
+    ChartCoachRequest,
+    ExchangeMoversOut,
     HoldingOut,
+    InvestingTipOut,
+    MarketMoverOut,
+    NewsSummaryOut,
     PortfolioOut,
+    PortfolioSnapshot,
+    PricePointOut,
     QuoteOut,
+    StockNewsOut,
+    TimeMachineOut,
+    TimeMachinePeriod,
     TradeOut,
     TradeRequest,
+)
+from app.services.chart_coach_service import (
+    ChartCoachInputTooLong,
+    ChartCoachLimitReached,
+    chart_coach_chat,
 )
 from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
 )
+from app.services.llm_client import LLMError, get_llm_client
 from app.services.price_provider import (
-    StaticPriceProvider,
+    LivePriceProvider,
     TickerNotAvailableError,
 )
 from app.services.simulator_service import (
@@ -32,7 +53,7 @@ from app.services.simulator_service import (
 
 router = APIRouter(tags=["simulator"])
 
-_price_provider = StaticPriceProvider()
+_price_provider = LivePriceProvider()
 
 
 def get_price_provider():
@@ -43,9 +64,12 @@ def get_price_provider():
 @router.get("/market/search", response_model=list[QuoteOut])
 async def search_market(
     q: str,
+    refresh: bool = False,
     _current: User = Depends(get_current_user),
     provider=Depends(get_price_provider),
 ):
+    if refresh and hasattr(provider, "clear_cache"):
+        provider.clear_cache()
     results = provider.search(q)
     return [
         QuoteOut(ticker=r.ticker, exchange=r.exchange, name=r.name, price=r.price, currency=r.currency)
@@ -65,6 +89,485 @@ async def get_quote(
     except TickerNotAvailableError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Ticker not available")
     return QuoteOut(ticker=q.ticker, exchange=q.exchange, name=q.name, price=q.price, currency=q.currency)
+
+
+@router.get("/market/history/{exchange}/{ticker}", response_model=list[PricePointOut])
+async def get_stock_history(
+    exchange: str,
+    ticker: str,
+    period: str = "1mo",
+    _current: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_history"):
+        return []
+    points = provider.get_history(ticker, exchange, period)
+    return [
+        PricePointOut(date=p.date, open=p.open, high=p.high, low=p.low, close=p.close, volume=p.volume)
+        for p in points
+    ]
+
+
+@router.get("/market/movers", response_model=dict[str, ExchangeMoversOut])
+async def get_market_movers(
+    _current: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_market_movers"):
+        return {}
+    raw = provider.get_market_movers()
+    return {
+        exchange: ExchangeMoversOut(
+            winners=[MarketMoverOut(**m.__dict__) for m in data.get("winners", [])],
+            losers=[MarketMoverOut(**m.__dict__) for m in data.get("losers", [])],
+        )
+        for exchange, data in raw.items()
+    }
+
+
+@router.get("/market/news", response_model=list[StockNewsOut])
+async def get_market_news(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_news"):
+        return []
+    portfolio = await session.scalar(
+        select(Portfolio).where(Portfolio.user_id == current_user.id)
+    )
+    if not portfolio:
+        return []
+    holdings = (await session.scalars(
+        select(Holding).where(Holding.portfolio_id == portfolio.id)
+    )).all()
+    if not holdings:
+        return []
+    ticker_pairs = [(h.ticker, h.exchange) for h in holdings]
+    items = provider.get_news(ticker_pairs)
+    return [StockNewsOut(**i.__dict__) for i in items]
+
+
+@router.get("/market/news-summary", response_model=NewsSummaryOut)
+async def get_news_summary(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_news"):
+        return NewsSummaryOut(summary="No news available right now.", tickers_mentioned=[])
+
+    portfolio = await session.scalar(
+        select(Portfolio).where(Portfolio.user_id == current_user.id)
+    )
+    if not portfolio:
+        return NewsSummaryOut(summary="Start investing to see personalised news!", tickers_mentioned=[])
+
+    holdings = (await session.scalars(
+        select(Holding).where(Holding.portfolio_id == portfolio.id)
+    )).all()
+    if not holdings:
+        return NewsSummaryOut(summary="Buy some stocks and news about them will appear here!", tickers_mentioned=[])
+
+    ticker_pairs = [(h.ticker, h.exchange) for h in holdings]
+    items = provider.get_news(ticker_pairs)
+    if not items:
+        return NewsSummaryOut(summary="No recent news for your stocks.", tickers_mentioned=[])
+
+    age = (date.today() - current_user.dob).days // 365
+    tickers = list({i.related_ticker for i in items})
+
+    headlines = "\n".join(
+        f"- [{i.related_ticker}] {i.title}: {i.summary}" for i in items[:12]
+    )
+
+    system_prompt = (
+        f"You are a friendly financial news reporter for a {age}-year-old. "
+        "Write a short, engaging summary of the news headlines below. "
+        "Rules:\n"
+        "- Use simple language appropriate for the reader's age\n"
+        "- For ages 8-11: use very simple words, short sentences, explain any business terms\n"
+        "- For ages 12-14: can use slightly more complex language but still explain jargon\n"
+        "- For ages 15+: can use normal language but keep it accessible\n"
+        "- Focus on what matters to someone who owns these stocks\n"
+        "- Keep it to 2-4 sentences\n"
+        "- Be encouraging and educational, never scary about losses\n"
+        "- Never give investment advice\n"
+        "- Mention the stock tickers when relevant"
+    )
+
+    llm = get_llm_client(tier="lite")
+    try:
+        summary = await llm.complete(
+            system_prompt=system_prompt,
+            messages=[{"role": "user", "content": f"Here are today's headlines about my stocks:\n{headlines}"}],
+            temperature=0.5,
+            max_tokens=200,
+        )
+    except LLMError:
+        summary = "Couldn't generate a summary right now — check back soon!"
+
+    return NewsSummaryOut(summary=summary.strip(), tickers_mentioned=tickers)
+
+
+@router.get("/market/news/{exchange}/{ticker}", response_model=list[StockNewsOut])
+async def get_stock_news(
+    exchange: str,
+    ticker: str,
+    _current: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_news"):
+        return []
+    items = provider.get_news([(ticker, exchange)])
+    return [StockNewsOut(**i.__dict__) for i in items]
+
+
+@router.get("/market/news-summary/{exchange}/{ticker}", response_model=NewsSummaryOut)
+async def get_stock_news_summary(
+    exchange: str,
+    ticker: str,
+    current_user: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_news"):
+        return NewsSummaryOut(summary="", tickers_mentioned=[])
+    items = provider.get_news([(ticker, exchange)])
+    if not items:
+        return NewsSummaryOut(summary="", tickers_mentioned=[])
+
+    age = (date.today() - current_user.dob).days // 365
+    headlines = "\n".join(f"- {i.title}: {i.summary}" for i in items[:8])
+
+    system_prompt = (
+        f"You are a friendly financial news reporter for a {age}-year-old "
+        f"who owns shares in {ticker}. "
+        "Write a short, engaging summary of what's happening with this stock. "
+        "Rules:\n"
+        "- Use simple language appropriate for the reader's age\n"
+        "- For ages 8-11: very simple words, short sentences, explain business terms\n"
+        "- For ages 12-14: slightly more complex but still explain jargon\n"
+        "- For ages 15+: normal language but keep it accessible\n"
+        "- Focus on what this news means for someone who owns this stock\n"
+        "- Keep it to 2-3 sentences\n"
+        "- Be encouraging and educational, never scary about losses\n"
+        "- Never give investment advice"
+    )
+
+    llm = get_llm_client(tier="lite")
+    try:
+        summary = await llm.complete(
+            system_prompt=system_prompt,
+            messages=[{"role": "user", "content": f"Recent news about {ticker}:\n{headlines}"}],
+            temperature=0.5,
+            max_tokens=200,
+        )
+    except LLMError:
+        summary = ""
+
+    return NewsSummaryOut(summary=summary.strip(), tickers_mentioned=[ticker])
+
+
+@router.get("/market/chart-guide/{exchange}/{ticker}", response_model=NewsSummaryOut)
+async def get_chart_guide(
+    exchange: str,
+    ticker: str,
+    period: str = "1mo",
+    current_user: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    age = (date.today() - current_user.dob).days // 365
+
+    if not hasattr(provider, "get_history"):
+        return NewsSummaryOut(summary="", tickers_mentioned=[])
+
+    points = provider.get_history(ticker, exchange, period)
+    if len(points) < 2:
+        return NewsSummaryOut(summary="", tickers_mentioned=[])
+
+    start = points[0].close
+    end = points[-1].close
+    change_pct = ((end - start) / start * 100) if start > 0 else 0
+    high = max(p.high for p in points)
+    low = min(p.low for p in points)
+    avg_vol = sum(p.volume for p in points) / len(points)
+
+    stats = (
+        f"Ticker: {ticker}, Period: {period}\n"
+        f"Start price: {start:.2f}, End price: {end:.2f}, Change: {change_pct:+.1f}%\n"
+        f"Period high: {high:.2f}, Period low: {low:.2f}\n"
+        f"Average daily volume: {avg_vol:,.0f} shares\n"
+        f"Number of data points: {len(points)}"
+    )
+
+    system_prompt = (
+        f"You are a friendly investing teacher for a {age}-year-old. "
+        f"Look at the chart data for {ticker} and teach the reader something useful. "
+        "Rules:\n"
+        "- Use simple language appropriate for the reader's age\n"
+        "- For ages 8-11: very simple, use analogies they'd understand\n"
+        "- For ages 12-14: can use more detail but explain terms\n"
+        "- For ages 15+: can be more technical\n"
+        "- Pick ONE of these to teach about (whichever is most relevant to this chart):\n"
+        "  * What the green/red colour means and why prices go up or down\n"
+        "  * What 'volume' means and why lots of trading can signal big news\n"
+        "  * What the high and low of a period tell you about volatility\n"
+        "  * How to compare short-term vs long-term trends using different periods\n"
+        "  * What it means when a stock price changes a lot vs a little\n"
+        "- Keep it to 2-3 sentences\n"
+        "- Reference the actual numbers from this stock's chart\n"
+        "- End with a question that makes the reader think\n"
+        "- Never give investment advice"
+    )
+
+    llm = get_llm_client(tier="standard")
+    try:
+        summary = await llm.complete(
+            system_prompt=system_prompt,
+            messages=[{"role": "user", "content": f"Here's the chart data:\n{stats}"}],
+            temperature=0.7,
+            max_tokens=250,
+        )
+    except LLMError:
+        summary = ""
+
+    return NewsSummaryOut(summary=summary.strip(), tickers_mentioned=[ticker])
+
+
+@router.post("/market/chart-coach", response_model=TutorChatResponse)
+async def chart_coach(
+    payload: ChartCoachRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    provider=Depends(get_price_provider),
+):
+    try:
+        quote = provider.get_quote(payload.ticker, payload.exchange)
+    except TickerNotAvailableError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ticker not available")
+
+    points = []
+    if hasattr(provider, "get_history"):
+        points = provider.get_history(payload.ticker, payload.exchange, payload.period)
+
+    if len(points) < 2:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Not enough chart data for coaching")
+
+    try:
+        result = await chart_coach_chat(
+            session=session,
+            user=current_user,
+            ticker=payload.ticker,
+            exchange=payload.exchange,
+            name=quote.name,
+            period=payload.period,
+            message=payload.message,
+            conversation_id=payload.conversation_id,
+            points=points,
+        )
+    except ChartCoachInputTooLong as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    except ChartCoachLimitReached as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    await session.commit()
+    return result
+
+
+_APPROX_USD_RATES: dict[str, float] = {
+    "USD": 1.0,
+    "GBP": 1.27,
+    "HKD": 0.128,
+    "EUR": 1.08,
+    "JPY": 0.0067,
+    "CAD": 0.73,
+    "AUD": 0.65,
+}
+
+
+@router.get("/market/time-machine/{exchange}/{ticker}", response_model=TimeMachineOut)
+async def get_time_machine(
+    exchange: str,
+    ticker: str,
+    current_user: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_history"):
+        return TimeMachineOut(ticker=ticker, periods=[], fun_fact="")
+
+    points = provider.get_history(ticker, exchange, "max")
+    if len(points) < 2:
+        return TimeMachineOut(ticker=ticker, periods=[], fun_fact="")
+
+    try:
+        quote = provider.get_quote(ticker, exchange)
+    except TickerNotAvailableError:
+        return TimeMachineOut(ticker=ticker, periods=[], fun_fact="")
+
+    current_price = float(quote.price)
+    currency = quote.currency
+    usd_rate = _APPROX_USD_RATES.get(currency, 1.0)
+    invest_amount = 5000.0
+
+    today = date.today()
+    periods: list[TimeMachinePeriod] = []
+
+    for years_ago in [5, 10, 15]:
+        target_date = today.replace(year=today.year - years_ago)
+
+        # Find the point closest to the target date
+        best = None
+        best_diff = float("inf")
+        for p in points:
+            diff = abs((date.fromisoformat(p.date[:10]) - target_date).days)
+            if diff < best_diff:
+                best_diff = diff
+                best = p
+            if diff == 0:
+                break
+
+        if best is None or best_diff > 60:
+            continue
+
+        historical_price = best.close
+        if historical_price <= 0:
+            continue
+
+        growth = current_price / historical_price
+        current_value = invest_amount * growth
+        return_pct = (growth - 1) * 100
+
+        usd_equiv = None
+        if currency != "USD":
+            usd_equiv = f"{current_value * usd_rate:.2f}"
+
+        periods.append(TimeMachinePeriod(
+            years_ago=years_ago,
+            invested=f"{invest_amount:.2f}",
+            current_value=f"{current_value:.2f}",
+            return_pct=round(return_pct, 1),
+            currency=currency,
+            usd_equivalent=usd_equiv,
+        ))
+
+    fun_fact = ""
+    if periods:
+        age = (date.today() - current_user.dob).days // 365
+        best_period = max(periods, key=lambda p: p.return_pct)
+        llm = get_llm_client(tier="lite")
+        try:
+            fun_fact = await llm.complete(
+                system_prompt=(
+                    f"You are a friendly investing teacher for a {age}-year-old. "
+                    "Write ONE short, fun 'Did you know?' fact comparing the investment return to "
+                    "something relatable for a young person (university fees, a car, a holiday, "
+                    "a gaming setup, etc). Keep it to 1-2 sentences. Be encouraging but never "
+                    "give investment advice. Use the reader's perspective ('you' not 'they')."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"If someone invested ${invest_amount:.0f} in {ticker} "
+                        f"{best_period.years_ago} years ago, it would be worth "
+                        f"${float(best_period.current_value):,.0f} today "
+                        f"({best_period.return_pct:+.0f}% return)."
+                    ),
+                }],
+                temperature=0.7,
+                max_tokens=100,
+            )
+            fun_fact = fun_fact.strip()
+        except LLMError:
+            fun_fact = ""
+
+    return TimeMachineOut(ticker=ticker, periods=periods, fun_fact=fun_fact)
+
+
+_FALLBACK_TIPS = [
+    InvestingTipOut(
+        id="price-vs-value",
+        title="Price Doesn't Equal Value",
+        description=(
+            "A $10 stock can grow just as much as a $1,000 stock. What matters is the percentage change, "
+            "not the dollar amount. A stock going from $10 to $15 is the same 50% gain as one going from "
+            "$1,000 to $1,500!"
+        ),
+        example_ticker="F",
+        example_exchange="NYSE",
+    ),
+    InvestingTipOut(
+        id="time-in-market",
+        title="Time in the Market",
+        description=(
+            "The longer you hold, the more likely you are to see gains. Even after big drops, patient "
+            "investors usually recover. Trying to time the market is nearly impossible — time IN the market "
+            "is what counts."
+        ),
+        example_ticker="MSFT",
+        example_exchange="NASDAQ",
+    ),
+    InvestingTipOut(
+        id="diversification",
+        title="Don't Put All Your Eggs in One Basket",
+        description=(
+            "Spreading your money across different companies and industries protects you if one has a bad "
+            "year. This is called diversification — it's one of the most important rules of investing!"
+        ),
+        example_ticker="JNJ",
+        example_exchange="NYSE",
+    ),
+]
+
+_TIPS_PROMPT = (
+    "You are writing short investing tips for kids aged 8-16 learning about the stock market.\n\n"
+    "Generate 6 different investing tips. Each tip should:\n"
+    "- Have a short catchy title (under 8 words)\n"
+    "- Have a 2-3 sentence description that explains the concept simply\n"
+    "- Include an example stock ticker and exchange from well-known companies kids would recognise\n"
+    "- Be educational, encouraging, and never give real investment advice\n"
+    "- Cover different concepts (don't repeat themes)\n\n"
+    "Return JSON: [{\"id\": \"slug-id\", \"title\": \"...\", \"description\": \"...\", "
+    "\"example_ticker\": \"AAPL\", \"example_exchange\": \"NASDAQ\"}]\n\n"
+    "Only return the JSON array, nothing else."
+)
+
+_tips_cache: dict[str, tuple[float, list[InvestingTipOut]]] = {}
+_TIPS_CACHE_TTL = 3600
+
+
+async def _generate_tips() -> list[InvestingTipOut]:
+    cache_key = "global"
+    now = time.time()
+
+    cached = _tips_cache.get(cache_key)
+    if cached and (now - cached[0]) < _TIPS_CACHE_TTL:
+        return cached[1]
+
+    try:
+        llm = get_llm_client(tier="lite")
+        raw = await llm.complete(
+            system_prompt=_TIPS_PROMPT,
+            messages=[{"role": "user", "content": "Generate 6 fresh investing tips for young learners."}],
+            temperature=0.9,
+            max_tokens=800,
+            response_format="json",
+        )
+        items = json.loads(raw)
+        tips = [InvestingTipOut(**item) for item in items]
+        if len(tips) >= 3:
+            _tips_cache[cache_key] = (now, tips)
+            return tips
+    except Exception:
+        pass
+
+    return _FALLBACK_TIPS
+
+
+@router.get("/market/tips", response_model=list[InvestingTipOut])
+async def get_investing_tips(
+    _current: User = Depends(get_current_user),
+):
+    return await _generate_tips()
 
 
 @router.get("/portfolio", response_model=PortfolioOut)
@@ -153,3 +656,78 @@ async def list_trades(
         select(Trade).where(Trade.portfolio_id == portfolio.id).order_by(Trade.executed_at.desc())
     )).all()
     return list(trades)
+
+
+@router.get("/portfolio/history", response_model=list[PortfolioSnapshot])
+async def portfolio_history(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    provider=Depends(get_price_provider),
+):
+    portfolio = await session.scalar(
+        select(Portfolio).where(Portfolio.user_id == current_user.id)
+    )
+    if not portfolio:
+        return []
+
+    trades = (
+        await session.scalars(
+            select(Trade)
+            .where(Trade.portfolio_id == portfolio.id)
+            .order_by(Trade.executed_at.asc())
+        )
+    ).all()
+
+    if not trades:
+        return []
+
+    # Build ticker→exchange map from holdings
+    all_holdings = (await session.scalars(
+        select(Holding).where(Holding.portfolio_id == portfolio.id)
+    )).all()
+    ticker_exchange: dict[str, str] = {h.ticker: h.exchange for h in all_holdings}
+
+    shares_held: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+    cash = portfolio.virtual_cash
+    # Reconstruct starting cash by reversing all trades
+    for t in trades:
+        cost = t.price * t.shares
+        if t.type == "buy":
+            cash += cost
+        else:
+            cash -= cost
+
+    snapshots: list[PortfolioSnapshot] = []
+    seen_dates: set[str] = set()
+
+    for t in trades:
+        cost = t.price * t.shares
+        if t.type == "buy":
+            cash -= cost
+            shares_held[t.ticker] += t.shares
+        else:
+            cash += cost
+            shares_held[t.ticker] -= t.shares
+
+        date_str = t.executed_at.date().isoformat()
+        holding_value = Decimal("0")
+        for ticker, qty in shares_held.items():
+            if qty <= 0:
+                continue
+            exchange = ticker_exchange.get(ticker, "")
+            try:
+                q = provider.get_quote(ticker, exchange)
+                holding_value += q.price * qty
+            except Exception:
+                holding_value += t.price * qty
+
+        snapshot = PortfolioSnapshot(
+            date=date_str, value=float((cash + holding_value).quantize(Decimal("0.01")))
+        )
+        if date_str in seen_dates:
+            snapshots[-1] = snapshot
+        else:
+            seen_dates.add(date_str)
+            snapshots.append(snapshot)
+
+    return snapshots

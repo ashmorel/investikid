@@ -44,9 +44,90 @@ export type TradeOut = {
   executed_at: string;
 };
 
+export type PortfolioSnapshot = {
+  date: string;
+  value: number;
+};
+
+export type PricePoint = {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+};
+
+export type MarketMover = {
+  ticker: string;
+  exchange: string;
+  name: string;
+  price: string;
+  currency: string;
+  change_percent: number;
+};
+
+export type ExchangeMovers = {
+  winners: MarketMover[];
+  losers: MarketMover[];
+};
+
+export type StockNews = {
+  title: string;
+  summary: string;
+  publisher: string;
+  url: string;
+  published: string;
+  thumbnail: string;
+  related_ticker: string;
+  related_exchange: string;
+};
+
+export type NewsSummary = {
+  summary: string;
+  tickers_mentioned: string[];
+};
+
+export type TimeMachinePeriod = {
+  years_ago: number;
+  invested: string;
+  current_value: string;
+  return_pct: number;
+  currency: string;
+  usd_equivalent: string | null;
+};
+
+export type TimeMachineData = {
+  ticker: string;
+  periods: TimeMachinePeriod[];
+  fun_fact: string;
+};
+
+export type InvestingTip = {
+  id: string;
+  title: string;
+  description: string;
+  example_ticker: string;
+  example_exchange: string;
+};
+
+export type ChartCoachRequest = {
+  ticker: string;
+  exchange: string;
+  period: string;
+  message: string;
+  conversation_id?: string | null;
+};
+
+export type ChartCoachResponse = {
+  response: string;
+  conversation_id: string;
+  messages_remaining: number;
+};
+
 export const simulatorApi = {
-  searchMarket: (q: string) =>
-    apiFetch<QuoteOut[]>(`/market/search?q=${encodeURIComponent(q)}`),
+  searchMarket: (q: string, refresh = false) =>
+    apiFetch<QuoteOut[]>(`/market/search?q=${encodeURIComponent(q)}${refresh ? '&refresh=true' : ''}`),
 
   getQuote: (exchange: string, ticker: string) =>
     apiFetch<QuoteOut>(`/market/quote/${exchange}/${ticker}`),
@@ -57,6 +138,41 @@ export const simulatorApi = {
 
   placeTrade: (req: TradeRequest) =>
     apiFetch<TradeOut>('/portfolio/trades', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+
+  getPortfolioHistory: () => apiFetch<PortfolioSnapshot[]>('/portfolio/history'),
+
+  getStockHistory: (exchange: string, ticker: string, period = '1mo') =>
+    apiFetch<PricePoint[]>(`/market/history/${exchange}/${ticker}?period=${period}`),
+
+  getMarketMovers: () =>
+    apiFetch<Record<string, ExchangeMovers>>('/market/movers'),
+
+  getMarketNews: () =>
+    apiFetch<StockNews[]>('/market/news'),
+
+  getNewsSummary: () =>
+    apiFetch<NewsSummary>('/market/news-summary'),
+
+  getStockNews: (exchange: string, ticker: string) =>
+    apiFetch<StockNews[]>(`/market/news/${exchange}/${ticker}`),
+
+  getStockNewsSummary: (exchange: string, ticker: string) =>
+    apiFetch<NewsSummary>(`/market/news-summary/${exchange}/${ticker}`),
+
+  getChartGuide: (exchange: string, ticker: string, period = '1mo') =>
+    apiFetch<NewsSummary>(`/market/chart-guide/${exchange}/${ticker}?period=${period}`),
+
+  getTimeMachine: (exchange: string, ticker: string) =>
+    apiFetch<TimeMachineData>(`/market/time-machine/${exchange}/${ticker}`),
+
+  getInvestingTips: () =>
+    apiFetch<InvestingTip[]>('/market/tips'),
+
+  sendChartCoachMessage: (req: ChartCoachRequest) =>
+    apiFetch<ChartCoachResponse>('/market/chart-coach', {
       method: 'POST',
       body: JSON.stringify(req),
     }),

@@ -24,3 +24,20 @@ class TutorConversation(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
+
+
+class ChartCoachConversation(Base):
+    __tablename__ = "chart_coach_conversations"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    ticker: Mapped[str] = mapped_column(String(20), nullable=False)
+    exchange: Mapped[str] = mapped_column(String(20), nullable=False)
+    messages: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    message_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    model_used: Mapped[str] = mapped_column(String(50), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )

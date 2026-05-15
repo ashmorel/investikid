@@ -50,7 +50,7 @@ describe('Simulator page', () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/\$10,000\.00 USD/)).toBeInTheDocument();
-      expect(screen.getByText(/haven't bought any stocks/i)).toBeInTheDocument();
+      expect(screen.getByText(/No stocks yet!/i)).toBeInTheDocument();
     });
   });
 

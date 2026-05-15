@@ -1,4 +1,5 @@
 import { BookOpen, Flame, Lock, Star, TrendingUp } from 'lucide-react';
+import { motion } from 'framer-motion';
 import type { BadgeDefinition, EarnedBadge } from '@/api/gamification';
 import { cn } from '@/lib/utils';
 
@@ -26,32 +27,56 @@ function formatEarnedDate(iso: string): string {
   return `Earned ${date.toLocaleDateString()}`;
 }
 
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+
+const item = {
+  hidden: { opacity: 0, scale: 0.9 },
+  show: { opacity: 1, scale: 1 },
+};
+
 export function BadgeGrid({ allBadges, earnedBadges }: Props) {
   const earnedById = new Map(earnedBadges.map((b) => [b.id, b]));
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <motion.div
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      variants={container}
+      initial="hidden"
+      animate="show"
+    >
       {allBadges.map((badge) => {
         const earned = earnedById.get(badge.id);
         const Icon = CONDITION_ICONS[badge.condition_type] ?? Star;
+        const isNewlyEarned = earned && formatEarnedDate(earned.earned_at) === 'Earned today';
 
         return (
-          <div
+          <motion.div
             key={badge.id}
+            variants={item}
             className={cn(
               'relative rounded-lg border p-4',
               earned ? 'bg-card' : 'bg-muted/50 opacity-60',
             )}
           >
             <div className="flex items-start gap-3">
-              <div
+              <motion.div
                 className={cn(
                   'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
                   earned ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
                 )}
+                {...(isNewlyEarned
+                  ? {
+                      initial: { scale: 0, rotate: -180 },
+                      animate: { scale: 1, rotate: 0 },
+                      transition: { type: 'spring', stiffness: 200, damping: 12 },
+                    }
+                  : {})}
               >
                 <Icon className="h-5 w-5" />
-              </div>
+              </motion.div>
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{badge.name}</p>
                 <p className="text-sm text-muted-foreground">{badge.description}</p>
@@ -67,9 +92,9 @@ export function BadgeGrid({ allBadges, earnedBadges }: Props) {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

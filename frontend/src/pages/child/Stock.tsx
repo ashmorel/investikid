@@ -4,7 +4,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { simulatorApi, type TradeRequest, type QuoteOut, type PortfolioOut } from '@/api/simulator';
 import { ApiError } from '@/api/client';
 import { StockHeader } from '@/components/child/simulator/StockHeader';
+import { StockChart } from '@/components/child/simulator/StockChart';
+import { ChartGuide } from '@/components/child/simulator/ChartGuide';
+import { StockNewsSection } from '@/components/child/simulator/StockNews';
 import { TradeForm } from '@/components/child/simulator/TradeForm';
+import { InvestmentTimeMachine } from '@/components/child/simulator/InvestmentTimeMachine';
+import { InvestingTips } from '@/components/child/simulator/InvestingTips';
+import { ChartCoachPanel } from '@/components/child/simulator/ChartCoachPanel';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Stock() {
@@ -13,6 +19,8 @@ export default function Stock() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [chartPeriod, setChartPeriod] = useState('1mo');
+  const [showCoachEddie, setShowCoachEddie] = useState(false);
 
   const quoteQ = useQuery<QuoteOut | null, ApiError>({
     queryKey: ['quote', exchange, ticker],
@@ -88,6 +96,33 @@ export default function Stock() {
         existingAvgPrice={existingHolding?.avg_buy_price ?? null}
       />
 
+      <div className="my-4">
+        <StockChart
+          exchange={quote.exchange}
+          ticker={quote.ticker}
+          currency={quote.currency}
+          onPeriodChange={setChartPeriod}
+        />
+      </div>
+
+      <div className="mb-4">
+        <ChartGuide exchange={quote.exchange} ticker={quote.ticker} period={chartPeriod} onAskEddie={() => setShowCoachEddie(true)} />
+      </div>
+
+      <div className="mb-4">
+        <InvestmentTimeMachine
+          exchange={quote.exchange}
+          ticker={quote.ticker}
+        />
+      </div>
+
+      <div className="mb-4">
+        <InvestingTips
+          contextTicker={quote.ticker}
+          contextExchange={quote.exchange}
+        />
+      </div>
+
       <TradeForm
         ticker={quote.ticker}
         exchange={quote.exchange}
@@ -99,6 +134,19 @@ export default function Stock() {
         isSubmitting={tradeMutation.isPending}
         submitError={submitError}
       />
+
+      <div className="mt-6">
+        <StockNewsSection exchange={quote.exchange} ticker={quote.ticker} />
+      </div>
+
+      {showCoachEddie && (
+        <ChartCoachPanel
+          ticker={quote.ticker}
+          exchange={quote.exchange}
+          period={chartPeriod}
+          onClose={() => setShowCoachEddie(false)}
+        />
+      )}
     </div>
   );
 }

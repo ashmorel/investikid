@@ -23,6 +23,7 @@ export function StatsBar({ xp, level, streakCount, lastActivityDate, today }: Pr
       <span
         className={cn(
           'rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-800',
+          active && 'animate-pulse',
           !active && 'opacity-50',
         )}
         aria-label={active ? 'streak active' : 'streak inactive'}

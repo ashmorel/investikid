@@ -4,9 +4,11 @@ import pytest
 
 from app.services.llm_client import (
     AnthropicClient,
+    FallbackLLMClient,
     LLMError,
     OpenAIClient,
     get_llm_client,
+    get_model_name,
 )
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
@@ -64,31 +66,134 @@ async def test_openai_client_raises_llm_error_on_failure():
             )
 
 
-def test_get_llm_client_returns_correct_provider():
+async def test_fallback_client_uses_primary_when_healthy():
+    primary = AsyncMock()
+    primary.complete = AsyncMock(return_value="primary response")
+    fallback = AsyncMock()
+    fallback.complete = AsyncMock(return_value="fallback response")
+
+    client = FallbackLLMClient(clients=[primary, fallback])
+    result = await client.complete(
+        system_prompt="test",
+        messages=[{"role": "user", "content": "hi"}],
+    )
+    assert result == "primary response"
+    primary.complete.assert_awaited_once()
+    fallback.complete.assert_not_awaited()
+
+
+async def test_fallback_client_falls_back_on_retryable_error():
+    primary = AsyncMock()
+    primary.complete = AsyncMock(side_effect=LLMError("rate limited", retryable=True))
+    fallback = AsyncMock()
+    fallback.complete = AsyncMock(return_value="fallback response")
+
+    client = FallbackLLMClient(clients=[primary, fallback])
+    result = await client.complete(
+        system_prompt="test",
+        messages=[{"role": "user", "content": "hi"}],
+    )
+    assert result == "fallback response"
+    primary.complete.assert_awaited_once()
+    fallback.complete.assert_awaited_once()
+
+
+async def test_fallback_client_raises_on_non_retryable_error():
+    primary = AsyncMock()
+    primary.complete = AsyncMock(side_effect=LLMError("bad request", retryable=False))
+    fallback = AsyncMock()
+
+    client = FallbackLLMClient(clients=[primary, fallback])
+    with pytest.raises(LLMError, match="bad request"):
+        await client.complete(
+            system_prompt="test",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+    fallback.complete.assert_not_awaited()
+
+
+async def test_fallback_client_raises_last_error_when_all_fail():
+    primary = AsyncMock()
+    primary.complete = AsyncMock(side_effect=LLMError("primary down", retryable=True))
+    fallback = AsyncMock()
+    fallback.complete = AsyncMock(side_effect=LLMError("fallback down", retryable=True))
+
+    client = FallbackLLMClient(clients=[primary, fallback])
+    with pytest.raises(LLMError, match="fallback down"):
+        await client.complete(
+            system_prompt="test",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+
+
+def test_get_llm_client_returns_fallback_for_lite():
     with patch("app.services.llm_client.settings") as mock_settings:
-        # Free tier uses Gemini Flash via OpenAI-compatible API
-        mock_settings.llm_free_api_key = "AIza-test"
-        mock_settings.llm_free_base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-        mock_settings.llm_free_model = "gemini-2.5-flash-lite"
-        # Premium tier uses OpenAI
+        mock_settings.llm_lite_providers = "together,groq"
+        mock_settings.llm_together_api_key = "tog-test"
+        mock_settings.llm_together_base_url = "https://api.together.xyz/v1"
+        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        mock_settings.llm_groq_api_key = "gsk-test"
+        mock_settings.llm_groq_base_url = "https://api.groq.com/openai/v1"
+        mock_settings.llm_groq_model = "llama-3.1-8b-instant"
+
+        client = get_llm_client(tier="lite")
+        assert isinstance(client, FallbackLLMClient)
+        assert len(client.clients) == 2
+        assert all(isinstance(c, OpenAIClient) for c in client.clients)
+
+
+def test_get_llm_client_returns_fallback_for_standard():
+    with patch("app.services.llm_client.settings") as mock_settings:
+        mock_settings.llm_standard_providers = "together"
+        mock_settings.llm_together_api_key = "tog-test"
+        mock_settings.llm_together_base_url = "https://api.together.xyz/v1"
+        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+
+        client = get_llm_client(tier="standard")
+        assert isinstance(client, FallbackLLMClient)
+        assert len(client.clients) == 1
+
+
+def test_get_llm_client_returns_premium_openai():
+    with patch("app.services.llm_client.settings") as mock_settings:
         mock_settings.llm_premium_provider = "openai"
         mock_settings.llm_premium_api_key = "sk-test"
         mock_settings.llm_premium_model = "gpt-4o"
 
-        free_client = get_llm_client(premium=False)
-        assert isinstance(free_client, OpenAIClient)
+        client = get_llm_client(tier="premium")
+        assert isinstance(client, OpenAIClient)
 
-        premium_client = get_llm_client(premium=True)
-        assert isinstance(premium_client, OpenAIClient)
 
-    # Premium with Anthropic provider
+def test_get_llm_client_returns_premium_anthropic():
     with patch("app.services.llm_client.settings") as mock_settings:
-        mock_settings.llm_free_api_key = "AIza-test"
-        mock_settings.llm_free_base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-        mock_settings.llm_free_model = "gemini-2.5-flash-lite"
         mock_settings.llm_premium_provider = "anthropic"
         mock_settings.llm_premium_api_key = "sk-ant-test"
         mock_settings.llm_premium_model = "claude-sonnet-4-20250514"
 
-        anthropic_client = get_llm_client(premium=True)
-        assert isinstance(anthropic_client, AnthropicClient)
+        client = get_llm_client(tier="premium")
+        assert isinstance(client, AnthropicClient)
+
+
+def test_get_llm_client_skips_providers_with_empty_key():
+    with patch("app.services.llm_client.settings") as mock_settings:
+        mock_settings.llm_lite_providers = "together,groq"
+        mock_settings.llm_together_api_key = ""
+        mock_settings.llm_together_base_url = "https://api.together.xyz/v1"
+        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        mock_settings.llm_groq_api_key = "gsk-test"
+        mock_settings.llm_groq_base_url = "https://api.groq.com/openai/v1"
+        mock_settings.llm_groq_model = "llama-3.1-8b-instant"
+
+        client = get_llm_client(tier="lite")
+        assert isinstance(client, FallbackLLMClient)
+        assert len(client.clients) == 1
+
+
+def test_get_model_name():
+    with patch("app.services.llm_client.settings") as mock_settings:
+        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        mock_settings.llm_premium_model = "gpt-4o"
+
+        assert get_model_name("lite") == "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        assert get_model_name("standard") == "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        assert get_model_name("premium") == "gpt-4o"

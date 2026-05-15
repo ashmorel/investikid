@@ -50,3 +50,78 @@ class TradeOut(BaseModel):
     shares: Decimal
     price: Decimal
     executed_at: datetime
+
+
+class PortfolioSnapshot(BaseModel):
+    date: str
+    value: float
+
+
+class PricePointOut(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: int
+
+
+class MarketMoverOut(BaseModel):
+    ticker: str
+    exchange: str
+    name: str
+    price: Decimal
+    currency: str
+    change_percent: float
+
+
+class ExchangeMoversOut(BaseModel):
+    winners: list[MarketMoverOut] = []
+    losers: list[MarketMoverOut] = []
+
+
+class StockNewsOut(BaseModel):
+    title: str
+    summary: str
+    publisher: str
+    url: str
+    published: str
+    thumbnail: str
+    related_ticker: str
+    related_exchange: str
+
+
+class NewsSummaryOut(BaseModel):
+    summary: str
+    tickers_mentioned: list[str]
+
+
+class ChartCoachRequest(BaseModel):
+    ticker: str = Field(min_length=1, max_length=20)
+    exchange: str = Field(min_length=1, max_length=20)
+    period: str = Field(min_length=1, max_length=10)
+    message: str = Field(min_length=1, max_length=200)
+    conversation_id: uuid.UUID | None = None
+
+
+class TimeMachinePeriod(BaseModel):
+    years_ago: int
+    invested: str
+    current_value: str
+    return_pct: float
+    currency: str
+    usd_equivalent: str | None = None
+
+
+class TimeMachineOut(BaseModel):
+    ticker: str
+    periods: list[TimeMachinePeriod]
+    fun_fact: str
+
+
+class InvestingTipOut(BaseModel):
+    id: str
+    title: str
+    description: str
+    example_ticker: str
+    example_exchange: str

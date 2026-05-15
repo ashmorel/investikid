@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useTrades } from '@/hooks/useTrades';
+import { usePortfolioHistory } from '@/hooks/usePortfolioHistory';
 import { CashCard } from '@/components/child/simulator/CashCard';
 import { HoldingsTable } from '@/components/child/simulator/HoldingsTable';
 import { TradeHistoryTab } from '@/components/child/simulator/TradeHistoryTab';
+import { PortfolioChart } from '@/components/child/simulator/PortfolioChart';
+import { cn } from '@/lib/utils';
 
 type Tab = 'holdings' | 'history';
 
 export default function Simulator() {
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio();
   const { data: trades } = useTrades();
+  const { data: history } = usePortfolioHistory();
   const [activeTab, setActiveTab] = useState<Tab>('holdings');
 
   if (portfolioLoading || !portfolio) {
@@ -26,27 +30,34 @@ export default function Simulator() {
 
   return (
     <div className="mx-auto max-w-4xl p-6">
-      <div className="mb-4 inline-flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
-        🎮 Practice Mode — no real money
+      <div className="rounded-2xl border-2 border-amber-200 bg-gradient-to-b from-amber-100 to-amber-50 p-6 text-center">
+        <span className="text-4xl">📊</span>
+        <h1 className="mt-2 text-xl font-extrabold text-gray-900">Your Portfolio</h1>
+        <p className="text-sm text-gray-500">Practice Mode — no real money</p>
       </div>
 
-      <CashCard
-        virtualCash={portfolio.virtual_cash}
-        totalValue={portfolio.total_value}
-        currencyCode={portfolio.currency_code}
-        hasMultiCurrency={hasMultiCurrency}
-        showTotalValue={holdings.length > 0}
-      />
+      <div className="mt-4">
+        <CashCard
+          virtualCash={portfolio.virtual_cash}
+          totalValue={portfolio.total_value}
+          currencyCode={portfolio.currency_code}
+          hasMultiCurrency={hasMultiCurrency}
+          showTotalValue={holdings.length > 0}
+        />
+      </div>
+
+      {history && <PortfolioChart history={history} />}
 
       <div className="mt-6">
-        <div role="tablist" className="mb-3 flex gap-1 border-b">
+        <div role="tablist" className="mb-3 flex gap-1 rounded-lg bg-amber-50 p-1">
           <button
             role="tab"
             aria-selected={activeTab === 'holdings'}
             onClick={() => setActiveTab('holdings')}
-            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
-              activeTab === 'holdings' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+            className={cn(
+              'flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-colors',
+              activeTab === 'holdings' ? 'bg-white text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+            )}
           >
             Holdings
           </button>
@@ -54,9 +65,10 @@ export default function Simulator() {
             role="tab"
             aria-selected={activeTab === 'history'}
             onClick={() => setActiveTab('history')}
-            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
-              activeTab === 'history' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+            className={cn(
+              'flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-colors',
+              activeTab === 'history' ? 'bg-white text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+            )}
           >
             Trade History
           </button>

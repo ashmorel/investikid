@@ -33,6 +33,7 @@ export function TradeForm({
   const cashNum = parseFloat(availableCash);
   const ownedNum = parseInt(ownedShares, 10) || 0;
   const canSell = ownedNum > 0;
+  const maxAffordable = priceNum > 0 ? Math.floor(cashNum / priceNum) : 0;
 
   function handleReview() {
     setValidationError(null);
@@ -114,6 +115,40 @@ export function TradeForm({
         </button>
       </div>
 
+      <div className="mb-4 rounded-lg border bg-muted/30 p-3 text-sm">
+        {side === 'buy' ? (
+          <div className="flex flex-col gap-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Available cash</span>
+              <span className="font-medium">{formatCurrency(availableCash, currency)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Price per share</span>
+              <span className="font-medium">{formatCurrency(price, currency)}</span>
+            </div>
+            <div className="flex justify-between border-t pt-1">
+              <span className="text-muted-foreground">You can afford</span>
+              <span className="font-semibold text-green-700">{maxAffordable} {maxAffordable === 1 ? 'share' : 'shares'}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Shares owned</span>
+              <span className="font-medium">{ownedNum}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Price per share</span>
+              <span className="font-medium">{formatCurrency(price, currency)}</span>
+            </div>
+            <div className="flex justify-between border-t pt-1">
+              <span className="text-muted-foreground">Value if sold</span>
+              <span className="font-semibold text-green-700">{formatCurrency((ownedNum * priceNum).toFixed(2), currency)}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="mb-4">
         <label htmlFor="shares-input" className="mb-1 block text-sm font-medium">
           Number of shares
@@ -128,6 +163,16 @@ export function TradeForm({
             onChange={(e) => setShares(e.target.value)}
             className="w-32 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
+          {side === 'buy' && maxAffordable > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShares(String(maxAffordable))}
+              aria-label="Max"
+            >
+              Max
+            </Button>
+          )}
           {side === 'sell' && canSell && (
             <Button
               variant="outline"
@@ -142,9 +187,16 @@ export function TradeForm({
       </div>
 
       {sharesNum > 0 && (
-        <p className="mb-4 text-sm text-muted-foreground">
-          {sharesNum} shares × {formatCurrency(price, currency)} = {formatCurrency(totalCost.toFixed(2), currency)}
-        </p>
+        <div className="mb-4 text-sm">
+          <p className="text-muted-foreground">
+            {sharesNum} {sharesNum === 1 ? 'share' : 'shares'} × {formatCurrency(price, currency)} = <span className="font-medium text-foreground">{formatCurrency(totalCost.toFixed(2), currency)}</span>
+          </p>
+          {side === 'buy' && (
+            <p className="text-muted-foreground">
+              Cash remaining: <span className={`font-medium ${cashNum - totalCost < 0 ? 'text-red-600' : 'text-foreground'}`}>{formatCurrency((cashNum - totalCost).toFixed(2), currency)}</span>
+            </p>
+          )}
+        </div>
       )}
 
       {validationError && (

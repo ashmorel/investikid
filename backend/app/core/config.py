@@ -17,10 +17,15 @@ class Settings(BaseSettings):
     email_from: str = "noreply@invest-ed.app"
     app_base_url: str = "http://localhost:5173"
 
-    # LLM / AI — free tier (Gemini Flash via Google's OpenAI-compatible API)
-    llm_free_api_key: str = ""
-    llm_free_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
-    llm_free_model: str = "gemini-2.5-flash-lite"
+    # LLM / AI — lite + standard tiers (open-source models)
+    llm_together_api_key: str = ""
+    llm_together_base_url: str = "https://api.together.xyz/v1"
+    llm_together_model: str = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+    llm_groq_api_key: str = ""
+    llm_groq_base_url: str = "https://api.groq.com/openai/v1"
+    llm_groq_model: str = "llama-3.1-8b-instant"
+    llm_lite_providers: str = "together,groq"
+    llm_standard_providers: str = "together,groq"
     # LLM / AI — premium tier (OpenAI or Anthropic)
     llm_premium_provider: str = "openai"  # "openai" | "anthropic"
     llm_premium_api_key: str = ""
@@ -32,7 +37,11 @@ class Settings(BaseSettings):
     tutor_max_input_chars: int = 200
     tutor_max_response_tokens: int = 150
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 
 settings = Settings()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from typing import Literal, Protocol
 
@@ -8,9 +9,25 @@ from openai import AsyncOpenAI
 
 from app.core.config import settings
 
+logger = logging.getLogger(__name__)
+
 
 class LLMError(Exception):
     """Raised when an LLM call fails after retries."""
+
+    def __init__(self, message: str, *, retryable: bool = False) -> None:
+        super().__init__(message)
+        self.retryable = retryable
+
+
+def _is_retryable(exc: Exception | None) -> bool:
+    if exc is None:
+        return False
+    status = getattr(exc, "status_code", None) or getattr(exc, "status", None)
+    if isinstance(status, int):
+        return status == 429 or status >= 500
+    msg = str(exc).lower()
+    return "rate" in msg or "timeout" in msg or "503" in msg or "502" in msg or "429" in msg
 
 
 class LLMClient(Protocol):
@@ -64,7 +81,7 @@ class OpenAIClient:
             except Exception as exc:
                 last_error = exc
                 attempts += 1
-        raise LLMError(str(last_error)) from last_error
+        raise LLMError(str(last_error), retryable=_is_retryable(last_error)) from last_error
 
     async def stream(
         self,
@@ -87,7 +104,7 @@ class OpenAIClient:
                 if delta and delta.content:
                     yield delta.content
         except Exception as exc:
-            raise LLMError(str(exc)) from exc
+            raise LLMError(str(exc), retryable=_is_retryable(exc)) from exc
 
 
 class AnthropicClient:
@@ -118,7 +135,7 @@ class AnthropicClient:
             except Exception as exc:
                 last_error = exc
                 attempts += 1
-        raise LLMError(str(last_error)) from last_error
+        raise LLMError(str(last_error), retryable=_is_retryable(last_error)) from last_error
 
     async def stream(
         self,
@@ -138,17 +155,122 @@ class AnthropicClient:
                 async for text in stream.text_stream:
                     yield text
         except Exception as exc:
-            raise LLMError(str(exc)) from exc
+            raise LLMError(str(exc), retryable=_is_retryable(exc)) from exc
 
 
-def get_llm_client(premium: bool = False) -> LLMClient:
+class FallbackLLMClient:
+    """Wraps multiple LLMClients, trying each in order on retryable failures."""
+
+    def __init__(self, clients: list[LLMClient]) -> None:
+        self.clients = clients
+
+    async def complete(
+        self,
+        system_prompt: str,
+        messages: list[dict[str, str]],
+        temperature: float = 0.3,
+        max_tokens: int = 500,
+        response_format: Literal["text", "json"] = "text",
+    ) -> str:
+        last_error: LLMError | None = None
+        for i, client in enumerate(self.clients):
+            try:
+                return await client.complete(
+                    system_prompt=system_prompt,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    response_format=response_format,
+                )
+            except LLMError as e:
+                if not e.retryable or i == len(self.clients) - 1:
+                    raise
+                logger.warning("Provider %d failed (retryable), trying next: %s", i, e)
+                last_error = e
+        raise last_error  # type: ignore[misc]  # unreachable if clients is non-empty
+
+    async def stream(
+        self,
+        system_prompt: str,
+        messages: list[dict[str, str]],
+        temperature: float = 0.3,
+        max_tokens: int = 500,
+    ) -> AsyncIterator[str]:
+        last_error: LLMError | None = None
+        for i, client in enumerate(self.clients):
+            try:
+                async for chunk in await client.stream(
+                    system_prompt=system_prompt,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                ):
+                    yield chunk
+                return
+            except LLMError as e:
+                if not e.retryable or i == len(self.clients) - 1:
+                    raise
+                logger.warning("Provider %d stream failed (retryable), trying next: %s", i, e)
+                last_error = e
+        raise last_error  # type: ignore[misc]
+
+
+def _build_together_client() -> OpenAIClient:
+    return OpenAIClient(
+        api_key=settings.llm_together_api_key,
+        model=settings.llm_together_model,
+        base_url=settings.llm_together_base_url,
+    )
+
+
+def _build_groq_client() -> OpenAIClient:
+    return OpenAIClient(
+        api_key=settings.llm_groq_api_key,
+        model=settings.llm_groq_model,
+        base_url=settings.llm_groq_base_url,
+    )
+
+
+_PROVIDER_BUILDERS: dict[str, tuple] = {
+    "together": (_build_together_client, lambda: settings.llm_together_api_key),
+    "groq": (_build_groq_client, lambda: settings.llm_groq_api_key),
+}
+
+
+def _build_chain(provider_csv: str) -> FallbackLLMClient:
+    clients: list[LLMClient] = []
+    for name in (p.strip() for p in provider_csv.split(",") if p.strip()):
+        entry = _PROVIDER_BUILDERS.get(name)
+        if entry is None:
+            logger.warning("Unknown LLM provider %r, skipping", name)
+            continue
+        builder, key_getter = entry
+        if not key_getter():
+            logger.debug("Skipping provider %r — API key is empty", name)
+            continue
+        clients.append(builder())
+    return FallbackLLMClient(clients=clients)
+
+
+def get_model_name(tier: str = "lite") -> str:
+    if tier == "premium":
+        return settings.llm_premium_model
+    return settings.llm_together_model
+
+
+def get_llm_client(tier: str = "lite", *, premium: bool | None = None) -> LLMClient:
     """Return an LLM client configured for the given tier.
 
-    Free tier uses Gemini 2.0 Flash via Google's OpenAI-compatible API
-    (free, accessible worldwide including HK, 15 RPM / 1M tokens/day).
-    Premium tier uses a commercial model (OpenAI or Anthropic).
+    Tiers:
+      - "lite"     — FallbackLLMClient over llm_lite_providers (default)
+      - "standard" — FallbackLLMClient over llm_standard_providers
+      - "premium"  — Single commercial client (OpenAI or Anthropic)
+
+    Backward compat: premium=True maps to tier="premium", premium=False to tier="lite".
     """
-    if premium:
+    if premium is not None:
+        tier = "premium" if premium else "lite"
+    if tier == "premium":
         if settings.llm_premium_provider == "anthropic":
             return AnthropicClient(
                 api_key=settings.llm_premium_api_key,
@@ -158,9 +280,6 @@ def get_llm_client(premium: bool = False) -> LLMClient:
             api_key=settings.llm_premium_api_key,
             model=settings.llm_premium_model,
         )
-    # Free tier — open-source model via OpenAI-compatible API
-    return OpenAIClient(
-        api_key=settings.llm_free_api_key,
-        model=settings.llm_free_model,
-        base_url=settings.llm_free_base_url,
-    )
+    if tier == "standard":
+        return _build_chain(settings.llm_standard_providers)
+    return _build_chain(settings.llm_lite_providers)

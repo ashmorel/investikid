@@ -13,13 +13,16 @@ type Props = { holdings: HoldingOut[] };
 export function HoldingsTable({ holdings }: Props) {
   if (holdings.length === 0) {
     return (
-      <div className="rounded-lg border bg-card p-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          You haven't bought any stocks yet. Start by{' '}
-          <Link to="/simulator/market" className="font-medium text-primary hover:underline">
-            browsing the market
-          </Link>!
-        </p>
+      <div className="rounded-2xl border-2 border-amber-200 bg-white p-8 text-center space-y-3">
+        <span className="text-5xl">📈</span>
+        <p className="font-bold text-gray-900">No stocks yet!</p>
+        <p className="text-sm text-gray-500">Start by browsing the market and making your first trade.</p>
+        <Link
+          to="/simulator/market"
+          className="inline-block rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-2 text-sm font-bold text-white hover:from-amber-500 hover:to-orange-600 transition-colors"
+        >
+          Browse Market →
+        </Link>
       </div>
     );
   }

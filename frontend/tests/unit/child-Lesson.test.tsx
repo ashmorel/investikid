@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import Lesson from '@/pages/child/Lesson';
 
+vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
+
 beforeEach(() => vi.restoreAllMocks());
 
 function mockJsonRoute(routeMap: Record<string, unknown>) {

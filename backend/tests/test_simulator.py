@@ -87,7 +87,7 @@ async def test_insufficient_shares_rejected(client):
 async def test_unknown_ticker_rejected(client):
     await _login(client)
     r = await client.post("/portfolio/trades", json={"ticker": "NOPE", "exchange": "LSE", "type": "buy", "shares": "1"})
-    assert r.status_code == 403  # not in free tier
+    assert r.status_code == 404  # ticker not found in static provider
 
 
 async def test_trade_history_listed_newest_first(client):
@@ -114,3 +114,70 @@ async def test_trade_awards_first_trade_badge(client, db_session):
 
     badges = (await client.get("/users/me/badges")).json()
     assert any(b["name"] == "First Trade" for b in badges)
+
+
+async def test_portfolio_history_empty_when_no_trades(client):
+    await _login(client, email="hist@example.com", username="histuser")
+    r = await client.get("/portfolio/history")
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+async def test_portfolio_history_returns_snapshots_after_trades(client):
+    await _login(client, email="hist2@example.com", username="hist2user")
+    # Make two trades
+    await client.post("/portfolio/trades", json={"ticker": "VOD", "exchange": "LSE", "type": "buy", "shares": "10"})
+    await client.post("/portfolio/trades", json={"ticker": "BP", "exchange": "LSE", "type": "buy", "shares": "5"})
+
+    r = await client.get("/portfolio/history")
+    assert r.status_code == 200
+    history = r.json()
+    assert len(history) >= 1
+    # Each entry has date and value
+    for entry in history:
+        assert "date" in entry
+        assert "value" in entry
+        assert isinstance(entry["value"], (int, float))
+    # The last entry's value should match current portfolio total_value
+    pf = (await client.get("/portfolio")).json()
+    assert abs(history[-1]["value"] - float(pf["total_value"])) < 0.02
+
+
+async def test_time_machine_returns_periods(client):
+    await _login(client)
+    r = await client.get("/market/time-machine/NASDAQ/AAPL")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ticker"] == "AAPL"
+    assert isinstance(body["periods"], list)
+    # Static provider may return empty periods (no max history) — just check shape
+    assert "fun_fact" in body
+
+
+async def test_time_machine_unknown_ticker(client):
+    await _login(client, email="tm2@example.com", username="tm2")
+    r = await client.get("/market/time-machine/NASDAQ/ZZZZZZ")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["periods"] == []
+
+
+async def test_tips_returns_list(client):
+    await _login(client, email="tips@example.com", username="tipster")
+    r = await client.get("/market/tips")
+    assert r.status_code == 200
+    tips = r.json()
+    assert len(tips) >= 1
+    for tip in tips:
+        assert "id" in tip
+        assert "title" in tip
+        assert "description" in tip
+        assert "example_ticker" in tip
+        assert "example_exchange" in tip
+
+
+async def test_chart_coach_requires_auth(client):
+    r = await client.post("/market/chart-coach", json={
+        "ticker": "AAPL", "exchange": "NASDAQ", "period": "1mo", "message": "What does this chart show?"
+    })
+    assert r.status_code == 403

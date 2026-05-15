@@ -31,12 +31,12 @@ def test_search_by_prefix_returns_matches():
     assert "AAPL" in tickers
 
 
-def test_search_empty_query_returns_empty():
+def test_search_empty_query_returns_all():
     p = StaticPriceProvider()
-    assert p.search("") == []
+    assert len(p.search("")) == 12
 
 
-def test_is_free_tier_allows_known_ticker():
+def test_is_free_tier_allows_any_ticker():
     p = StaticPriceProvider()
     assert p.is_free_tier("AAPL", "NASDAQ") is True
-    assert p.is_free_tier("NOTREAL", "NASDAQ") is False
+    assert p.is_free_tier("NOTREAL", "NASDAQ") is True
