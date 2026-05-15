@@ -88,6 +88,43 @@ export type NewsSummary = {
   tickers_mentioned: string[];
 };
 
+export type TimeMachinePeriod = {
+  years_ago: number;
+  invested: string;
+  current_value: string;
+  return_pct: number;
+  currency: string;
+  usd_equivalent: string | null;
+};
+
+export type TimeMachineData = {
+  ticker: string;
+  periods: TimeMachinePeriod[];
+  fun_fact: string;
+};
+
+export type InvestingTip = {
+  id: string;
+  title: string;
+  description: string;
+  example_ticker: string;
+  example_exchange: string;
+};
+
+export type ChartCoachRequest = {
+  ticker: string;
+  exchange: string;
+  period: string;
+  message: string;
+  conversation_id?: string | null;
+};
+
+export type ChartCoachResponse = {
+  response: string;
+  conversation_id: string;
+  messages_remaining: number;
+};
+
 export const simulatorApi = {
   searchMarket: (q: string, refresh = false) =>
     apiFetch<QuoteOut[]>(`/market/search?q=${encodeURIComponent(q)}${refresh ? '&refresh=true' : ''}`),
@@ -127,4 +164,16 @@ export const simulatorApi = {
 
   getChartGuide: (exchange: string, ticker: string, period = '1mo') =>
     apiFetch<NewsSummary>(`/market/chart-guide/${exchange}/${ticker}?period=${period}`),
+
+  getTimeMachine: (exchange: string, ticker: string) =>
+    apiFetch<TimeMachineData>(`/market/time-machine/${exchange}/${ticker}`),
+
+  getInvestingTips: () =>
+    apiFetch<InvestingTip[]>('/market/tips'),
+
+  sendChartCoachMessage: (req: ChartCoachRequest) =>
+    apiFetch<ChartCoachResponse>('/market/chart-coach', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
 };
