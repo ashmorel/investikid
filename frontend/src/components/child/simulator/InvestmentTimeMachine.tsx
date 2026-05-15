@@ -6,7 +6,6 @@ import { ApiError } from '@/api/client';
 type Props = {
   exchange: string;
   ticker: string;
-  currency: string;
 };
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -28,7 +27,7 @@ function formatValue(value: string, currency: string): string {
   return `${sym}${num.toFixed(2)}`;
 }
 
-export function InvestmentTimeMachine({ exchange, ticker, currency }: Props) {
+export function InvestmentTimeMachine({ exchange, ticker }: Props) {
   const { data, isLoading } = useQuery<TimeMachineData | null, ApiError>({
     queryKey: ['time-machine', exchange, ticker],
     queryFn: () => simulatorApi.getTimeMachine(exchange, ticker),

@@ -113,7 +113,6 @@ export default function Stock() {
         <InvestmentTimeMachine
           exchange={quote.exchange}
           ticker={quote.ticker}
-          currency={quote.currency}
         />
       </div>
 

@@ -116,8 +116,8 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
                 border: '1px solid #fde68a',
                 fontSize: '13px',
               }}
-              formatter={(value: number) => [`${currency === 'GBP' ? '£' : currency === 'HKD' ? 'HK$' : '$'}${value.toFixed(2)}`, 'Close']}
-              labelFormatter={(d: string) => new Date(d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+              formatter={(value) => [`${currency === 'GBP' ? '£' : currency === 'HKD' ? 'HK$' : '$'}${Number(value).toFixed(2)}`, 'Close']}
+              labelFormatter={(d) => new Date(String(d)).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
             />
             <Area
               type="monotone"
