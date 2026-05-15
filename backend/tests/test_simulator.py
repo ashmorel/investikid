@@ -167,10 +167,13 @@ async def test_tips_returns_list(client):
     r = await client.get("/market/tips")
     assert r.status_code == 200
     tips = r.json()
-    assert len(tips) == 6
-    assert tips[0]["id"] == "price-vs-value"
-    assert tips[0]["title"] == "Price Doesn't Equal Value"
-    assert "example_ticker" in tips[0]
+    assert len(tips) >= 1
+    for tip in tips:
+        assert "id" in tip
+        assert "title" in tip
+        assert "description" in tip
+        assert "example_ticker" in tip
+        assert "example_exchange" in tip
 
 
 async def test_chart_coach_requires_auth(client):

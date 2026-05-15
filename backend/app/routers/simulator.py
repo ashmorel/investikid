@@ -1,3 +1,5 @@
+import json
+import time
 from collections import defaultdict
 from datetime import date
 from decimal import Decimal
@@ -481,7 +483,7 @@ async def get_time_machine(
     return TimeMachineOut(ticker=ticker, periods=periods, fun_fact=fun_fact)
 
 
-_INVESTING_TIPS = [
+_FALLBACK_TIPS = [
     InvestingTipOut(
         id="price-vs-value",
         title="Price Doesn't Equal Value",
@@ -492,16 +494,6 @@ _INVESTING_TIPS = [
         ),
         example_ticker="F",
         example_exchange="NYSE",
-    ),
-    InvestingTipOut(
-        id="repeat-success",
-        title="Companies Repeat Success",
-        description=(
-            "Great companies often keep finding ways to grow. Look for consistent upward trends over years, "
-            "not days. Companies with strong brands and loyal customers tend to keep winning."
-        ),
-        example_ticker="AAPL",
-        example_exchange="NASDAQ",
     ),
     InvestingTipOut(
         id="time-in-market",
@@ -524,35 +516,58 @@ _INVESTING_TIPS = [
         example_ticker="JNJ",
         example_exchange="NYSE",
     ),
-    InvestingTipOut(
-        id="recovery",
-        title="What Goes Down Can Come Back",
-        description=(
-            "Stock prices fall sometimes, but many strong companies bounce back. Selling during a dip "
-            "locks in your losses. If the company is still strong, patience often pays off."
-        ),
-        example_ticker="AMZN",
-        example_exchange="NASDAQ",
-    ),
-    InvestingTipOut(
-        id="small-amounts",
-        title="Small Amounts Add Up",
-        description=(
-            "You don't need thousands to start investing. Even small regular investments grow over time "
-            "thanks to compounding — when your returns earn their own returns. Starting early is the "
-            "biggest advantage!"
-        ),
-        example_ticker="KO",
-        example_exchange="NYSE",
-    ),
 ]
+
+_TIPS_PROMPT = (
+    "You are writing short investing tips for kids aged 8-16 learning about the stock market.\n\n"
+    "Generate 6 different investing tips. Each tip should:\n"
+    "- Have a short catchy title (under 8 words)\n"
+    "- Have a 2-3 sentence description that explains the concept simply\n"
+    "- Include an example stock ticker and exchange from well-known companies kids would recognise\n"
+    "- Be educational, encouraging, and never give real investment advice\n"
+    "- Cover different concepts (don't repeat themes)\n\n"
+    "Return JSON: [{\"id\": \"slug-id\", \"title\": \"...\", \"description\": \"...\", "
+    "\"example_ticker\": \"AAPL\", \"example_exchange\": \"NASDAQ\"}]\n\n"
+    "Only return the JSON array, nothing else."
+)
+
+_tips_cache: dict[str, tuple[float, list[InvestingTipOut]]] = {}
+_TIPS_CACHE_TTL = 3600
+
+
+async def _generate_tips() -> list[InvestingTipOut]:
+    cache_key = "global"
+    now = time.time()
+
+    cached = _tips_cache.get(cache_key)
+    if cached and (now - cached[0]) < _TIPS_CACHE_TTL:
+        return cached[1]
+
+    try:
+        llm = get_llm_client(tier="lite")
+        raw = await llm.complete(
+            system_prompt=_TIPS_PROMPT,
+            messages=[{"role": "user", "content": "Generate 6 fresh investing tips for young learners."}],
+            temperature=0.9,
+            max_tokens=800,
+            response_format="json",
+        )
+        items = json.loads(raw)
+        tips = [InvestingTipOut(**item) for item in items]
+        if len(tips) >= 3:
+            _tips_cache[cache_key] = (now, tips)
+            return tips
+    except Exception:
+        pass
+
+    return _FALLBACK_TIPS
 
 
 @router.get("/market/tips", response_model=list[InvestingTipOut])
 async def get_investing_tips(
     _current: User = Depends(get_current_user),
 ):
-    return _INVESTING_TIPS
+    return await _generate_tips()
 
 
 @router.get("/portfolio", response_model=PortfolioOut)
