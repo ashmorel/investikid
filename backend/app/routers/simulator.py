@@ -33,11 +33,11 @@ from app.services.chart_coach_service import (
     ChartCoachLimitReached,
     chart_coach_chat,
 )
-from app.services.llm_client import LLMError, get_llm_client
 from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
 )
+from app.services.llm_client import LLMError, get_llm_client
 from app.services.price_provider import (
     LivePriceProvider,
     TickerNotAvailableError,
@@ -412,7 +412,6 @@ async def get_time_machine(
 
     for years_ago in [5, 10, 15]:
         target_date = today.replace(year=today.year - years_ago)
-        target_str = target_date.isoformat()
 
         # Find the point closest to the target date
         best = None
@@ -486,42 +485,63 @@ _INVESTING_TIPS = [
     InvestingTipOut(
         id="price-vs-value",
         title="Price Doesn't Equal Value",
-        description="A $10 stock can grow just as much as a $1,000 stock. What matters is the percentage change, not the dollar amount. A stock going from $10 to $15 is the same 50% gain as one going from $1,000 to $1,500!",
+        description=(
+            "A $10 stock can grow just as much as a $1,000 stock. What matters is the percentage change, "
+            "not the dollar amount. A stock going from $10 to $15 is the same 50% gain as one going from "
+            "$1,000 to $1,500!"
+        ),
         example_ticker="F",
         example_exchange="NYSE",
     ),
     InvestingTipOut(
         id="repeat-success",
         title="Companies Repeat Success",
-        description="Great companies often keep finding ways to grow. Look for consistent upward trends over years, not days. Companies with strong brands and loyal customers tend to keep winning.",
+        description=(
+            "Great companies often keep finding ways to grow. Look for consistent upward trends over years, "
+            "not days. Companies with strong brands and loyal customers tend to keep winning."
+        ),
         example_ticker="AAPL",
         example_exchange="NASDAQ",
     ),
     InvestingTipOut(
         id="time-in-market",
         title="Time in the Market",
-        description="The longer you hold, the more likely you are to see gains. Even after big drops, patient investors usually recover. Trying to time the market is nearly impossible — time IN the market is what counts.",
+        description=(
+            "The longer you hold, the more likely you are to see gains. Even after big drops, patient "
+            "investors usually recover. Trying to time the market is nearly impossible — time IN the market "
+            "is what counts."
+        ),
         example_ticker="MSFT",
         example_exchange="NASDAQ",
     ),
     InvestingTipOut(
         id="diversification",
         title="Don't Put All Your Eggs in One Basket",
-        description="Spreading your money across different companies and industries protects you if one has a bad year. This is called diversification — it's one of the most important rules of investing!",
+        description=(
+            "Spreading your money across different companies and industries protects you if one has a bad "
+            "year. This is called diversification — it's one of the most important rules of investing!"
+        ),
         example_ticker="JNJ",
         example_exchange="NYSE",
     ),
     InvestingTipOut(
         id="recovery",
         title="What Goes Down Can Come Back",
-        description="Stock prices fall sometimes, but many strong companies bounce back. Selling during a dip locks in your losses. If the company is still strong, patience often pays off.",
+        description=(
+            "Stock prices fall sometimes, but many strong companies bounce back. Selling during a dip "
+            "locks in your losses. If the company is still strong, patience often pays off."
+        ),
         example_ticker="AMZN",
         example_exchange="NASDAQ",
     ),
     InvestingTipOut(
         id="small-amounts",
         title="Small Amounts Add Up",
-        description="You don't need thousands to start investing. Even small regular investments grow over time thanks to compounding — when your returns earn their own returns. Starting early is the biggest advantage!",
+        description=(
+            "You don't need thousands to start investing. Even small regular investments grow over time "
+            "thanks to compounding — when your returns earn their own returns. Starting early is the "
+            "biggest advantage!"
+        ),
         example_ticker="KO",
         example_exchange="NYSE",
     ),

@@ -1,6 +1,6 @@
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Protocol
 
@@ -167,7 +167,12 @@ class StaticPriceProvider:
         out: list[PriceQuote] = []
         for (ticker, exchange), (name, fallback_price, currency, _yf) in _FEATURED.items():
             if not q or ticker.startswith(q) or q in name.upper():
-                out.append(PriceQuote(ticker=ticker, exchange=exchange, name=name, price=fallback_price, currency=currency))
+                out.append(
+                    PriceQuote(
+                        ticker=ticker, exchange=exchange, name=name,
+                        price=fallback_price, currency=currency,
+                    )
+                )
         return out
 
     def is_free_tier(self, ticker: str, exchange: str) -> bool:
@@ -257,7 +262,6 @@ class LivePriceProvider:
                 continue
             symbol = item.get("symbol", "")
             yahoo_exchange = item.get("exchange", "")
-            name = item.get("shortname") or item.get("longname") or symbol
             exchange = _parse_exchange(yahoo_exchange, symbol)
 
             # Strip suffix to get display ticker
