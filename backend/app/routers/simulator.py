@@ -10,7 +10,9 @@ from app.core.database import get_session
 from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
+from app.schemas.ai import TutorChatResponse
 from app.schemas.simulator import (
+    ChartCoachRequest,
     ExchangeMoversOut,
     HoldingOut,
     MarketMoverOut,
@@ -22,6 +24,11 @@ from app.schemas.simulator import (
     StockNewsOut,
     TradeOut,
     TradeRequest,
+)
+from app.services.chart_coach_service import (
+    ChartCoachInputTooLong,
+    ChartCoachLimitReached,
+    chart_coach_chat,
 )
 from app.services.llm_client import LLMError, get_llm_client
 from app.services.gamification_service import (
@@ -320,6 +327,46 @@ async def get_chart_guide(
         summary = ""
 
     return NewsSummaryOut(summary=summary.strip(), tickers_mentioned=[ticker])
+
+
+@router.post("/market/chart-coach", response_model=TutorChatResponse)
+async def chart_coach(
+    payload: ChartCoachRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    provider=Depends(get_price_provider),
+):
+    try:
+        quote = provider.get_quote(payload.ticker, payload.exchange)
+    except TickerNotAvailableError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ticker not available")
+
+    points = []
+    if hasattr(provider, "get_history"):
+        points = provider.get_history(payload.ticker, payload.exchange, payload.period)
+
+    if len(points) < 2:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Not enough chart data for coaching")
+
+    try:
+        result = await chart_coach_chat(
+            session=session,
+            user=current_user,
+            ticker=payload.ticker,
+            exchange=payload.exchange,
+            name=quote.name,
+            period=payload.period,
+            message=payload.message,
+            conversation_id=payload.conversation_id,
+            points=points,
+        )
+    except ChartCoachInputTooLong as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    except ChartCoachLimitReached as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    await session.commit()
+    return result
 
 
 @router.get("/portfolio", response_model=PortfolioOut)

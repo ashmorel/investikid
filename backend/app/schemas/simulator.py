@@ -94,3 +94,11 @@ class StockNewsOut(BaseModel):
 class NewsSummaryOut(BaseModel):
     summary: str
     tickers_mentioned: list[str]
+
+
+class ChartCoachRequest(BaseModel):
+    ticker: str = Field(min_length=1, max_length=20)
+    exchange: str = Field(min_length=1, max_length=20)
+    period: str = Field(min_length=1, max_length=10)
+    message: str = Field(min_length=1, max_length=200)
+    conversation_id: uuid.UUID | None = None
