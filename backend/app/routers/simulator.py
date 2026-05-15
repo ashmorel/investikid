@@ -22,6 +22,8 @@ from app.schemas.simulator import (
     PricePointOut,
     QuoteOut,
     StockNewsOut,
+    TimeMachineOut,
+    TimeMachinePeriod,
     TradeOut,
     TradeRequest,
 )
@@ -367,6 +369,116 @@ async def chart_coach(
 
     await session.commit()
     return result
+
+
+_APPROX_USD_RATES: dict[str, float] = {
+    "USD": 1.0,
+    "GBP": 1.27,
+    "HKD": 0.128,
+    "EUR": 1.08,
+    "JPY": 0.0067,
+    "CAD": 0.73,
+    "AUD": 0.65,
+}
+
+
+@router.get("/market/time-machine/{exchange}/{ticker}", response_model=TimeMachineOut)
+async def get_time_machine(
+    exchange: str,
+    ticker: str,
+    current_user: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    if not hasattr(provider, "get_history"):
+        return TimeMachineOut(ticker=ticker, periods=[], fun_fact="")
+
+    points = provider.get_history(ticker, exchange, "max")
+    if len(points) < 2:
+        return TimeMachineOut(ticker=ticker, periods=[], fun_fact="")
+
+    try:
+        quote = provider.get_quote(ticker, exchange)
+    except TickerNotAvailableError:
+        return TimeMachineOut(ticker=ticker, periods=[], fun_fact="")
+
+    current_price = float(quote.price)
+    currency = quote.currency
+    usd_rate = _APPROX_USD_RATES.get(currency, 1.0)
+    invest_amount = 5000.0
+
+    today = date.today()
+    periods: list[TimeMachinePeriod] = []
+
+    for years_ago in [5, 10, 15]:
+        target_date = today.replace(year=today.year - years_ago)
+        target_str = target_date.isoformat()
+
+        # Find the point closest to the target date
+        best = None
+        best_diff = float("inf")
+        for p in points:
+            diff = abs((date.fromisoformat(p.date[:10]) - target_date).days)
+            if diff < best_diff:
+                best_diff = diff
+                best = p
+            if diff == 0:
+                break
+
+        if best is None or best_diff > 60:
+            continue
+
+        historical_price = best.close
+        if historical_price <= 0:
+            continue
+
+        growth = current_price / historical_price
+        current_value = invest_amount * growth
+        return_pct = (growth - 1) * 100
+
+        usd_equiv = None
+        if currency != "USD":
+            usd_equiv = f"{current_value * usd_rate:.2f}"
+
+        periods.append(TimeMachinePeriod(
+            years_ago=years_ago,
+            invested=f"{invest_amount:.2f}",
+            current_value=f"{current_value:.2f}",
+            return_pct=round(return_pct, 1),
+            currency=currency,
+            usd_equivalent=usd_equiv,
+        ))
+
+    fun_fact = ""
+    if periods:
+        age = (date.today() - current_user.dob).days // 365
+        best_period = max(periods, key=lambda p: p.return_pct)
+        llm = get_llm_client(premium=False)
+        try:
+            fun_fact = await llm.complete(
+                system_prompt=(
+                    f"You are a friendly investing teacher for a {age}-year-old. "
+                    "Write ONE short, fun 'Did you know?' fact comparing the investment return to "
+                    "something relatable for a young person (university fees, a car, a holiday, "
+                    "a gaming setup, etc). Keep it to 1-2 sentences. Be encouraging but never "
+                    "give investment advice. Use the reader's perspective ('you' not 'they')."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"If someone invested ${invest_amount:.0f} in {ticker} "
+                        f"{best_period.years_ago} years ago, it would be worth "
+                        f"${float(best_period.current_value):,.0f} today "
+                        f"({best_period.return_pct:+.0f}% return)."
+                    ),
+                }],
+                temperature=0.7,
+                max_tokens=100,
+            )
+            fun_fact = fun_fact.strip()
+        except LLMError:
+            fun_fact = ""
+
+    return TimeMachineOut(ticker=ticker, periods=periods, fun_fact=fun_fact)
 
 
 @router.get("/portfolio", response_model=PortfolioOut)

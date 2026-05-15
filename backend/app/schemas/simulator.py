@@ -102,3 +102,18 @@ class ChartCoachRequest(BaseModel):
     period: str = Field(min_length=1, max_length=10)
     message: str = Field(min_length=1, max_length=200)
     conversation_id: uuid.UUID | None = None
+
+
+class TimeMachinePeriod(BaseModel):
+    years_ago: int
+    invested: str
+    current_value: str
+    return_pct: float
+    currency: str
+    usd_equivalent: str | None = None
+
+
+class TimeMachineOut(BaseModel):
+    ticker: str
+    periods: list[TimeMachinePeriod]
+    fun_fact: str
