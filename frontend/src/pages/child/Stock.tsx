@@ -8,6 +8,9 @@ import { StockChart } from '@/components/child/simulator/StockChart';
 import { ChartGuide } from '@/components/child/simulator/ChartGuide';
 import { StockNewsSection } from '@/components/child/simulator/StockNews';
 import { TradeForm } from '@/components/child/simulator/TradeForm';
+import { InvestmentTimeMachine } from '@/components/child/simulator/InvestmentTimeMachine';
+import { InvestingTips } from '@/components/child/simulator/InvestingTips';
+import { ChartCoachPanel } from '@/components/child/simulator/ChartCoachPanel';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Stock() {
@@ -17,6 +20,7 @@ export default function Stock() {
   const { toast } = useToast();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [chartPeriod, setChartPeriod] = useState('1mo');
+  const [showCoachEddie, setShowCoachEddie] = useState(false);
 
   const quoteQ = useQuery<QuoteOut | null, ApiError>({
     queryKey: ['quote', exchange, ticker],
@@ -102,7 +106,22 @@ export default function Stock() {
       </div>
 
       <div className="mb-4">
-        <ChartGuide exchange={quote.exchange} ticker={quote.ticker} period={chartPeriod} />
+        <ChartGuide exchange={quote.exchange} ticker={quote.ticker} period={chartPeriod} onAskEddie={() => setShowCoachEddie(true)} />
+      </div>
+
+      <div className="mb-4">
+        <InvestmentTimeMachine
+          exchange={quote.exchange}
+          ticker={quote.ticker}
+          currency={quote.currency}
+        />
+      </div>
+
+      <div className="mb-4">
+        <InvestingTips
+          contextTicker={quote.ticker}
+          contextExchange={quote.exchange}
+        />
       </div>
 
       <TradeForm
@@ -120,6 +139,15 @@ export default function Stock() {
       <div className="mt-6">
         <StockNewsSection exchange={quote.exchange} ticker={quote.ticker} />
       </div>
+
+      {showCoachEddie && (
+        <ChartCoachPanel
+          ticker={quote.ticker}
+          exchange={quote.exchange}
+          period={chartPeriod}
+          onClose={() => setShowCoachEddie(false)}
+        />
+      )}
     </div>
   );
 }
