@@ -194,7 +194,7 @@ async def get_news_summary(
         "- Mention the stock tickers when relevant"
     )
 
-    llm = get_llm_client(premium=False)
+    llm = get_llm_client(tier="lite")
     try:
         summary = await llm.complete(
             system_prompt=system_prompt,
@@ -252,7 +252,7 @@ async def get_stock_news_summary(
         "- Never give investment advice"
     )
 
-    llm = get_llm_client(premium=False)
+    llm = get_llm_client(tier="lite")
     try:
         summary = await llm.complete(
             system_prompt=system_prompt,
@@ -318,7 +318,7 @@ async def get_chart_guide(
         "- Never give investment advice"
     )
 
-    llm = get_llm_client(premium=False)
+    llm = get_llm_client(tier="standard")
     try:
         summary = await llm.complete(
             system_prompt=system_prompt,
@@ -452,7 +452,7 @@ async def get_time_machine(
     if periods:
         age = (date.today() - current_user.dob).days // 365
         best_period = max(periods, key=lambda p: p.return_pct)
-        llm = get_llm_client(premium=False)
+        llm = get_llm_client(tier="lite")
         try:
             fun_fact = await llm.complete(
                 system_prompt=(
