@@ -117,3 +117,11 @@ class TimeMachineOut(BaseModel):
     ticker: str
     periods: list[TimeMachinePeriod]
     fun_fact: str
+
+
+class InvestingTipOut(BaseModel):
+    id: str
+    title: str
+    description: str
+    example_ticker: str
+    example_exchange: str
