@@ -290,3 +290,32 @@ async def test_register_teen_without_email_rejected(client):
         "policy_version_accepted": "2026-05-16",
     })
     assert resp.status_code == 400
+
+
+async def test_login_with_username_for_emailless_account(client):
+    # Underage account registered without child email, then parent-approved.
+    from sqlalchemy import select
+
+    from app.core.database import get_session
+    from app.main import app
+    from app.models.user import User
+
+    reg = await client.post("/auth/register", json={
+        "username": "emaillesskid", "password": "SecurePass123!",
+        "dob": "2016-01-01", "country_code": "GB", "currency_code": "GBP",
+        "parent_email": "parent2@example.com",
+        "policy_version_accepted": "2026-05-16",
+    })
+    assert reg.status_code == 201
+
+    # Activate directly via the overridden session (simulating parent approval).
+    gen = app.dependency_overrides[get_session]()
+    db = await gen.__anext__()
+    user = await db.scalar(select(User).where(User.username == "emaillesskid"))
+    user.is_active = True
+    await db.commit()
+
+    resp = await client.post("/auth/login", json={
+        "email": "emaillesskid", "password": "SecurePass123!",
+    })
+    assert resp.status_code == 200

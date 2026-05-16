@@ -193,7 +193,10 @@ async def login(
     response: Response,
     session: AsyncSession = Depends(get_session),
 ):
-    user = await session.scalar(select(User).where(User.email == payload.email))
+    ident = payload.email
+    user = await session.scalar(
+        select(User).where((User.email == ident) | (User.username == ident))
+    )
     if not user:
         # Equalise timing against the wrong-password branch.
         dummy_verify()
