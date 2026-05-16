@@ -1,3 +1,5 @@
+import pytest
+
 from app.models.audit import AuditLog
 from app.models.content import Lesson, Module
 from app.models.simulator import Portfolio
@@ -38,6 +40,7 @@ def test_audit_log_columns():
     assert {"id", "user_id", "event_type", "ip_address", "metadata_json", "created_at"}.issubset(cols)
 
 
+@pytest.mark.asyncio(loop_scope="session")
 async def test_user_compliance_columns_default(db_session):
     from datetime import date  # noqa: PLC0415
 
