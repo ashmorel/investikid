@@ -20,11 +20,14 @@ from app.models.audit import AuditLog
 from app.models.user import RefreshToken, User, UserProgress
 from app.schemas.auth import LoginRequest, PendingConsentResponse, RegisterRequest, TokenResponse
 from app.schemas.user import UserProfile
-from app.services.consent_service import age_in_years, needs_parental_consent
+from app.services.compliance import resolve_policy
+from app.services.consent_service import age_in_years
 from app.services.email import get_email_sender
 from app.services.tokens import (
     CONSENT_AUDIENCE,
     CONSENT_EXPIRY,
+    VERIFY_EMAIL_AUDIENCE,
+    VERIFY_EMAIL_EXPIRY,
     issue_one_time_token,
 )
 
@@ -92,9 +95,10 @@ async def register(
     response: Response,
     session: AsyncSession = Depends(get_session),
 ):
-    existing = await session.scalar(select(User).where(User.email == payload.email))
-    if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+    if payload.email:
+        existing = await session.scalar(select(User).where(User.email == payload.email))
+        if existing:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
     existing_username = await session.scalar(
         select(User).where(User.username == payload.username)
@@ -103,14 +107,21 @@ async def register(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
 
     today = date.today()
-    needs_consent = needs_parental_consent(payload.dob, payload.country_code, today)
+    policy = resolve_policy(payload.country_code, payload.dob, today)
+    needs_consent = policy.requires_parental_consent
 
     if needs_consent and not payload.parent_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Parent email required for users under the consent threshold",
         )
+    if not needs_consent and not payload.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email required for self-managed accounts",
+        )
 
+    now = datetime.now(UTC)
     user = User(
         email=payload.email,
         username=payload.username,
@@ -121,6 +132,8 @@ async def register(
         topic_path=payload.topic_path,
         parent_email=str(payload.parent_email) if payload.parent_email else None,
         is_active=not needs_consent,
+        policy_version_accepted=payload.policy_version_accepted,
+        policy_accepted_at=now if payload.policy_version_accepted else None,
     )
     session.add(user)
     await session.flush()
@@ -151,6 +164,17 @@ async def register(
         )
         await session.commit()
         return PendingConsentResponse(user_id=user.id)
+
+    verify_token = await issue_one_time_token(
+        session, purpose=VERIFY_EMAIL_AUDIENCE,
+        email=str(payload.email), subject_id=user.id,
+        expires_in=VERIFY_EMAIL_EXPIRY,
+    )
+    verify_link = f"{settings.app_base_url}/verify-email?token={verify_token}"
+    await get_email_sender().send(
+        session, str(payload.email), "verify_email",
+        {"username": user.username, "link": verify_link},
+    )
 
     secure = settings.environment != "development"
     _set_access_cookie(response, str(user.id), secure)

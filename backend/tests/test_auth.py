@@ -252,3 +252,41 @@ async def test_refresh_token_rejected_as_access_token(client):
         "/users/me", cookies={"access_token": refresh_cookie}
     )
     assert response.status_code == 401
+
+
+async def test_register_teen_self_sends_verify_email(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.consent import SentEmail
+
+    resp = await client.post("/auth/register", json={
+        "email": "teen@example.com", "username": "teen1",
+        "password": "SecurePass123!", "dob": "2009-01-01",
+        "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    assert resp.status_code == 201
+    rows = (await db_session.scalars(
+        select(SentEmail).where(SentEmail.template == "verify_email")
+    )).all()
+    assert any(r.to_email == "teen@example.com" for r in rows)
+
+
+async def test_register_underage_no_child_email_ok_with_parent(client):
+    resp = await client.post("/auth/register", json={
+        "username": "littlekid", "password": "SecurePass123!",
+        "dob": "2016-01-01", "country_code": "GB", "currency_code": "GBP",
+        "parent_email": "parent@example.com",
+        "policy_version_accepted": "2026-05-16",
+    })
+    assert resp.status_code == 201
+    assert resp.json()["status"] == "pending_consent"
+
+
+async def test_register_teen_without_email_rejected(client):
+    resp = await client.post("/auth/register", json={
+        "username": "noemailteen", "password": "SecurePass123!",
+        "dob": "2009-01-01", "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    assert resp.status_code == 400
