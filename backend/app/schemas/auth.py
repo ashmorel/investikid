@@ -10,7 +10,7 @@ _TOPIC_RE = re.compile(r"^[a-z0-9_/-]+$")
 
 
 class RegisterRequest(BaseModel):
-    email: EmailStr
+    email: EmailStr | None = None
     username: str
     password: str = Field(min_length=12, max_length=128)
     dob: date_type
@@ -18,10 +18,13 @@ class RegisterRequest(BaseModel):
     currency_code: str
     parent_email: EmailStr | None = None
     topic_path: str | None = Field(default=None, max_length=200)
+    policy_version_accepted: str | None = Field(default=None, max_length=20)
 
     @field_validator("email", mode="before")
     @classmethod
-    def normalise_email(cls, v: str) -> str:
+    def normalise_email(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
         return v.lower().strip()
 
     @field_validator("password")
@@ -94,12 +97,14 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    # `email` carries a login identifier: an email address OR a username.
+    # Username-only child accounts (registered without a child email) log in here.
+    email: str
     password: str
 
     @field_validator("email", mode="before")
     @classmethod
-    def normalise_email(cls, v: str) -> str:
+    def normalise_identifier(cls, v: str) -> str:
         return v.lower().strip()
 
 
