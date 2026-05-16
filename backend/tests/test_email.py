@@ -92,3 +92,23 @@ async def test_resend_sender_raises_on_api_error(db_session):
             await sender.send(
                 db_session, "parent@example.com", "parent_magic_link", context
             )
+
+
+async def test_verify_email_and_reset_templates_render(db_session):
+    from sqlalchemy import select
+
+    from app.models.consent import SentEmail
+    from app.services.email import LoggingEmailSender
+
+    sender = LoggingEmailSender()
+    await sender.send(db_session, "kid@example.com", "verify_email",
+                      {"username": "kiddo", "link": "https://x/y?token=abc"})
+    await sender.send(db_session, "kid@example.com", "password_reset",
+                      {"link": "https://x/reset?token=def"})
+    rows = (await db_session.scalars(select(SentEmail))).all()
+    templates = {r.template for r in rows}
+    assert "verify_email" in templates
+    assert "password_reset" in templates
+    bodies = "\n".join(r.body for r in rows)
+    assert "https://x/y?token=abc" in bodies
+    assert "https://x/reset?token=def" in bodies
