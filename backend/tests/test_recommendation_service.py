@@ -20,6 +20,7 @@ async def seeded(db_session):
     user = User(
         email="rec@example.com", username="reckid", password_hash="x",
         dob=date(2012, 1, 1), country_code="GB", currency_code="GBP",
+        profiling_enabled=True,  # algorithm tests require profiling on
     )
     db_session.add(user)
     await db_session.flush()
@@ -123,3 +124,25 @@ async def test_completed_modules_ranked_last(db_session, seeded):
     stocks_idx = module_ids.index(seeded["stocks"].id)
     # Stocks should be last (or near last) since it's complete
     assert stocks_idx >= len(module_ids) - 2
+
+
+async def test_recommendations_withheld_when_profiling_disabled(db_session):
+    """Personalised recommendations must not be returned when profiling_enabled is False.
+
+    Modules are seeded so that without the guard the algorithm would return
+    non-empty suggested_modules, confirming the guard fires before computation.
+    """
+    from datetime import date as _date
+
+    u = User(
+        email="np@example.com", username="noprofile", password_hash="x",
+        dob=_date(2010, 1, 1), country_code="GB", currency_code="GBP",
+        profiling_enabled=False,
+    )
+    db_session.add(u)
+    # Add a module so the algorithm would normally return recommendations
+    m = _make_module("stocks", "Stocks (profiling off test)", 99)
+    db_session.add(m)
+    await db_session.flush()
+    result = await get_recommendations(db_session, u)
+    assert result == {"next_quest": None, "suggested_modules": []}

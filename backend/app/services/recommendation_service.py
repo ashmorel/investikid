@@ -36,6 +36,9 @@ async def get_recommendations(
     user: User,
 ) -> dict[str, Any]:
     """Return personalised module rankings and a next-quest suggestion."""
+    if not user.profiling_enabled:
+        return {"next_quest": None, "suggested_modules": []}
+
     # Load all accessible modules
     all_modules = (
         await session.scalars(select(Module).order_by(Module.order_index))
