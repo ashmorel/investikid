@@ -1,11 +1,7 @@
-import pytest
-
 from app.models.audit import AuditLog
 from app.models.content import Lesson, Module
 from app.models.simulator import Portfolio
 from app.models.user import User, UserProgress
-
-pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
 def test_user_model_columns():
