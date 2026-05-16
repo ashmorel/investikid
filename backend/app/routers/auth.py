@@ -33,6 +33,8 @@ from app.services.email import get_email_sender
 from app.services.tokens import (
     CONSENT_AUDIENCE,
     CONSENT_EXPIRY,
+    PASSWORD_RESET_AUDIENCE,
+    PASSWORD_RESET_EXPIRY,
     VERIFY_EMAIL_AUDIENCE,
     VERIFY_EMAIL_EXPIRY,
     TokenAlreadyUsed,
@@ -379,7 +381,6 @@ async def forgot_password(
     payload: ForgotPasswordRequest,
     session: AsyncSession = Depends(get_session),
 ):
-    from app.services.tokens import PASSWORD_RESET_AUDIENCE, PASSWORD_RESET_EXPIRY
     ident = payload.email
     user = await session.scalar(
         select(User).where((User.email == ident) | (User.username == ident))
@@ -409,13 +410,12 @@ async def reset_password(
     payload: ResetPasswordRequest,
     session: AsyncSession = Depends(get_session),
 ):
-    from app.services.tokens import PASSWORD_RESET_AUDIENCE
     try:
         row = await consume_one_time_token(session, payload.token, PASSWORD_RESET_AUDIENCE)
     except (TokenInvalid, TokenExpired, TokenAlreadyUsed) as exc:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="Link invalid or expired") from exc
     user = await session.get(User, row.subject_id)
-    if user is None:
+    if user is None or user.deleted_at is not None:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account not found")
     user.password_hash = hash_password(payload.new_password)
     user.failed_login_count = 0
