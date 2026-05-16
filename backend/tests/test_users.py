@@ -96,3 +96,21 @@ async def test_get_progress_unauthenticated(client):
     client.headers.pop("X-CSRF-Token", None)
     response = await client.get("/users/me/progress")
     assert response.status_code == 401
+
+
+async def test_self_export_returns_profile_json(client, db_session):
+    await client.post("/auth/register", json={
+        "email": "export@example.com", "username": "exportme",
+        "password": "SecurePass123!", "dob": "2009-01-01",
+        "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    # Register set auth cookies on the client.
+    resp = await client.get("/users/me/export")
+    assert resp.status_code == 200
+    assert resp.headers["content-disposition"].startswith("attachment")
+    data = resp.json()
+    assert data["profile"]["username"] == "exportme"
+    assert data["profile"]["email"] == "export@example.com"
+    assert "progress" in data
+    assert "consent" in data
