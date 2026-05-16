@@ -28,6 +28,10 @@ from app.services.tokens import (
     CONSENT_EXPIRY,
     VERIFY_EMAIL_AUDIENCE,
     VERIFY_EMAIL_EXPIRY,
+    TokenAlreadyUsed,
+    TokenExpired,
+    TokenInvalid,
+    consume_one_time_token,
     issue_one_time_token,
 )
 
@@ -319,3 +323,45 @@ async def refresh(
     _set_csrf_cookie(response, secure)
     await session.commit()
     return TokenResponse()
+
+
+@router.get("/verify-email")
+async def verify_email(
+    token: str,
+    session: AsyncSession = Depends(get_session),
+):
+    from app.services.tokens import VERIFY_EMAIL_AUDIENCE
+    try:
+        row = await consume_one_time_token(session, token, VERIFY_EMAIL_AUDIENCE)
+    except (TokenInvalid, TokenExpired, TokenAlreadyUsed) as exc:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Link invalid or expired") from exc
+    user = await session.get(User, row.subject_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account not found")
+    if user.email_verified_at is None:
+        user.email_verified_at = datetime.now(UTC)
+    await session.commit()
+    return {"status": "ok"}
+
+
+@router.post("/verify-email/resend")
+@limiter.limit("3/hour")
+async def resend_verify_email(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    from app.routers.users import get_current_user
+    from app.services.tokens import VERIFY_EMAIL_AUDIENCE, VERIFY_EMAIL_EXPIRY
+    user = await get_current_user(request, session)
+    if user.email and user.email_verified_at is None:
+        token = await issue_one_time_token(
+            session, purpose=VERIFY_EMAIL_AUDIENCE, email=user.email,
+            subject_id=user.id, expires_in=VERIFY_EMAIL_EXPIRY,
+        )
+        link = f"{settings.app_base_url}/verify-email?token={token}"
+        await get_email_sender().send(
+            session, user.email, "verify_email",
+            {"username": user.username, "link": link},
+        )
+        await session.commit()
+    return {"status": "accepted"}

@@ -319,3 +319,32 @@ async def test_login_with_username_for_emailless_account(client):
         "email": "emaillesskid", "password": "SecurePass123!",
     })
     assert resp.status_code == 200
+
+
+async def test_verify_email_happy_path(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.user import User
+    from app.services.tokens import VERIFY_EMAIL_AUDIENCE, VERIFY_EMAIL_EXPIRY, issue_one_time_token
+
+    await client.post("/auth/register", json={
+        "email": "verifyme@example.com", "username": "verifyme",
+        "password": "SecurePass123!", "dob": "2009-01-01",
+        "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    user = await db_session.scalar(select(User).where(User.username == "verifyme"))
+    assert user.email_verified_at is None
+    tok = await issue_one_time_token(
+        db_session, purpose=VERIFY_EMAIL_AUDIENCE, email=user.email,
+        subject_id=user.id, expires_in=VERIFY_EMAIL_EXPIRY,
+    )
+    resp = await client.get(f"/auth/verify-email?token={tok}")
+    assert resp.status_code == 200
+    await db_session.refresh(user)
+    assert user.email_verified_at is not None
+
+
+async def test_verify_email_bad_token_410(client):
+    resp = await client.get("/auth/verify-email?token=not-a-real-token")
+    assert resp.status_code == 410
