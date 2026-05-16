@@ -330,7 +330,6 @@ async def verify_email(
     token: str,
     session: AsyncSession = Depends(get_session),
 ):
-    from app.services.tokens import VERIFY_EMAIL_AUDIENCE
     try:
         row = await consume_one_time_token(session, token, VERIFY_EMAIL_AUDIENCE)
     except (TokenInvalid, TokenExpired, TokenAlreadyUsed) as exc:
@@ -351,7 +350,6 @@ async def resend_verify_email(
     session: AsyncSession = Depends(get_session),
 ):
     from app.routers.users import get_current_user
-    from app.services.tokens import VERIFY_EMAIL_AUDIENCE, VERIFY_EMAIL_EXPIRY
     user = await get_current_user(request, session)
     if user.email and user.email_verified_at is None:
         token = await issue_one_time_token(
