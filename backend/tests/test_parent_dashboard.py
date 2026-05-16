@@ -100,6 +100,32 @@ async def test_erasure_sets_deleted_at(client, db_session):
     assert user.is_active is False
 
 
+async def test_parent_export_child(client, db_session):
+    await _setup(
+        client, db_session,
+        parent_email="pexparent@example.com",
+        child_email="pexkid@example.com",
+        child_username="pexkid",
+    )
+    children = (await client.get("/parent/children")).json()
+    cid = children[0]["user_id"]
+    resp = await client.get(f"/parent/children/{cid}/export")
+    assert resp.status_code == 200
+    assert resp.json()["profile"]["username"] == "pexkid"
+
+
+async def test_parent_export_not_owned_404(client, db_session):
+    import uuid as _uuid
+    await _setup(
+        client, db_session,
+        parent_email="stranger@example.com",
+        child_email="strangerchild@example.com",
+        child_username="strangerchild",
+    )
+    resp = await client.get(f"/parent/children/{_uuid.uuid4()}/export")
+    assert resp.status_code == 404
+
+
 async def test_freeze_deleted_child_returns_410(client, db_session):
     await _setup(client, db_session, child_email="kid11@example.com", child_username="kid11")
     children = (await client.get("/parent/children")).json()

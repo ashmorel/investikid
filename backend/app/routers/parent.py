@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +10,7 @@ from app.core.database import get_session
 from app.models.user import User
 from app.routers.parent_auth import get_current_parent
 from app.schemas.parent import ChildOut, FreezeRequest
+from app.services.export_service import build_user_export
 
 router = APIRouter(prefix="/parent", tags=["parent"])
 
@@ -80,3 +82,19 @@ async def erase_child(
     child.is_active = False
     await session.commit()
     return {"status": "ok"}
+
+
+@router.get("/children/{user_id}/export")
+async def export_child_data(
+    user_id: uuid.UUID,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    child = await _get_owned_child(session, parent_email, user_id)
+    if child.deleted_at is not None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account deleted")
+    data = await build_user_export(session, child)
+    return JSONResponse(
+        content=data,
+        headers={"Content-Disposition": 'attachment; filename="invest-ed-child-export.json"'},
+    )
