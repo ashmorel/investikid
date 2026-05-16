@@ -3,16 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
+from typing import Literal
 
-from app.services.consent_service import age_in_years
+from app.services.consent_service import EU_COUNTRIES_16, age_in_years
 
 _EU_GDPRK_COUNTRIES: frozenset[str] = frozenset({
     "IE", "NL", "DE", "LU", "SK", "HR", "FR", "ES", "IT", "BE", "AT",
     "PT", "PL", "SE", "DK", "FI", "CZ", "HU", "RO", "BG", "GR", "EE",
     "LV", "LT", "SI", "CY", "MT",
 })
-# Member states whose GDPR-K consent age is 16 (others in the EU set use 13).
-_EU_CONSENT_AGE_16: frozenset[str] = frozenset({"IE", "NL", "DE", "LU", "SK", "HR"})
 
 
 class Regime(StrEnum):
@@ -28,8 +27,8 @@ class CompliancePolicy:
     regime: Regime
     consent_age: int
     requires_parental_consent: bool
-    email_verification_target: str  # "parent" | "self"
-    password_reset_mode: str        # "parent" | "self"
+    email_verification_target: Literal["parent", "self"]
+    password_reset_mode: Literal["parent", "self"]
     data_retention_days: int
     profiling_default_off: bool
 
@@ -48,7 +47,7 @@ def _regime_for(country_code: str) -> Regime:
 
 
 def _consent_age_for(country_code: str, regime: Regime) -> int:
-    if regime is Regime.EU_GDPRK and country_code.upper() in _EU_CONSENT_AGE_16:
+    if regime is Regime.EU_GDPRK and country_code.upper() in EU_COUNTRIES_16:
         return 16
     return 13
 

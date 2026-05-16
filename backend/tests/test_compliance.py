@@ -66,3 +66,11 @@ def test_unknown_country_defaults_to_13():
     assert p.regime is Regime.DEFAULT
     assert p.consent_age == 13
     assert p.requires_parental_consent is True
+
+
+def test_fr_under_13_is_eu_gdprk_age_13():
+    today = date(2026, 5, 16)
+    p = resolve_policy("FR", _dob_for_age(12, today), today)
+    assert p.regime is Regime.EU_GDPRK
+    assert p.consent_age == 13
+    assert p.requires_parental_consent is True
