@@ -74,3 +74,30 @@ def test_parent_session_roundtrip():
 def test_parent_session_invalid_rejected():
     with pytest.raises(TokenInvalid):
         decode_parent_session("garbage")
+
+
+async def test_verify_email_and_reset_token_roundtrip(db_session):
+    import uuid
+
+    from app.services.tokens import (
+        PASSWORD_RESET_AUDIENCE,
+        PASSWORD_RESET_EXPIRY,
+        VERIFY_EMAIL_AUDIENCE,
+        VERIFY_EMAIL_EXPIRY,
+        consume_one_time_token,
+        issue_one_time_token,
+    )
+    uid = uuid.uuid4()
+    vt = await issue_one_time_token(
+        db_session, purpose=VERIFY_EMAIL_AUDIENCE, email="t@example.com",
+        subject_id=uid, expires_in=VERIFY_EMAIL_EXPIRY,
+    )
+    row = await consume_one_time_token(db_session, vt, VERIFY_EMAIL_AUDIENCE)
+    assert row.subject_id == uid
+
+    rt = await issue_one_time_token(
+        db_session, purpose=PASSWORD_RESET_AUDIENCE, email="t@example.com",
+        subject_id=uid, expires_in=PASSWORD_RESET_EXPIRY,
+    )
+    row2 = await consume_one_time_token(db_session, rt, PASSWORD_RESET_AUDIENCE)
+    assert row2.subject_id == uid

@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     email_backend: str = "logging"  # "logging" | "resend"
     email_from: str = "noreply@invest-ed.app"
     app_base_url: str = "http://localhost:5173"
+    data_retention_days: int = 30
+    privacy_notice_version: str = "2026-05-16"
 
     # LLM / AI — lite + standard tiers (open-source models)
     llm_together_api_key: str = ""

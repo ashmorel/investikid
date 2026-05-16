@@ -15,6 +15,11 @@ PARENT_SESSION_AUDIENCE = "parent_session"
 CONSENT_EXPIRY = timedelta(hours=24)
 PARENT_MAGIC_EXPIRY = timedelta(minutes=15)
 PARENT_SESSION_EXPIRY = timedelta(days=7)
+VERIFY_EMAIL_AUDIENCE = "verify_email"
+PASSWORD_RESET_AUDIENCE = "password_reset"
+
+VERIFY_EMAIL_EXPIRY = timedelta(hours=24)
+PASSWORD_RESET_EXPIRY = timedelta(hours=1)
 
 
 class TokenInvalid(Exception):
