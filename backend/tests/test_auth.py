@@ -348,3 +348,81 @@ async def test_verify_email_happy_path(client, db_session):
 async def test_verify_email_bad_token_410(client):
     resp = await client.get("/auth/verify-email?token=not-a-real-token")
     assert resp.status_code == 410
+
+
+async def test_forgot_password_underage_routes_to_parent(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.consent import SentEmail
+
+    await client.post("/auth/register", json={
+        "username": "fpkid", "password": "SecurePass123!",
+        "dob": "2016-01-01", "country_code": "GB", "currency_code": "GBP",
+        "parent_email": "fpparent@example.com",
+        "policy_version_accepted": "2026-05-16",
+    })
+    resp = await client.post("/auth/forgot-password", json={"email": "fpkid"})
+    assert resp.status_code == 202
+    rows = (await db_session.scalars(
+        select(SentEmail).where(SentEmail.template == "password_reset")
+    )).all()
+    assert any(r.to_email == "fpparent@example.com" for r in rows)
+
+
+async def test_forgot_password_unknown_still_202(client):
+    resp = await client.post("/auth/forgot-password", json={"email": "nobody@example.com"})
+    assert resp.status_code == 202
+
+
+async def test_reset_password_flow_revokes_refresh(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.user import RefreshToken, User
+    from app.services.tokens import PASSWORD_RESET_AUDIENCE, PASSWORD_RESET_EXPIRY, issue_one_time_token
+
+    await client.post("/auth/register", json={
+        "email": "resetme@example.com", "username": "resetme",
+        "password": "SecurePass123!", "dob": "2009-01-01",
+        "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    user = await db_session.scalar(select(User).where(User.username == "resetme"))
+    tok = await issue_one_time_token(
+        db_session, purpose=PASSWORD_RESET_AUDIENCE, email=user.email,
+        subject_id=user.id, expires_in=PASSWORD_RESET_EXPIRY,
+    )
+    resp = await client.post("/auth/reset-password", json={
+        "token": tok, "new_password": "BrandNewPass456!",
+    })
+    assert resp.status_code == 200
+    rt = (await db_session.scalars(
+        select(RefreshToken).where(RefreshToken.user_id == user.id)
+    )).all()
+    assert all(t.revoked_at is not None for t in rt)
+    login = await client.post("/auth/login", json={
+        "email": "resetme@example.com", "password": "BrandNewPass456!",
+    })
+    assert login.status_code == 200
+
+
+async def test_reset_password_weak_rejected(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.user import User
+    from app.services.tokens import PASSWORD_RESET_AUDIENCE, PASSWORD_RESET_EXPIRY, issue_one_time_token
+
+    await client.post("/auth/register", json={
+        "email": "weak@example.com", "username": "weakreset",
+        "password": "SecurePass123!", "dob": "2009-01-01",
+        "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    user = await db_session.scalar(select(User).where(User.username == "weakreset"))
+    tok = await issue_one_time_token(
+        db_session, purpose=PASSWORD_RESET_AUDIENCE, email=user.email,
+        subject_id=user.id, expires_in=PASSWORD_RESET_EXPIRY,
+    )
+    resp = await client.post("/auth/reset-password", json={
+        "token": tok, "new_password": "short",
+    })
+    assert resp.status_code == 422

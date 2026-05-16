@@ -116,3 +116,26 @@ class TokenResponse(BaseModel):
 class PendingConsentResponse(BaseModel):
     status: str = "pending_consent"
     user_id: uuid.UUID
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalise(cls, v: str) -> str:
+        return v.lower().strip()
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def strength(cls, v: str) -> str:
+        if not any(c.isalpha() for c in v):
+            raise ValueError("Password must contain at least one letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        return v

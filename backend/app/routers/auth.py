@@ -18,7 +18,14 @@ from app.core.security import (
 )
 from app.models.audit import AuditLog
 from app.models.user import RefreshToken, User, UserProgress
-from app.schemas.auth import LoginRequest, PendingConsentResponse, RegisterRequest, TokenResponse
+from app.schemas.auth import (
+    ForgotPasswordRequest,
+    LoginRequest,
+    PendingConsentResponse,
+    RegisterRequest,
+    ResetPasswordRequest,
+    TokenResponse,
+)
 from app.schemas.user import UserProfile
 from app.services.compliance import resolve_policy
 from app.services.consent_service import age_in_years
@@ -363,3 +370,63 @@ async def resend_verify_email(
         )
         await session.commit()
     return {"status": "accepted"}
+
+
+@router.post("/forgot-password", status_code=202)
+@limiter.limit("3/hour")
+async def forgot_password(
+    request: Request,
+    payload: ForgotPasswordRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    from app.services.tokens import PASSWORD_RESET_AUDIENCE, PASSWORD_RESET_EXPIRY
+    ident = payload.email
+    user = await session.scalar(
+        select(User).where((User.email == ident) | (User.username == ident))
+    )
+    if user and user.deleted_at is None and (user.is_active or user.parent_email):
+        today = date.today()
+        policy = resolve_policy(user.country_code, user.dob, today)
+        if policy.password_reset_mode == "parent":
+            recipient = user.parent_email
+        else:
+            recipient = user.email
+        if recipient:
+            token = await issue_one_time_token(
+                session, purpose=PASSWORD_RESET_AUDIENCE, email=recipient,
+                subject_id=user.id, expires_in=PASSWORD_RESET_EXPIRY,
+            )
+            link = f"{settings.app_base_url}/reset-password?token={token}"
+            await get_email_sender().send(
+                session, recipient, "password_reset", {"link": link},
+            )
+            await session.commit()
+    return {"status": "accepted"}
+
+
+@router.post("/reset-password")
+async def reset_password(
+    payload: ResetPasswordRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    from app.services.tokens import PASSWORD_RESET_AUDIENCE
+    try:
+        row = await consume_one_time_token(session, payload.token, PASSWORD_RESET_AUDIENCE)
+    except (TokenInvalid, TokenExpired, TokenAlreadyUsed) as exc:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Link invalid or expired") from exc
+    user = await session.get(User, row.subject_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account not found")
+    user.password_hash = hash_password(payload.new_password)
+    user.failed_login_count = 0
+    user.locked_until = None
+    now = datetime.now(UTC)
+    tokens = await session.scalars(
+        select(RefreshToken).where(
+            RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None)
+        )
+    )
+    for t in tokens:
+        t.revoked_at = now
+    await session.commit()
+    return {"status": "ok"}
