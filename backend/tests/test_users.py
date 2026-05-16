@@ -114,3 +114,5 @@ async def test_self_export_returns_profile_json(client, db_session):
     assert data["profile"]["email"] == "export@example.com"
     assert "progress" in data
     assert "consent" in data
+    assert "emails" in data
+    assert isinstance(data["emails"], list)

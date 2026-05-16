@@ -38,6 +38,11 @@ async def build_user_export(session: AsyncSession, user: User) -> dict[str, Any]
             "xp": progress.xp if progress else 0,
             "level": progress.level if progress else 1,
             "streak_count": progress.streak_count if progress else 0,
+            "last_activity_date": (
+                progress.last_activity_date.isoformat()
+                if progress and progress.last_activity_date
+                else None
+            ),
         },
         "consent": {
             "parent_consent_given_at": (
@@ -52,6 +57,6 @@ async def build_user_export(session: AsyncSession, user: User) -> dict[str, Any]
             ),
         },
         "emails": [
-            {"template": e.template, "to": e.to_email} for e in emails
+            {"template": e.template, "to": e.to_email, "sent_at": e.sent_at.isoformat()} for e in emails
         ],
     }
