@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # LLM / AI — lite + standard tiers (open-source models)
     llm_together_api_key: str = ""
     llm_together_base_url: str = "https://api.together.xyz/v1"
-    llm_together_model: str = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+    llm_together_model: str = "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
     llm_groq_api_key: str = ""
     llm_groq_base_url: str = "https://api.groq.com/openai/v1"
     llm_groq_model: str = "llama-3.1-8b-instant"

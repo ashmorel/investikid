@@ -73,7 +73,7 @@ async def test_generate_practice_quiz_uses_cache(db_session, lesson_fixture):
             "answer_index": 0,
             "explanation": "Cached.",
         },
-        model_used="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+        model_used="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
     )
     db_session.add(cached)
     await db_session.flush()
