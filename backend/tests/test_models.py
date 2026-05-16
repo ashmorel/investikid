@@ -44,8 +44,6 @@ def test_audit_log_columns():
 async def test_user_compliance_columns_default(db_session):
     from datetime import date  # noqa: PLC0415
 
-    from app.models.user import User  # noqa: PLC0415
-
     u = User(
         email="cols@example.com", username="colsuser", password_hash="x",
         dob=date(2010, 1, 1), country_code="GB", currency_code="GBP",

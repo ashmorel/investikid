@@ -21,7 +21,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column("users", sa.Column("email_verified_at", sa.DateTime(timezone=True), nullable=True))
     op.add_column("users", sa.Column("purged_at", sa.DateTime(timezone=True), nullable=True))
-    op.create_index("ix_users_purged_at", "users", ["purged_at"])
+    op.create_index(op.f("ix_users_purged_at"), "users", ["purged_at"])
     op.add_column("users", sa.Column("profiling_enabled", sa.Boolean(), server_default="false", nullable=False))
     op.add_column("users", sa.Column("marketing_opt_in", sa.Boolean(), server_default="false", nullable=False))
     op.add_column("users", sa.Column("policy_version_accepted", sa.String(length=20), nullable=True))
@@ -35,6 +35,6 @@ def downgrade() -> None:
     op.drop_column("users", "policy_version_accepted")
     op.drop_column("users", "marketing_opt_in")
     op.drop_column("users", "profiling_enabled")
-    op.drop_index("ix_users_purged_at", table_name="users")
+    op.drop_index(op.f("ix_users_purged_at"), table_name="users")
     op.drop_column("users", "purged_at")
     op.drop_column("users", "email_verified_at")
