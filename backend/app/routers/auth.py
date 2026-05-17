@@ -9,6 +9,8 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.core.rate_limit import limiter
 from app.core.security import (
+    TOKEN_TYPE_ACCESS,
+    TOKEN_TYPE_REFRESH,
     create_token,
     decode_token,
     dummy_verify,
@@ -54,7 +56,7 @@ LOCKOUT_DURATION = timedelta(minutes=15)
 
 def _set_access_cookie(response: Response, user_id: str, secure: bool) -> None:
     access = create_token(
-        {"sub": user_id, "type": "access"},
+        {"sub": user_id, "type": TOKEN_TYPE_ACCESS},
         timedelta(minutes=settings.access_token_expire_minutes),
     )
     response.set_cookie(
@@ -79,7 +81,7 @@ async def _issue_refresh_token(
         expires_at=expires_at,
     ))
     token = create_token(
-        {"sub": str(user_id), "type": "refresh", "jti": str(jti)},
+        {"sub": str(user_id), "type": TOKEN_TYPE_REFRESH, "jti": str(jti)},
         timedelta(days=settings.refresh_token_expire_days),
     )
     response.set_cookie(
@@ -267,7 +269,7 @@ async def logout(
     token = request.cookies.get("refresh_token")
     if token:
         try:
-            payload = decode_token(token, expected_type="refresh")
+            payload = decode_token(token, expected_type=TOKEN_TYPE_REFRESH)
             jti_str = payload.get("jti")
             if jti_str:
                 jti = uuid.UUID(jti_str)
@@ -301,7 +303,7 @@ async def refresh(
     token = request.cookies.get("refresh_token")
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token")
-    payload = decode_token(token, expected_type="refresh")
+    payload = decode_token(token, expected_type=TOKEN_TYPE_REFRESH)
 
     jti_str = payload.get("jti")
     sub = payload.get("sub")

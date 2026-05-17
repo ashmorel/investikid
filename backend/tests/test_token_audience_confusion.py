@@ -1,5 +1,6 @@
 """A07-1: one-time / cross-audience tokens must not be accepted as a session
 access token on authenticated endpoints."""
+import uuid
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
@@ -18,9 +19,10 @@ pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
 async def _make_user(db_session) -> User:
+    suffix = uuid.uuid4().hex[:8]
     user = User(
-        email="victim@example.com",
-        username="victimkid",
+        email=f"victim-{suffix}@example.com",
+        username=f"victim{suffix}",
         password_hash="x",
         dob=date(2006, 5, 10),
         country_code="GB",
