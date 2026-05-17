@@ -35,12 +35,11 @@ def test_jose_version_not_vulnerable():
 
 
 def test_jwt_decode_rejects_token_signed_with_wrong_secret():
-    import pytest
     from jose import jwt
 
     from app.core.config import settings
-    from app.core.security import decode_token
 
     bad = jwt.encode({"sub": "x"}, "not-the-secret", algorithm=settings.jwt_algorithm)
-    with pytest.raises(Exception):
+    with pytest.raises(HTTPException) as exc_info:
         decode_token(bad)
+    assert exc_info.value.status_code == 401
