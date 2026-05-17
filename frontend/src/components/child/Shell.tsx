@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useChildSession } from '@/hooks/useChildSession';
 import { useChildAuthGuard } from '@/hooks/useChildAuthGuard';
+import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
 import { TopNav } from './TopNav';
 import { BottomTabBar } from './BottomTabBar';
 
@@ -26,6 +27,7 @@ export function Shell() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
       <TopNav username={session.data.username} />
+      <VerifyEmailBanner profile={session.data} />
       <AnimatePresence mode="wait">
         <motion.main
           key={location.pathname}

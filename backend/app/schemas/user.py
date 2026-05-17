@@ -20,6 +20,7 @@ class UserProfile(BaseModel):
     is_premium: bool
     parent_email: str | None
     created_at: datetime
+    email_verified_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

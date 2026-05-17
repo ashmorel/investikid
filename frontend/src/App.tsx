@@ -13,6 +13,9 @@ import Market from '@/pages/child/Market';
 import Stock from '@/pages/child/Stock';
 import Stats from '@/pages/child/Stats';
 import ConsentVerify from '@/pages/ConsentVerify';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
+import VerifyEmail from '@/pages/VerifyEmail';
 import ParentLogin from '@/pages/ParentLogin';
 import ParentAuthCallback from '@/pages/ParentAuthCallback';
 import ParentDashboard from '@/pages/ParentDashboard';
@@ -32,6 +35,9 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/pending-consent" element={<PendingConsent />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* Authed child routes inside Shell */}
         <Route element={<Shell />}>

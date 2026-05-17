@@ -39,6 +39,7 @@ export default function Signup() {
   const [currency, setCurrency] = useState('');
   const [topic, setTopic] = useState<string>(TOPIC_PATHS[0]);
   const [fieldError, setFieldError] = useState<{ field: 'email' | 'username' | 'top'; msg: string } | null>(null);
+  const [policyAccepted, setPolicyAccepted] = useState(false);
 
   const today = useMemo(() => new Date(), []);
   const dobValid = !!dob && !Number.isNaN(Date.parse(dob));
@@ -65,6 +66,7 @@ export default function Signup() {
         country_code: country, currency_code: currency || countryDefaultCurrency,
         parent_email: needsConsent ? parentEmail : undefined,
         topic_path: topic,
+        policy_version_accepted: '2026-05-16',
       };
       // Over-threshold: backend register sets auth + csrf cookies directly.
       // Under-threshold: backend returns { status: 'pending_consent' } (no cookies).
@@ -202,9 +204,15 @@ export default function Signup() {
         {fieldError?.field === 'top' && (
           <p role="alert" className="text-sm text-destructive">{fieldError.msg}</p>
         )}
+        <label className="flex items-start gap-2 text-sm text-gray-700">
+          <input type="checkbox" checked={policyAccepted}
+            onChange={(e) => setPolicyAccepted(e.target.checked)} className="mt-1" />
+          <span>I (or my grown-up) have read the{' '}
+            <a href="/privacy" className="underline text-amber-700">privacy notice</a>.</span>
+        </label>
         <div className="flex gap-3">
           <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
-          <Button type="submit" disabled={submit.isPending} className="flex-1">
+          <Button type="submit" disabled={submit.isPending || !policyAccepted} className="flex-1">
             {submit.isPending ? 'Creating account…' : 'Create account'}
           </Button>
         </div>

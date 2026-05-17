@@ -59,7 +59,10 @@ export default function Login() {
           {submit.isPending ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
-      <p className="mt-6 text-sm text-muted-foreground">
+      <p className="mt-4 text-sm text-muted-foreground">
+        <Link to="/forgot-password" className="underline">Forgot password?</Link>
+      </p>
+      <p className="mt-2 text-sm text-muted-foreground">
         New to Invest-Ed? <Link to="/signup" className="underline">Create an account</Link>.
       </p>
     </main>
