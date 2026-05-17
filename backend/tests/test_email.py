@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import patch
 
 import pytest
@@ -52,8 +53,9 @@ async def test_resend_sender_calls_api_and_persists(db_session):
         "link": "http://localhost:5173/consent/verify?token=tok123",
     }
 
+    sid = uuid.uuid4()
     with patch("app.services.email.asyncio.to_thread", return_value={"id": "msg_123"}) as mock_to_thread:
-        await sender.send(db_session, "parent@example.com", "consent_request", context)
+        await sender.send(db_session, "parent@example.com", "consent_request", context, subject_id=sid)
 
         mock_to_thread.assert_called_once()
         call_args = mock_to_thread.call_args
@@ -75,6 +77,7 @@ async def test_resend_sender_calls_api_and_persists(db_session):
     assert row.to_email == "parent@example.com"
     assert row.template == "consent_request"
     assert "bob" in row.body
+    assert row.subject_id == sid
 
 
 async def test_resend_sender_raises_on_api_error(db_session):
@@ -84,13 +87,14 @@ async def test_resend_sender_raises_on_api_error(db_session):
         "link": "http://localhost:5173/parent/auth/callback?token=tok456",
     }
 
+    sid = uuid.uuid4()
     with patch(
         "app.services.email.asyncio.to_thread",
         side_effect=Exception("Resend API error"),
     ):
         with pytest.raises(Exception, match="Resend API error"):
             await sender.send(
-                db_session, "parent@example.com", "parent_magic_link", context
+                db_session, "parent@example.com", "parent_magic_link", context, subject_id=sid
             )
 
 
@@ -101,10 +105,14 @@ async def test_verify_email_and_reset_templates_render(db_session):
     from app.services.email import LoggingEmailSender
 
     sender = LoggingEmailSender()
+    sid_verify = uuid.uuid4()
+    sid_reset = uuid.uuid4()
     await sender.send(db_session, "kid@example.com", "verify_email",
-                      {"username": "kiddo", "link": "https://x/y?token=abc"})
+                      {"username": "kiddo", "link": "https://x/y?token=abc"},
+                      subject_id=sid_verify)
     await sender.send(db_session, "kid@example.com", "password_reset",
-                      {"link": "https://x/reset?token=def"})
+                      {"link": "https://x/reset?token=def"},
+                      subject_id=sid_reset)
     rows = (await db_session.scalars(select(SentEmail))).all()
     templates = {r.template for r in rows}
     assert "verify_email" in templates
@@ -112,3 +120,6 @@ async def test_verify_email_and_reset_templates_render(db_session):
     bodies = "\n".join(r.body for r in rows)
     assert "https://x/y?token=abc" in bodies
     assert "https://x/reset?token=def" in bodies
+    subject_ids = {r.subject_id for r in rows}
+    assert sid_verify in subject_ids
+    assert sid_reset in subject_ids

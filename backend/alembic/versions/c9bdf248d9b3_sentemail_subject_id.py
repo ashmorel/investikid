@@ -1,4 +1,4 @@
-"""sentemail subject_id
+"""add subject_id column to sent_emails (close cross-child export IDOR)
 
 Revision ID: c9bdf248d9b3
 Revises: 09718bc80afc
