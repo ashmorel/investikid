@@ -14,9 +14,20 @@ def test_hash_and_verify_password():
 
 
 def test_create_and_decode_access_token():
-    token = create_token({"sub": "user-123"}, expires_delta=timedelta(minutes=15))
+    # A07-1: an access token must positively carry type=="access"; a
+    # claims-only JWT (no type) is no longer accepted as a session.
+    token = create_token(
+        {"sub": "user-123", "type": "access"}, expires_delta=timedelta(minutes=15)
+    )
     payload = decode_token(token)
     assert payload["sub"] == "user-123"
+
+
+def test_typeless_token_rejected_as_access():
+    token = create_token({"sub": "user-123"}, expires_delta=timedelta(minutes=15))
+    with pytest.raises(HTTPException) as exc_info:
+        decode_token(token)
+    assert exc_info.value.status_code == 401
 
 
 def test_expired_token_raises():

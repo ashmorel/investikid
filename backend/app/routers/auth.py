@@ -54,7 +54,7 @@ LOCKOUT_DURATION = timedelta(minutes=15)
 
 def _set_access_cookie(response: Response, user_id: str, secure: bool) -> None:
     access = create_token(
-        {"sub": user_id},
+        {"sub": user_id, "type": "access"},
         timedelta(minutes=settings.access_token_expire_minutes),
     )
     response.set_cookie(

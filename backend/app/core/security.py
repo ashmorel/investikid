@@ -58,8 +58,11 @@ def decode_token(token: str, expected_type: str | None = None) -> dict[str, Any]
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
             )
     else:
-        # Reject refresh tokens from being used where an access token is expected.
-        if token_type == "refresh":
+        # No specific type requested == an access token is expected. Positively
+        # require type == "access" so that refresh tokens, one-time tokens
+        # (consent/verify/reset/parent-magic) or any other claims-only JWT
+        # signed with the app secret cannot be substituted for a session.
+        if token_type != "access":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
             )
