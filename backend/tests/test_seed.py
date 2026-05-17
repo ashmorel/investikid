@@ -27,3 +27,19 @@ async def test_seed_is_idempotent(db_session):
     second = await db_session.scalar(select(func.count()).select_from(Module))
 
     assert first == second
+
+
+async def test_compliance_accounts_seed_idempotent(db_session):
+    from sqlalchemy import func, select
+
+    from app.models.user import User
+    from app.seed.compliance_accounts import seed_compliance_accounts
+
+    await seed_compliance_accounts(db_session)
+    await seed_compliance_accounts(db_session)
+    count = await db_session.scalar(
+        select(func.count()).select_from(User).where(
+            User.username.in_(["pending_consent_kid", "consented_kid", "selfteen"])
+        )
+    )
+    assert count == 3
