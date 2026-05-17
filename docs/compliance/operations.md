@@ -10,9 +10,9 @@ When a user requests account deletion (or an account is administratively closed)
 
 After the retention window has elapsed, the account is eligible for hard purge. The purge operation overwrites all personally identifiable fields with anonymised values. It does not delete the database row — the row is retained for referential integrity and audit purposes, but it contains no information that can identify the former account holder.
 
-Fields overwritten on purge: `email`, `username`, `password_hash`, `parent_email`, `topic_path`, `currency_code`, `email_verified_at`.
+Fields overwritten on purge: `email`, `username`, `password_hash`, `parent_email`, `topic_path`.
 
-Fields retained after purge (non-identifying): `id` (opaque UUID), `dob`, `country_code`, `purged_at`, `deleted_at`, `deletion_requested_at`, `policy_version_accepted`, `policy_accepted_at`, `parent_consent_given_at`.
+Fields retained after purge (non-identifying): `id` (opaque UUID), `dob`, `country_code`, `currency_code`, `email_verified_at`, `purged_at`, `deleted_at`, `deletion_requested_at`, `policy_version_accepted`, `policy_accepted_at`, `parent_consent_given_at`. `currency_code` and `email_verified_at` are retained because, once the direct identifiers above are removed, they are non-identifying and are kept for aggregate analytics and verification-status audit respectively.
 
 ---
 

@@ -37,10 +37,10 @@ The following table enumerates every column in the `users` table (defined in `ap
 | `password_hash` | Authentication (Argon2id hash; not raw password) | Contract | Overwritten on purge |
 | `dob` | Age-gate enforcement; regime selection; aggregate analytics | Legitimate interest (child safety, legal compliance) | Retained after purge — non-identifying in isolation; required for age-gate audit trail |
 | `country_code` | Jurisdiction resolution; regime selection; currency default | Legitimate interest (legal compliance) | Retained after purge — non-identifying in isolation |
-| `currency_code` | Display currency for financial education content | Contract | Overwritten on purge |
+| `currency_code` | Display currency for financial education content | Contract | Retained post-purge (non-identifying) — kept for aggregate analytics |
 | `topic_path` | Personalised learning path (chosen or inferred onboarding topic) | Consent (profiling disabled by default; user opts in) | Overwritten on purge |
 | `parent_email` | Parental consent flow for child accounts | Consent (parental); legitimate interest (child safety) | Overwritten on purge |
-| `email_verified_at` | Tracks whether email address has been verified | Contract | Overwritten on purge (timestamp reveals nothing without email) |
+| `email_verified_at` | Tracks whether email address has been verified | Contract | Retained post-purge (non-identifying) — verification-status audit trail; not a direct identifier once email itself is removed |
 | `purged_at` | Audit timestamp of PII overwrite | Legal obligation (demonstrable erasure) | Retained permanently |
 | `is_active` | Account status; controls login and content access | Contract | Retained — operational field |
 | `failed_login_count` | Account lockout (5 failures / 15 min window) | Legitimate interest (security) | Reset on successful login; cleared on purge |
@@ -144,9 +144,9 @@ Invest-Ed implements a two-phase erasure process:
 
 **Soft delete:** When a user requests erasure (right to erasure / right to be forgotten), or when an account is administratively closed, `deleted_at` is set to the current timestamp and `is_active` is set to `false`. The account is immediately inaccessible for login and all user-facing data access. The `deletion_requested_at` timestamp is also set if the deletion was initiated by a subject rights request.
 
-**Hard purge (PII overwrite):** After `settings.data_retention_days` days (default: 30 days) following `deleted_at`, the account is eligible for purging. The purge is executed by `app/services/retention.py::purge_expired_accounts`, triggered via `python -m app.cli purge-accounts`. The purge process overwrites the following fields with anonymised values: `email`, `username`, `password_hash`, `parent_email`, `topic_path`, `currency_code`, `email_verified_at`. The `purged_at` timestamp is set on completion.
+**Hard purge (PII overwrite):** After `settings.data_retention_days` days (default: 30 days) following `deleted_at`, the account is eligible for purging. The purge is executed by `app/services/retention.py::purge_expired_accounts`, triggered via `python -m app.cli purge-accounts`. The purge process overwrites the following fields with anonymised values: `email`, `username`, `password_hash`, `parent_email`, `topic_path`. The `purged_at` timestamp is set on completion.
 
-**Fields retained after purge:** `dob` and `country_code` are retained post-purge. These values are not personally identifying in isolation — a date of birth without a name, email, or other identifier cannot be linked to a natural person. They are retained to support: (a) age-gate audit trails demonstrating that underage users were handled correctly; (b) aggregate demographic analytics computed without joining to any identifier.
+**Fields retained after purge:** `dob`, `country_code`, `currency_code`, and `email_verified_at` are retained post-purge. These values are not personally identifying in isolation — once the direct identifiers (`email`, `username`, `password_hash`, `parent_email`, `topic_path`) are removed, none of these fields can be linked to a natural person. They are retained to support: (a) age-gate audit trails demonstrating that underage users were handled correctly; (b) aggregate demographic and analytics purposes computed without joining to any identifier; (c) verification-status audit trail (`email_verified_at` is not a direct identifier once the email address itself is removed). This retention is deliberate and was approved during DPIA review.
 
 **Idempotency:** The purge operation is idempotent. Running it multiple times against the same account produces the same result. Accounts already marked `purged_at IS NOT NULL` are skipped.
 

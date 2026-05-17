@@ -30,8 +30,6 @@ async def test_seed_is_idempotent(db_session):
 
 
 async def test_compliance_accounts_seed_idempotent(db_session):
-    from sqlalchemy import func, select
-
     from app.models.user import User
     from app.seed.compliance_accounts import seed_compliance_accounts
 
