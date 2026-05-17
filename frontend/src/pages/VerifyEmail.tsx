@@ -57,6 +57,11 @@ export default function VerifyEmail() {
             ? 'This link is invalid or expired.'
             : 'Something went wrong. Please try again.'}
         </p>
+        {!isExpired && (
+          <p className="mt-4 text-sm text-muted-foreground">
+            <Link to="/login" className="underline">Back to sign in</Link>
+          </p>
+        )}
         {isExpired && (
           <div className="mt-4">
             {resendDone ? (

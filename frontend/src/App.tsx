@@ -14,6 +14,7 @@ import Stock from '@/pages/child/Stock';
 import Stats from '@/pages/child/Stats';
 import ConsentVerify from '@/pages/ConsentVerify';
 import ForgotPassword from '@/pages/ForgotPassword';
+import Privacy from '@/pages/Privacy';
 import ResetPassword from '@/pages/ResetPassword';
 import VerifyEmail from '@/pages/VerifyEmail';
 import ParentLogin from '@/pages/ParentLogin';
@@ -34,6 +35,7 @@ export default function App() {
         {/* Public child routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route path="/pending-consent" element={<PendingConsent />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />

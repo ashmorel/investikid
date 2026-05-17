@@ -51,17 +51,18 @@ export default function Market() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: searchResults, isLoading: searchLoading, isFetching: searchFetching } = useQuery<QuoteOut[] | null>({
+  const { data: searchResults, isFetching: searchFetching } = useQuery<QuoteOut[] | null>({
     queryKey: ['market-search', debouncedQuery],
     queryFn: () => simulatorApi.searchMarket(debouncedQuery),
-    enabled: debouncedQuery.length > 0,
+    enabled: debouncedQuery.length >= 2,
     retry: false,
     staleTime: 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
-  const isSearching = debouncedQuery.length > 0;
+  const isSearching = debouncedQuery.length >= 2;
   const stocks = isSearching ? (searchResults ?? []) : (featuredStocks ?? []);
-  const isLoading = isSearching ? searchLoading : featuredLoading;
+  const isLoading = !isSearching && featuredLoading;
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -102,8 +103,10 @@ export default function Market() {
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         {isSearching
-          ? `${stocks.length} results for "${debouncedQuery}"`
-          : `${stocks.length} featured stocks — search to find any stock worldwide`}
+          ? `${stocks.length} result${stocks.length !== 1 ? 's' : ''} for "${debouncedQuery}"`
+          : query.trim().length === 1
+            ? 'Type one more character to search…'
+            : `${stocks.length} featured stocks — search to find any stock worldwide`}
       </p>
 
       <div className="relative mb-2">

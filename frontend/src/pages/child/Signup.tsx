@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { authApi, type RegisterBody } from '@/api/auth';
+import { authApi, type RegisterBody, PRIVACY_NOTICE_VERSION } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { ageInYears, needsParentalConsent } from '@/lib/consent';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ export default function Signup() {
         country_code: country, currency_code: currency || countryDefaultCurrency,
         parent_email: needsConsent ? parentEmail : undefined,
         topic_path: topic,
-        policy_version_accepted: '2026-05-16',
+        policy_version_accepted: PRIVACY_NOTICE_VERSION,
       };
       // Over-threshold: backend register sets auth + csrf cookies directly.
       // Under-threshold: backend returns { status: 'pending_consent' } (no cookies).
@@ -208,7 +208,7 @@ export default function Signup() {
           <input type="checkbox" checked={policyAccepted}
             onChange={(e) => setPolicyAccepted(e.target.checked)} className="mt-1" />
           <span>I (or my grown-up) have read the{' '}
-            <a href="/privacy" className="underline text-amber-700">privacy notice</a>.</span>
+            <Link to="/privacy" className="underline text-amber-700">privacy notice</Link>.</span>
         </label>
         <div className="flex gap-3">
           <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>

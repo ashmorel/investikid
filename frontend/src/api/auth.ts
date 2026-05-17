@@ -1,5 +1,9 @@
 import { apiFetch } from './client';
 
+// Must stay in sync with backend settings.privacy_notice_version.
+// No FE/BE shared config endpoint yet — update both sides when the version changes.
+export const PRIVACY_NOTICE_VERSION = '2026-05-16';
+
 export type Me = {
   id: string;
   email: string;

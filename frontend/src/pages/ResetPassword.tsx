@@ -117,7 +117,7 @@ export default function ResetPassword() {
           <Input
             id="confirm-password"
             type="password"
-            autoComplete="new-password"
+            autoComplete="off"
             required
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
