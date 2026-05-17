@@ -194,7 +194,9 @@ The following risks are known at the time of this DPIA. They are recorded as res
 
 **Planned mitigation:** Add a `subject_id` foreign key to the `SentEmail` model, referencing `users.id`. Filter the export query by `SentEmail.subject_id == user.id` in addition to (or instead of) the address-based filter. This is recorded as a future task and must be completed before the platform is made available in jurisdictions where sibling accounts are anticipated at scale.
 
-**Residual risk until mitigated:** A parent who requests a data export for Child A may receive emails that relate to Child B. While the data is disclosed to the parent (who has consent rights over both children), it is a correctness and minimisation failure. Under GDPR it constitutes sharing more data than requested. Severity: Medium. Likelihood: Low (requires multiple children with same parent email). Priority: High.
+**Status: Resolved in security sub-project — `SentEmail.subject_id` added; export scoped by `subject_id`. (2026-05-17)**
+
+~~Residual risk until mitigated: A parent who requests a data export for Child A may receive emails that relate to Child B. While the data is disclosed to the parent (who has consent rights over both children), it is a correctness and minimisation failure. Under GDPR it constitutes sharing more data than requested. Severity: Medium. Likelihood: Low (requires multiple children with same parent email). Priority: High.~~
 
 ### Risk 2: Email-Based Parental Consent Weaker than COPPA Verifiable Consent
 

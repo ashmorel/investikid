@@ -174,6 +174,7 @@ async def register(
                 "country_code": user.country_code,
                 "link": link,
             },
+            subject_id=user.id,
         )
         await session.commit()
         return PendingConsentResponse(user_id=user.id)
@@ -187,6 +188,7 @@ async def register(
     await get_email_sender().send(
         session, str(payload.email), "verify_email",
         {"username": user.username, "link": verify_link},
+        subject_id=user.id,
     )
 
     secure = settings.environment != "development"
@@ -369,6 +371,7 @@ async def resend_verify_email(
         await get_email_sender().send(
             session, user.email, "verify_email",
             {"username": user.username, "link": link},
+            subject_id=user.id,
         )
         await session.commit()
     return {"status": "accepted"}
@@ -400,6 +403,7 @@ async def forgot_password(
             link = f"{settings.app_base_url}/reset-password?token={token}"
             await get_email_sender().send(
                 session, recipient, "password_reset", {"link": link},
+                subject_id=user.id,
             )
             await session.commit()
     return {"status": "accepted"}

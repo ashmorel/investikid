@@ -12,10 +12,7 @@ from app.models.user import User, UserProgress
 async def build_user_export(session: AsyncSession, user: User) -> dict[str, Any]:
     progress = await session.get(UserProgress, user.id)
     emails = (await session.scalars(
-        select(SentEmail).where(
-            (SentEmail.to_email == user.email)
-            | (SentEmail.to_email == user.parent_email)
-        )
+        select(SentEmail).where(SentEmail.subject_id == user.id)
     )).all()
     return {
         "profile": {

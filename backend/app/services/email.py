@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from typing import Protocol
 
 import resend
@@ -14,6 +15,7 @@ class EmailSender(Protocol):
         to: str,
         template: str,
         context: dict,
+        subject_id: uuid.UUID | None = None,
     ) -> None: ...
 
 
@@ -125,10 +127,11 @@ class LoggingEmailSender:
     """Persists every send to sent_emails. Used for dev + tests."""
 
     async def send(
-        self, session: AsyncSession, to: str, template: str, context: dict
+        self, session: AsyncSession, to: str, template: str, context: dict,
+        subject_id: uuid.UUID | None = None,
     ) -> None:
         body = _render(template, context)
-        session.add(SentEmail(to_email=to, template=template, body=body))
+        session.add(SentEmail(to_email=to, template=template, body=body, subject_id=subject_id))
         await session.flush()
 
 
@@ -140,14 +143,15 @@ class ResendEmailSender:
         self._from_email = from_email
 
     async def send(
-        self, session: AsyncSession, to: str, template: str, context: dict
+        self, session: AsyncSession, to: str, template: str, context: dict,
+        subject_id: uuid.UUID | None = None,
     ) -> None:
         plain = _render(template, context)
         html = _render_html(template, context)
         subject = _email_subject(template)
 
         # Persist audit record (same as LoggingEmailSender)
-        session.add(SentEmail(to_email=to, template=template, body=plain))
+        session.add(SentEmail(to_email=to, template=template, body=plain, subject_id=subject_id))
         await session.flush()
 
         # Send via Resend
