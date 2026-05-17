@@ -43,3 +43,16 @@ def test_jwt_decode_rejects_token_signed_with_wrong_secret():
     with pytest.raises(HTTPException) as exc_info:
         decode_token(bad)
     assert exc_info.value.status_code == 401
+
+
+def test_requirements_fully_pinned():
+    import pathlib
+    req = pathlib.Path(__file__).resolve().parents[1] / "requirements.txt"
+    bad = []
+    for line in req.read_text().splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        if "==" not in s:
+            bad.append(s)
+    assert not bad, f"Unpinned dependencies: {bad}"
