@@ -28,7 +28,6 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/auth/forgot-password", "/auth/reset-password",
     "/consent/decide",
     "/parent/auth/request",
-    "/tutor/chat",
 })
 # Path prefixes that bypass CSRF (for dynamic segments like /consent/request/{id})
 _DEFAULT_EXEMPT_PREFIXES = ("/consent/request/",)
