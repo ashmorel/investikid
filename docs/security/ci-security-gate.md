@@ -130,3 +130,15 @@ There is no automated ignore mechanism for npm audit; the justification lives in
 ## Gate verification (one-time, Task 11)
 
 Task 11 will perform the one-time gate-block verification procedure: introduce a deliberate High-severity finding (e.g. a known-bad dependency version pinned in a test branch) and confirm the `security` job exits non-zero, then revert and confirm it returns to green. This procedure validates that the gate actually blocks rather than merely running.
+
+---
+
+## Gate-block verification — 2026-05-18
+
+**Procedure:** A throwaway file `invest-ed/backend/app/_gate_probe_tmp.py` was created containing a single `subprocess.Popen(sys.argv[1], shell=True)` call — bandit rule **B602** (subprocess call with shell=True, non-constant argument). This is rated **High severity / High confidence** by bandit.
+
+**Result:** Running `bandit -r app -lll -iii` with the probe file present produced exit code **1** (non-zero), confirming the gate blocks on a High/High finding. The finding was correctly identified as B602 / CWE-78 at `app/_gate_probe_tmp.py:2`.
+
+**Revert:** The probe file was deleted (`rm`). It was never staged or committed (`git status --short invest-ed/backend` returned empty). Re-running `bandit -r app -lll -iii` after revert returned exit code **0**, confirming the gate is back to clean.
+
+**Conclusion:** The CI bandit gate demonstrably blocks High/High findings and is not a no-op. Gate-block sanity confirmed.
