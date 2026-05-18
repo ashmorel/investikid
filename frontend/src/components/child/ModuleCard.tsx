@@ -18,6 +18,7 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
     return (
       <button
         type="button"
+        data-testid="module-locked"
         onClick={onLockedClick}
         aria-label={`${module.title} (locked)`}
         className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-amber-200 bg-white p-4 text-center opacity-60 cursor-not-allowed"
@@ -27,6 +28,7 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
         <span className="inline-flex items-center gap-1 text-xs text-gray-500">
           <Lock className="h-3.5 w-3.5" /> Premium
         </span>
+        <p className="text-xs text-gray-400">Premium — ask a grown-up to unlock. Billing coming soon.</p>
       </button>
     );
   }
