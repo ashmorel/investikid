@@ -41,3 +41,44 @@ async def test_compliance_accounts_seed_idempotent(db_session):
         )
     )
     assert count == 3
+
+
+async def test_tier_accounts_seed_idempotent(db_session):
+    from sqlalchemy import func, select
+
+    from app.models.user import User
+    from app.seed.tier_accounts import seed_tier_accounts
+
+    await seed_tier_accounts(db_session)
+    await seed_tier_accounts(db_session)
+    count = await db_session.scalar(
+        select(func.count()).select_from(User).where(
+            User.username.in_(["tier_parent", "premium_child", "free_child"])
+        )
+    )
+    assert count == 3
+    premium = await db_session.scalar(
+        select(User).where(User.username == "premium_child"))
+    free = await db_session.scalar(
+        select(User).where(User.username == "free_child"))
+    assert premium.is_premium is True
+    assert free.is_premium is False
+    assert premium.parent_email == "tier-parent@test.invest-ed"
+    assert free.parent_email == "tier-parent@test.invest-ed"
+
+
+async def test_tier_accounts_seed_prod_guarded(db_session, monkeypatch):
+    from sqlalchemy import func, select
+
+    from app.core.config import settings
+    from app.models.user import User
+    from app.seed.tier_accounts import seed_tier_accounts
+
+    monkeypatch.setattr(settings, "environment", "production")
+    await seed_tier_accounts(db_session)
+    count = await db_session.scalar(
+        select(func.count()).select_from(User).where(
+            User.username.in_(["tier_parent", "premium_child", "free_child"])
+        )
+    )
+    assert count == 0
