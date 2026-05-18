@@ -9,6 +9,7 @@ from app.models.content import Lesson, LessonCompletion, Module
 from app.models.skill_profile import TopicMastery, WeakConcept
 from app.models.user import User
 from app.services.content_service import is_module_accessible
+from app.services.entitlements import is_premium
 
 TOPIC_PREREQUISITES: dict[str, list[str]] = {
     "stocks": [],
@@ -45,7 +46,7 @@ async def get_recommendations(
     ).all()
     modules = [
         m for m in all_modules
-        if is_module_accessible(user.country_code, user.is_premium, m.country_codes, m.is_premium)
+        if is_module_accessible(user.country_code, is_premium(user), m.country_codes, m.is_premium)
     ]
 
     if not modules:

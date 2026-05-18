@@ -126,6 +126,66 @@ async def test_completed_modules_ranked_last(db_session, seeded):
     assert stocks_idx >= len(module_ids) - 2
 
 
+async def test_premium_module_excluded_for_free_user(db_session):
+    """Premium-gated modules must NOT appear in recommendations for a free user.
+
+    This test verifies that the entitlement read goes through is_premium()
+    rather than user.is_premium directly — so the seam is the sole read path.
+    """
+    free_user = User(
+        email="free_rec@example.com", username="freerecuser", password_hash="x",
+        dob=date(2012, 1, 1), country_code="GB", currency_code="GBP",
+        profiling_enabled=True, is_premium=False,
+    )
+    db_session.add(free_user)
+
+    premium_module = Module(
+        topic="premium_topic", title="Premium Content", country_codes=[],
+        is_premium=True, order_index=999, icon="💎",
+    )
+    db_session.add(premium_module)
+    await db_session.flush()
+
+    recs = await get_recommendations(db_session, free_user)
+    module_ids = [r["module_id"] for r in recs["suggested_modules"]]
+    assert premium_module.id not in module_ids, (
+        "Premium-gated module must not appear in free user's recommendations"
+    )
+
+
+async def test_premium_module_included_for_premium_user(db_session):
+    """Premium-gated modules MUST appear in recommendations for a premium user.
+
+    This is the positive-path counterpart to test_premium_module_excluded_for_free_user.
+    """
+    premium_user = User(
+        email="prem_rec@example.com", username="premrecuser", password_hash="x",
+        dob=date(2012, 1, 1), country_code="GB", currency_code="GBP",
+        profiling_enabled=True, is_premium=True,
+    )
+    db_session.add(premium_user)
+
+    premium_module = Module(
+        topic="premium_topic2", title="Premium Content 2", country_codes=[],
+        is_premium=True, order_index=998, icon="💎",
+    )
+    db_session.add(premium_module)
+    # Add a lesson so next_quest logic has something to point at
+    await db_session.flush()
+    lesson = Lesson(
+        module_id=premium_module.id, type="card", xp_reward=10, order_index=0,
+        content_json={"title": "t", "body": "b"},
+    )
+    db_session.add(lesson)
+    await db_session.flush()
+
+    recs = await get_recommendations(db_session, premium_user)
+    module_ids = [r["module_id"] for r in recs["suggested_modules"]]
+    assert premium_module.id in module_ids, (
+        "Premium-gated module must appear in premium user's recommendations"
+    )
+
+
 async def test_recommendations_withheld_when_profiling_disabled(db_session):
     """Personalised recommendations must not be returned when profiling_enabled is False.
 
