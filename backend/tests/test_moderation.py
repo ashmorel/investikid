@@ -43,6 +43,7 @@ async def test_empty_output_is_unsafe_fallback():
     r = await moderate_output("   ", surface="tutor")
     assert r.safe is False
     assert r.text == moderation._SAFE_FALLBACKS["tutor"]
+    assert r.category == "empty"
 
 
 async def test_fail_closed_on_prefilter_exception(monkeypatch):
