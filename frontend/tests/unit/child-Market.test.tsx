@@ -15,10 +15,21 @@ const allQuotes: QuoteOut[] = [
   { ticker: '0700', exchange: 'HKEX', name: 'Tencent Holdings', price: '350.00', currency: 'HKD' },
 ];
 
-function renderPage() {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    new Response(JSON.stringify(allQuotes), { status: 200 }),
-  );
+function makeFetchMock(filterFn?: (q: string) => QuoteOut[]) {
+  return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input.toString();
+    if (url.includes('/market/search')) {
+      const qParam = new URL(url, 'http://localhost').searchParams.get('q') ?? '';
+      const results = filterFn ? filterFn(qParam) : allQuotes;
+      return new Response(JSON.stringify(results), { status: 200 });
+    }
+    // Other API calls (market movers, news, tips, etc.) return empty/null gracefully
+    return new Response(JSON.stringify(null), { status: 200 });
+  });
+}
+
+function renderPage(filterFn?: (q: string) => QuoteOut[]) {
+  makeFetchMock(filterFn);
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
@@ -43,20 +54,22 @@ describe('Market page', () => {
   });
 
   it('filters stocks client-side as user types', async () => {
-    renderPage();
+    renderPage((q) => q ? allQuotes.filter((s) => s.name.toLowerCase().includes(q.toLowerCase())) : allQuotes);
     await waitFor(() => expect(screen.getByText('Apple Inc.')).toBeInTheDocument());
     const input = screen.getByRole('searchbox');
     await userEvent.type(input, 'vod');
-    expect(screen.queryByText('Apple Inc.')).not.toBeInTheDocument();
-    expect(screen.getByText('Vodafone Group')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Apple Inc.')).not.toBeInTheDocument();
+      expect(screen.getByText('Vodafone Group')).toBeInTheDocument();
+    });
   });
 
   it('shows no-matches message when filter yields nothing', async () => {
-    renderPage();
+    renderPage((q) => q ? allQuotes.filter((s) => s.name.toLowerCase().includes(q.toLowerCase())) : allQuotes);
     await waitFor(() => expect(screen.getByText('Apple Inc.')).toBeInTheDocument());
     const input = screen.getByRole('searchbox');
     await userEvent.type(input, 'xyz');
-    expect(screen.getByText(/no stocks match/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/no stocks found/i)).toBeInTheDocument());
   });
 
   it('each stock card links to stock detail page', async () => {

@@ -34,7 +34,12 @@ describe('TradeForm', () => {
     render(<TradeForm {...baseProps} />);
     const input = screen.getByLabelText(/number of shares/i);
     await userEvent.type(input, '5');
-    expect(screen.getByText(/5 shares × \$185\.42 USD = \$927\.10 USD/)).toBeInTheDocument();
+    expect(
+      screen.getByText((_, el) =>
+        el?.tagName === 'P' &&
+        /5 shares × \$185\.42 USD = \$927\.10 USD/.test(el.textContent ?? '')
+      )
+    ).toBeInTheDocument();
   });
 
   it('advances to step 2 on Review click and shows confirmation', async () => {

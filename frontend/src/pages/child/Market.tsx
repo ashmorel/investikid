@@ -20,6 +20,13 @@ const EXCHANGE_BADGE_COLORS: Record<string, string> = {
   ASX: 'bg-emerald-100 text-emerald-800',
 };
 
+const EXCHANGE_GROUP_LABELS: Record<string, string> = {
+  NASDAQ: 'US Stocks',
+  NYSE: 'US Stocks',
+  LSE: 'UK Stocks',
+  HKEX: 'Hong Kong Stocks',
+};
+
 function groupByExchange(stocks: QuoteOut[]) {
   const groups: Record<string, QuoteOut[]> = {};
   for (const s of stocks) {
@@ -150,7 +157,7 @@ export default function Market() {
           {groups.map(([exchange, groupStocks]) => (
             <section key={exchange}>
               <h2 className="mb-2 text-sm font-medium text-muted-foreground">
-                {exchange}
+                {EXCHANGE_GROUP_LABELS[exchange] ?? exchange}
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {groupStocks.map((s) => (
