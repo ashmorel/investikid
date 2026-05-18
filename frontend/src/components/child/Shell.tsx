@@ -4,6 +4,7 @@ import { useChildSession } from '@/hooks/useChildSession';
 import { useChildAuthGuard } from '@/hooks/useChildAuthGuard';
 import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
 import { TopNav } from './TopNav';
+import { TierBadge } from './TierBadge';
 import { BottomTabBar } from './BottomTabBar';
 
 export function Shell() {
@@ -27,6 +28,9 @@ export function Shell() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
       <TopNav username={session.data.username} />
+      <div className="mx-auto flex max-w-5xl items-center px-4 pt-2">
+        <TierBadge premium={session.data.is_premium} />
+      </div>
       <VerifyEmailBanner profile={session.data} />
       <AnimatePresence mode="wait">
         <motion.main
