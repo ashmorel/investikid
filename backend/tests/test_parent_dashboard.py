@@ -141,3 +141,49 @@ async def test_freeze_deleted_child_returns_410(client, db_session):
         headers=_csrf_headers(client),
     )
     assert r.status_code == 410
+
+
+async def test_parent_can_toggle_child_premium(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.audit import AuditLog
+    from app.models.user import User
+
+    await client.post("/auth/register", json={
+        "username": "ptierkid", "password": "SecurePass123!",
+        "dob": "2016-01-01", "country_code": "GB", "currency_code": "GBP",
+        "parent_email": "ptierparent@example.com",
+        "policy_version_accepted": "2026-05-16",
+    })
+    child = await db_session.scalar(select(User).where(User.username == "ptierkid"))
+    await _setup(client, db_session, parent_email="ptierparent@example.com",
+                 child_email="ptierparent_dummy@example.com", child_username="ptierparentdummy")
+
+    up = await client.post(
+        f"/parent/children/{child.id}/premium", json={"premium": True},
+        headers=_csrf_headers(client))
+    assert up.status_code == 200
+    assert up.json() == {"status": "ok", "premium": True}
+    await db_session.refresh(child)
+    assert child.is_premium is True
+    aud = (await db_session.scalars(select(AuditLog).where(
+        AuditLog.user_id == child.id, AuditLog.event_type == "premium_grant"))).all()
+    assert len(aud) == 1
+
+    down = await client.post(
+        f"/parent/children/{child.id}/premium", json={"premium": False},
+        headers=_csrf_headers(client))
+    assert down.status_code == 200
+    assert down.json() == {"status": "ok", "premium": False}
+    await db_session.refresh(child)
+    assert child.is_premium is False
+
+
+async def test_parent_premium_toggle_not_owned_404(client, db_session):
+    import uuid
+    await _setup(client, db_session, parent_email="ptierstranger@example.com",
+                 child_email="ptierstrangerchild@example.com", child_username="ptierstrangerchild")
+    resp = await client.post(
+        f"/parent/children/{uuid.uuid4()}/premium", json={"premium": True},
+        headers=_csrf_headers(client))
+    assert resp.status_code == 404

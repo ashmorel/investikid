@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_session
 from app.models.user import User
 from app.routers.parent_auth import get_current_parent
-from app.schemas.parent import ChildOut, FreezeRequest
+from app.schemas.parent import ChildOut, FreezeRequest, PremiumToggleRequest
+from app.services.entitlements import set_premium
 from app.services.export_service import build_user_export
 
 router = APIRouter(prefix="/parent", tags=["parent"])
@@ -42,7 +43,7 @@ async def list_children(
     return [
         ChildOut(
             user_id=r.id, username=r.username, country_code=r.country_code,
-            is_active=r.is_active,
+            is_active=r.is_active, is_premium=r.is_premium,
             parent_consent_given_at=r.parent_consent_given_at,
             consent_declined_at=r.consent_declined_at,
             deleted_at=r.deleted_at,
@@ -65,6 +66,21 @@ async def freeze_child(
     child.is_active = not payload.frozen
     await session.commit()
     return {"status": "ok", "frozen": payload.frozen}
+
+
+@router.post("/children/{user_id}/premium")
+async def set_child_premium(
+    user_id: uuid.UUID,
+    payload: PremiumToggleRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    child = await _get_owned_child(session, parent_email, user_id)
+    if child.deleted_at is not None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account deleted")
+    await set_premium(session, child, value=payload.premium, actor=parent_email)
+    await session.commit()
+    return {"status": "ok", "premium": payload.premium}
 
 
 @router.post("/children/{user_id}/erasure")
