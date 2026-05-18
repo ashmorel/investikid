@@ -177,6 +177,9 @@ async def test_parent_can_toggle_child_premium(client, db_session):
     assert down.json() == {"status": "ok", "premium": False}
     await db_session.refresh(child)
     assert child.is_premium is False
+    rev = (await db_session.scalars(select(AuditLog).where(
+        AuditLog.user_id == child.id, AuditLog.event_type == "premium_revoke"))).all()
+    assert len(rev) == 1
 
 
 async def test_parent_premium_toggle_not_owned_404(client, db_session):
