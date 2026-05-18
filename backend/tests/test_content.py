@@ -185,6 +185,36 @@ async def test_complete_lesson_requires_csrf(client, db_session):
     assert response.status_code == 403
 
 
+async def test_premium_module_gated_for_free_user(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.content import Module
+    from app.seed.content import seed_modules_and_lessons
+    from app.seed.gamification import seed_badges_and_challenges
+
+    await seed_modules_and_lessons(db_session)
+    await seed_badges_and_challenges(db_session)
+    await db_session.commit()
+
+    premium_mod = await db_session.scalar(
+        select(Module).where(Module.is_premium.is_(True)).limit(1)
+    )
+    assert premium_mod is not None, "expected at least one seeded premium module"
+
+    # Register and log in as a free (non-premium) child user
+    await _register_and_login(client, email="freecontent@example.com", username="freecontentkid")
+
+    # A free user must be blocked from accessing a premium module's lessons
+    detail = await client.get(f"/modules/{premium_mod.id}/lessons")
+    assert detail.status_code == 403
+
+    # The module must appear in the list but show locked: true
+    lst = await client.get("/modules")
+    assert lst.status_code == 200
+    locked = [m for m in lst.json() if m["id"] == str(premium_mod.id)]
+    assert locked and locked[0]["locked"] is True
+
+
 async def test_lesson_summary_includes_derived_title(client, db_session):
     module = Module(topic="stocks", title="Title Test", country_codes=[], is_premium=False, order_index=10)
     db_session.add(module)
