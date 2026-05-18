@@ -5,6 +5,7 @@ export type Child = {
   username: string;
   country_code: string;
   is_active: boolean;
+  is_premium: boolean;
   parent_consent_given_at: string | null;
   consent_declined_at: string | null;
   deleted_at: string | null;
@@ -31,5 +32,10 @@ export const parentApi = {
     apiFetch<{ status: string }>(
       `/parent/children/${userId}/erasure`,
       { method: 'POST' },
+    ),
+  setChildPremium: (userId: string, premium: boolean) =>
+    apiFetch<{ status: string; premium: boolean }>(
+      `/parent/children/${userId}/premium`,
+      { method: 'POST', body: JSON.stringify({ premium }) },
     ),
 };
