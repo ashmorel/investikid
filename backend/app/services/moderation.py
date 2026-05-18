@@ -21,6 +21,9 @@ _DEFAULT_FALLBACK = "Let's get back to learning!"
 
 _ADVICE_IMPERATIVE = re.compile(
     r"\byou should (buy|sell|invest|trade)\b", re.IGNORECASE)
+# NO re.IGNORECASE: the asset name must start with a capital (ticker AAPL or
+# proper noun Apple). With IGNORECASE this arm would match "buy something" /
+# "sell them" — exactly the over-block this guard fixes.
 _ADVICE_NAMED = re.compile(
     r"\b(?:buy|sell|invest in) (?:[A-Z]{2,}|[A-Z][a-z]+)\b")  # NO IGNORECASE
 
@@ -28,15 +31,6 @@ _ADVICE_NAMED = re.compile(
 def _is_financial_advice(text: str) -> bool:
     return bool(_ADVICE_IMPERATIVE.search(text) or _ADVICE_NAMED.search(text))
 
-
-# Back-compat alias: a callable proxy exposing .search() like the old pattern.
-class _FinancialAdvicePattern:
-    @staticmethod
-    def search(text: str):
-        return _ADVICE_IMPERATIVE.search(text) or _ADVICE_NAMED.search(text)
-
-
-_FINANCIAL_ADVICE = _FinancialAdvicePattern()
 
 _CATEGORY_PATTERNS: dict[str, re.Pattern] = {
     "sexual": re.compile(
@@ -60,7 +54,6 @@ _CATEGORY_PATTERNS: dict[str, re.Pattern] = {
     "prompt_injection": re.compile(
         r"\b(ignore (all )?(previous|prior) instructions"
         r"|system prompt|you are now|disregard the rules)\b", re.I),
-    "financial_advice": _FINANCIAL_ADVICE,
 }
 
 _REVIEW_TOKENS = re.compile(r"\b(weapon|suicide|kill yourself|explicit)\b", re.I)
@@ -81,6 +74,8 @@ def _fallback_for(surface: str) -> str:
 
 
 def _prefilter_category(text: str) -> str | None:
+    if _is_financial_advice(text):
+        return "financial_advice"
     for name, pat in _CATEGORY_PATTERNS.items():
         if pat.search(text):
             return name
