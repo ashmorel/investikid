@@ -80,3 +80,47 @@ async def test_escalation_safe_verdict_passes_and_caches(monkeypatch):
     assert r1.safe is True and r1.text == txt
     assert r2.safe is True
     assert calls["n"] == 1
+
+
+_EDU_CORPUS = [
+    "Stocks can go down as well as up, and you can lose money.",
+    "A loss happens when you sell something for less than you paid for it.",
+    "Diversifying means not putting all your eggs in one basket.",
+    "Compound interest means your money can grow over time.",
+    "Debt is money you owe and usually have to pay back with interest.",
+    "Some people pay tax on the money they earn from investments.",
+    "Crypto can be very risky and its price changes a lot.",
+    "Inflation means prices going up, so money buys less over time.",
+    "A budget helps you plan how to spend and save your money.",
+    "If a company does badly, the value of its shares can fall.",
+    "Gambling is risky and is not the same as investing for the long term.",
+    "Saving regularly, even a little, adds up over the years.",
+    "Buy low and sell high is a common idea people talk about.",
+    "Companies sell goods and services to make money.",
+    "Investors buy shares on the stock exchange.",
+    "You should save more money each week if you can.",
+    "You should spend wisely and think before you buy.",
+    "When a company dies out, its shares can become worthless.",
+    "Drug store chains are one kind of retail business.",
+]
+
+
+@pytest.mark.parametrize("line", _EDU_CORPUS)
+async def test_educational_content_not_overblocked(line):
+    r = await moderate_output(line, surface="tutor")
+    assert r.safe is True, f"educational line wrongly blocked as {r.category!r}: {line}"
+    assert r.text == line
+
+
+@pytest.mark.parametrize("advice", [
+    "You should buy Apple stock right now",
+    "You should buy Apple stock",
+    "You should sell Tesla now",
+    "You should invest in Bitcoin",
+    "buy AAPL",
+    "sell Tesla",
+])
+async def test_genuine_financial_advice_still_blocked(advice):
+    r = await moderate_output(advice, surface="tutor")
+    assert r.safe is False
+    assert r.category == "financial_advice"

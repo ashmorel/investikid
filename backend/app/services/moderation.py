@@ -19,11 +19,24 @@ _SAFE_FALLBACKS: dict[str, str] = {
 }
 _DEFAULT_FALLBACK = "Let's get back to learning!"
 
-_FINANCIAL_ADVICE = re.compile(
-    r"\byou should (buy|sell|invest|spend|save|trade)\b"
-    r"|\b(buy|sell|invest in) [A-Z][a-z]",
-    re.IGNORECASE,
-)
+_ADVICE_IMPERATIVE = re.compile(
+    r"\byou should (buy|sell|invest|trade)\b", re.IGNORECASE)
+_ADVICE_NAMED = re.compile(
+    r"\b(?:buy|sell|invest in) (?:[A-Z]{2,}|[A-Z][a-z]+)\b")  # NO IGNORECASE
+
+
+def _is_financial_advice(text: str) -> bool:
+    return bool(_ADVICE_IMPERATIVE.search(text) or _ADVICE_NAMED.search(text))
+
+
+# Back-compat alias: a callable proxy exposing .search() like the old pattern.
+class _FinancialAdvicePattern:
+    @staticmethod
+    def search(text: str):
+        return _ADVICE_IMPERATIVE.search(text) or _ADVICE_NAMED.search(text)
+
+
+_FINANCIAL_ADVICE = _FinancialAdvicePattern()
 
 _CATEGORY_PATTERNS: dict[str, re.Pattern] = {
     "sexual": re.compile(
@@ -50,7 +63,7 @@ _CATEGORY_PATTERNS: dict[str, re.Pattern] = {
     "financial_advice": _FINANCIAL_ADVICE,
 }
 
-_REVIEW_TOKENS = re.compile(r"\b(gun|blood|drug|gamble|gambling|hate|die|death)\b", re.I)
+_REVIEW_TOKENS = re.compile(r"\b(weapon|suicide|kill yourself|explicit)\b", re.I)
 
 
 @dataclass(frozen=True)
