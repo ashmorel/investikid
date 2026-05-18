@@ -35,6 +35,7 @@ from app.services.chart_coach_service import (
     ChartCoachLimitReached,
     chart_coach_chat,
 )
+from app.services.entitlements import is_premium
 from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
@@ -614,7 +615,7 @@ async def place_trade(
     session: AsyncSession = Depends(get_session),
     provider=Depends(get_price_provider),
 ):
-    if not current_user.is_premium and not provider.is_free_tier(payload.ticker, payload.exchange):
+    if not is_premium(current_user) and not provider.is_free_tier(payload.ticker, payload.exchange):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Ticker not available on free tier")
     try:
         quote = provider.get_quote(payload.ticker, payload.exchange)

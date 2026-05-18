@@ -16,6 +16,7 @@ from app.schemas.ai import (
     TutorChatResponse,
 )
 from app.services.ai_content_service import generate_practice_quiz
+from app.services.entitlements import is_premium
 from app.services.recommendation_service import get_recommendations
 from app.services.skill_profile_service import get_mastery_profile
 from app.services.tutor_service import TutorInputTooLong, TutorLimitReached, chat
@@ -56,7 +57,7 @@ async def practice_quiz(
         lesson,
         topic=module.topic,
         concept=concept,
-        premium=current_user.is_premium,
+        premium=is_premium(current_user),
         wrong_answer_index=payload.wrong_answer_index,
     )
     return result
@@ -84,7 +85,7 @@ async def tutor_chat(
             topic=module.topic,
             message=payload.message,
             conversation_id=payload.conversation_id,
-            premium=current_user.is_premium,
+            premium=is_premium(current_user),
         )
     except TutorInputTooLong as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))

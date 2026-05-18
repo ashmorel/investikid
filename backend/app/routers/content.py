@@ -22,6 +22,7 @@ from app.services.content_service import (
     is_module_accessible,
     streak_after_activity,
 )
+from app.services.entitlements import is_premium
 from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
@@ -47,7 +48,7 @@ async def _get_accessible_module(
     if not country_ok:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     if not is_module_accessible(
-        current_user.country_code, current_user.is_premium,
+        current_user.country_code, is_premium(current_user),
         module.country_codes, module.is_premium,
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Module requires premium")
@@ -67,7 +68,7 @@ async def list_modules(
         if not country_ok:
             continue
         accessible = is_module_accessible(
-            current_user.country_code, current_user.is_premium,
+            current_user.country_code, is_premium(current_user),
             m.country_codes, m.is_premium,
         )
         out.append(ModuleOut(
