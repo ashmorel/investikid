@@ -51,7 +51,7 @@ async def run(argv: list[str]) -> int:
     if not argv or argv[0] != "purge-accounts":
         if argv and argv[0] == "grant-premium":
             return await _grant_premium(argv[1:])
-        print("usage: python -m app.cli purge-accounts", file=sys.stderr)
+        print("usage: python -m app.cli {purge-accounts | grant-premium <email|username> [--revoke]}", file=sys.stderr)
         return 2
     gen = _session_scope()
     session = await gen.__anext__()
