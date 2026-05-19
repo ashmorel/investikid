@@ -36,6 +36,11 @@ export type RegisterResponse =
 
 export const authApi = {
   me: () => apiFetch<Me>('/users/me'),
+  updatePreferences: (body: { topic_path: string | null }) =>
+    apiFetch<Me>('/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
   login: (email: string, password: string) =>
     apiFetch<{ token_type: 'bearer' }>('/auth/login', {
       method: 'POST', body: JSON.stringify({ email, password }),
