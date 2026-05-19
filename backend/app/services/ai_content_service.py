@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.audit import AuditLog
 from app.models.content import Lesson
 from app.models.generated_content import GeneratedContent
+from app.models.user import User
+from app.services.content_variety_service import resolve_variant
 from app.services.llm_client import LLMError, get_llm_client, get_model_name
 from app.services.moderation import moderate_output
 
@@ -56,32 +58,43 @@ async def generate_practice_quiz(
     session: AsyncSession,
     lesson: Lesson,
     *,
+    user: User,
     topic: str,
     concept: str,
     premium: bool,
     wrong_answer_index: int | None = None,
 ) -> dict[str, Any]:
-    """Generate or serve a cached practice quiz for a lesson concept."""
+    """Generate or serve a cached practice quiz variant for a lesson concept."""
     model_name = get_model_name("premium" if premium else "standard")
+    spec = await resolve_variant(session, user, lesson, concept)
+    variant_key = spec.variant_key
 
-    # Check cache
+    def _with_rung(d: dict[str, Any]) -> dict[str, Any]:
+        out = dict(d)
+        out["variant_rung"] = spec.rung
+        return out
+
     cached = await session.scalar(
         select(GeneratedContent).where(
             GeneratedContent.lesson_id == lesson.id,
             GeneratedContent.concept == concept,
             GeneratedContent.model_used == model_name,
+            GeneratedContent.variant_key == variant_key,
         )
     )
     if cached:
-        return cached.content_json
+        return _with_rung(cached.content_json)
 
-    # Build grounded prompt
     content = lesson.content_json or {}
     user_message = f"Lesson topic: {topic}\nLesson content: {json.dumps(content)}"
     if wrong_answer_index is not None and "choices" in content:
         choices = content.get("choices", [])
         if 0 <= wrong_answer_index < len(choices):
             user_message += f"\nThe student chose: {choices[wrong_answer_index]} (wrong)"
+    if spec.rung == "easier":
+        user_message += "\nMake this question slightly easier and more encouraging."
+    elif spec.rung == "harder":
+        user_message += "\nMake this question slightly more challenging (still kid-friendly)."
 
     client = get_llm_client(tier="premium" if premium else "standard")
 
@@ -101,11 +114,7 @@ async def generate_practice_quiz(
             result = validated.model_dump()
 
             _mod = await moderate_output(
-                " ".join([
-                    result["question"],
-                    *result["choices"],
-                    result["explanation"],
-                ]),
+                " ".join([result["question"], *result["choices"], result["explanation"]]),
                 surface="quiz",
             )
             if not _mod.safe:
@@ -115,25 +124,52 @@ async def generate_practice_quiz(
                     metadata_json={"surface": "quiz", "category": _mod.category},
                 ))
                 if attempt == 0:
-                    continue  # regenerate once
-                return _fallback(content)
+                    continue
+                return _with_rung(await _safe_cached_or_fallback(
+                    session, lesson.id, concept, model_name, content
+                ))
 
-            # Cache it
             session.add(GeneratedContent(
                 lesson_id=lesson.id,
                 concept=concept,
                 content_json=result,
                 model_used=model_name,
+                variant_key=variant_key,
             ))
             await session.flush()
-            return result
+            return _with_rung(result)
 
         except (json.JSONDecodeError, ValueError, LLMError):
             if attempt == 0:
-                continue  # retry once
-            # Fall back to original question with shuffled choices
-            return _fallback(content)
+                continue
+            return _with_rung(await _safe_cached_or_fallback(
+                session, lesson.id, concept, model_name, content
+            ))
 
+    return _with_rung(await _safe_cached_or_fallback(
+        session, lesson.id, concept, model_name, content
+    ))
+
+
+async def _safe_cached_or_fallback(
+    session: AsyncSession,
+    lesson_id,
+    concept: str,
+    model_name: str,
+    content: dict[str, Any],
+) -> dict[str, Any]:
+    """Prefer any already-cached (therefore moderation-passed) variant; else deterministic fallback."""
+    rows = (
+        await session.scalars(
+            select(GeneratedContent).where(
+                GeneratedContent.lesson_id == lesson_id,
+                GeneratedContent.concept == concept,
+                GeneratedContent.model_used == model_name,
+            )
+        )
+    ).all()
+    if rows:
+        return random.choice(rows).content_json
     return _fallback(content)
 
 

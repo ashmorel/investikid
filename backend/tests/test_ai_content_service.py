@@ -54,7 +54,7 @@ async def test_generate_practice_quiz_calls_llm(db_session, lesson_fixture):
 
     with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
         result = await generate_practice_quiz(
-            db_session, quiz, topic="budgeting", concept="50/30/20 rule", premium=False,
+            db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )
     assert result["question"] is not None
     assert len(result["choices"]) >= 3
@@ -75,6 +75,7 @@ async def test_generate_practice_quiz_uses_cache(db_session, lesson_fixture):
             "explanation": "Cached.",
         },
         model_used="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
+        variant_key="core:0",
     )
     db_session.add(cached)
     await db_session.flush()
@@ -82,7 +83,7 @@ async def test_generate_practice_quiz_uses_cache(db_session, lesson_fixture):
     mock_client = AsyncMock()
     with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
         result = await generate_practice_quiz(
-            db_session, quiz, topic="budgeting", concept="50/30/20 rule", premium=False,
+            db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )
     assert result["question"] == "Cached question"
     mock_client.complete.assert_not_awaited()
@@ -95,7 +96,7 @@ async def test_generate_practice_quiz_fallback_on_invalid_json(db_session, lesso
 
     with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
         result = await generate_practice_quiz(
-            db_session, quiz, topic="budgeting", concept="50/30/20 rule", premium=False,
+            db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )
     # Should fall back to original question (shuffled or not)
     assert result["question"] is not None
@@ -126,7 +127,7 @@ async def test_generate_practice_quiz_blocks_unsafe_and_falls_back(db_session, l
 
     with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
         result = await generate_practice_quiz(
-            db_session, quiz, topic="budgeting", concept="50/30/20 rule", premium=False,
+            db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )
 
     # Unsafe model quiz rejected → deterministic _fallback(content) shape.
@@ -162,7 +163,7 @@ async def test_generate_practice_quiz_safe_passes_through(db_session, lesson_fix
 
     with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
         result = await generate_practice_quiz(
-            db_session, quiz, topic="budgeting", concept="50/30/20 rule", premium=False,
+            db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )
 
     assert result["question"] == "If you save 20% of £20, how much is that?"

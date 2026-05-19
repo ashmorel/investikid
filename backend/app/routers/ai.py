@@ -55,6 +55,7 @@ async def practice_quiz(
     result = await generate_practice_quiz(
         session,
         lesson,
+        user=current_user,
         topic=module.topic,
         concept=concept,
         premium=is_premium(current_user),

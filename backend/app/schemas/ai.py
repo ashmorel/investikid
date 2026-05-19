@@ -29,6 +29,7 @@ class PracticeResponse(BaseModel):
     choices: list[str]
     answer_index: int
     explanation: str
+    variant_rung: str | None = None
 
 
 class TutorChatRequest(BaseModel):
