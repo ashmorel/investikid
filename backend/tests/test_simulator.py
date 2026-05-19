@@ -181,3 +181,68 @@ async def test_chart_coach_requires_auth(client):
         "ticker": "AAPL", "exchange": "NASDAQ", "period": "1mo", "message": "What does this chart show?"
     })
     assert r.status_code == 403
+
+
+async def test_moderation_blocks_financial_advice_in_chart_coach():
+    from app.services.moderation import _SAFE_FALLBACKS, moderate_output
+    r = await moderate_output("You should sell Tesla", surface="chart_coach")
+    assert r.safe is False
+    assert r.category == "financial_advice"
+    assert r.text == _SAFE_FALLBACKS["chart_coach"]
+
+
+async def test_chart_coach_returns_fallback_when_model_unsafe(db_session):
+    import json
+    from datetime import date
+    from unittest.mock import AsyncMock, patch
+
+    from sqlalchemy import select
+
+    from app.models.audit import AuditLog
+    from app.models.user import User
+    from app.services.chart_coach_service import chart_coach_chat
+    from app.services.moderation import _SAFE_FALLBACKS
+    from app.services.price_provider import PricePoint
+
+    user = User(
+        email="chartkid@example.com", username="chartkid", password_hash="x",
+        dob=date(2012, 1, 1), country_code="GB", currency_code="GBP",
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    points = [
+        PricePoint(date="2026-01-01", open=10.0, high=11.0, low=9.5, close=10.5, volume=1000),
+        PricePoint(date="2026-01-02", open=10.5, high=12.0, low=10.0, close=11.5, volume=1200),
+    ]
+
+    unsafe = "You should sell Tesla right now!"
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=unsafe)
+
+    with patch("app.services.chart_coach_service.get_llm_client", return_value=mock_client):
+        result = await chart_coach_chat(
+            session=db_session,
+            user=user,
+            ticker="TSLA",
+            exchange="NASDAQ",
+            name="Tesla Inc",
+            period="1mo",
+            message="Should I sell Tesla?",
+            conversation_id=None,
+            points=points,
+        )
+
+    assert result["response"] == _SAFE_FALLBACKS["chart_coach"]
+    assert unsafe not in result["response"]
+
+    rows = (
+        await db_session.execute(
+            select(AuditLog).where(AuditLog.event_type == "moderation_block")
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.metadata_json["surface"] == "chart_coach"
+    assert row.metadata_json["category"] == "financial_advice"
+    assert unsafe not in json.dumps(row.metadata_json)
