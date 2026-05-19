@@ -405,7 +405,7 @@ _MODULES = [
     },
     {
         "topic": "taxes", "title": "Your First Paycheque",
-        "country_codes": [], "is_premium": False, "order_index": 11, "icon": "💷",
+        "country_codes": [], "is_premium": True, "order_index": 11, "icon": "💷",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
                 "title": "Reading a payslip",
@@ -444,6 +444,7 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
         )
         if existing:
             existing.icon = spec.get("icon", "📚")
+            existing.is_premium = spec["is_premium"]
             continue
         module = Module(
             topic=spec["topic"], title=spec["title"],
