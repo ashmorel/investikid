@@ -1,6 +1,6 @@
 # Premium Content & AI Engagement — Design Spec (Sub-project 4b)
 
-**Status:** Approved (brainstorming) — 2026-05-19
+**Status:** Delivered — 2026-05-19 (sub-project 4b)
 **Programme:** Invest-Ed hardening, sub-project 4b (follows 4a kid-safe moderation, LLM-03 closed)
 **Working dir:** `/Users/leeashmore/Local Repo/invest-ed`
 
