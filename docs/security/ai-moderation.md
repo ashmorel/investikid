@@ -30,7 +30,7 @@ The seam is pure: it performs no database access and no I/O other than the
 escalation classifier call. Callers that hold a DB session are responsible for
 writing the audit row (see Audit behaviour).
 
-## The four surfaces and their fallback copy
+## The six surfaces and their fallback copy
 
 `surface` selects the kid-friendly redirect shown instead of blocked output.
 The supported surfaces and their fallback copy (`_SAFE_FALLBACKS`) are:
@@ -41,6 +41,12 @@ The supported surfaces and their fallback copy (`_SAFE_FALLBACKS`) are:
 | `chart_coach` | `chart_coach_service.chart_coach_chat` | "Let's look at the chart together — what do you notice about the line going up or down?" |
 | `quiz` | `ai_content_service.generate_practice_quiz` | "Let's review the lesson and try a practice question from there." |
 | `tips` | `simulator._generate_tips` | "Keep learning with your lessons — you're doing great!" |
+| `news_summary` | `simulator.get_news_summary`, `get_stock_news_summary`, `get_chart_guide` | "No news round-up right now — keep exploring your portfolio and check back soon! 📰" |
+| `time_machine` | `simulator.get_time_machine` (fun_fact) | "Time travel's a bit fuzzy right now — try another stock and see how it could have grown! ⏳" |
+
+`news_summary` is shared across three news-style endpoints: the market
+news-summary, the per-stock news-summary, and the chart-guide. They use the
+same fallback copy because all three render the same kind of round-up text.
 
 An unknown surface falls back to a generic "Let's get back to learning!"
 (`_DEFAULT_FALLBACK`), so the seam fails safe even if mis-called.
@@ -162,6 +168,15 @@ log.
   module-level cached generator with no DB session in scope, so tips
   moderation is best-effort — unsafe generated tips are replaced by the
   static fallback tips, but no `AuditLog` row is written.
+- **news_summary** is split: `get_news_summary` has `session` and
+  `current_user` in scope, so it writes one `moderation_block` row per
+  blocked round-up (`user_id` of the child). The other two `news_summary`
+  sites — `get_stock_news_summary` and `get_chart_guide` — have **no audit
+  row by design**, having no DB session in scope; they fall back to the safe
+  copy best-effort, same constraint as **tips**.
+- **time_machine** has **no audit row by design**: `get_time_machine` has no
+  DB session in scope, so an unsafe fun-fact is replaced by the safe fallback
+  best-effort with no `AuditLog` row, same constraint as **tips**.
 
 ## Out of scope
 
