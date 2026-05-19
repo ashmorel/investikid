@@ -8,9 +8,11 @@ from pydantic import BaseModel, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.audit import AuditLog
 from app.models.content import Lesson
 from app.models.generated_content import GeneratedContent
 from app.services.llm_client import LLMError, get_llm_client, get_model_name
+from app.services.moderation import moderate_output
 
 
 class PracticeQuizSchema(BaseModel):
@@ -97,6 +99,24 @@ async def generate_practice_quiz(
             if validated.answer_index >= len(validated.choices):
                 raise ValueError("answer_index out of range")
             result = validated.model_dump()
+
+            _mod = await moderate_output(
+                " ".join([
+                    result["question"],
+                    *result["choices"],
+                    result["explanation"],
+                ]),
+                surface="quiz",
+            )
+            if not _mod.safe:
+                session.add(AuditLog(
+                    user_id=None,
+                    event_type="moderation_block",
+                    metadata_json={"surface": "quiz", "category": _mod.category},
+                ))
+                if attempt == 0:
+                    continue  # regenerate once
+                return _fallback(content)
 
             # Cache it
             session.add(GeneratedContent(
