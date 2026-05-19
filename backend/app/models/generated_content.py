@@ -11,7 +11,10 @@ from app.core.database import Base
 class GeneratedContent(Base):
     __tablename__ = "generated_content"
     __table_args__ = (
-        UniqueConstraint("lesson_id", "concept", "model_used", name="uq_generated_content_lesson_concept_model"),
+        UniqueConstraint(
+            "lesson_id", "concept", "model_used", "variant_key",
+            name="uq_generated_content_lesson_concept_model_variant",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -21,6 +24,9 @@ class GeneratedContent(Base):
     concept: Mapped[str] = mapped_column(String(200), nullable=False)
     content_json: Mapped[dict] = mapped_column(JSON, nullable=False)
     model_used: Mapped[str] = mapped_column(String(50), nullable=False)
+    variant_key: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="core:0"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
