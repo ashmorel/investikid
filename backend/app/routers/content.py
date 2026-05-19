@@ -76,6 +76,9 @@ async def list_modules(
             country_codes=m.country_codes, is_premium=m.is_premium,
             order_index=m.order_index, icon=m.icon, locked=not accessible,
         ))
+    pref = current_user.topic_path
+    if pref and pref in {m.topic for m in modules}:
+        out.sort(key=lambda mo: (0 if mo.topic == pref else 1))
     return out
 
 
