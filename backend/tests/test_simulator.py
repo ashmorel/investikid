@@ -246,3 +246,59 @@ async def test_chart_coach_returns_fallback_when_model_unsafe(db_session):
     assert row.metadata_json["surface"] == "chart_coach"
     assert row.metadata_json["category"] == "financial_advice"
     assert unsafe not in json.dumps(row.metadata_json)
+
+
+async def test_generate_tips_falls_back_when_model_unsafe():
+    import json
+    from unittest.mock import AsyncMock, patch
+
+    from app.routers import simulator
+    from app.routers.simulator import _FALLBACK_TIPS, _generate_tips
+
+    simulator._tips_cache.clear()
+
+    unsafe_items = [
+        {"id": "t1", "title": "Smart Saving", "description": "Saving regularly adds up over time.",
+         "example_ticker": "AAPL", "example_exchange": "NASDAQ"},
+        {"id": "t2", "title": "Hot Tip", "description": "You should buy Tesla stock right now!",
+         "example_ticker": "TSLA", "example_exchange": "NASDAQ"},
+        {"id": "t3", "title": "Patience Pays", "description": "Time in the market beats timing it.",
+         "example_ticker": "MSFT", "example_exchange": "NASDAQ"},
+    ]
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=json.dumps(unsafe_items))
+
+    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
+        result = await _generate_tips()
+
+    assert result is _FALLBACK_TIPS
+    simulator._tips_cache.clear()
+
+
+async def test_generate_tips_returns_safe_model_tips():
+    import json
+    from unittest.mock import AsyncMock, patch
+
+    from app.routers import simulator
+    from app.routers.simulator import _FALLBACK_TIPS, _generate_tips
+
+    simulator._tips_cache.clear()
+
+    safe_items = [
+        {"id": "s1", "title": "Smart Saving", "description": "Saving a little regularly adds up over time.",
+         "example_ticker": "AAPL", "example_exchange": "NASDAQ"},
+        {"id": "s2", "title": "Spread It Out",
+         "description": "Diversifying means not putting all your eggs in one basket.",
+         "example_ticker": "JNJ", "example_exchange": "NYSE"},
+        {"id": "s3", "title": "Patience Pays", "description": "Time in the market beats timing the market.",
+         "example_ticker": "MSFT", "example_exchange": "NASDAQ"},
+    ]
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=json.dumps(safe_items))
+
+    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
+        result = await _generate_tips()
+
+    assert result is not _FALLBACK_TIPS
+    assert [t.id for t in result] == ["s1", "s2", "s3"]
+    simulator._tips_cache.clear()

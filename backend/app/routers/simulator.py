@@ -41,6 +41,7 @@ from app.services.gamification_service import (
     update_challenge_progress,
 )
 from app.services.llm_client import LLMError, get_llm_client
+from app.services.moderation import moderate_output
 from app.services.price_provider import (
     LivePriceProvider,
     TickerNotAvailableError,
@@ -555,6 +556,13 @@ async def _generate_tips() -> list[InvestingTipOut]:
         )
         items = json.loads(raw)
         tips = [InvestingTipOut(**item) for item in items]
+        # Kid-safe moderation of generated tips. Best-effort: _generate_tips
+        # has no DB session in scope, so no AuditLog row is written here by
+        # design (unlike the session-bearing tutor/chart-coach/quiz surfaces).
+        joined = " ".join(f"{t.title} {t.description}" for t in tips)
+        _mod = await moderate_output(joined, surface="tips")
+        if not _mod.safe:
+            return _FALLBACK_TIPS
         if len(tips) >= 3:
             _tips_cache[cache_key] = (now, tips)
             return tips
