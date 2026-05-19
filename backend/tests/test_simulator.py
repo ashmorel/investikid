@@ -302,3 +302,218 @@ async def test_generate_tips_returns_safe_model_tips():
     assert result is not _FALLBACK_TIPS
     assert [t.id for t in result] == ["s1", "s2", "s3"]
     simulator._tips_cache.clear()
+
+
+# --- Seam-completeness: news-summary / chart-guide / time-machine surfaces ---
+
+from decimal import Decimal as _D  # noqa: E402
+
+from app.services.price_provider import (  # noqa: E402
+    PricePoint,
+    PriceQuote,
+    StaticPriceProvider,
+    StockNewsItem,
+)
+
+
+class _NewsProvider(StaticPriceProvider):
+    """Static provider that also yields one news item so the LLM path runs."""
+
+    def get_news(self, holdings):
+        return [
+            StockNewsItem(
+                title="Big update",
+                summary="Something happened with the company.",
+                publisher="News Co",
+                url="http://example.com/a",
+                published="2026-05-19",
+                thumbnail="",
+                related_ticker="AAPL",
+                related_exchange="NASDAQ",
+            )
+        ]
+
+
+class _HistoryProvider(StaticPriceProvider):
+    """Static provider with a multi-point history for chart-guide/time-machine."""
+
+    def get_history(self, ticker, exchange, period="1mo"):
+        return [
+            PricePoint(date="2011-05-19", open=10.0, high=11.0, low=9.5, close=10.0, volume=1000),
+            PricePoint(date="2016-05-19", open=12.0, high=13.0, low=11.0, close=12.0, volume=1100),
+            PricePoint(date="2021-05-19", open=20.0, high=21.0, low=19.0, close=20.0, volume=1200),
+            PricePoint(date="2026-05-18", open=30.0, high=31.0, low=29.0, close=30.0, volume=1300),
+        ]
+
+    def get_quote(self, ticker, exchange):
+        return PriceQuote(
+            ticker=ticker.upper(), exchange=exchange.upper(),
+            name="Apple Inc", price=_D("30.00"), currency="USD",
+        )
+
+
+def _use_provider(provider):
+    from app.main import app
+    from app.routers.simulator import get_price_provider
+    app.dependency_overrides[get_price_provider] = lambda: provider
+
+
+_UNSAFE = "You should buy Tesla right now!"
+
+
+async def test_news_summary_falls_back_when_model_unsafe(client, db_session):
+    import json
+    from unittest.mock import AsyncMock, patch
+
+    from sqlalchemy import select
+
+    from app.models.audit import AuditLog
+    from app.services.moderation import _SAFE_FALLBACKS
+
+    await _login(client, email="news1@example.com", username="news1")
+    # Need a holding so the summary endpoint reaches the LLM.
+    _use_provider(_NewsProvider())
+    await client.post("/portfolio/trades", json={"ticker": "AAPL", "exchange": "NASDAQ", "type": "buy", "shares": "1"})
+
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=_UNSAFE)
+    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
+        r = await client.get("/market/news-summary")
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["summary"] == _SAFE_FALLBACKS["news_summary"]
+    assert _UNSAFE not in body["summary"]
+
+    rows = (
+        await db_session.execute(
+            select(AuditLog).where(AuditLog.event_type == "moderation_block")
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].metadata_json["surface"] == "news_summary"
+    assert rows[0].metadata_json["category"] == "financial_advice"
+    assert _UNSAFE not in json.dumps(rows[0].metadata_json)
+
+
+async def test_news_summary_safe_passthrough(client):
+    from unittest.mock import AsyncMock, patch
+
+    await _login(client, email="news1b@example.com", username="news1b")
+    _use_provider(_NewsProvider())
+    await client.post("/portfolio/trades", json={"ticker": "AAPL", "exchange": "NASDAQ", "type": "buy", "shares": "1"})
+
+    safe = "Your stocks had some news today — keep watching how they change!"
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=safe)
+    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
+        r = await client.get("/market/news-summary")
+
+    assert r.status_code == 200
+    assert r.json()["summary"] == safe
+
+
+async def test_stock_news_summary_falls_back_when_model_unsafe(client):
+    from unittest.mock import AsyncMock, patch
+
+    from app.services.moderation import _SAFE_FALLBACKS
+
+    await _login(client, email="news2@example.com", username="news2")
+    _use_provider(_NewsProvider())
+
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=_UNSAFE)
+    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
+        r = await client.get("/market/news-summary/NASDAQ/AAPL")
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["summary"] == _SAFE_FALLBACKS["news_summary"]
+    assert _UNSAFE not in body["summary"]
+
+
+async def test_stock_news_summary_safe_passthrough(client):
+    from unittest.mock import AsyncMock, patch
+
+    await _login(client, email="news2b@example.com", username="news2b")
+    _use_provider(_NewsProvider())
+
+    safe = "AAPL had some interesting news — a great chance to learn how markets react."
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=safe)
+    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
+        r = await client.get("/market/news-summary/NASDAQ/AAPL")
+
+    assert r.status_code == 200
+    assert r.json()["summary"] == safe
+
+
+async def test_chart_guide_falls_back_when_model_unsafe(client):
+    from unittest.mock import AsyncMock, patch
+
+    from app.services.moderation import _SAFE_FALLBACKS
+
+    await _login(client, email="cg1@example.com", username="cg1")
+    _use_provider(_HistoryProvider())
+
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=_UNSAFE)
+    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
+        r = await client.get("/market/chart-guide/NASDAQ/AAPL")
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["summary"] == _SAFE_FALLBACKS["news_summary"]
+    assert _UNSAFE not in body["summary"]
+
+
+async def test_chart_guide_safe_passthrough(client):
+    from unittest.mock import AsyncMock, patch
+
+    await _login(client, email="cg2@example.com", username="cg2")
+    _use_provider(_HistoryProvider())
+
+    safe = "Notice how the price climbed over time — what do you think drove that?"
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=safe)
+    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
+        r = await client.get("/market/chart-guide/NASDAQ/AAPL")
+
+    assert r.status_code == 200
+    assert r.json()["summary"] == safe
+
+
+async def test_time_machine_fun_fact_falls_back_when_model_unsafe(client):
+    from unittest.mock import AsyncMock, patch
+
+    from app.services.moderation import _SAFE_FALLBACKS
+
+    await _login(client, email="tm3@example.com", username="tm3")
+    _use_provider(_HistoryProvider())
+
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=_UNSAFE)
+    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
+        r = await client.get("/market/time-machine/NASDAQ/AAPL")
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["periods"]  # history provider yields growth periods
+    assert body["fun_fact"] == _SAFE_FALLBACKS["time_machine"]
+    assert _UNSAFE not in body["fun_fact"]
+
+
+async def test_time_machine_fun_fact_safe_passthrough(client):
+    from unittest.mock import AsyncMock, patch
+
+    await _login(client, email="tm4@example.com", username="tm4")
+    _use_provider(_HistoryProvider())
+
+    safe = "Did you know? That growth could have covered a year of university fees!"
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=safe)
+    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
+        r = await client.get("/market/time-machine/NASDAQ/AAPL")
+
+    assert r.status_code == 200
+    assert r.json()["fun_fact"] == safe

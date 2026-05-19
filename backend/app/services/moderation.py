@@ -16,6 +16,10 @@ _SAFE_FALLBACKS: dict[str, str] = {
                    "about the line going up or down?",
     "quiz": "Let's review the lesson and try a practice question from there.",
     "tips": "Keep learning with your lessons — you're doing great!",
+    "news_summary": "No news round-up right now — keep exploring your "
+                    "portfolio and check back soon! 📰",
+    "time_machine": "Time travel's a bit fuzzy right now — try another "
+                    "stock and see how it could have grown! ⏳",
 }
 _DEFAULT_FALLBACK = "Let's get back to learning!"
 

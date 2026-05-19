@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.models.audit import AuditLog
 from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
@@ -209,7 +210,18 @@ async def get_news_summary(
     except LLMError:
         summary = "Couldn't generate a summary right now — check back soon!"
 
-    return NewsSummaryOut(summary=summary.strip(), tickers_mentioned=tickers)
+    # Kid-safe moderation seam. session + current_user are in scope here, so an
+    # AuditLog moderation_block row is written when the model output is unsafe.
+    _mod = await moderate_output(summary.strip(), surface="news_summary")
+    if not _mod.safe:
+        session.add(AuditLog(
+            user_id=current_user.id,
+            event_type="moderation_block",
+            metadata_json={"surface": "news_summary", "category": _mod.category},
+        ))
+        await session.commit()
+
+    return NewsSummaryOut(summary=_mod.text, tickers_mentioned=tickers)
 
 
 @router.get("/market/news/{exchange}/{ticker}", response_model=list[StockNewsOut])
@@ -267,7 +279,11 @@ async def get_stock_news_summary(
     except LLMError:
         summary = ""
 
-    return NewsSummaryOut(summary=summary.strip(), tickers_mentioned=[ticker])
+    # Kid-safe moderation seam. Best-effort: this endpoint has no DB session in
+    # scope, so no AuditLog row is written here by design (unlike the
+    # session-bearing news-summary/tutor/chart-coach surfaces).
+    _mod = await moderate_output(summary.strip(), surface="news_summary")
+    return NewsSummaryOut(summary=_mod.text, tickers_mentioned=[ticker])
 
 
 @router.get("/market/chart-guide/{exchange}/{ticker}", response_model=NewsSummaryOut)
@@ -333,7 +349,12 @@ async def get_chart_guide(
     except LLMError:
         summary = ""
 
-    return NewsSummaryOut(summary=summary.strip(), tickers_mentioned=[ticker])
+    # Kid-safe moderation seam. Best-effort: this endpoint has no DB session in
+    # scope, so no AuditLog row is written here by design (unlike the
+    # session-bearing news-summary/tutor/chart-coach surfaces). Shares the
+    # news_summary surface since it returns the same child-facing NewsSummaryOut.
+    _mod = await moderate_output(summary.strip(), surface="news_summary")
+    return NewsSummaryOut(summary=_mod.text, tickers_mentioned=[ticker])
 
 
 @router.post("/market/chart-coach", response_model=TutorChatResponse)
@@ -481,6 +502,12 @@ async def get_time_machine(
             fun_fact = fun_fact.strip()
         except LLMError:
             fun_fact = ""
+
+        # Kid-safe moderation seam. Best-effort: this endpoint has no DB
+        # session in scope, so no AuditLog row is written here by design
+        # (unlike the session-bearing news-summary/tutor/chart-coach surfaces).
+        _mod = await moderate_output(fun_fact, surface="time_machine")
+        fun_fact = _mod.text
 
     return TimeMachineOut(ticker=ticker, periods=periods, fun_fact=fun_fact)
 
