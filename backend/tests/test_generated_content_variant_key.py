@@ -1,8 +1,4 @@
-import pytest
-
 from app.models.generated_content import GeneratedContent
-
-pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
 def test_model_has_variant_key_column():
