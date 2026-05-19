@@ -4,9 +4,10 @@ from datetime import date as date_type
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.schemas.content import TOPIC_PATH_VALUES
+
 _COUNTRY_RE = re.compile(r"^[A-Z]{2}$")
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
-_TOPIC_RE = re.compile(r"^[a-z0-9_/-]+$")
 
 
 class RegisterRequest(BaseModel):
@@ -17,7 +18,7 @@ class RegisterRequest(BaseModel):
     country_code: str
     currency_code: str
     parent_email: EmailStr | None = None
-    topic_path: str | None = Field(default=None, max_length=200)
+    topic_path: str | None = Field(default=None, max_length=20)
     policy_version_accepted: str | None = Field(default=None, max_length=20)
 
     @field_validator("email", mode="before")
@@ -81,13 +82,20 @@ class RegisterRequest(BaseModel):
             raise ValueError("dob is not plausible")
         return v
 
+    @field_validator("topic_path", mode="before")
+    @classmethod
+    def normalise_topic(cls, v):
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
+
     @field_validator("topic_path")
     @classmethod
     def validate_topic(cls, v: str | None) -> str | None:
         if v is None:
             return v
-        if not _TOPIC_RE.match(v):
-            raise ValueError("topic_path may only contain [a-z0-9_/-]")
+        if v not in TOPIC_PATH_VALUES:
+            raise ValueError("topic_path must be one of the known learning topics")
         return v
 
     # Note: `parent_email` requirement for under-threshold minors is enforced in
