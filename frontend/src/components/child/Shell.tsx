@@ -1,8 +1,13 @@
+import { useRef, useCallback } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 import { useChildSession } from '@/hooks/useChildSession';
 import { useChildAuthGuard } from '@/hooks/useChildAuthGuard';
 import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
+import { useSwipeNav } from '@/hooks/useSwipeNav';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { PullToRefreshIndicator } from '@/components/mobile/PullToRefreshIndicator';
 import { TopNav } from './TopNav';
 import { TierBadge } from './TierBadge';
 import { BottomTabBar } from './BottomTabBar';
@@ -15,6 +20,18 @@ export function Shell() {
   const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
   useRouteFocus();
+
+  const mainRef = useRef<HTMLDivElement>(null);
+  const swipeRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+
+  useSwipeNav({ ref: swipeRef });
+
+  const handleRefresh = useCallback(async () => {
+    await queryClient.refetchQueries({ type: 'active' });
+  }, [queryClient]);
+
+  const { indicatorProps } = usePullToRefresh({ ref: mainRef, onRefresh: handleRefresh });
 
   if (session.isLoading) {
     return (
@@ -30,28 +47,31 @@ export function Shell() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
+    <div ref={swipeRef} className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
       <SkipLink />
       <TopNav username={session.data.username} />
       <div className="mx-auto flex max-w-5xl items-center px-4 pt-2">
         <TierBadge premium={session.data.is_premium} />
       </div>
       <VerifyEmailBanner profile={session.data} />
-      <AnimatePresence mode="wait">
-        <motion.main
-          key={location.pathname}
-          id="main"
-          tabIndex={-1}
-          className="pb-20 md:pb-0 outline-none"
-          style={{ paddingLeft: 'var(--safe-left)', paddingRight: 'var(--safe-right)' }}
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-          exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
-          transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-        >
-          <Outlet />
-        </motion.main>
-      </AnimatePresence>
+      <div ref={mainRef}>
+        <PullToRefreshIndicator {...indicatorProps} />
+        <AnimatePresence mode="wait">
+          <motion.main
+            key={location.pathname}
+            id="main"
+            tabIndex={-1}
+            className="pb-20 md:pb-0 outline-none"
+            style={{ paddingLeft: 'var(--safe-left)', paddingRight: 'var(--safe-right)' }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+          >
+            <Outlet />
+          </motion.main>
+        </AnimatePresence>
+      </div>
       <BottomTabBar />
     </div>
   );
