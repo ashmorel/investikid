@@ -6,6 +6,7 @@ import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
 import { TopNav } from './TopNav';
 import { TierBadge } from './TierBadge';
 import { BottomTabBar } from './BottomTabBar';
+import { SkipLink } from '@/components/a11y/SkipLink';
 
 export function Shell() {
   const session = useChildSession();
@@ -27,6 +28,7 @@ export function Shell() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
+      <SkipLink />
       <TopNav username={session.data.username} />
       <div className="mx-auto flex max-w-5xl items-center px-4 pt-2">
         <TierBadge premium={session.data.is_premium} />
@@ -35,7 +37,9 @@ export function Shell() {
       <AnimatePresence mode="wait">
         <motion.main
           key={location.pathname}
-          className="pb-20 md:pb-0"
+          id="main"
+          tabIndex={-1}
+          className="pb-20 md:pb-0 outline-none"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
