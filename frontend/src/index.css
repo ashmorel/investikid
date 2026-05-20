@@ -20,6 +20,10 @@
     --input: 48 97% 77%;
     --ring: 38 92% 35%;
     --radius: 0.75rem;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
   }
   * { @apply border-border; }
   body { @apply bg-background text-foreground; font-family: ui-sans-serif, system-ui, sans-serif; }

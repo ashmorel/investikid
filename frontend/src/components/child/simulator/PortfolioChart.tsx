@@ -23,6 +23,11 @@ export function PortfolioChart({ history }: Props) {
   const dir = delta >= 0 ? 'rose' : 'fell';
   const summary = `Portfolio ${dir} from ${start.toFixed(2)} to ${end.toFixed(2)} (${pct.toFixed(1)}%) across ${history.length} points.`;
 
+  const tickInterval =
+    typeof window !== 'undefined' && window.innerWidth < 400
+      ? Math.max(Math.floor(history.length / 3), 1)
+      : undefined;
+
   return (
     <div
       className="mt-4 rounded-2xl border-2 border-amber-200 bg-white p-4"
@@ -38,7 +43,7 @@ export function PortfolioChart({ history }: Props) {
               <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+          <XAxis dataKey="date" tick={{ fontSize: 11 }} interval={tickInterval ?? 'preserveStartEnd'} />
           <YAxis hide />
           <Tooltip
             contentStyle={{

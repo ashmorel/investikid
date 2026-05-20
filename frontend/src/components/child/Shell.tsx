@@ -43,6 +43,7 @@ export function Shell() {
           id="main"
           tabIndex={-1}
           className="pb-20 md:pb-0 outline-none"
+          style={{ paddingLeft: 'var(--safe-left)', paddingRight: 'var(--safe-right)' }}
           initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
           animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
           exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}

@@ -56,6 +56,11 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
     ? `${ticker} price ${dir} from ${startPrice.toFixed(2)} to ${endPrice.toFixed(2)} (${changePct.toFixed(1)}%) over ${points.length} ${period} points.`
     : `${ticker} price history unavailable for ${period}.`;
 
+  const tickInterval =
+    typeof window !== 'undefined' && window.innerWidth < 400
+      ? Math.max(Math.floor(points.length / 3), 1)
+      : undefined;
+
   return (
     <div
       className="rounded-2xl border-2 border-amber-200 bg-white p-4"
@@ -76,7 +81,7 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
           <button
             key={p.key}
             onClick={() => handlePeriodChange(p.key)}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors min-h-[44px] min-w-[44px] ${
               period === p.key
                 ? 'bg-amber-500 text-white'
                 : 'bg-amber-50 text-gray-600 hover:bg-amber-100'
@@ -113,7 +118,7 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
                   ? date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
                   : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
               }}
-              interval="preserveStartEnd"
+              interval={tickInterval ?? 'preserveStartEnd'}
             />
             <YAxis
               hide
