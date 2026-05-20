@@ -149,7 +149,6 @@ export function ChildCard({ child }: { child: Child }) {
               </DialogDescription>
             </DialogHeader>
             <Input
-              autoFocus
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               aria-label="Type child username to confirm"
