@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { parentApi, type Child } from '@/api/parent';
 import { useParentAuthGuard } from '@/hooks/useParentAuthGuard';
 import { ChildCard } from '@/components/ChildCard';
@@ -22,9 +22,14 @@ export default function ParentDashboard() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Parent dashboard</h1>
-        <Button variant="ghost" onClick={() => logout.mutate()} disabled={logout.isPending}>
+      <header className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex items-center justify-between border-b border-amber-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:-mt-6 sm:px-6">
+        <div className="flex items-center gap-2">
+          <Link to="/parent" className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-extrabold text-white">
+            IE
+          </Link>
+          <h1 className="text-lg font-semibold sm:text-2xl">Parent Dashboard</h1>
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => logout.mutate()} disabled={logout.isPending}>
           Log out
         </Button>
       </header>
