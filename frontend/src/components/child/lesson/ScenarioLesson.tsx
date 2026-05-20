@@ -25,12 +25,12 @@ export function ScenarioLesson({ contentJson, onComplete, illustration, onShowEd
     <div className="rounded-2xl border-2 border-amber-200 bg-white p-6 space-y-5">
       {illustration && <div>{illustration}</div>}
       <p className="text-base italic text-gray-500 leading-relaxed">{contentJson.prompt}</p>
-      <ul className="space-y-2" role="radiogroup">
+      <div className="space-y-2" role="radiogroup">
         {contentJson.choices.map((choice, i) => {
           const showCorrect = submitted && i === contentJson.correct_index;
           const showPickedWrong = submitted && i === selected && !isCorrect;
           return (
-            <li key={i} className="space-y-1">
+            <div key={i} className="space-y-1">
               <label
                 className={cn(
                   'flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3 transition-all active:scale-[0.98]',
@@ -62,10 +62,10 @@ export function ScenarioLesson({ contentJson, onComplete, illustration, onShowEd
               {submitted && (showCorrect || showPickedWrong) && (
                 <p className="ml-9 text-sm text-gray-500">{choice.outcome}</p>
               )}
-            </li>
+            </div>
           );
         })}
-      </ul>
+      </div>
       {submitted ? (
         <div className="flex justify-end">
           <Button
