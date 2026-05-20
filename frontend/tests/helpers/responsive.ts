@@ -66,7 +66,7 @@ export function mockTouchDevice(): () => void {
   });
   return () => {
     if (!had) {
-      delete (window as Record<string, unknown>).ontouchstart;
+      delete (window as unknown as Record<string, unknown>).ontouchstart;
     }
   };
 }
