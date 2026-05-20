@@ -18,9 +18,12 @@
     --accent-foreground: 220 9% 12%;
     --border: 48 97% 77%;
     --input: 48 97% 77%;
-    --ring: 38 92% 50%;
+    --ring: 38 92% 35%;
     --radius: 0.75rem;
   }
   * { @apply border-border; }
   body { @apply bg-background text-foreground; font-family: ui-sans-serif, system-ui, sans-serif; }
+  /* WCAG 2.2 SC 2.4.11 focus-not-obscured: keep keyboard focus clear of
+     sticky TopNav (~3.5rem) + BottomTabBar (~4rem). */
+  :focus-visible { scroll-margin-top: 4.5rem; scroll-margin-bottom: 5rem; }
 }

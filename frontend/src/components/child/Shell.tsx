@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useChildSession } from '@/hooks/useChildSession';
 import { useChildAuthGuard } from '@/hooks/useChildAuthGuard';
 import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
@@ -13,6 +13,7 @@ export function Shell() {
   const session = useChildSession();
   useChildAuthGuard(session.error);
   const location = useLocation();
+  const prefersReducedMotion = useReducedMotion();
   useRouteFocus();
 
   if (session.isLoading) {
@@ -42,10 +43,10 @@ export function Shell() {
           id="main"
           tabIndex={-1}
           className="pb-20 md:pb-0 outline-none"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.15 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
         >
           <Outlet />
         </motion.main>
