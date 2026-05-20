@@ -24,7 +24,7 @@ describe('usePullToRefresh', () => {
   });
 
   afterEach(() => {
-    delete (window as Record<string, unknown>).ontouchstart;
+    delete (window as unknown as Record<string, unknown>).ontouchstart;
     vi.restoreAllMocks();
   });
 
