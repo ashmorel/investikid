@@ -21,7 +21,7 @@ export default function ParentDashboard() {
   });
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
+    <main className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Parent dashboard</h1>
         <Button variant="ghost" onClick={() => logout.mutate()} disabled={logout.isPending}>

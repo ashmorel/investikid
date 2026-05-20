@@ -45,7 +45,7 @@ export default function PendingConsent() {
 
   if (!email) {
     return (
-      <main className="mx-auto max-w-md p-6">
+      <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
         <h1 className="text-2xl font-semibold">Page expired</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           We need your email to recheck your account.
@@ -58,7 +58,7 @@ export default function PendingConsent() {
   }
 
   return (
-    <main className="mx-auto max-w-md p-6">
+    <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
       <h1 className="text-2xl font-semibold">Waiting for your parent to approve</h1>
       <p className="mt-3 text-sm text-muted-foreground">
         We've emailed your parent at the address you provided. Once they click the approval link,

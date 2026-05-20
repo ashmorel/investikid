@@ -96,7 +96,7 @@ export default function Signup() {
 
   if (step === 1) {
     return (
-      <main className="mx-auto max-w-md p-6">
+      <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
         <h1 className="text-2xl font-semibold">Create your account</h1>
         <p className="mt-1 text-sm text-muted-foreground">Step 1 of 2</p>
         <form
@@ -146,7 +146,7 @@ export default function Signup() {
   }
 
   return (
-    <main className="mx-auto max-w-md p-6">
+    <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
       <h1 className="text-2xl font-semibold">Create your account</h1>
       <p className="mt-1 text-sm text-muted-foreground">Step 2 of 2</p>
       <form

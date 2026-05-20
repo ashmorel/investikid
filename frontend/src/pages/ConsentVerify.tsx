@@ -78,7 +78,7 @@ export default function ConsentVerify() {
 }
 
 function Page({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto max-w-lg p-6">{children}</main>;
+  return <main className="mx-auto max-w-lg px-4 py-4 sm:px-6 sm:py-6">{children}</main>;
 }
 
 function Success({ title, message }: { title: string; message: string }) {

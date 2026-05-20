@@ -83,7 +83,7 @@ export default function Market() {
 
   if (isLoading && stocks.length === 0) {
     return (
-      <div className="mx-auto max-w-4xl p-6">
+      <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
         <p className="text-sm text-muted-foreground">Loading stocks…</p>
       </div>
     );
@@ -92,7 +92,7 @@ export default function Market() {
   const groups = groupByExchange(stocks);
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
       <div className="mb-1 flex items-center gap-2">
         <h1 className="text-2xl font-semibold">Browse Stocks</h1>
         <EduTooltip

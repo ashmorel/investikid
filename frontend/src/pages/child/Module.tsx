@@ -19,12 +19,12 @@ export default function Module() {
   });
 
   if (modulesQ.isLoading || lessonsQ.isLoading) {
-    return <div className="mx-auto max-w-3xl p-6 text-sm text-gray-500">Loading…</div>;
+    return <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6 text-sm text-gray-500">Loading…</div>;
   }
 
   if (modulesQ.isError || lessonsQ.isError) {
     return (
-      <div className="mx-auto max-w-3xl p-6">
+      <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
         <p>Module not found or locked.</p>
         <Link to="/lessons" className="text-sm text-amber-600 hover:underline">← Back to modules</Link>
       </div>
@@ -38,7 +38,7 @@ export default function Module() {
   return (
     <div className="mx-auto max-w-3xl">
       {/* Banner */}
-      <div className="bg-gradient-to-br from-amber-100 to-amber-200 px-6 py-8 text-center">
+      <div className="bg-gradient-to-br from-amber-100 to-amber-200 px-4 py-6 sm:px-6 sm:py-8 text-center">
         <span className="text-5xl">{module?.icon ?? '📚'}</span>
         <h1 className="mt-3 text-2xl font-extrabold text-gray-900">{module?.title ?? 'Module'}</h1>
         <p className="mt-1 text-sm text-gray-600">
@@ -47,7 +47,7 @@ export default function Module() {
       </div>
 
       {/* Quest list */}
-      <div className="px-6 py-4">
+      <div className="px-4 py-4 sm:px-6">
         <div className="rounded-2xl border-2 border-amber-200 bg-white overflow-hidden">
           {lessons.map((lesson, i) => {
             const nextIndex = lessons.findIndex((l) => !l.completed);

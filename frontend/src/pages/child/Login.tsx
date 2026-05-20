@@ -38,7 +38,7 @@ export default function Login() {
   });
 
   return (
-    <main className="mx-auto max-w-md p-6">
+    <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
       <h1 className="text-2xl font-semibold">Sign in to Invest-Ed</h1>
       <form
         className="mt-6 space-y-3"
