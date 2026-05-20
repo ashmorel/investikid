@@ -164,7 +164,7 @@ export default function Market() {
                   <Link
                     key={`${s.exchange}-${s.ticker}`}
                     to={`/simulator/stock/${s.exchange}/${s.ticker}`}
-                    className="rounded-lg border bg-card p-3 transition-shadow hover:shadow-md"
+                    className="rounded-lg border bg-card p-2 sm:p-3 min-h-[44px] transition-shadow hover:shadow-md"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold">{s.ticker}</span>
