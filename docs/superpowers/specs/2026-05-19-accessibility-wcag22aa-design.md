@@ -1,6 +1,6 @@
 # Accessibility (WCAG 2.2 AA) — Design Spec (Sub-project 5)
 
-**Status:** Approved (brainstorming) — 2026-05-19
+**Status:** Delivered — 2026-05-20 (sub-project 5)
 **Programme:** Invest-Ed hardening, sub-project 5 (follows 4b; sub-projects 1–4 DONE)
 **Working dir:** `/Users/leeashmore/Local Repo/invest-ed`
 
