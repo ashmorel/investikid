@@ -7,11 +7,13 @@ import { TopNav } from './TopNav';
 import { TierBadge } from './TierBadge';
 import { BottomTabBar } from './BottomTabBar';
 import { SkipLink } from '@/components/a11y/SkipLink';
+import { useRouteFocus } from '@/components/a11y/useRouteFocus';
 
 export function Shell() {
   const session = useChildSession();
   useChildAuthGuard(session.error);
   const location = useLocation();
+  useRouteFocus();
 
   if (session.isLoading) {
     return (
