@@ -7,16 +7,28 @@ import {
   Tooltip,
 } from 'recharts';
 import type { PortfolioSnapshot } from '@/api/simulator';
+import { ChartDescription } from '@/components/a11y/ChartDescription';
 
 type Props = {
   history: PortfolioSnapshot[];
 };
 
 export function PortfolioChart({ history }: Props) {
-  if (history.length < 2) return null;
+  if (!Array.isArray(history) || history.length < 2) return null;
+
+  const start = history[0].value;
+  const end = history[history.length - 1].value;
+  const delta = end - start;
+  const pct = start > 0 ? (delta / start) * 100 : 0;
+  const dir = delta >= 0 ? 'rose' : 'fell';
+  const summary = `Portfolio ${dir} from ${start.toFixed(2)} to ${end.toFixed(2)} (${pct.toFixed(1)}%) across ${history.length} points.`;
 
   return (
-    <div className="mt-4 rounded-2xl border-2 border-amber-200 bg-white p-4">
+    <div
+      className="mt-4 rounded-2xl border-2 border-amber-200 bg-white p-4"
+      role="img"
+      aria-label={summary}
+    >
       <h3 className="mb-3 text-sm font-semibold text-gray-700">Portfolio Value</h3>
       <ResponsiveContainer width="100%" height={200}>
         <AreaChart data={history}>
@@ -44,6 +56,11 @@ export function PortfolioChart({ history }: Props) {
           />
         </AreaChart>
       </ResponsiveContainer>
+      <ChartDescription
+        summary={summary}
+        columns={['Date', 'Value']}
+        rows={history.map((p) => [String(p.date), p.value.toFixed(2)])}
+      />
     </div>
   );
 }
