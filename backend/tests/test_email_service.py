@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from sqlalchemy import select
 
@@ -24,7 +26,9 @@ def test_render_unknown_template_raises():
 
 async def test_logging_sender_persists_to_db(db_session):
     sender = LoggingEmailSender()
-    await sender.send(db_session, "p@example.com", "parent_magic_link", {"link": "http://x/m?t=1"})
+    sid = uuid.uuid4()
+    await sender.send(db_session, "p@example.com", "parent_magic_link", {"link": "http://x/m?t=1"}, subject_id=sid)
     await db_session.commit()
     rows = (await db_session.scalars(select(SentEmail))).all()
     assert any(r.to_email == "p@example.com" and "http://x/m?t=1" in r.body for r in rows)
+    assert any(r.subject_id == sid for r in rows)

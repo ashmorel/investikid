@@ -20,6 +20,13 @@ const EXCHANGE_BADGE_COLORS: Record<string, string> = {
   ASX: 'bg-emerald-100 text-emerald-800',
 };
 
+const EXCHANGE_GROUP_LABELS: Record<string, string> = {
+  NASDAQ: 'US Stocks',
+  NYSE: 'US Stocks',
+  LSE: 'UK Stocks',
+  HKEX: 'Hong Kong Stocks',
+};
+
 function groupByExchange(stocks: QuoteOut[]) {
   const groups: Record<string, QuoteOut[]> = {};
   for (const s of stocks) {
@@ -51,17 +58,18 @@ export default function Market() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: searchResults, isLoading: searchLoading, isFetching: searchFetching } = useQuery<QuoteOut[] | null>({
+  const { data: searchResults, isFetching: searchFetching } = useQuery<QuoteOut[] | null>({
     queryKey: ['market-search', debouncedQuery],
     queryFn: () => simulatorApi.searchMarket(debouncedQuery),
-    enabled: debouncedQuery.length > 0,
+    enabled: debouncedQuery.length >= 2,
     retry: false,
     staleTime: 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
-  const isSearching = debouncedQuery.length > 0;
+  const isSearching = debouncedQuery.length >= 2;
   const stocks = isSearching ? (searchResults ?? []) : (featuredStocks ?? []);
-  const isLoading = isSearching ? searchLoading : featuredLoading;
+  const isLoading = !isSearching && featuredLoading;
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -75,7 +83,7 @@ export default function Market() {
 
   if (isLoading && stocks.length === 0) {
     return (
-      <div className="mx-auto max-w-4xl p-6">
+      <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
         <p className="text-sm text-muted-foreground">Loading stocks…</p>
       </div>
     );
@@ -84,7 +92,7 @@ export default function Market() {
   const groups = groupByExchange(stocks);
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
       <div className="mb-1 flex items-center gap-2">
         <h1 className="text-2xl font-semibold">Browse Stocks</h1>
         <EduTooltip
@@ -102,8 +110,10 @@ export default function Market() {
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         {isSearching
-          ? `${stocks.length} results for "${debouncedQuery}"`
-          : `${stocks.length} featured stocks — search to find any stock worldwide`}
+          ? `${stocks.length} result${stocks.length !== 1 ? 's' : ''} for "${debouncedQuery}"`
+          : query.trim().length === 1
+            ? 'Type one more character to search…'
+            : `${stocks.length} featured stocks — search to find any stock worldwide`}
       </p>
 
       <div className="relative mb-2">
@@ -147,14 +157,14 @@ export default function Market() {
           {groups.map(([exchange, groupStocks]) => (
             <section key={exchange}>
               <h2 className="mb-2 text-sm font-medium text-muted-foreground">
-                {exchange}
+                {EXCHANGE_GROUP_LABELS[exchange] ?? exchange}
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {groupStocks.map((s) => (
                   <Link
                     key={`${s.exchange}-${s.ticker}`}
                     to={`/simulator/stock/${s.exchange}/${s.ticker}`}
-                    className="rounded-lg border bg-card p-3 transition-shadow hover:shadow-md"
+                    className="rounded-lg border bg-card p-2 sm:p-3 min-h-[44px] transition-shadow hover:shadow-md"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold">{s.ticker}</span>

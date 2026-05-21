@@ -25,9 +25,10 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 _DEFAULT_EXEMPT_PATHS = frozenset({
     "/auth/login", "/auth/register", "/health",
+    "/auth/forgot-password", "/auth/reset-password",
     "/consent/decide",
     "/parent/auth/request",
-    "/tutor/chat",
+    "/billing/webhook",
 })
 # Path prefixes that bypass CSRF (for dynamic segments like /consent/request/{id})
 _DEFAULT_EXEMPT_PREFIXES = ("/consent/request/",)

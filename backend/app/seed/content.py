@@ -201,7 +201,7 @@ _MODULES = [
     },
     {
         "topic": "crypto", "title": "What is Crypto?",
-        "country_codes": [], "is_premium": False, "order_index": 6, "icon": "₿",
+        "country_codes": [], "is_premium": True, "order_index": 6, "icon": "₿",  # SAMPLE premium gating fixture — real premium curriculum is sub-project #4
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
                 "title": "Digital money on a shared ledger",
@@ -371,7 +371,7 @@ _MODULES = [
     },
     {
         "topic": "entrepreneurship", "title": "Revenue, Costs & Profit",
-        "country_codes": [], "is_premium": False, "order_index": 10, "icon": "📊",
+        "country_codes": [], "is_premium": True, "order_index": 10, "icon": "📊",  # SAMPLE premium gating fixture — real premium curriculum is sub-project #4
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
                 "title": "Revenue isn't profit",
@@ -405,7 +405,7 @@ _MODULES = [
     },
     {
         "topic": "taxes", "title": "Your First Paycheque",
-        "country_codes": [], "is_premium": False, "order_index": 11, "icon": "💷",
+        "country_codes": [], "is_premium": True, "order_index": 11, "icon": "💷",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
                 "title": "Reading a payslip",
@@ -444,6 +444,7 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
         )
         if existing:
             existing.icon = spec.get("icon", "📚")
+            existing.is_premium = spec["is_premium"]
             continue
         module = Module(
             topic=spec["topic"], title=spec["title"],

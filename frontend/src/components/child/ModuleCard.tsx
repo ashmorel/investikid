@@ -18,15 +18,17 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
     return (
       <button
         type="button"
+        data-testid="module-locked"
         onClick={onLockedClick}
         aria-label={`${module.title} (locked)`}
         className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-amber-200 bg-white p-4 text-center opacity-60 cursor-not-allowed"
       >
-        <span className="text-3xl">{module.icon}</span>
-        <h3 className="font-bold text-sm text-gray-900">{module.title}</h3>
+        <span className="text-3xl" aria-hidden="true">{module.icon}</span>
+        <h2 className="font-bold text-sm text-gray-900">{module.title}</h2>
         <span className="inline-flex items-center gap-1 text-xs text-gray-500">
           <Lock className="h-3.5 w-3.5" /> Premium
         </span>
+        <p className="text-xs text-gray-400">Premium — ask a grown-up to unlock. Billing coming soon.</p>
       </button>
     );
   }
@@ -36,8 +38,8 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
       to={`/lessons/${module.id}`}
       className="flex flex-col items-center gap-2 rounded-2xl border-2 border-amber-200 bg-white p-4 text-center transition-all duration-200 hover:-translate-y-1 hover:border-amber-400 hover:shadow-md"
     >
-      <span className="text-4xl">{module.icon}</span>
-      <h3 className="font-bold text-sm text-gray-900">{module.title}</h3>
+      <span className="text-4xl" aria-hidden="true">{module.icon}</span>
+      <h2 className="font-bold text-sm text-gray-900">{module.title}</h2>
       <p className="text-xs text-gray-500">{completedCount} / {totalCount} quests</p>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-100">
         <div

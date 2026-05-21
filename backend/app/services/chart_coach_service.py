@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import uuid
 from datetime import date
 from typing import Any
@@ -8,9 +7,11 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.models.audit import AuditLog
 from app.models.tutor import ChartCoachConversation
 from app.models.user import User
 from app.services.llm_client import get_llm_client, get_model_name
+from app.services.moderation import moderate_output
 from app.services.price_provider import PricePoint
 
 
@@ -20,24 +21,6 @@ class ChartCoachLimitReached(Exception):
 
 class ChartCoachInputTooLong(Exception):
     """User message exceeds the maximum character limit."""
-
-
-_ADVICE_PATTERNS = re.compile(
-    r"\byou should (buy|sell|invest|spend|save|trade)\b"
-    r"|\b(buy|sell|invest in) [A-Z][a-z]",
-    re.IGNORECASE,
-)
-
-_SAFE_FALLBACK = (
-    "That's a great question! Ask a parent or teacher for advice "
-    "about real money decisions."
-)
-
-
-def _safety_filter(response: str) -> str:
-    if _ADVICE_PATTERNS.search(response):
-        return _SAFE_FALLBACK
-    return response
 
 
 def _build_stats(ticker: str, period: str, points: list[PricePoint]) -> str:
@@ -132,7 +115,14 @@ async def chart_coach_chat(
         max_tokens=settings.tutor_max_response_tokens,
     )
 
-    filtered_response = _safety_filter(raw_response)
+    _mod = await moderate_output(raw_response, surface="chart_coach")
+    filtered_response = _mod.text
+    if not _mod.safe:
+        session.add(AuditLog(
+            user_id=user.id,
+            event_type="moderation_block",
+            metadata_json={"surface": "chart_coach", "category": _mod.category},
+        ))
 
     conversation.messages = [
         *conversation.messages,

@@ -20,7 +20,7 @@ function renderPage() {
   );
 }
 
-beforeEach(() => { vi.spyOn(globalThis, 'fetch'); });
+beforeEach(() => { vi.restoreAllMocks(); vi.spyOn(globalThis, 'fetch'); });
 
 describe('Signup step 1', () => {
   it('shows under-threshold banner for UK 11', async () => {
@@ -70,6 +70,7 @@ describe('Signup step 2 — under-threshold flow', () => {
     await userEvent.type(screen.getByLabelText(/username/i), 'kid');
     await userEvent.type(screen.getByLabelText(/password/i), 'SecurePass123!');
     await userEvent.type(screen.getByLabelText(/parent email/i), 'parent@example.com');
+    await userEvent.click(screen.getByRole('checkbox'));
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() => expect(screen.getByText('Pending Consent')).toBeInTheDocument());
@@ -99,6 +100,7 @@ describe('Signup step 2 — over-threshold flow', () => {
     await userEvent.type(screen.getByLabelText(/^email$/i), 'kid@example.com');
     await userEvent.type(screen.getByLabelText(/username/i), 'kid');
     await userEvent.type(screen.getByLabelText(/password/i), 'SecurePass123!');
+    await userEvent.click(screen.getByRole('checkbox'));
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() => expect(screen.getByText('Home Page')).toBeInTheDocument());
@@ -117,6 +119,7 @@ describe('Signup step 2 — error handling', () => {
     await userEvent.type(screen.getByLabelText(/^email$/i), 'a@x.com');
     await userEvent.type(screen.getByLabelText(/username/i), 'taken');
     await userEvent.type(screen.getByLabelText(/password/i), 'SecurePass123!');
+    await userEvent.click(screen.getByRole('checkbox'));
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
     expect(await screen.findByText(/Username already taken/i)).toBeInTheDocument();
   });

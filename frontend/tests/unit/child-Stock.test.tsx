@@ -44,7 +44,7 @@ describe('Stock page', () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Apple Inc.')).toBeInTheDocument();
-      expect(screen.getByText(/\$185\.42 USD/)).toBeInTheDocument();
+      expect(screen.getAllByText(/\$185\.42 USD/).length).toBeGreaterThan(0);
       expect(screen.getByRole('button', { name: /review trade/i })).toBeInTheDocument();
     });
   });

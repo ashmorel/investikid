@@ -1,18 +1,19 @@
 from __future__ import annotations
 
 import json
-import re
 import uuid
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.models.audit import AuditLog
 from app.models.content import Lesson
 from app.models.skill_profile import TopicMastery
 from app.models.tutor import TutorConversation
 from app.models.user import User
 from app.services.llm_client import get_llm_client, get_model_name
+from app.services.moderation import moderate_output
 
 
 class TutorLimitReached(Exception):
@@ -52,26 +53,6 @@ _SKILL_INSTRUCTIONS = {
         " Ask 'what if' scenarios to deepen understanding."
     ),
 }
-
-# Patterns that suggest financial advice
-_ADVICE_PATTERNS = re.compile(
-    r"\byou should (buy|sell|invest|spend|save|trade)\b"
-    r"|\b(buy|sell|invest in) [A-Z][a-z]",
-    re.IGNORECASE,
-)
-
-_SAFE_FALLBACK = (
-    "That's a great question! Ask a parent or teacher for advice "
-    "about real money decisions. 😊"
-)
-
-
-def safety_filter(response: str) -> str:
-    """Replace responses containing financial advice patterns with a safe fallback."""
-    if _ADVICE_PATTERNS.search(response):
-        return _SAFE_FALLBACK
-    return response
-
 
 def _skill_level(mastery_score: float) -> str:
     if mastery_score < 0.3:
@@ -152,8 +133,15 @@ async def chat(
         max_tokens=settings.tutor_max_response_tokens,
     )
 
-    # Safety filter
-    filtered_response = safety_filter(raw_response)
+    # Kid-safe moderation seam
+    _mod = await moderate_output(raw_response, surface="tutor")
+    filtered_response = _mod.text
+    if not _mod.safe:
+        session.add(AuditLog(
+            user_id=user.id,
+            event_type="moderation_block",
+            metadata_json={"surface": "tutor", "category": _mod.category},
+        ))
 
     # Persist conversation
     conversation.messages = [

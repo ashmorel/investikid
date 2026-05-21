@@ -12,6 +12,7 @@ import { childStatus, type ChildStatus } from '@/lib/format';
 import { parentApi, type Child } from '@/api/parent';
 import { ApiError } from '@/api/client';
 import { cn } from '@/lib/utils';
+import { ChildAnalytics } from '@/components/ChildAnalytics';
 
 const CHIP: Record<ChildStatus, string> = {
   active: 'bg-emerald-100 text-emerald-900',
@@ -83,6 +84,10 @@ export function ChildCard({ child }: { child: Child }) {
         </span>
       </div>
 
+      {child.analytics && !isDeleted && (
+        <ChildAnalytics analytics={child.analytics} />
+      )}
+
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Switch
@@ -95,6 +100,10 @@ export function ChildCard({ child }: { child: Child }) {
             Freeze account
           </Label>
         </div>
+
+        {child.is_premium && (
+          <span className="text-xs font-medium text-amber-600">Premium ✨</span>
+        )}
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -111,7 +120,6 @@ export function ChildCard({ child }: { child: Child }) {
               </DialogDescription>
             </DialogHeader>
             <Input
-              autoFocus
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               aria-label="Type child username to confirm"

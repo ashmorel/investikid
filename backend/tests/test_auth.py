@@ -252,3 +252,177 @@ async def test_refresh_token_rejected_as_access_token(client):
         "/users/me", cookies={"access_token": refresh_cookie}
     )
     assert response.status_code == 401
+
+
+async def test_register_teen_self_sends_verify_email(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.consent import SentEmail
+
+    resp = await client.post("/auth/register", json={
+        "email": "teen@example.com", "username": "teen1",
+        "password": "SecurePass123!", "dob": "2009-01-01",
+        "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    assert resp.status_code == 201
+    rows = (await db_session.scalars(
+        select(SentEmail).where(SentEmail.template == "verify_email")
+    )).all()
+    assert any(r.to_email == "teen@example.com" for r in rows)
+
+
+async def test_register_underage_no_child_email_ok_with_parent(client):
+    resp = await client.post("/auth/register", json={
+        "username": "littlekid", "password": "SecurePass123!",
+        "dob": "2016-01-01", "country_code": "GB", "currency_code": "GBP",
+        "parent_email": "parent@example.com",
+        "policy_version_accepted": "2026-05-16",
+    })
+    assert resp.status_code == 201
+    assert resp.json()["status"] == "pending_consent"
+
+
+async def test_register_teen_without_email_rejected(client):
+    resp = await client.post("/auth/register", json={
+        "username": "noemailteen", "password": "SecurePass123!",
+        "dob": "2009-01-01", "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    assert resp.status_code == 400
+
+
+async def test_login_with_username_for_emailless_account(client):
+    # Underage account registered without child email, then parent-approved.
+    from sqlalchemy import select
+
+    from app.core.database import get_session
+    from app.main import app
+    from app.models.user import User
+
+    reg = await client.post("/auth/register", json={
+        "username": "emaillesskid", "password": "SecurePass123!",
+        "dob": "2016-01-01", "country_code": "GB", "currency_code": "GBP",
+        "parent_email": "parent2@example.com",
+        "policy_version_accepted": "2026-05-16",
+    })
+    assert reg.status_code == 201
+
+    # Activate directly via the overridden session (simulating parent approval).
+    gen = app.dependency_overrides[get_session]()
+    db = await gen.__anext__()
+    user = await db.scalar(select(User).where(User.username == "emaillesskid"))
+    user.is_active = True
+    await db.commit()
+
+    resp = await client.post("/auth/login", json={
+        "email": "emaillesskid", "password": "SecurePass123!",
+    })
+    assert resp.status_code == 200
+
+
+async def test_verify_email_happy_path(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.user import User
+    from app.services.tokens import VERIFY_EMAIL_AUDIENCE, VERIFY_EMAIL_EXPIRY, issue_one_time_token
+
+    await client.post("/auth/register", json={
+        "email": "verifyme@example.com", "username": "verifyme",
+        "password": "SecurePass123!", "dob": "2009-01-01",
+        "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    user = await db_session.scalar(select(User).where(User.username == "verifyme"))
+    assert user.email_verified_at is None
+    tok = await issue_one_time_token(
+        db_session, purpose=VERIFY_EMAIL_AUDIENCE, email=user.email,
+        subject_id=user.id, expires_in=VERIFY_EMAIL_EXPIRY,
+    )
+    resp = await client.get(f"/auth/verify-email?token={tok}")
+    assert resp.status_code == 200
+    await db_session.refresh(user)
+    assert user.email_verified_at is not None
+
+
+async def test_verify_email_bad_token_410(client):
+    resp = await client.get("/auth/verify-email?token=not-a-real-token")
+    assert resp.status_code == 410
+
+
+async def test_forgot_password_underage_routes_to_parent(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.consent import SentEmail
+
+    await client.post("/auth/register", json={
+        "username": "fpkid", "password": "SecurePass123!",
+        "dob": "2016-01-01", "country_code": "GB", "currency_code": "GBP",
+        "parent_email": "fpparent@example.com",
+        "policy_version_accepted": "2026-05-16",
+    })
+    resp = await client.post("/auth/forgot-password", json={"email": "fpkid"})
+    assert resp.status_code == 202
+    rows = (await db_session.scalars(
+        select(SentEmail).where(SentEmail.template == "password_reset")
+    )).all()
+    assert any(r.to_email == "fpparent@example.com" for r in rows)
+
+
+async def test_forgot_password_unknown_still_202(client):
+    resp = await client.post("/auth/forgot-password", json={"email": "nobody@example.com"})
+    assert resp.status_code == 202
+
+
+async def test_reset_password_flow_revokes_refresh(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.user import RefreshToken, User
+    from app.services.tokens import PASSWORD_RESET_AUDIENCE, PASSWORD_RESET_EXPIRY, issue_one_time_token
+
+    await client.post("/auth/register", json={
+        "email": "resetme@example.com", "username": "resetme",
+        "password": "SecurePass123!", "dob": "2009-01-01",
+        "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    user = await db_session.scalar(select(User).where(User.username == "resetme"))
+    tok = await issue_one_time_token(
+        db_session, purpose=PASSWORD_RESET_AUDIENCE, email=user.email,
+        subject_id=user.id, expires_in=PASSWORD_RESET_EXPIRY,
+    )
+    resp = await client.post("/auth/reset-password", json={
+        "token": tok, "new_password": "BrandNewPass456!",
+    })
+    assert resp.status_code == 200
+    rt = (await db_session.scalars(
+        select(RefreshToken).where(RefreshToken.user_id == user.id)
+    )).all()
+    assert all(t.revoked_at is not None for t in rt)
+    login = await client.post("/auth/login", json={
+        "email": "resetme@example.com", "password": "BrandNewPass456!",
+    })
+    assert login.status_code == 200
+
+
+async def test_reset_password_weak_rejected(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.user import User
+    from app.services.tokens import PASSWORD_RESET_AUDIENCE, PASSWORD_RESET_EXPIRY, issue_one_time_token
+
+    await client.post("/auth/register", json={
+        "email": "weak@example.com", "username": "weakreset",
+        "password": "SecurePass123!", "dob": "2009-01-01",
+        "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    user = await db_session.scalar(select(User).where(User.username == "weakreset"))
+    tok = await issue_one_time_token(
+        db_session, purpose=PASSWORD_RESET_AUDIENCE, email=user.email,
+        subject_id=user.id, expires_in=PASSWORD_RESET_EXPIRY,
+    )
+    resp = await client.post("/auth/reset-password", json={
+        "token": tok, "new_password": "short",
+    })
+    assert resp.status_code == 422

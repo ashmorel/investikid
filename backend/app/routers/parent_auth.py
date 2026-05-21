@@ -46,6 +46,7 @@ async def request_magic_link(
     link = f"{settings.app_base_url}/parent/auth/callback?token={token}"
     await get_email_sender().send(
         session, str(payload.email), "parent_magic_link", {"link": link},
+        subject_id=None,
     )
     await session.commit()
     return {"status": "queued"}

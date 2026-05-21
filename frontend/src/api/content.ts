@@ -1,6 +1,19 @@
 import { apiFetch } from './client';
 
 export type ModuleTopic = 'stocks' | 'savings' | 'real_estate' | 'budgeting' | 'risk' | 'crypto' | 'taxes' | 'debt' | 'entrepreneurship';
+
+export const TOPIC_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'No preference' },
+  { value: 'stocks', label: 'Stocks' },
+  { value: 'savings', label: 'Savings' },
+  { value: 'real_estate', label: 'Real estate' },
+  { value: 'budgeting', label: 'Budgeting' },
+  { value: 'risk', label: 'Risk' },
+  { value: 'crypto', label: 'Crypto' },
+  { value: 'taxes', label: 'Taxes' },
+  { value: 'debt', label: 'Debt' },
+  { value: 'entrepreneurship', label: 'Entrepreneurship' },
+];
 export type LessonType = 'card' | 'quiz' | 'scenario' | 'video';
 
 export type ModuleOut = {

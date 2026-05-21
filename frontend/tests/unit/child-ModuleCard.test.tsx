@@ -25,8 +25,11 @@ describe('ModuleCard', () => {
         <ModuleCard module={{ ...baseModule, locked: true, is_premium: true }} completedCount={0} totalCount={3} onLockedClick={() => {}} />
       </MemoryRouter>,
     );
-    expect(screen.getByText(/Premium/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Premium/i).length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/locked/i)).toBeInTheDocument();
+    expect(screen.getByTestId('module-locked')).toBeInTheDocument();
+    expect(screen.getByText(/ask a grown-up to unlock/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link')).toBeNull();
   });
 
   it('locked card click calls onLockedClick instead of navigating', () => {

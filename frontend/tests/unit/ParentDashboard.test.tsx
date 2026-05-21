@@ -4,6 +4,15 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ParentDashboard from '@/pages/ParentDashboard';
 
+// Prevent SubscriptionCard from racing with the children fetch mock
+vi.mock('@/api/billing', () => ({
+  billingApi: {
+    getStatus: () => new Promise(() => {}), // never resolves → card stays hidden
+    createCheckout: () => new Promise(() => {}),
+    createPortal: () => new Promise(() => {}),
+  },
+}));
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(

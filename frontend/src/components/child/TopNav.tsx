@@ -11,7 +11,7 @@ const NAV_LINKS = [
 
 export function TopNav({ username }: { username: string }) {
   return (
-    <header className="sticky top-0 z-10 border-b border-amber-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-amber-200 bg-white/95 backdrop-blur" style={{ paddingTop: 'var(--safe-top)' }}>
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
         <Link to="/home" className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-center text-sm font-extrabold text-white">IE</span>

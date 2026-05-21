@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { EduTooltip } from './EduTooltip';
 import { formatCurrency } from '@/lib/currency';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { HoldingOut } from '@/api/simulator';
 
 const EXCHANGE_CURRENCY: Record<string, string> = {
@@ -11,6 +12,8 @@ const EXCHANGE_CURRENCY: Record<string, string> = {
 type Props = { holdings: HoldingOut[] };
 
 export function HoldingsTable({ holdings }: Props) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
   if (holdings.length === 0) {
     return (
       <div className="rounded-2xl border-2 border-amber-200 bg-white p-8 text-center space-y-3">
@@ -23,6 +26,43 @@ export function HoldingsTable({ holdings }: Props) {
         >
           Browse Market →
         </Link>
+      </div>
+    );
+  }
+
+  if (!isDesktop) {
+    return (
+      <div className="space-y-2">
+        {holdings.map((h) => {
+          const pl = parseFloat(h.unrealized_pl);
+          const plSign = pl > 0 ? 'positive' : pl < 0 ? 'negative' : 'neutral';
+          const currency = EXCHANGE_CURRENCY[h.exchange] ?? 'USD';
+          return (
+            <Link
+              key={`${h.exchange}-${h.ticker}`}
+              to={`/simulator/stock/${h.exchange}/${h.ticker}`}
+              className="block rounded-xl border-2 border-amber-200 bg-white p-3 transition-shadow hover:shadow-md"
+            >
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <span className="font-bold">{h.ticker}</span>
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-xs">{h.exchange}</span>
+                </span>
+                <span className={`flex items-center gap-1 text-sm ${plSign === 'positive' ? 'text-green-600' : plSign === 'negative' ? 'text-red-600' : ''}`}>
+                  {plSign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
+                  {plSign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
+                  {plSign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}
+                  {h.unrealized_pl}
+                </span>
+              </div>
+              <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                <span>{h.shares} shares</span>
+                <span>avg {formatCurrency(h.avg_buy_price, currency)}</span>
+                <span>value {formatCurrency(h.market_value, currency)}</span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     );
   }

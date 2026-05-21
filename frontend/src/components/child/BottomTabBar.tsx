@@ -23,7 +23,7 @@ export function BottomTabBar() {
             to={to}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition-colors',
+                'flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition-colors min-h-[44px] min-w-[44px] justify-center',
                 isActive ? 'text-amber-600' : 'text-gray-400',
               )
             }

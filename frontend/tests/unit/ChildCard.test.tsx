@@ -7,9 +7,10 @@ import type { Child } from '@/api/parent';
 
 const baseChild: Child = {
   user_id: 'u1', username: 'kid', country_code: 'GB',
-  is_active: true,
+  is_active: true, is_premium: false,
   parent_consent_given_at: '2026-01-01T00:00:00Z',
   consent_declined_at: null, deleted_at: null, deletion_requested_at: null,
+  analytics: null,
 };
 
 function wrap(child: Child) {
@@ -35,6 +36,16 @@ describe('ChildCard', () => {
   it('disables erasure button when already deleted', () => {
     wrap({ ...baseChild, is_active: false, deleted_at: '2026-02-01T00:00:00Z' });
     expect(screen.getByRole('button', { name: /delete account/i })).toBeDisabled();
+  });
+
+  it('shows Premium badge when child is premium', () => {
+    wrap({ ...baseChild, is_premium: true });
+    expect(screen.getByText(/Premium ✨/)).toBeInTheDocument();
+  });
+
+  it('does not show premium toggle button', () => {
+    wrap(baseChild);
+    expect(screen.queryByTestId('premium-toggle')).not.toBeInTheDocument();
   });
 
   it('erasure button only enabled when typed username matches', async () => {

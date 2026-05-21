@@ -51,12 +51,12 @@ export default function Stock() {
   });
 
   if (quoteQ.isLoading || portfolioQ.isLoading) {
-    return <div className="mx-auto max-w-3xl p-6"><p className="text-sm text-muted-foreground">Loading…</p></div>;
+    return <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6"><p className="text-sm text-muted-foreground">Loading…</p></div>;
   }
 
   if (quoteQ.error?.status === 404) {
     return (
-      <div className="mx-auto max-w-3xl p-6">
+      <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
         <p className="text-sm">Stock not found.</p>
         <Link to="/simulator/market" className="text-sm text-primary hover:underline">← Back to market</Link>
       </div>
@@ -65,7 +65,7 @@ export default function Stock() {
 
   if (quoteQ.error?.status === 403) {
     return (
-      <div className="mx-auto max-w-3xl p-6">
+      <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
         <p className="text-sm">This stock isn't available in practice mode.</p>
         <Link to="/simulator/market" className="text-sm text-primary hover:underline">← Back to market</Link>
       </div>
@@ -81,7 +81,7 @@ export default function Stock() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
       <Link to="/simulator/market" className="mb-4 inline-block text-sm text-primary hover:underline">
         ← Back to market
       </Link>

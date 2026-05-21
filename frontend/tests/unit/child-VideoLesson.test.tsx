@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { axe } from 'vitest-axe';
 import { VideoLesson } from '@/components/child/lesson/VideoLesson';
 
 describe('VideoLesson', () => {
@@ -26,5 +28,37 @@ describe('VideoLesson', () => {
     expect(screen.getByText(/Video unavailable/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
     expect(onComplete).toHaveBeenCalledWith(null);
+  });
+
+  it('renders captions indicator and a disclosure for transcript', async () => {
+    const u = userEvent.setup();
+    render(
+      <VideoLesson
+        contentJson={{ youtube_id: 'abc', captions_available: true, transcript: 'Hello world transcript content.' }}
+        onComplete={() => {}}
+      />,
+    );
+    expect(screen.getByText(/Captions available/)).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: /show transcript/i });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await u.click(trigger);
+    expect(screen.getByText('Hello world transcript content.')).toBeVisible();
+  });
+
+  it('shows "No captions" when flag is false and omits transcript when missing', () => {
+    render(<VideoLesson contentJson={{ youtube_id: 'abc', captions_available: false }} onComplete={() => {}} />);
+    expect(screen.getByText(/No captions/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /show transcript/i })).not.toBeInTheDocument();
+  });
+
+  it('has no axe violations (fallback branch — no iframe)', async () => {
+    // The YouTube iframe trips jsdom's window-postMessage in axe-core's frame
+    // rules; layout-dependent frame checks are covered by the Playwright e2e
+    // axe scan (Task 3). Here we exercise the no-iframe fallback branch, which
+    // still validates Disclosure/Button/labelling axe-cleanness around it.
+    const { container } = render(
+      <VideoLesson contentJson={{}} onComplete={() => {}} />,
+    );
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

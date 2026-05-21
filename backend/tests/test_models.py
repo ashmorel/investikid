@@ -1,3 +1,5 @@
+import pytest
+
 from app.models.audit import AuditLog
 from app.models.content import Lesson, Module
 from app.models.simulator import Portfolio
@@ -36,3 +38,21 @@ def test_portfolio_columns():
 def test_audit_log_columns():
     cols = {c.key for c in AuditLog.__table__.columns}
     assert {"id", "user_id", "event_type", "ip_address", "metadata_json", "created_at"}.issubset(cols)
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_user_compliance_columns_default(db_session):
+    from datetime import date  # noqa: PLC0415
+
+    u = User(
+        email="cols@example.com", username="colsuser", password_hash="x",
+        dob=date(2010, 1, 1), country_code="GB", currency_code="GBP",
+    )
+    db_session.add(u)
+    await db_session.flush()
+    assert u.email_verified_at is None
+    assert u.purged_at is None
+    assert u.profiling_enabled is False
+    assert u.marketing_opt_in is False
+    assert u.policy_version_accepted is None
+    assert u.policy_accepted_at is None

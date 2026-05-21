@@ -57,6 +57,6 @@ describe('Lessons page', () => {
       ],
     });
     renderLessons();
-    expect(await screen.findByText(/Premium/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Premium/i)).length).toBeGreaterThan(0);
   });
 });

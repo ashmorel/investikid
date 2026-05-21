@@ -4,9 +4,10 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.content import TOPIC_PATH_VALUES
+
 _COUNTRY_RE = re.compile(r"^[A-Z]{2}$")
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
-_TOPIC_RE = re.compile(r"^[a-z0-9_/-]+$")
 
 
 class UserProfile(BaseModel):
@@ -20,6 +21,7 @@ class UserProfile(BaseModel):
     is_premium: bool
     parent_email: str | None
     created_at: datetime
+    email_verified_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -27,7 +29,7 @@ class UserProfile(BaseModel):
 class UpdatePreferencesRequest(BaseModel):
     country_code: str | None = None
     currency_code: str | None = None
-    topic_path: str | None = Field(default=None, max_length=200)
+    topic_path: str | None = Field(default=None, max_length=20)
 
     @field_validator("country_code", mode="before")
     @classmethod
@@ -61,13 +63,20 @@ class UpdatePreferencesRequest(BaseModel):
             raise ValueError("currency_code must be a 3-letter ISO 4217 code")
         return v
 
+    @field_validator("topic_path", mode="before")
+    @classmethod
+    def normalise_topic(cls, v):
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
+
     @field_validator("topic_path")
     @classmethod
     def validate_topic(cls, v):
         if v is None:
             return v
-        if not _TOPIC_RE.match(v):
-            raise ValueError("topic_path may only contain [a-z0-9_/-]")
+        if v not in TOPIC_PATH_VALUES:
+            raise ValueError("topic_path must be one of the known learning topics")
         return v
 
 
