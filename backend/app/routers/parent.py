@@ -10,6 +10,7 @@ from app.core.database import get_session
 from app.models.user import User
 from app.routers.parent_auth import get_current_parent
 from app.schemas.parent import ChildOut, FreezeRequest, PremiumToggleRequest
+from app.services.analytics_service import build_child_analytics
 from app.services.entitlements import set_premium
 from app.services.export_service import build_user_export
 
@@ -40,17 +41,24 @@ async def list_children(
         .execution_options(include_deleted=True)
         .order_by(User.created_at)
     )).all()
-    return [
-        ChildOut(
-            user_id=r.id, username=r.username, country_code=r.country_code,
-            is_active=r.is_active, is_premium=r.is_premium,
-            parent_consent_given_at=r.parent_consent_given_at,
-            consent_declined_at=r.consent_declined_at,
-            deleted_at=r.deleted_at,
-            deletion_requested_at=r.deletion_requested_at,
+
+    children = []
+    for r in rows:
+        analytics = None
+        if r.deleted_at is None:
+            analytics = await build_child_analytics(session, r.id, r.country_code)
+        children.append(
+            ChildOut(
+                user_id=r.id, username=r.username, country_code=r.country_code,
+                is_active=r.is_active, is_premium=r.is_premium,
+                parent_consent_given_at=r.parent_consent_given_at,
+                consent_declined_at=r.consent_declined_at,
+                deleted_at=r.deleted_at,
+                deletion_requested_at=r.deletion_requested_at,
+                analytics=analytics,
+            )
         )
-        for r in rows
-    ]
+    return children
 
 
 @router.post("/children/{user_id}/freeze")
