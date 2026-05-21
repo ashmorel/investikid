@@ -9,6 +9,8 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.core.rate_limit import limiter
 from app.core.security import (
+    TOKEN_TYPE_ACCESS,
+    TOKEN_TYPE_REFRESH,
     create_token,
     decode_token,
     dummy_verify,
@@ -18,13 +20,29 @@ from app.core.security import (
 )
 from app.models.audit import AuditLog
 from app.models.user import RefreshToken, User, UserProgress
-from app.schemas.auth import LoginRequest, PendingConsentResponse, RegisterRequest, TokenResponse
+from app.schemas.auth import (
+    ForgotPasswordRequest,
+    LoginRequest,
+    PendingConsentResponse,
+    RegisterRequest,
+    ResetPasswordRequest,
+    TokenResponse,
+)
 from app.schemas.user import UserProfile
-from app.services.consent_service import age_in_years, needs_parental_consent
+from app.services.compliance import resolve_policy
+from app.services.consent_service import age_in_years
 from app.services.email import get_email_sender
 from app.services.tokens import (
     CONSENT_AUDIENCE,
     CONSENT_EXPIRY,
+    PASSWORD_RESET_AUDIENCE,
+    PASSWORD_RESET_EXPIRY,
+    VERIFY_EMAIL_AUDIENCE,
+    VERIFY_EMAIL_EXPIRY,
+    TokenAlreadyUsed,
+    TokenExpired,
+    TokenInvalid,
+    consume_one_time_token,
     issue_one_time_token,
 )
 
@@ -38,7 +56,7 @@ LOCKOUT_DURATION = timedelta(minutes=15)
 
 def _set_access_cookie(response: Response, user_id: str, secure: bool) -> None:
     access = create_token(
-        {"sub": user_id},
+        {"sub": user_id, "type": TOKEN_TYPE_ACCESS},
         timedelta(minutes=settings.access_token_expire_minutes),
     )
     response.set_cookie(
@@ -63,7 +81,7 @@ async def _issue_refresh_token(
         expires_at=expires_at,
     ))
     token = create_token(
-        {"sub": str(user_id), "type": "refresh", "jti": str(jti)},
+        {"sub": str(user_id), "type": TOKEN_TYPE_REFRESH, "jti": str(jti)},
         timedelta(days=settings.refresh_token_expire_days),
     )
     response.set_cookie(
@@ -92,9 +110,10 @@ async def register(
     response: Response,
     session: AsyncSession = Depends(get_session),
 ):
-    existing = await session.scalar(select(User).where(User.email == payload.email))
-    if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+    if payload.email:
+        existing = await session.scalar(select(User).where(User.email == payload.email))
+        if existing:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
     existing_username = await session.scalar(
         select(User).where(User.username == payload.username)
@@ -103,14 +122,21 @@ async def register(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
 
     today = date.today()
-    needs_consent = needs_parental_consent(payload.dob, payload.country_code, today)
+    policy = resolve_policy(payload.country_code, payload.dob, today)
+    needs_consent = policy.requires_parental_consent
 
     if needs_consent and not payload.parent_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Parent email required for users under the consent threshold",
         )
+    if not needs_consent and not payload.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email required for self-managed accounts",
+        )
 
+    now = datetime.now(UTC)
     user = User(
         email=payload.email,
         username=payload.username,
@@ -121,6 +147,8 @@ async def register(
         topic_path=payload.topic_path,
         parent_email=str(payload.parent_email) if payload.parent_email else None,
         is_active=not needs_consent,
+        policy_version_accepted=payload.policy_version_accepted,
+        policy_accepted_at=now if payload.policy_version_accepted else None,
     )
     session.add(user)
     await session.flush()
@@ -148,9 +176,22 @@ async def register(
                 "country_code": user.country_code,
                 "link": link,
             },
+            subject_id=user.id,
         )
         await session.commit()
         return PendingConsentResponse(user_id=user.id)
+
+    verify_token = await issue_one_time_token(
+        session, purpose=VERIFY_EMAIL_AUDIENCE,
+        email=str(payload.email), subject_id=user.id,
+        expires_in=VERIFY_EMAIL_EXPIRY,
+    )
+    verify_link = f"{settings.app_base_url}/verify-email?token={verify_token}"
+    await get_email_sender().send(
+        session, str(payload.email), "verify_email",
+        {"username": user.username, "link": verify_link},
+        subject_id=user.id,
+    )
 
     secure = settings.environment != "development"
     _set_access_cookie(response, str(user.id), secure)
@@ -169,7 +210,10 @@ async def login(
     response: Response,
     session: AsyncSession = Depends(get_session),
 ):
-    user = await session.scalar(select(User).where(User.email == payload.email))
+    ident = payload.email
+    user = await session.scalar(
+        select(User).where((User.email == ident) | (User.username == ident))
+    )
     if not user:
         # Equalise timing against the wrong-password branch.
         dummy_verify()
@@ -225,7 +269,7 @@ async def logout(
     token = request.cookies.get("refresh_token")
     if token:
         try:
-            payload = decode_token(token, expected_type="refresh")
+            payload = decode_token(token, expected_type=TOKEN_TYPE_REFRESH)
             jti_str = payload.get("jti")
             if jti_str:
                 jti = uuid.UUID(jti_str)
@@ -259,7 +303,7 @@ async def refresh(
     token = request.cookies.get("refresh_token")
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token")
-    payload = decode_token(token, expected_type="refresh")
+    payload = decode_token(token, expected_type=TOKEN_TYPE_REFRESH)
 
     jti_str = payload.get("jti")
     sub = payload.get("sub")
@@ -292,3 +336,103 @@ async def refresh(
     _set_csrf_cookie(response, secure)
     await session.commit()
     return TokenResponse()
+
+
+@router.get("/verify-email")
+async def verify_email(
+    token: str,
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        row = await consume_one_time_token(session, token, VERIFY_EMAIL_AUDIENCE)
+    except (TokenInvalid, TokenExpired, TokenAlreadyUsed) as exc:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Link invalid or expired") from exc
+    user = await session.get(User, row.subject_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account not found")
+    if user.email_verified_at is None:
+        user.email_verified_at = datetime.now(UTC)
+    await session.commit()
+    return {"status": "ok"}
+
+
+@router.post("/verify-email/resend")
+@limiter.limit("3/hour")
+async def resend_verify_email(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    from app.routers.users import get_current_user
+    user = await get_current_user(request, session)
+    if user.email and user.email_verified_at is None:
+        token = await issue_one_time_token(
+            session, purpose=VERIFY_EMAIL_AUDIENCE, email=user.email,
+            subject_id=user.id, expires_in=VERIFY_EMAIL_EXPIRY,
+        )
+        link = f"{settings.app_base_url}/verify-email?token={token}"
+        await get_email_sender().send(
+            session, user.email, "verify_email",
+            {"username": user.username, "link": link},
+            subject_id=user.id,
+        )
+        await session.commit()
+    return {"status": "accepted"}
+
+
+@router.post("/forgot-password", status_code=202)
+@limiter.limit("3/hour")
+async def forgot_password(
+    request: Request,
+    payload: ForgotPasswordRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    ident = payload.email
+    user = await session.scalar(
+        select(User).where((User.email == ident) | (User.username == ident))
+    )
+    if user and user.deleted_at is None and (user.is_active or user.parent_email):
+        today = date.today()
+        policy = resolve_policy(user.country_code, user.dob, today)
+        if policy.password_reset_mode == "parent":
+            recipient = user.parent_email
+        else:
+            recipient = user.email
+        if recipient:
+            token = await issue_one_time_token(
+                session, purpose=PASSWORD_RESET_AUDIENCE, email=recipient,
+                subject_id=user.id, expires_in=PASSWORD_RESET_EXPIRY,
+            )
+            link = f"{settings.app_base_url}/reset-password?token={token}"
+            await get_email_sender().send(
+                session, recipient, "password_reset", {"link": link},
+                subject_id=user.id,
+            )
+            await session.commit()
+    return {"status": "accepted"}
+
+
+@router.post("/reset-password")
+async def reset_password(
+    payload: ResetPasswordRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        row = await consume_one_time_token(session, payload.token, PASSWORD_RESET_AUDIENCE)
+    except (TokenInvalid, TokenExpired, TokenAlreadyUsed) as exc:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Link invalid or expired") from exc
+    user = await session.get(User, row.subject_id)
+    if user is None or user.deleted_at is not None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account not found")
+    user.password_hash = hash_password(payload.new_password)
+    user.failed_login_count = 0
+    user.locked_until = None
+    now = datetime.now(UTC)
+    tokens = await session.scalars(
+        select(RefreshToken).where(
+            RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None)
+        )
+    )
+    for t in tokens:
+        t.revoked_at = now
+    await session.commit()
+    return {"status": "ok"}

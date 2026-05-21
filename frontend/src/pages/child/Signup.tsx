@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { authApi, type RegisterBody } from '@/api/auth';
+import { authApi, type RegisterBody, PRIVACY_NOTICE_VERSION } from '@/api/auth';
+import { TOPIC_OPTIONS } from '@/api/content';
 import { ApiError } from '@/api/client';
 import { ageInYears, needsParentalConsent } from '@/lib/consent';
 import { Button } from '@/components/ui/button';
@@ -20,8 +21,6 @@ const COUNTRIES: ReadonlyArray<{ code: string; name: string; currency: string }>
   { code: 'HK', name: 'Hong Kong', currency: 'HKD' },
 ];
 
-const TOPIC_PATHS = ['core', 'investing-101', 'crypto-basics'] as const;
-
 export default function Signup() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -37,8 +36,9 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [parentEmail, setParentEmail] = useState('');
   const [currency, setCurrency] = useState('');
-  const [topic, setTopic] = useState<string>(TOPIC_PATHS[0]);
+  const [topic, setTopic] = useState<string>('');
   const [fieldError, setFieldError] = useState<{ field: 'email' | 'username' | 'top'; msg: string } | null>(null);
+  const [policyAccepted, setPolicyAccepted] = useState(false);
 
   const today = useMemo(() => new Date(), []);
   const dobValid = !!dob && !Number.isNaN(Date.parse(dob));
@@ -64,7 +64,8 @@ export default function Signup() {
         email, username, password, dob,
         country_code: country, currency_code: currency || countryDefaultCurrency,
         parent_email: needsConsent ? parentEmail : undefined,
-        topic_path: topic,
+        topic_path: topic === '' ? null : topic,
+        policy_version_accepted: PRIVACY_NOTICE_VERSION,
       };
       // Over-threshold: backend register sets auth + csrf cookies directly.
       // Under-threshold: backend returns { status: 'pending_consent' } (no cookies).
@@ -95,7 +96,7 @@ export default function Signup() {
 
   if (step === 1) {
     return (
-      <main className="mx-auto max-w-md p-6">
+      <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
         <h1 className="text-2xl font-semibold">Create your account</h1>
         <p className="mt-1 text-sm text-muted-foreground">Step 1 of 2</p>
         <form
@@ -145,7 +146,7 @@ export default function Signup() {
   }
 
   return (
-    <main className="mx-auto max-w-md p-6">
+    <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
       <h1 className="text-2xl font-semibold">Create your account</h1>
       <p className="mt-1 text-sm text-muted-foreground">Step 2 of 2</p>
       <form
@@ -194,17 +195,23 @@ export default function Signup() {
           <select id="topic"
             className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
             value={topic} onChange={(e) => setTopic(e.target.value)}>
-            {TOPIC_PATHS.map((t) => (
-              <option key={t} value={t}>{t}</option>
+            {TOPIC_OPTIONS.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
         </div>
         {fieldError?.field === 'top' && (
           <p role="alert" className="text-sm text-destructive">{fieldError.msg}</p>
         )}
+        <label className="flex items-start gap-2 text-sm text-gray-700">
+          <input type="checkbox" checked={policyAccepted}
+            onChange={(e) => setPolicyAccepted(e.target.checked)} className="mt-1" />
+          <span>I (or my grown-up) have read the{' '}
+            <Link to="/privacy" className="underline text-amber-700">privacy notice</Link>.</span>
+        </label>
         <div className="flex gap-3">
           <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
-          <Button type="submit" disabled={submit.isPending} className="flex-1">
+          <Button type="submit" disabled={submit.isPending || !policyAccepted} className="flex-1">
             {submit.isPending ? 'Creating account…' : 'Create account'}
           </Button>
         </div>

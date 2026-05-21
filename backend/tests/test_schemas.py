@@ -43,3 +43,21 @@ def test_email_normalised_to_lowercase():
         parent_email="parent@example.com",
     )
     assert req.email == "kid@example.com"
+
+
+def test_register_request_email_optional_and_policy_field():
+    from app.schemas.auth import RegisterRequest
+    r = RegisterRequest(
+        username="kid1", password="SecurePass123!", dob="2014-01-01",
+        country_code="GB", currency_code="GBP", parent_email="p@example.com",
+        policy_version_accepted="2026-05-16",
+    )
+    assert r.email is None
+    assert r.policy_version_accepted == "2026-05-16"
+
+
+def test_login_request_accepts_username_identifier():
+    from app.schemas.auth import LoginRequest
+    lr = LoginRequest(email="kiddo_username", password="whatever12345")
+    # `email` field now carries an identifier (email OR username); not EmailStr.
+    assert lr.email == "kiddo_username"

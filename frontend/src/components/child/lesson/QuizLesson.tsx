@@ -26,12 +26,12 @@ export function QuizLesson({ contentJson, onComplete, illustration, onShowEddie 
     <div className="rounded-2xl border-2 border-amber-200 bg-white p-6 space-y-5">
       {illustration && <div>{illustration}</div>}
       <p className="text-lg font-bold text-gray-900">{contentJson.question}</p>
-      <ul className="space-y-2" role="radiogroup">
+      <div className="space-y-2" role="radiogroup">
         {contentJson.choices.map((choice, i) => {
           const showCorrect = submitted && i === contentJson.answer_index;
           const showWrongPick = submitted && i === selected && !isCorrect;
           return (
-            <li key={i}>
+            <div key={i}>
               <label
                 className={cn(
                   'flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3 transition-all active:scale-[0.98]',
@@ -60,10 +60,10 @@ export function QuizLesson({ contentJson, onComplete, illustration, onShowEddie 
                 />
                 <span className={cn('text-sm', submitted && (showCorrect || (i === selected)) && 'font-semibold')}>{choice}</span>
               </label>
-            </li>
+            </div>
           );
         })}
-      </ul>
+      </div>
       {submitted ? (
         <>
           <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4 text-sm">

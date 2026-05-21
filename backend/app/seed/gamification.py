@@ -29,7 +29,7 @@ def _challenges_for_week() -> list[dict]:
          "starts_at": monday, "ends_at": end, "is_premium": False},
         {"title": "Market Explorer", "description": "Make 1 paper trade this week",
          "type": "trades_executed", "target_value": 1, "xp_reward": 30,
-         "starts_at": monday, "ends_at": end, "is_premium": False},
+         "starts_at": monday, "ends_at": end, "is_premium": True},  # SAMPLE premium gating fixture — real premium curriculum is sub-project #4
     ]
 
 

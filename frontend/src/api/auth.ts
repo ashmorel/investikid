@@ -1,5 +1,9 @@
 import { apiFetch } from './client';
 
+// Must stay in sync with backend settings.privacy_notice_version.
+// No FE/BE shared config endpoint yet — update both sides when the version changes.
+export const PRIVACY_NOTICE_VERSION = '2026-05-16';
+
 export type Me = {
   id: string;
   email: string;
@@ -11,6 +15,7 @@ export type Me = {
   is_premium: boolean;
   parent_email: string | null;
   created_at: string;
+  email_verified_at: string | null;
 };
 
 export type RegisterBody = {
@@ -22,6 +27,7 @@ export type RegisterBody = {
   currency_code: string;
   parent_email?: string | null;
   topic_path?: string | null;
+  policy_version_accepted?: string;
 };
 
 export type RegisterResponse =
@@ -30,6 +36,11 @@ export type RegisterResponse =
 
 export const authApi = {
   me: () => apiFetch<Me>('/users/me'),
+  updatePreferences: (body: { topic_path: string | null }) =>
+    apiFetch<Me>('/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
   login: (email: string, password: string) =>
     apiFetch<{ token_type: 'bearer' }>('/auth/login', {
       method: 'POST', body: JSON.stringify({ email, password }),
@@ -39,4 +50,16 @@ export const authApi = {
       method: 'POST', body: JSON.stringify(body),
     }),
   logout: () => apiFetch<{ message: string }>('/auth/logout', { method: 'POST' }),
+  forgotPassword: (email: string) =>
+    apiFetch<{ status: string }>('/auth/forgot-password', {
+      method: 'POST', body: JSON.stringify({ email }),
+    }),
+  resetPassword: (token: string, new_password: string) =>
+    apiFetch<{ status: string }>('/auth/reset-password', {
+      method: 'POST', body: JSON.stringify({ token, new_password }),
+    }),
+  verifyEmail: (token: string) =>
+    apiFetch<{ status: string }>(`/auth/verify-email?token=${encodeURIComponent(token)}`),
+  resendVerifyEmail: () =>
+    apiFetch<{ status: string }>('/auth/verify-email/resend', { method: 'POST' }),
 };

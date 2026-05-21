@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from typing import Protocol
 
 import resend
@@ -14,6 +15,7 @@ class EmailSender(Protocol):
         to: str,
         template: str,
         context: dict,
+        subject_id: uuid.UUID | None = None,
     ) -> None: ...
 
 
@@ -32,12 +34,28 @@ def _render(template: str, context: dict) -> str:
             f"Click to sign in to your Invest-Ed parent dashboard: {context['link']}\n\n"
             f"Link expires in 15 minutes."
         )
+    if template == "verify_email":
+        return (
+            f"Hi {context['username']},\n\n"
+            f"Please confirm your Invest-Ed email address by clicking: {context['link']}\n\n"
+            f"If you didn't create an account you can ignore this email.\n"
+            f"Link expires in 24 hours."
+        )
+    if template == "password_reset":
+        return (
+            f"We received a request to reset the password for an Invest-Ed account.\n"
+            f"Click to choose a new password: {context['link']}\n\n"
+            f"If you didn't request this, you can ignore this email.\n"
+            f"Link expires in 1 hour."
+        )
     raise ValueError(f"Unknown template: {template}")
 
 
 _SUBJECT = {
     "consent_request": "Approve your child's Invest-Ed account",
     "parent_magic_link": "Sign in to Invest-Ed",
+    "verify_email": "Confirm your Invest-Ed email",
+    "password_reset": "Reset your Invest-Ed password",
 }
 
 
@@ -61,6 +79,18 @@ def _render_html(template: str, context: dict) -> str:
         cta_label = "Sign In"
         cta_url = context["link"]
         footer = "Link expires in 15 minutes."
+    elif template == "verify_email":
+        heading = "Confirm your email"
+        body_text = f"Hi {context['username']}, please confirm your Invest-Ed email address."
+        cta_label = "Confirm Email"
+        cta_url = context["link"]
+        footer = "If you didn't create an account, ignore this email. Link expires in 24 hours."
+    elif template == "password_reset":
+        heading = "Reset your password"
+        body_text = "Click below to choose a new password for your Invest-Ed account."
+        cta_label = "Reset Password"
+        cta_url = context["link"]
+        footer = "If you didn't request this, ignore this email. Link expires in 1 hour."
     else:
         raise ValueError(f"Unknown template: {template}")
 
@@ -97,10 +127,11 @@ class LoggingEmailSender:
     """Persists every send to sent_emails. Used for dev + tests."""
 
     async def send(
-        self, session: AsyncSession, to: str, template: str, context: dict
+        self, session: AsyncSession, to: str, template: str, context: dict,
+        subject_id: uuid.UUID | None = None,
     ) -> None:
         body = _render(template, context)
-        session.add(SentEmail(to_email=to, template=template, body=body))
+        session.add(SentEmail(to_email=to, template=template, body=body, subject_id=subject_id))
         await session.flush()
 
 
@@ -112,14 +143,15 @@ class ResendEmailSender:
         self._from_email = from_email
 
     async def send(
-        self, session: AsyncSession, to: str, template: str, context: dict
+        self, session: AsyncSession, to: str, template: str, context: dict,
+        subject_id: uuid.UUID | None = None,
     ) -> None:
         plain = _render(template, context)
         html = _render_html(template, context)
         subject = _email_subject(template)
 
         # Persist audit record (same as LoggingEmailSender)
-        session.add(SentEmail(to_email=to, template=template, body=plain))
+        session.add(SentEmail(to_email=to, template=template, body=plain, subject_id=subject_id))
         await session.flush()
 
         # Send via Resend

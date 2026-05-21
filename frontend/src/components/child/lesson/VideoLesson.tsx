@@ -1,8 +1,14 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Disclosure } from '@/components/a11y/Disclosure';
 
 type Props = {
-  contentJson: { youtube_id?: string; caption?: string };
+  contentJson: {
+    youtube_id?: string;
+    caption?: string;
+    transcript?: string;
+    captions_available?: boolean;
+  };
   onComplete: (score: number | null) => void;
 };
 
@@ -32,6 +38,12 @@ export function VideoLesson({ contentJson, onComplete }: Props) {
         />
       </div>
       {contentJson.caption && <p className="text-sm text-muted-foreground">{contentJson.caption}</p>}
+      <p className="text-xs text-muted-foreground">
+        {contentJson.captions_available ? 'Captions available' : 'No captions'}
+      </p>
+      {contentJson.transcript && (
+        <Disclosure label="Show transcript">{contentJson.transcript}</Disclosure>
+      )}
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={watched} onChange={(e) => setWatched(e.target.checked)} />
         I watched this

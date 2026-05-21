@@ -116,6 +116,7 @@ async def request_consent_email(
         session, user.parent_email, "consent_request",
         {"child_username": user.username, "age": age,
          "country_code": user.country_code, "link": link},
+        subject_id=user.id,
     )
     await session.commit()
     return {"status": "queued"}

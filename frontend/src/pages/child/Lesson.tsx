@@ -60,11 +60,11 @@ export default function Lesson() {
   }, [lessonId]);
 
   if (lessonQ.isLoading) {
-    return <div className="mx-auto max-w-2xl p-6 text-sm text-muted-foreground">Loading…</div>;
+    return <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6 text-sm text-muted-foreground">Loading…</div>;
   }
   if (lessonQ.isError || !lessonQ.data) {
     return (
-      <div className="mx-auto max-w-2xl p-6">
+      <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
         <p>Lesson not found.</p>
         <Link to={`/lessons/${moduleId ?? ''}`} className="text-sm underline">← Back to module</Link>
       </div>
@@ -81,14 +81,14 @@ export default function Lesson() {
 
     if (showPractice) {
       return (
-        <div className="mx-auto max-w-2xl p-6">
+        <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
           <PracticeQuiz lessonId={lessonId!} onClose={() => setShowPractice(false)} />
         </div>
       );
     }
 
     return (
-      <div className="mx-auto max-w-2xl p-6">
+      <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
         <CompletionPanel
           result={complete.data}
           moduleId={moduleId!}
@@ -110,7 +110,7 @@ export default function Lesson() {
 
   if (complete.isError) {
     return (
-      <div className="mx-auto max-w-2xl p-6 space-y-4">
+      <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6 space-y-4">
         <p>Something went wrong saving your progress.</p>
         <button
           type="button"
@@ -135,7 +135,7 @@ export default function Lesson() {
   const illustration = <LessonIllustration lessonTitle={lessonTitle} topic={topic} />;
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
+    <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
       <header className="mb-4 flex items-center justify-between text-sm text-gray-500">
         <span>Quest {lesson.order_index + 1} of {total || '…'}</span>
         <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">🏆 {lesson.xp_reward} XP</span>

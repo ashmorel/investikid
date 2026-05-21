@@ -96,6 +96,10 @@ export function ChildCard({ child }: { child: Child }) {
           </Label>
         </div>
 
+        {child.is_premium && (
+          <span className="text-xs font-medium text-amber-600">Premium ✨</span>
+        )}
+
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button variant="ghost" size="sm" disabled={isDeleted}>
@@ -111,7 +115,6 @@ export function ChildCard({ child }: { child: Child }) {
               </DialogDescription>
             </DialogHeader>
             <Input
-              autoFocus
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               aria-label="Type child username to confirm"

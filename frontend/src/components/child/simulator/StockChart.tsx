@@ -9,6 +9,7 @@ import {
   Tooltip,
 } from 'recharts';
 import { simulatorApi, type PricePoint } from '@/api/simulator';
+import { ChartDescription } from '@/components/a11y/ChartDescription';
 
 const PERIODS = [
   { key: '1d', label: '1D' },
@@ -50,9 +51,22 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
   const changePct = startPrice > 0 ? (change / startPrice) * 100 : 0;
   const isPositive = change >= 0;
   const color = isPositive ? '#16a34a' : '#dc2626';
+  const dir = isPositive ? 'rose' : 'fell';
+  const chartSummary = hasData
+    ? `${ticker} price ${dir} from ${startPrice.toFixed(2)} to ${endPrice.toFixed(2)} (${changePct.toFixed(1)}%) over ${points.length} ${period} points.`
+    : `${ticker} price history unavailable for ${period}.`;
+
+  const tickInterval =
+    typeof window !== 'undefined' && window.innerWidth < 400
+      ? Math.max(Math.floor(points.length / 3), 1)
+      : undefined;
 
   return (
-    <div className="rounded-2xl border-2 border-amber-200 bg-white p-4">
+    <div
+      className="rounded-2xl border-2 border-amber-200 bg-white p-4"
+      role="img"
+      aria-label={chartSummary}
+    >
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700">Price History</h3>
         {hasData && (
@@ -67,7 +81,7 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
           <button
             key={p.key}
             onClick={() => handlePeriodChange(p.key)}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors min-h-[44px] min-w-[44px] ${
               period === p.key
                 ? 'bg-amber-500 text-white'
                 : 'bg-amber-50 text-gray-600 hover:bg-amber-100'
@@ -104,7 +118,7 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
                   ? date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
                   : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
               }}
-              interval="preserveStartEnd"
+              interval={tickInterval ?? 'preserveStartEnd'}
             />
             <YAxis
               hide
@@ -128,6 +142,13 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
             />
           </AreaChart>
         </ResponsiveContainer>
+      )}
+      {hasData && (
+        <ChartDescription
+          summary={chartSummary}
+          columns={['Date', 'Close']}
+          rows={points.map((p) => [String(p.date), p.close.toFixed(2)])}
+        />
       )}
     </div>
   );

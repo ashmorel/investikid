@@ -4,24 +4,28 @@ from datetime import date as date_type
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.schemas.content import TOPIC_PATH_VALUES
+
 _COUNTRY_RE = re.compile(r"^[A-Z]{2}$")
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
-_TOPIC_RE = re.compile(r"^[a-z0-9_/-]+$")
 
 
 class RegisterRequest(BaseModel):
-    email: EmailStr
+    email: EmailStr | None = None
     username: str
     password: str = Field(min_length=12, max_length=128)
     dob: date_type
     country_code: str
     currency_code: str
     parent_email: EmailStr | None = None
-    topic_path: str | None = Field(default=None, max_length=200)
+    topic_path: str | None = Field(default=None, max_length=20)
+    policy_version_accepted: str | None = Field(default=None, max_length=20)
 
     @field_validator("email", mode="before")
     @classmethod
-    def normalise_email(cls, v: str) -> str:
+    def normalise_email(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
         return v.lower().strip()
 
     @field_validator("password")
@@ -78,13 +82,20 @@ class RegisterRequest(BaseModel):
             raise ValueError("dob is not plausible")
         return v
 
+    @field_validator("topic_path", mode="before")
+    @classmethod
+    def normalise_topic(cls, v):
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
+
     @field_validator("topic_path")
     @classmethod
     def validate_topic(cls, v: str | None) -> str | None:
         if v is None:
             return v
-        if not _TOPIC_RE.match(v):
-            raise ValueError("topic_path may only contain [a-z0-9_/-]")
+        if v not in TOPIC_PATH_VALUES:
+            raise ValueError("topic_path must be one of the known learning topics")
         return v
 
     # Note: `parent_email` requirement for under-threshold minors is enforced in
@@ -94,12 +105,14 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    # `email` carries a login identifier: an email address OR a username.
+    # Username-only child accounts (registered without a child email) log in here.
+    email: str
     password: str
 
     @field_validator("email", mode="before")
     @classmethod
-    def normalise_email(cls, v: str) -> str:
+    def normalise_identifier(cls, v: str) -> str:
         return v.lower().strip()
 
 
@@ -111,3 +124,26 @@ class TokenResponse(BaseModel):
 class PendingConsentResponse(BaseModel):
     status: str = "pending_consent"
     user_id: uuid.UUID
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalise(cls, v: str) -> str:
+        return v.lower().strip()
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def strength(cls, v: str) -> str:
+        if not any(c.isalpha() for c in v):
+            raise ValueError("Password must contain at least one letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        return v

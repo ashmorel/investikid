@@ -96,3 +96,47 @@ async def test_get_progress_unauthenticated(client):
     client.headers.pop("X-CSRF-Token", None)
     response = await client.get("/users/me/progress")
     assert response.status_code == 401
+
+
+async def test_self_export_returns_profile_json(client, db_session):
+    await client.post("/auth/register", json={
+        "email": "export@example.com", "username": "exportme",
+        "password": "SecurePass123!", "dob": "2009-01-01",
+        "country_code": "GB", "currency_code": "GBP",
+        "policy_version_accepted": "2026-05-16",
+    })
+    # Register set auth cookies on the client.
+    resp = await client.get("/users/me/export")
+    assert resp.status_code == 200
+    assert resp.headers["content-disposition"].startswith("attachment")
+    data = resp.json()
+    assert data["profile"]["username"] == "exportme"
+    assert data["profile"]["email"] == "export@example.com"
+    assert "progress" in data
+    assert "consent" in data
+    assert "emails" in data
+    assert isinstance(data["emails"], list)
+
+
+async def test_export_does_not_leak_sibling_emails(client, db_session):
+    from sqlalchemy import select
+
+    from app.models.consent import SentEmail
+    from app.models.user import User
+
+    for uname in ("sibA", "sibB"):
+        await client.post("/auth/register", json={
+            "username": uname, "password": "SecurePass123!",
+            "dob": "2016-01-01", "country_code": "GB", "currency_code": "GBP",
+            "parent_email": "shared-parent@example.com",
+            "policy_version_accepted": "2026-05-16",
+        })
+    a = await db_session.scalar(select(User).where(User.username == "sibA"))
+    b = await db_session.scalar(select(User).where(User.username == "sibB"))
+    a_emails = (await db_session.scalars(
+        select(SentEmail).where(SentEmail.subject_id == a.id))).all()
+    b_emails = (await db_session.scalars(
+        select(SentEmail).where(SentEmail.subject_id == b.id))).all()
+    assert a_emails and b_emails
+    assert {e.subject_id for e in a_emails} == {a.id}
+    assert {e.subject_id for e in b_emails} == {b.id}

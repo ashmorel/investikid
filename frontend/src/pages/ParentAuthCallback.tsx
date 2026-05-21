@@ -25,11 +25,11 @@ export default function ParentAuthCallback() {
   }, [token, navigate]);
 
   if (state === 'pending') {
-    return <main className="mx-auto max-w-md p-6"><p>Signing you in…</p></main>;
+    return <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6"><p>Signing you in…</p></main>;
   }
 
   return (
-    <main className="mx-auto max-w-md p-6">
+    <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
       <ErrorBanner
         title={state === 'gone' ? 'Sign-in link expired' : 'Could not sign you in'}
         message={

@@ -1,12 +1,14 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.security import decode_token, get_token_from_cookie
 from app.models.user import User, UserProgress
 from app.schemas.user import UpdatePreferencesRequest, UserProfile, UserProgressOut
+from app.services.export_service import build_user_export
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -70,4 +72,16 @@ async def get_progress(
         level=progress.level,
         streak_count=progress.streak_count,
         last_activity_date=progress.last_activity_date,
+    )
+
+
+@router.get("/me/export")
+async def export_my_data(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    data = await build_user_export(session, current_user)
+    return JSONResponse(
+        content=data,
+        headers={"Content-Disposition": 'attachment; filename="invest-ed-export.json"'},
     )

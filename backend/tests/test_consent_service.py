@@ -37,3 +37,11 @@ def test_needs_consent_ireland_15():
 
 def test_no_consent_ireland_16():
     assert needs_parental_consent(date(2010, 1, 1), "IE", date(2026, 4, 25)) is False
+
+
+def test_consent_threshold_matches_resolver_for_eu16():
+    # IE is a GDPR-K 16 country; threshold helper must still return 16.
+    from app.services.consent_service import consent_threshold
+    assert consent_threshold("IE") == 16
+    assert consent_threshold("GB") == 13
+    assert consent_threshold("US") == 13

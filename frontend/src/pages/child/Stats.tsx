@@ -22,7 +22,7 @@ export default function Stats() {
   const session = useChildSession();
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-4 py-6">
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-4 sm:space-y-8 sm:py-6">
       <h1 className="text-2xl font-bold">Your Stats</h1>
 
       {/* XP Summary */}

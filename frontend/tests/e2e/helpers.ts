@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import type { Page } from '@playwright/test';
 
 const BACKEND = 'http://localhost:8000';
 
@@ -54,4 +55,58 @@ export function readLatestEmailToken(toEmail: string, template: string): string 
 
 export function uniq(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+}
+
+export async function loginChild(page: Page, email: string, password = 'SecurePass123!') {
+  await page.goto('/login');
+  await page.getByLabel(/email/i).fill(email);
+  await page.getByLabel(/password/i).fill(password);
+  await page.getByRole('button', { name: /log in/i }).click();
+  await page.waitForURL('/home');
+}
+
+export async function registerOverThresholdUS(page: Page, username: string) {
+  await page.goto('/signup');
+  await page.getByLabel('Date of birth').fill('2010-01-01');
+  await page.getByLabel('Country').selectOption('US');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByLabel(/^Email$/).fill(`${username}@example.com`);
+  await page.getByLabel('Username').fill(username);
+  await page.getByLabel(/Password/).fill('SecurePass123!');
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await page.waitForURL(/\/home$/);
+}
+
+export async function approveConsent(page: Page, parentEmail: string) {
+  const token = readLatestEmailToken(parentEmail, 'consent_request');
+  await page.goto(`/consent/verify?token=${encodeURIComponent(token)}`);
+  await page.getByRole('button', { name: /approve/i }).click();
+  await page.waitForURL(/\/consent\/verify/);
+}
+
+export async function loginParentViaMagicLink(page: Page, parentEmail: string) {
+  await page.goto('/parent/login');
+  await page.getByLabel('Email').fill(parentEmail);
+  await page.getByRole('button', { name: /Send sign-in link/i }).click();
+  const magicToken = readLatestEmailToken(parentEmail, 'parent_magic_link');
+  await page.goto(`/parent/auth/callback?token=${encodeURIComponent(magicToken)}`);
+  await page.waitForURL(/\/parent$/);
+}
+
+export async function grantPremiumViaApi(page: Page, childUserId: string, premium = true) {
+  const cookies = await page.context().cookies();
+  const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
+  const csrfCookie = cookies.find((c) => c.name === 'csrf_token');
+  if (!csrfCookie) throw new Error('No csrf_token cookie found — is the parent logged in?');
+
+  const res = await fetch(`${BACKEND}/parent/children/${childUserId}/premium`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': cookieHeader,
+      'X-CSRF-Token': csrfCookie.value,
+    },
+    body: JSON.stringify({ premium }),
+  });
+  if (!res.ok) throw new Error(`grantPremiumViaApi failed: ${res.status}`);
 }

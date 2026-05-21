@@ -13,14 +13,18 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    stripe_price_id: str = ""
+    stripe_portal_config_id: str = ""
     email_backend: str = "logging"  # "logging" | "resend"
     email_from: str = "noreply@invest-ed.app"
     app_base_url: str = "http://localhost:5173"
+    data_retention_days: int = 30
+    privacy_notice_version: str = "2026-05-16"
 
     # LLM / AI — lite + standard tiers (open-source models)
     llm_together_api_key: str = ""
     llm_together_base_url: str = "https://api.together.xyz/v1"
-    llm_together_model: str = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+    llm_together_model: str = "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
     llm_groq_api_key: str = ""
     llm_groq_base_url: str = "https://api.groq.com/openai/v1"
     llm_groq_model: str = "llama-3.1-8b-instant"

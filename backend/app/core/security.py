@@ -9,6 +9,9 @@ from jose import JWTError, jwt
 
 from app.core.config import settings
 
+TOKEN_TYPE_ACCESS = "access"
+TOKEN_TYPE_REFRESH = "refresh"
+
 _ph = PasswordHasher()
 
 # Pre-computed at import time so dummy_verify() runs in constant time on
@@ -58,8 +61,11 @@ def decode_token(token: str, expected_type: str | None = None) -> dict[str, Any]
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
             )
     else:
-        # Reject refresh tokens from being used where an access token is expected.
-        if token_type == "refresh":
+        # No specific type requested == an access token is expected. Positively
+        # require type == "access" so that refresh tokens, one-time tokens
+        # (consent/verify/reset/parent-magic) or any other claims-only JWT
+        # signed with the app secret cannot be substituted for a session.
+        if token_type != TOKEN_TYPE_ACCESS:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
             )

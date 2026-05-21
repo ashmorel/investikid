@@ -9,6 +9,7 @@ from app.models.content import Lesson, LessonCompletion, Module
 from app.models.skill_profile import TopicMastery, WeakConcept
 from app.models.user import User
 from app.services.content_service import is_module_accessible
+from app.services.entitlements import is_premium
 
 TOPIC_PREREQUISITES: dict[str, list[str]] = {
     "stocks": [],
@@ -36,13 +37,17 @@ async def get_recommendations(
     user: User,
 ) -> dict[str, Any]:
     """Return personalised module rankings and a next-quest suggestion."""
+    if not user.profiling_enabled:
+        seed = await _topic_path_seed(session, user)
+        return {"next_quest": seed, "suggested_modules": []}
+
     # Load all accessible modules
     all_modules = (
         await session.scalars(select(Module).order_by(Module.order_index))
     ).all()
     modules = [
         m for m in all_modules
-        if is_module_accessible(user.country_code, user.is_premium, m.country_codes, m.is_premium)
+        if is_module_accessible(user.country_code, is_premium(user), m.country_codes, m.is_premium)
     ]
 
     if not modules:
@@ -202,3 +207,44 @@ def _build_reason(
     if readiness > 0:
         return f"Almost ready for {module.title} — keep building foundations"
     return f"New topic: {module.title}"
+
+
+async def _topic_path_seed(session: AsyncSession, user: User):
+    """Profiling-off only: first incomplete lesson in the self-declared topic, for a brand-new learner."""
+    pref = user.topic_path
+    if not pref or pref not in TOPIC_PREREQUISITES:
+        return None
+
+    completion_count = int(
+        await session.scalar(
+            select(func.count(LessonCompletion.id)).where(
+                LessonCompletion.user_id == user.id
+            )
+        )
+        or 0
+    )
+    if completion_count > 0:
+        return None
+
+    modules = (
+        await session.scalars(
+            select(Module).where(Module.topic == pref).order_by(Module.order_index)
+        )
+    ).all()
+    for m in modules:
+        if not is_module_accessible(
+            user.country_code, is_premium(user), m.country_codes, m.is_premium
+        ):
+            continue
+        lessons = (
+            await session.scalars(
+                select(Lesson).where(Lesson.module_id == m.id).order_by(Lesson.order_index)
+            )
+        ).all()
+        if lessons:
+            return {
+                "module_id": m.id,
+                "lesson_id": lessons[0].id,
+                "reason": f"Start your {pref.replace('_', ' ')} journey",
+            }
+    return None

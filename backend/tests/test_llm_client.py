@@ -131,7 +131,7 @@ def test_get_llm_client_returns_fallback_for_lite():
         mock_settings.llm_lite_providers = "together,groq"
         mock_settings.llm_together_api_key = "tog-test"
         mock_settings.llm_together_base_url = "https://api.together.xyz/v1"
-        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
         mock_settings.llm_groq_api_key = "gsk-test"
         mock_settings.llm_groq_base_url = "https://api.groq.com/openai/v1"
         mock_settings.llm_groq_model = "llama-3.1-8b-instant"
@@ -147,7 +147,7 @@ def test_get_llm_client_returns_fallback_for_standard():
         mock_settings.llm_standard_providers = "together"
         mock_settings.llm_together_api_key = "tog-test"
         mock_settings.llm_together_base_url = "https://api.together.xyz/v1"
-        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
 
         client = get_llm_client(tier="standard")
         assert isinstance(client, FallbackLLMClient)
@@ -179,7 +179,7 @@ def test_get_llm_client_skips_providers_with_empty_key():
         mock_settings.llm_lite_providers = "together,groq"
         mock_settings.llm_together_api_key = ""
         mock_settings.llm_together_base_url = "https://api.together.xyz/v1"
-        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
         mock_settings.llm_groq_api_key = "gsk-test"
         mock_settings.llm_groq_base_url = "https://api.groq.com/openai/v1"
         mock_settings.llm_groq_model = "llama-3.1-8b-instant"
@@ -191,9 +191,9 @@ def test_get_llm_client_skips_providers_with_empty_key():
 
 def test_get_model_name():
     with patch("app.services.llm_client.settings") as mock_settings:
-        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
         mock_settings.llm_premium_model = "gpt-4o"
 
-        assert get_model_name("lite") == "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
-        assert get_model_name("standard") == "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        assert get_model_name("lite") == "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
+        assert get_model_name("standard") == "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
         assert get_model_name("premium") == "gpt-4o"

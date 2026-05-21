@@ -13,6 +13,7 @@ class ChildOut(BaseModel):
     username: str
     country_code: str
     is_active: bool
+    is_premium: bool
     parent_consent_given_at: datetime | None
     consent_declined_at: datetime | None
     deleted_at: datetime | None
@@ -21,3 +22,7 @@ class ChildOut(BaseModel):
 
 class FreezeRequest(BaseModel):
     frozen: bool
+
+
+class PremiumToggleRequest(BaseModel):
+    premium: bool

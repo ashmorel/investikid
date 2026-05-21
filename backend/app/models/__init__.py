@@ -6,5 +6,6 @@ from app.models.gamification import Badge, Challenge, UserBadge, UserChallenge  
 from app.models.generated_content import GeneratedContent  # noqa: F401
 from app.models.simulator import Holding, Portfolio, Trade  # noqa: F401
 from app.models.skill_profile import TopicMastery, WeakConcept  # noqa: F401
+from app.models.subscription import Subscription  # noqa: F401
 from app.models.tutor import ChartCoachConversation, TutorConversation  # noqa: F401
 from app.models.user import RefreshToken, User, UserProgress  # noqa: F401

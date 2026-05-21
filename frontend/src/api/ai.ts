@@ -42,6 +42,7 @@ export type PracticeQuiz = {
   choices: string[];
   answer_index: number;
   explanation: string;
+  variant_rung?: string | null;
 };
 
 export type TutorResponse = {

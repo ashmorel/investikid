@@ -14,9 +14,20 @@ def test_hash_and_verify_password():
 
 
 def test_create_and_decode_access_token():
-    token = create_token({"sub": "user-123"}, expires_delta=timedelta(minutes=15))
+    # A07-1: an access token must positively carry type=="access"; a
+    # claims-only JWT (no type) is no longer accepted as a session.
+    token = create_token(
+        {"sub": "user-123", "type": "access"}, expires_delta=timedelta(minutes=15)
+    )
     payload = decode_token(token)
     assert payload["sub"] == "user-123"
+
+
+def test_typeless_token_rejected_as_access():
+    token = create_token({"sub": "user-123"}, expires_delta=timedelta(minutes=15))
+    with pytest.raises(HTTPException) as exc_info:
+        decode_token(token)
+    assert exc_info.value.status_code == 401
 
 
 def test_expired_token_raises():
@@ -24,3 +35,35 @@ def test_expired_token_raises():
     with pytest.raises(HTTPException) as exc_info:
         decode_token(token)
     assert exc_info.value.status_code == 401
+
+
+def test_jose_version_not_vulnerable():
+    import importlib.metadata as md
+
+    from packaging.version import Version
+    v = Version(md.version("python-jose"))
+    assert v >= Version("3.4.0"), f"python-jose {v} is CVE-vulnerable (<3.4.0)"
+
+
+def test_jwt_decode_rejects_token_signed_with_wrong_secret():
+    from jose import jwt
+
+    from app.core.config import settings
+
+    bad = jwt.encode({"sub": "x"}, "not-the-secret", algorithm=settings.jwt_algorithm)
+    with pytest.raises(HTTPException) as exc_info:
+        decode_token(bad)
+    assert exc_info.value.status_code == 401
+
+
+def test_requirements_fully_pinned():
+    import pathlib
+    req = pathlib.Path(__file__).resolve().parents[1] / "requirements.txt"
+    bad = []
+    for line in req.read_text().splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        if "==" not in s:
+            bad.append(s)
+    assert not bad, f"Unpinned dependencies: {bad}"

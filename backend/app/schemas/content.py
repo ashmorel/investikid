@@ -1,5 +1,5 @@
 import uuid
-from typing import Literal
+from typing import Literal, get_args
 
 from pydantic import BaseModel, ConfigDict
 
@@ -8,6 +8,8 @@ ModuleTopic = Literal[
     "stocks", "savings", "real_estate", "budgeting", "risk",
     "crypto", "taxes", "debt", "entrepreneurship",
 ]
+
+TOPIC_PATH_VALUES: frozenset[str] = frozenset(get_args(ModuleTopic))
 
 
 class ModuleOut(BaseModel):

@@ -17,7 +17,7 @@ export default function Simulator() {
   const [activeTab, setActiveTab] = useState<Tab>('holdings');
 
   if (portfolioLoading || !portfolio) {
-    return <div className="mx-auto max-w-4xl p-6"><p className="text-sm text-muted-foreground">Loading portfolio…</p></div>;
+    return <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6"><p className="text-sm text-muted-foreground">Loading portfolio…</p></div>;
   }
 
   const holdings = portfolio.holdings ?? [];
@@ -29,9 +29,9 @@ export default function Simulator() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
       <div className="rounded-2xl border-2 border-amber-200 bg-gradient-to-b from-amber-100 to-amber-50 p-6 text-center">
-        <span className="text-4xl">📊</span>
+        <span className="text-4xl" aria-hidden="true">📊</span>
         <h1 className="mt-2 text-xl font-extrabold text-gray-900">Your Portfolio</h1>
         <p className="text-sm text-gray-500">Practice Mode — no real money</p>
       </div>

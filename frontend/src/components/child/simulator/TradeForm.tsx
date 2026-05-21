@@ -3,6 +3,9 @@ import { EduTooltip } from './EduTooltip';
 import { formatCurrency } from '@/lib/currency';
 import type { TradeRequest, TradeType } from '@/api/simulator';
 import { Button } from '@/components/ui/button';
+import { BottomSheet } from '@/components/mobile/BottomSheet';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useHaptic } from '@/hooks/useHaptic';
 
 type TradeFormProps = {
   ticker: string;
@@ -22,6 +25,8 @@ export function TradeForm({
   ticker, exchange, price, currency, availableCash, ownedShares,
   onSubmit, isSubmitting, submitError,
 }: TradeFormProps) {
+  const isMobile = !useMediaQuery('(min-width: 768px)');
+  const haptic = useHaptic();
   const [side, setSide] = useState<TradeType>('buy');
   const [shares, setShares] = useState('');
   const [step, setStep] = useState<Step>('input');
@@ -58,12 +63,13 @@ export function TradeForm({
 
   async function handleConfirm() {
     await onSubmit({ ticker, exchange, type: side, shares: sharesNum });
+    haptic('medium');
   }
 
   if (step === 'review') {
     const cashAfter = side === 'buy' ? cashNum - totalCost : cashNum + totalCost;
-    return (
-      <div aria-live="assertive">
+    const reviewContent = (
+      <>
         <div className="rounded-lg border bg-muted/50 p-4">
           <p className="font-medium">{side === 'buy' ? 'Buy' : 'Sell'} {sharesNum} shares of {ticker}</p>
           <div className="mt-2 space-y-1 text-sm">
@@ -87,6 +93,24 @@ export function TradeForm({
           </Button>
           <Button variant="outline" onClick={handleBack} disabled={isSubmitting}>Go back</Button>
         </div>
+      </>
+    );
+
+    if (isMobile) {
+      return (
+        <BottomSheet
+          open
+          onOpenChange={(open) => { if (!open) handleBack(); }}
+          title="Review Trade"
+        >
+          {reviewContent}
+        </BottomSheet>
+      );
+    }
+
+    return (
+      <div aria-live="assertive">
+        {reviewContent}
       </div>
     );
   }

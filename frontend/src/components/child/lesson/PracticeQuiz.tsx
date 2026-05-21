@@ -38,6 +38,11 @@ export function PracticeQuiz({ lessonId, wrongAnswerIndex, onClose }: Props) {
         <span className="rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">
           Practice — no XP
         </span>
+        {practiceQ.data.variant_rung && practiceQ.data.variant_rung !== 'core' && (
+          <span className="rounded-lg bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-800">
+            {practiceQ.data.variant_rung === 'harder' ? 'Challenge' : 'Warm-up'}
+          </span>
+        )}
         <button onClick={onClose} className="text-sm text-amber-600 underline">
           Skip
         </button>
