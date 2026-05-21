@@ -6,6 +6,20 @@ import { axe } from 'vitest-axe';
 
 import ParentDashboard from '@/pages/ParentDashboard';
 
+vi.mock('@/api/billing', () => ({
+  billingApi: {
+    getStatus: vi.fn().mockResolvedValue({
+      has_subscription: false,
+      status: null,
+      trial_ends_at: null,
+      current_period_end: null,
+      cancel_at_period_end: false,
+    }),
+    createCheckout: vi.fn(),
+    createPortal: vi.fn(),
+  },
+}));
+
 function wrap(ui: React.ReactNode, initial = '/parent') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(

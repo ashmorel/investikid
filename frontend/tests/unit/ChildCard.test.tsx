@@ -37,15 +37,14 @@ describe('ChildCard', () => {
     expect(screen.getByRole('button', { name: /delete account/i })).toBeDisabled();
   });
 
-  it('renders Upgrade to Premium button for a free child', () => {
-    wrap({ ...baseChild, is_premium: false });
-    expect(screen.getByTestId('premium-toggle')).toHaveTextContent(/upgrade to premium/i);
-  });
-
-  it('renders Premium ✨ indicator and Downgrade button for a premium child', () => {
+  it('shows Premium badge when child is premium', () => {
     wrap({ ...baseChild, is_premium: true });
     expect(screen.getByText(/Premium ✨/)).toBeInTheDocument();
-    expect(screen.getByTestId('premium-toggle')).toHaveTextContent(/downgrade/i);
+  });
+
+  it('does not show premium toggle button', () => {
+    wrap(baseChild);
+    expect(screen.queryByTestId('premium-toggle')).not.toBeInTheDocument();
   });
 
   it('erasure button only enabled when typed username matches', async () => {

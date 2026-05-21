@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    stripe_price_id: str = ""
+    stripe_portal_config_id: str = ""
     email_backend: str = "logging"  # "logging" | "resend"
     email_from: str = "noreply@invest-ed.app"
     app_base_url: str = "http://localhost:5173"
