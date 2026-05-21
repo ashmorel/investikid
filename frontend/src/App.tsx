@@ -21,6 +21,8 @@ import VerifyEmail from '@/pages/VerifyEmail';
 import ParentLogin from '@/pages/ParentLogin';
 import ParentAuthCallback from '@/pages/ParentAuthCallback';
 import ParentDashboard from '@/pages/ParentDashboard';
+import AdminLayout from '@/components/admin/AdminLayout';
+import AdminDashboard from '@/components/admin/AdminDashboard';
 
 function RootRedirect() {
   // Redirect / to /home; if unauthed, /home's Shell will redirect to /login.
@@ -59,6 +61,11 @@ export default function App() {
         <Route path="/parent/login" element={<ParentLogin />} />
         <Route path="/parent/auth/callback" element={<ParentAuthCallback />} />
         <Route path="/parent" element={<ParentDashboard />} />
+
+        {/* Admin routes */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+        </Route>
 
         <Route path="*" element={<div className="p-6">Not found</div>} />
       </Routes>
