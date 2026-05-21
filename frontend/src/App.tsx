@@ -23,6 +23,8 @@ import ParentAuthCallback from '@/pages/ParentAuthCallback';
 import ParentDashboard from '@/pages/ParentDashboard';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminDashboard from '@/components/admin/AdminDashboard';
+import ModuleList from '@/components/admin/ModuleList';
+import ModuleForm from '@/components/admin/ModuleForm';
 
 function RootRedirect() {
   // Redirect / to /home; if unauthed, /home's Shell will redirect to /login.
@@ -65,6 +67,9 @@ export default function App() {
         {/* Admin routes */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
+          <Route path="modules" element={<ModuleList />} />
+          <Route path="modules/new" element={<ModuleForm />} />
+          <Route path="modules/:moduleId" element={<ModuleForm />} />
         </Route>
 
         <Route path="*" element={<div className="p-6">Not found</div>} />
