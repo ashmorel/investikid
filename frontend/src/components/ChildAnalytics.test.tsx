@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ChildAnalytics } from './ChildAnalytics';
 import type { ChildAnalytics as ChildAnalyticsType } from '@/api/parent';
@@ -72,7 +72,9 @@ describe('ChildAnalytics', () => {
     await user.click(toggle);
     expect(screen.getByText(/12 of 30 lessons/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /hide progress/i }));
-    expect(screen.queryByText(/12 of 30 lessons/)).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText(/12 of 30 lessons/)).not.toBeInTheDocument(),
+    );
   });
 
   it('shows zero-state message when no activity', () => {
