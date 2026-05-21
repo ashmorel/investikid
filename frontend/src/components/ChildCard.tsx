@@ -12,6 +12,7 @@ import { childStatus, type ChildStatus } from '@/lib/format';
 import { parentApi, type Child } from '@/api/parent';
 import { ApiError } from '@/api/client';
 import { cn } from '@/lib/utils';
+import { ChildAnalytics } from '@/components/ChildAnalytics';
 
 const CHIP: Record<ChildStatus, string> = {
   active: 'bg-emerald-100 text-emerald-900',
@@ -82,6 +83,10 @@ export function ChildCard({ child }: { child: Child }) {
           {LABEL[status]}
         </span>
       </div>
+
+      {child.analytics && !isDeleted && (
+        <ChildAnalytics analytics={child.analytics} />
+      )}
 
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
