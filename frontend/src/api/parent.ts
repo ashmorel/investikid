@@ -5,6 +5,7 @@ export type Child = {
   username: string;
   country_code: string;
   is_active: boolean;
+  is_premium: boolean;
   parent_consent_given_at: string | null;
   consent_declined_at: string | null;
   deleted_at: string | null;

@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import { parentApi, type Child } from '@/api/parent';
 import { useParentAuthGuard } from '@/hooks/useParentAuthGuard';
 import { ChildCard } from '@/components/ChildCard';
+import { SubscriptionCard } from '@/components/SubscriptionCard';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ErrorBanner';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ParentDashboard() {
   const navigate = useNavigate();
@@ -20,6 +23,24 @@ export default function ParentDashboard() {
     },
   });
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const checkoutResult = searchParams.get('checkout');
+    if (checkoutResult === 'success') {
+      toast({
+        title: 'Welcome to Premium!',
+        description: 'All your children now have access to premium features.',
+      });
+      searchParams.delete('checkout');
+      setSearchParams(searchParams, { replace: true });
+    } else if (checkoutResult === 'canceled') {
+      searchParams.delete('checkout');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, toast]);
+
   return (
     <main className="mx-auto max-w-2xl p-6">
       <header className="flex items-center justify-between">
@@ -28,6 +49,8 @@ export default function ParentDashboard() {
           Log out
         </Button>
       </header>
+
+      <SubscriptionCard />
 
       {q.isLoading && <p className="mt-6 text-sm text-muted-foreground">Loading…</p>}
       {q.isError && (
