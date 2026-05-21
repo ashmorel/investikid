@@ -25,6 +25,10 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import ModuleList from '@/components/admin/ModuleList';
 import ModuleForm from '@/components/admin/ModuleForm';
+import BadgeList from '@/components/admin/BadgeList';
+import BadgeForm from '@/components/admin/BadgeForm';
+import ChallengeList from '@/components/admin/ChallengeList';
+import ChallengeForm from '@/components/admin/ChallengeForm';
 
 function RootRedirect() {
   // Redirect / to /home; if unauthed, /home's Shell will redirect to /login.
@@ -70,6 +74,12 @@ export default function App() {
           <Route path="modules" element={<ModuleList />} />
           <Route path="modules/new" element={<ModuleForm />} />
           <Route path="modules/:moduleId" element={<ModuleForm />} />
+          <Route path="badges" element={<BadgeList />} />
+          <Route path="badges/new" element={<BadgeForm />} />
+          <Route path="badges/:badgeId" element={<BadgeForm />} />
+          <Route path="challenges" element={<ChallengeList />} />
+          <Route path="challenges/new" element={<ChallengeForm />} />
+          <Route path="challenges/:challengeId" element={<ChallengeForm />} />
         </Route>
 
         <Route path="*" element={<div className="p-6">Not found</div>} />
