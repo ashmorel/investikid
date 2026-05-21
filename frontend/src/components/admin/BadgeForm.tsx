@@ -1,34 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBadges, useCreateBadge, useUpdateBadge } from '@/api/admin';
+import type { AdminBadge } from '@/api/admin';
 
 const CONDITION_TYPES = ['lesson_count', 'streak_days', 'module_complete', 'xp_total'] as const;
 
 export default function BadgeForm() {
   const { badgeId } = useParams<{ badgeId: string }>();
-  const navigate = useNavigate();
   const isEdit = !!badgeId && badgeId !== 'new';
 
   const { data: badges = [] } = useBadges();
   const existing = isEdit ? badges.find((b) => b.id === badgeId) : undefined;
+
+  if (isEdit && !existing) {
+    return <div className="text-slate-400">Loading…</div>;
+  }
+
+  return <BadgeFormInner key={existing?.id ?? 'new'} existing={existing} isEdit={isEdit} badgeId={badgeId} />;
+}
+
+function BadgeFormInner({ existing, isEdit, badgeId }: { existing?: AdminBadge; isEdit: boolean; badgeId?: string }) {
+  const navigate = useNavigate();
   const createBadge = useCreateBadge();
   const updateBadge = useUpdateBadge();
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [iconUrl, setIconUrl] = useState('🏅');
-  const [conditionType, setConditionType] = useState<string>('lesson_count');
-  const [conditionValue, setConditionValue] = useState(1);
-
-  useEffect(() => {
-    if (existing) {
-      setName(existing.name);
-      setDescription(existing.description);
-      setIconUrl(existing.icon_url);
-      setConditionType(existing.condition_type);
-      setConditionValue(existing.condition_value);
-    }
-  }, [existing]);
+  const [name, setName] = useState(existing?.name ?? '');
+  const [description, setDescription] = useState(existing?.description ?? '');
+  const [iconUrl, setIconUrl] = useState(existing?.icon_url ?? '🏅');
+  const [conditionType, setConditionType] = useState<string>(existing?.condition_type ?? 'lesson_count');
+  const [conditionValue, setConditionValue] = useState(existing?.condition_value ?? 1);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

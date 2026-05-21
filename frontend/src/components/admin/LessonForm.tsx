@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useCreateLesson, useUpdateLesson } from '@/api/admin';
 import type { AdminLesson } from '@/api/admin';
 
@@ -22,42 +22,27 @@ export default function LessonForm({ moduleId, lesson, nextOrderIndex, onClose }
   const [type, setType] = useState<LessonType>((lesson?.type as LessonType) ?? 'card');
   const [xpReward, setXpReward] = useState(lesson?.xp_reward ?? DEFAULT_XP.card);
 
+  // Initialize content fields from existing lesson data
+  const cj = lesson ? (lesson.content_json as Record<string, unknown>) : undefined;
+
   // Card fields
-  const [cardTitle, setCardTitle] = useState('');
-  const [cardBody, setCardBody] = useState('');
+  const [cardTitle, setCardTitle] = useState(lesson?.type === 'card' ? ((cj?.title as string) ?? '') : '');
+  const [cardBody, setCardBody] = useState(lesson?.type === 'card' ? ((cj?.body as string) ?? '') : '');
 
   // Quiz fields
-  const [question, setQuestion] = useState('');
-  const [choices, setChoices] = useState<string[]>(['', '']);
-  const [answerIndex, setAnswerIndex] = useState(0);
-  const [explanation, setExplanation] = useState('');
+  const [question, setQuestion] = useState(lesson?.type === 'quiz' ? ((cj?.question as string) ?? '') : '');
+  const [choices, setChoices] = useState<string[]>(lesson?.type === 'quiz' ? ((cj?.choices as string[]) ?? ['', '']) : ['', '']);
+  const [answerIndex, setAnswerIndex] = useState(lesson?.type === 'quiz' ? ((cj?.answer_index as number) ?? 0) : 0);
+  const [explanation, setExplanation] = useState(lesson?.type === 'quiz' ? ((cj?.explanation as string) ?? '') : '');
 
   // Scenario fields
-  const [prompt, setPrompt] = useState('');
-  const [scenarioChoices, setScenarioChoices] = useState<{ label: string; outcome: string }[]>([
-    { label: '', outcome: '' },
-    { label: '', outcome: '' },
-  ]);
-  const [correctIndex, setCorrectIndex] = useState(0);
-
-  // Load existing lesson data
-  useEffect(() => {
-    if (!lesson) return;
-    const cj = lesson.content_json as Record<string, unknown>;
-    if (lesson.type === 'card') {
-      setCardTitle((cj.title as string) ?? '');
-      setCardBody((cj.body as string) ?? '');
-    } else if (lesson.type === 'quiz') {
-      setQuestion((cj.question as string) ?? '');
-      setChoices((cj.choices as string[]) ?? ['', '']);
-      setAnswerIndex((cj.answer_index as number) ?? 0);
-      setExplanation((cj.explanation as string) ?? '');
-    } else if (lesson.type === 'scenario') {
-      setPrompt((cj.prompt as string) ?? '');
-      setScenarioChoices((cj.choices as { label: string; outcome: string }[]) ?? [{ label: '', outcome: '' }, { label: '', outcome: '' }]);
-      setCorrectIndex((cj.correct_index as number) ?? 0);
-    }
-  }, [lesson]);
+  const [prompt, setPrompt] = useState(lesson?.type === 'scenario' ? ((cj?.prompt as string) ?? '') : '');
+  const [scenarioChoices, setScenarioChoices] = useState<{ label: string; outcome: string }[]>(
+    lesson?.type === 'scenario'
+      ? ((cj?.choices as { label: string; outcome: string }[]) ?? [{ label: '', outcome: '' }, { label: '', outcome: '' }])
+      : [{ label: '', outcome: '' }, { label: '', outcome: '' }]
+  );
+  const [correctIndex, setCorrectIndex] = useState(lesson?.type === 'scenario' ? ((cj?.correct_index as number) ?? 0) : 0);
 
   function handleTypeChange(newType: LessonType) {
     setType(newType);

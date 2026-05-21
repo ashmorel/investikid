@@ -1,43 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useChallenges, useCreateChallenge, useUpdateChallenge, useBadges } from '@/api/admin';
+import type { AdminChallenge, AdminBadge } from '@/api/admin';
 
 const CHALLENGE_TYPES = ['lessons_completed', 'xp_earned', 'streak'] as const;
 
 export default function ChallengeForm() {
   const { challengeId } = useParams<{ challengeId: string }>();
-  const navigate = useNavigate();
   const isEdit = !!challengeId && challengeId !== 'new';
 
   const { data: challenges = [] } = useChallenges();
   const { data: badges = [] } = useBadges();
   const existing = isEdit ? challenges.find((c) => c.id === challengeId) : undefined;
+
+  if (isEdit && !existing) {
+    return <div className="text-slate-400">Loading…</div>;
+  }
+
+  return <ChallengeFormInner key={existing?.id ?? 'new'} existing={existing} badges={badges} isEdit={isEdit} challengeId={challengeId} />;
+}
+
+function ChallengeFormInner({ existing, badges, isEdit, challengeId }: {
+  existing?: AdminChallenge;
+  badges: AdminBadge[];
+  isEdit: boolean;
+  challengeId?: string;
+}) {
+  const navigate = useNavigate();
   const createChallenge = useCreateChallenge();
   const updateChallenge = useUpdateChallenge();
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [type, setType] = useState<string>('lessons_completed');
-  const [targetValue, setTargetValue] = useState(1);
-  const [xpReward, setXpReward] = useState(50);
-  const [badgeId, setBadgeId] = useState<string | null>(null);
-  const [startsAt, setStartsAt] = useState('');
-  const [endsAt, setEndsAt] = useState('');
-  const [isPremium, setIsPremium] = useState(false);
-
-  useEffect(() => {
-    if (existing) {
-      setTitle(existing.title);
-      setDescription(existing.description);
-      setType(existing.type);
-      setTargetValue(existing.target_value);
-      setXpReward(existing.xp_reward);
-      setBadgeId(existing.badge_id);
-      setStartsAt(existing.starts_at.slice(0, 16));
-      setEndsAt(existing.ends_at.slice(0, 16));
-      setIsPremium(existing.is_premium);
-    }
-  }, [existing]);
+  const [title, setTitle] = useState(existing?.title ?? '');
+  const [description, setDescription] = useState(existing?.description ?? '');
+  const [type, setType] = useState<string>(existing?.type ?? 'lessons_completed');
+  const [targetValue, setTargetValue] = useState(existing?.target_value ?? 1);
+  const [xpReward, setXpReward] = useState(existing?.xp_reward ?? 50);
+  const [badgeId, setBadgeId] = useState<string | null>(existing?.badge_id ?? null);
+  const [startsAt, setStartsAt] = useState(existing?.starts_at.slice(0, 16) ?? '');
+  const [endsAt, setEndsAt] = useState(existing?.ends_at.slice(0, 16) ?? '');
+  const [isPremium, setIsPremium] = useState(existing?.is_premium ?? false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

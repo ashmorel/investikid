@@ -1,18 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   useModules, useCreateModule, useUpdateModule,
   useLessons, useDeleteLesson, useReorderLessons,
   useCountries,
 } from '@/api/admin';
-import type { AdminLesson } from '@/api/admin';
+import type { AdminModule, AdminLesson } from '@/api/admin';
 import OrderArrows from './OrderArrows';
 import LessonForm from './LessonForm';
 import ConfirmDialog from './ConfirmDialog';
 
 export default function ModuleForm() {
   const { moduleId } = useParams<{ moduleId: string }>();
-  const navigate = useNavigate();
   const isEdit = !!moduleId && moduleId !== 'new';
 
   const { data: modules = [] } = useModules();
@@ -20,29 +19,36 @@ export default function ModuleForm() {
   const { data: lessons = [] } = useLessons(isEdit ? moduleId : '');
   const { data: countries = [] } = useCountries();
 
+  // Wait for data to load in edit mode before rendering the form
+  if (isEdit && !existing) {
+    return <div className="text-slate-400">Loading…</div>;
+  }
+
+  return <ModuleFormInner key={existing?.id ?? 'new'} existing={existing} modules={modules} lessons={lessons} countries={countries} isEdit={isEdit} moduleId={moduleId} />;
+}
+
+function ModuleFormInner({ existing, modules, lessons, countries, isEdit, moduleId }: {
+  existing?: AdminModule;
+  modules: AdminModule[];
+  lessons: AdminLesson[];
+  countries: string[];
+  isEdit: boolean;
+  moduleId?: string;
+}) {
+  const navigate = useNavigate();
   const createMod = useCreateModule();
   const updateMod = useUpdateModule();
   const deleteLesson = useDeleteLesson();
   const reorderLessons = useReorderLessons();
 
-  const [topic, setTopic] = useState('');
-  const [title, setTitle] = useState('');
-  const [icon, setIcon] = useState('📚');
-  const [isPremium, setIsPremium] = useState(false);
-  const [countryCodes, setCountryCodes] = useState<string[]>([]);
+  const [topic, setTopic] = useState(existing?.topic ?? '');
+  const [title, setTitle] = useState(existing?.title ?? '');
+  const [icon, setIcon] = useState(existing?.icon ?? '📚');
+  const [isPremium, setIsPremium] = useState(existing?.is_premium ?? false);
+  const [countryCodes, setCountryCodes] = useState<string[]>(existing?.country_codes ?? []);
   const [editingLesson, setEditingLesson] = useState<AdminLesson | null>(null);
   const [showNewLesson, setShowNewLesson] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdminLesson | null>(null);
-
-  useEffect(() => {
-    if (existing) {
-      setTopic(existing.topic);
-      setTitle(existing.title);
-      setIcon(existing.icon);
-      setIsPremium(existing.is_premium);
-      setCountryCodes(existing.country_codes);
-    }
-  }, [existing]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
