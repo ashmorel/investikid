@@ -54,11 +54,29 @@ describe('a11y: parent surfaces', () => {
             user_id: 'u1', username: 'kid1', country_code: 'GB', is_active: true,
             parent_consent_given_at: '2026-01-01T00:00:00Z', consent_declined_at: null,
             deleted_at: null, deletion_requested_at: null,
+            is_premium: false,
+            analytics: {
+              level: 3, xp: 250, xp_to_next_level: 250, streak_count: 2,
+              lessons_completed: 5, lessons_total: 20,
+              recent_lessons: [
+                { title: 'Test Lesson', type: 'card', score: null, completed_at: '2026-05-20T10:00:00Z' },
+              ],
+              badges: [{ name: 'First Lesson', icon: 'trophy', earned_at: '2026-05-15T10:00:00Z' }],
+            },
           },
           {
             user_id: 'u2', username: 'kid2', country_code: 'US', is_active: true,
             parent_consent_given_at: '2026-01-01T00:00:00Z', consent_declined_at: null,
             deleted_at: null, deletion_requested_at: null,
+            is_premium: false,
+            analytics: {
+              level: 3, xp: 250, xp_to_next_level: 250, streak_count: 2,
+              lessons_completed: 5, lessons_total: 20,
+              recent_lessons: [
+                { title: 'Test Lesson', type: 'card', score: null, completed_at: '2026-05-20T10:00:00Z' },
+              ],
+              badges: [{ name: 'First Lesson', icon: 'trophy', earned_at: '2026-05-15T10:00:00Z' }],
+            },
           },
         ]),
         { status: 200 },

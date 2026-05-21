@@ -1,5 +1,29 @@
 import { apiFetch } from './client';
 
+export type RecentLesson = {
+  title: string;
+  type: 'card' | 'quiz' | 'scenario' | 'video';
+  score: number | null;
+  completed_at: string;
+};
+
+export type BadgeInfo = {
+  name: string;
+  icon: string;
+  earned_at: string;
+};
+
+export type ChildAnalytics = {
+  level: number;
+  xp: number;
+  xp_to_next_level: number;
+  streak_count: number;
+  lessons_completed: number;
+  lessons_total: number;
+  recent_lessons: RecentLesson[];
+  badges: BadgeInfo[];
+};
+
 export type Child = {
   user_id: string;
   username: string;
@@ -10,6 +34,7 @@ export type Child = {
   consent_declined_at: string | null;
   deleted_at: string | null;
   deletion_requested_at: string | null;
+  analytics: ChildAnalytics | null;
 };
 
 export const parentApi = {
