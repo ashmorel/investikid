@@ -56,6 +56,7 @@ async def list_modules(session: AsyncSession = Depends(get_session)):
             id=m.id, topic=m.topic, title=m.title, icon=m.icon,
             is_premium=m.is_premium, country_codes=m.country_codes,
             order_index=m.order_index, lesson_count=len(m.lessons),
+            prerequisite_ids=m.prerequisite_ids, min_age=m.min_age, max_age=m.max_age,
         )
         for m in modules
     ]
@@ -63,10 +64,19 @@ async def list_modules(session: AsyncSession = Depends(get_session)):
 
 @router.post("/modules", response_model=ModuleOut)
 async def create_module(payload: ModuleCreate, session: AsyncSession = Depends(get_session)):
+    # Validate all prerequisite IDs exist
+    for prereq_id in payload.prerequisite_ids:
+        prereq = await session.get(Module, prereq_id)
+        if prereq is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Prerequisite module {prereq_id} not found",
+            )
     module = Module(
         topic=payload.topic, title=payload.title, icon=payload.icon,
         is_premium=payload.is_premium, country_codes=payload.country_codes,
-        order_index=payload.order_index,
+        order_index=payload.order_index, prerequisite_ids=payload.prerequisite_ids,
+        min_age=payload.min_age, max_age=payload.max_age,
     )
     session.add(module)
     await session.commit()
@@ -75,6 +85,7 @@ async def create_module(payload: ModuleCreate, session: AsyncSession = Depends(g
         id=module.id, topic=module.topic, title=module.title, icon=module.icon,
         is_premium=module.is_premium, country_codes=module.country_codes,
         order_index=module.order_index, lesson_count=0,
+        prerequisite_ids=module.prerequisite_ids, min_age=module.min_age, max_age=module.max_age,
     )
 
 
@@ -85,7 +96,23 @@ async def update_module(
     module = await session.get(Module, module_id, options=[selectinload(Module.lessons)])
     if module is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    update_data = payload.model_dump(exclude_unset=True)
+    # Prerequisite validation
+    if "prerequisite_ids" in update_data:
+        prereq_ids = update_data["prerequisite_ids"]
+        if module_id in prereq_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Prerequisite self-reference not allowed",
+            )
+        for prereq_id in prereq_ids:
+            prereq = await session.get(Module, prereq_id)
+            if prereq is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Prerequisite module {prereq_id} not found",
+                )
+    for field, value in update_data.items():
         setattr(module, field, value)
     await session.commit()
     await session.refresh(module)
@@ -93,6 +120,7 @@ async def update_module(
         id=module.id, topic=module.topic, title=module.title, icon=module.icon,
         is_premium=module.is_premium, country_codes=module.country_codes,
         order_index=module.order_index, lesson_count=len(module.lessons),
+        prerequisite_ids=module.prerequisite_ids, min_age=module.min_age, max_age=module.max_age,
     )
 
 
