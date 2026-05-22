@@ -1,7 +1,7 @@
 """add module prerequisites and age range
 
 Revision ID: 9b7815c040
-Revises: 5b9ed6eec8c9
+Revises: d3e4f5a6b7c8
 Create Date: 2026-05-22 22:50:00.000000
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = '9b7815c040'
-down_revision: Union[str, None] = '5b9ed6eec8c9'
+down_revision: Union[str, None] = 'd3e4f5a6b7c8'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

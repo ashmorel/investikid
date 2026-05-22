@@ -1,7 +1,7 @@
 """add subscriptions table
 
-Revision ID: a1b2c3d4e5f6
-Revises: c61a2b91ec27
+Revision ID: d3e4f5a6b7c8
+Revises: b2c3d4e5f6a7
 Create Date: 2026-05-21 00:00:00.000000
 
 """
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "a1b2c3d4e5f6"
-down_revision: str | None = "c61a2b91ec27"
+revision: str = "d3e4f5a6b7c8"
+down_revision: str | None = "b2c3d4e5f6a7"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
