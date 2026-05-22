@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     app_base_url: str = "http://localhost:5173"
     data_retention_days: int = 30
     privacy_notice_version: str = "2026-05-16"
+    admin_token: str = "test-admin-token-xyz"
 
     # LLM / AI — lite + standard tiers (open-source models)
     llm_together_api_key: str = ""

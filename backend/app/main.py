@@ -9,6 +9,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from app.core.config import settings
 from app.core.csrf import CSRFMiddleware
 from app.core.rate_limit import limiter
+from app.routers import admin as admin_router
 from app.routers import ai as ai_router
 from app.routers import billing as billing_router
 from app.routers import auth as auth_router
@@ -112,8 +113,8 @@ def create_app() -> FastAPI:
             ["http://localhost:5173"] if settings.environment == "development" else []
         ),
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Content-Type", "X-CSRF-Token"],
+        allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
+        allow_headers=["Content-Type", "X-CSRF-Token", "Authorization"],
     )
 
     @application.get("/health")
@@ -130,6 +131,7 @@ def create_app() -> FastAPI:
     application.include_router(parent_router.router)
     application.include_router(ai_router.router)
     application.include_router(billing_router.router)
+    application.include_router(admin_router.router)
 
     return application
 

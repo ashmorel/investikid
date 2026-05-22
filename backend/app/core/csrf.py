@@ -31,7 +31,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/billing/webhook",
 })
 # Path prefixes that bypass CSRF (for dynamic segments like /consent/request/{id})
-_DEFAULT_EXEMPT_PREFIXES = ("/consent/request/",)
+_DEFAULT_EXEMPT_PREFIXES = ("/consent/request/", "/admin/")
 
 
 class CSRFMiddleware:
