@@ -1,35 +1,137 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import Lesson, LessonCompletion, Module
-from app.models.skill_profile import TopicMastery, WeakConcept
+from app.models.skill_profile import TopicMastery
 from app.models.user import User
-from app.services.content_service import is_module_accessible
 from app.services.entitlements import is_premium
 
-TOPIC_PREREQUISITES: dict[str, list[str]] = {
-    "stocks": [],
-    "savings": [],
-    "budgeting": [],
-    "risk": ["stocks"],
-    "real_estate": ["stocks"],
-    "crypto": ["stocks", "risk"],
-    "taxes": ["budgeting"],
-    "debt": ["budgeting"],
-    "entrepreneurship": ["budgeting"],
-}
+# Scoring weights
+_WEIGHT_TOPIC_MATCH = 0.30
+_WEIGHT_READINESS = 0.25
+_WEIGHT_NEAR_COMPLETION = 0.20
+_WEIGHT_NATURAL_ORDER = 0.15
+_WEIGHT_TOPIC_VARIETY = 0.10
 
-_WEIGHT_READINESS = 0.4
-_WEIGHT_WEAKNESS = 0.3
-_WEIGHT_FRESHNESS = 0.2
-_WEIGHT_COMPLETION = 0.1
+_READINESS_THRESHOLD = 0.7  # avg prerequisite score required to be "ready"
+_MAX_ORDER_INDEX = 100  # normalisation ceiling for order_index
 
-_MASTERY_THRESHOLD = 0.5  # prerequisite considered "met" at this score
-_FRESHNESS_CAP_DAYS = 30
+
+def _calculate_age(dob: date, today: date | None = None) -> int:
+    """Calculate age from date of birth."""
+    if today is None:
+        today = datetime.now(UTC).date()
+    age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+    return age
+
+
+def _apply_hard_filters(
+    module: Any,
+    user: Any,
+    fully_completed_module_ids: set,
+    completed_module_ids_for_prereqs: set,
+    user_age: int,
+) -> bool:
+    """Return True if module passes all hard filters (should be included)."""
+    # 1. Already fully completed
+    if module.id in fully_completed_module_ids:
+        return False
+
+    # 2. Prerequisites not met — any prerequisite module has uncompleted lessons
+    for prereq_id in module.prerequisite_ids:
+        if prereq_id not in completed_module_ids_for_prereqs:
+            return False
+
+    # 3. Age out of range
+    if module.min_age is not None and user_age < module.min_age:
+        return False
+    if module.max_age is not None and user_age > module.max_age:
+        return False
+
+    # 4. Premium gating
+    if module.is_premium and not user.is_premium:
+        return False
+
+    # 5. Country filtering
+    if module.country_codes and user.country_code not in module.country_codes:
+        return False
+
+    return True
+
+
+def _score_module(
+    module: Any,
+    user: Any,
+    completed_count: int,
+    total_count: int,
+    mastery_by_topic: dict,
+) -> dict:
+    """Score a module. Returns dict with 'score', 'is_topic_match', 'near_completion', 'variety', 'readiness'."""
+    # --- Topic match (30%) ---
+    is_topic_match = bool(user.topic_path and module.topic == user.topic_path)
+    topic_match_score = 1.0 if is_topic_match else 0.0
+
+    # --- Readiness (25%) — all prerequisites completed with avg mastery >= 0.7 ---
+    mastery = mastery_by_topic.get(module.topic)
+    readiness_score = mastery.mastery_score if mastery else 0.0
+    # Readiness is high if current topic mastery is above threshold
+    readiness = 1.0 if readiness_score >= _READINESS_THRESHOLD else readiness_score / _READINESS_THRESHOLD
+
+    # --- Near completion (20%) — scales with % complete ---
+    near_completion = False
+    if total_count > 0 and 0 < completed_count < total_count:
+        near_completion = True
+        near_completion_score = completed_count / total_count
+    else:
+        near_completion_score = 0.0
+
+    # --- Natural order (15%) — lower order_index within same topic scores higher ---
+    order_score = 1.0 - min(module.order_index / _MAX_ORDER_INDEX, 1.0)
+
+    # --- Topic variety (10%) — bonus if user hasn't touched this topic recently ---
+    variety = mastery is None  # never touched = fresh variety
+    variety_score = 1.0 if variety else 0.0
+
+    score = (
+        _WEIGHT_TOPIC_MATCH * topic_match_score
+        + _WEIGHT_READINESS * readiness
+        + _WEIGHT_NEAR_COMPLETION * near_completion_score
+        + _WEIGHT_NATURAL_ORDER * order_score
+        + _WEIGHT_TOPIC_VARIETY * variety_score
+    )
+
+    return {
+        "score": round(score, 4),
+        "is_topic_match": is_topic_match,
+        "near_completion": near_completion,
+        "variety": variety,
+        "readiness": readiness_score,
+    }
+
+
+def _build_reason(
+    module: Any,
+    *,
+    completed: int,
+    total: int,
+    is_topic_match: bool,
+    is_variety: bool,
+    readiness_score: float,
+) -> str:
+    """Build child-friendly reason string."""
+    if completed > 0 and completed < total:
+        return "You're halfway through — keep going!"
+    if is_topic_match:
+        return f"You're great at {module.topic.replace('_', ' ')} — try this next!"
+    if is_variety:
+        return "Something new to explore!"
+    if readiness_score >= _READINESS_THRESHOLD:
+        return "You're ready for the next level!"
+    return "Recommended for you"
 
 
 async def get_recommendations(
@@ -41,41 +143,17 @@ async def get_recommendations(
         seed = await _topic_path_seed(session, user)
         return {"next_quest": seed, "suggested_modules": []}
 
-    # Load all accessible modules
+    # Load all modules ordered by order_index
     all_modules = (
         await session.scalars(select(Module).order_by(Module.order_index))
     ).all()
-    modules = [
-        m for m in all_modules
-        if is_module_accessible(user.country_code, is_premium(user), m.country_codes, m.is_premium)
-    ]
 
-    if not modules:
+    if not all_modules:
         return {"next_quest": None, "suggested_modules": []}
 
-    # Load user's mastery data
-    mastery_rows = (
-        await session.scalars(
-            select(TopicMastery).where(TopicMastery.user_id == user.id)
-        )
-    ).all()
-    mastery_by_topic: dict[str, TopicMastery] = {tm.topic: tm for tm in mastery_rows}
-
-    # Load unresolved weak concepts grouped by topic
-    weak_rows = (
-        await session.scalars(
-            select(WeakConcept).where(
-                WeakConcept.user_id == user.id,
-                WeakConcept.resolved == False,  # noqa: E712
-            )
-        )
-    ).all()
-    weak_by_topic: dict[str, list[WeakConcept]] = {}
-    for wc in weak_rows:
-        weak_by_topic.setdefault(wc.topic, []).append(wc)
+    module_ids = [m.id for m in all_modules]
 
     # Load completion counts per module
-    module_ids = [m.id for m in modules]
     lesson_counts_result = await session.execute(
         select(Lesson.module_id, func.count(Lesson.id))
         .where(Lesson.module_id.in_(module_ids))
@@ -91,67 +169,64 @@ async def get_recommendations(
     )
     completed_lessons: dict[uuid.UUID, int] = dict(completed_counts_result.all())
 
-    now = datetime.now(UTC)
+    # Build sets for hard filtering
+    fully_completed_module_ids: set[uuid.UUID] = {
+        mid for mid in module_ids
+        if total_lessons.get(mid, 0) > 0 and completed_lessons.get(mid, 0) >= total_lessons.get(mid, 0)
+    }
+    # A module is "completed enough" for prerequisite purposes when all its lessons are done
+    completed_module_ids_for_prereqs: set[uuid.UUID] = fully_completed_module_ids.copy()
+
+    # Calculate user age
+    user_age = _calculate_age(user.dob) if user.dob else 0
+
+    # Load mastery data
+    mastery_rows = (
+        await session.scalars(
+            select(TopicMastery).where(TopicMastery.user_id == user.id)
+        )
+    ).all()
+    mastery_by_topic: dict[str, TopicMastery] = {tm.topic: tm for tm in mastery_rows}
+
+    # Filter and score modules
     scored: list[dict[str, Any]] = []
 
-    for m in modules:
+    for m in all_modules:
         total = total_lessons.get(m.id, 0)
         completed = completed_lessons.get(m.id, 0)
 
-        # --- Readiness score ---
-        prereqs = TOPIC_PREREQUISITES.get(m.topic, [])
-        if not prereqs:
-            readiness = 1.0
-        else:
-            met = sum(
-                1 for p in prereqs
-                if mastery_by_topic.get(p) and mastery_by_topic[p].mastery_score >= _MASTERY_THRESHOLD
-            )
-            readiness = met / len(prereqs)
+        # Apply hard filters
+        if not _apply_hard_filters(m, user, fully_completed_module_ids, completed_module_ids_for_prereqs, user_age):
+            continue
 
-        # --- Weakness score ---
-        weak_count = len(weak_by_topic.get(m.topic, []))
-        weakness = min(weak_count / 3.0, 1.0)  # cap at 3 weak concepts
-
-        # --- Freshness score ---
-        mastery = mastery_by_topic.get(m.topic)
-        if mastery:
-            days_since = (now - mastery.last_activity_at).days
-            freshness = min(days_since / _FRESHNESS_CAP_DAYS, 1.0)
-        else:
-            freshness = 1.0  # never touched = very fresh
-
-        # --- Completion score ---
-        if total == 0:
-            completion = 0.5
-        elif completed == 0:
-            completion = 0.5  # untouched
-        elif completed < total:
-            completion = 0.8  # in progress (momentum)
-        else:
-            completion = 0.1  # fully done
-
-        score = (
-            _WEIGHT_READINESS * readiness
-            + _WEIGHT_WEAKNESS * weakness
-            + _WEIGHT_FRESHNESS * freshness
-            + _WEIGHT_COMPLETION * completion
-        )
+        # Score the module
+        score_result = _score_module(m, user, completed, total, mastery_by_topic)
 
         # Build reason string
-        reason = _build_reason(m, readiness, weakness, completed, total)
+        reason = _build_reason(
+            m,
+            completed=completed,
+            total=total,
+            is_topic_match=score_result["is_topic_match"],
+            is_variety=score_result["variety"],
+            readiness_score=score_result["readiness"],
+        )
 
         scored.append({
             "module_id": m.id,
-            "score": round(score, 4),
+            "score": score_result["score"],
             "reason": reason,
             "topic": m.topic,
             "_completed_count": completed,
             "_total_count": total,
+            "_order_index": m.order_index,
         })
 
+    if not scored:
+        return {"next_quest": None, "suggested_modules": []}
+
     # Sort by score descending, then order_index for ties
-    scored.sort(key=lambda s: (-s["score"], modules[[m.id for m in modules].index(s["module_id"])].order_index))
+    scored.sort(key=lambda s: (-s["score"], s["_order_index"]))
 
     # Find next quest: first incomplete lesson in the top-ranked module
     next_quest = None
@@ -191,28 +266,10 @@ async def get_recommendations(
     return {"next_quest": next_quest, "suggested_modules": suggested}
 
 
-def _build_reason(
-    module: Module,
-    readiness: float,
-    weakness: float,
-    completed: int,
-    total: int,
-) -> str:
-    if completed > 0 and completed < total:
-        return f"Continue where you left off in {module.title}"
-    if weakness > 0:
-        return f"Practice your weak spots in {module.topic.replace('_', ' ')}"
-    if readiness >= 1.0:
-        return f"You're ready for {module.title}"
-    if readiness > 0:
-        return f"Almost ready for {module.title} — keep building foundations"
-    return f"New topic: {module.title}"
-
-
 async def _topic_path_seed(session: AsyncSession, user: User):
     """Profiling-off only: first incomplete lesson in the self-declared topic, for a brand-new learner."""
     pref = user.topic_path
-    if not pref or pref not in TOPIC_PREREQUISITES:
+    if not pref:
         return None
 
     completion_count = int(
@@ -232,9 +289,10 @@ async def _topic_path_seed(session: AsyncSession, user: User):
         )
     ).all()
     for m in modules:
-        if not is_module_accessible(
-            user.country_code, is_premium(user), m.country_codes, m.is_premium
-        ):
+        # Basic accessibility check: premium and country
+        if m.is_premium and not is_premium(user):
+            continue
+        if m.country_codes and user.country_code not in m.country_codes:
             continue
         lessons = (
             await session.scalars(

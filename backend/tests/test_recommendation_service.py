@@ -121,9 +121,8 @@ async def test_completed_modules_ranked_last(db_session, seeded):
 
     recs = await get_recommendations(db_session, user)
     module_ids = [r["module_id"] for r in recs["suggested_modules"]]
-    stocks_idx = module_ids.index(seeded["stocks"].id)
-    # Stocks should be last (or near last) since it's complete
-    assert stocks_idx >= len(module_ids) - 2
+    # Fully completed modules are excluded by the hard filter — stocks should not appear
+    assert seeded["stocks"].id not in module_ids
 
 
 async def test_premium_module_excluded_for_free_user(db_session):
