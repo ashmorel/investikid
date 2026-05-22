@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 
 # ── Module ──────────────────────────────────────────────────────────
@@ -15,6 +15,15 @@ class ModuleCreate(BaseModel):
     is_premium: bool = False
     country_codes: list[str] = []
     order_index: int
+    prerequisite_ids: list[uuid.UUID] = []
+    min_age: int | None = None
+    max_age: int | None = None
+
+    @model_validator(mode="after")
+    def validate_age_range(self):
+        if self.min_age is not None and self.max_age is not None and self.min_age > self.max_age:
+            raise ValueError("min_age must be less than or equal to max_age")
+        return self
 
 
 class ModuleUpdate(BaseModel):
@@ -23,6 +32,9 @@ class ModuleUpdate(BaseModel):
     icon: str | None = None
     is_premium: bool | None = None
     country_codes: list[str] | None = None
+    prerequisite_ids: list[uuid.UUID] | None = None
+    min_age: int | None = None
+    max_age: int | None = None
 
 
 class ModuleOut(BaseModel):
@@ -34,6 +46,9 @@ class ModuleOut(BaseModel):
     country_codes: list[str]
     order_index: int
     lesson_count: int = 0
+    prerequisite_ids: list[uuid.UUID] = []
+    min_age: int | None = None
+    max_age: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
