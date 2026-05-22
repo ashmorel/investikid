@@ -20,6 +20,11 @@ class Module(Base):
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
     icon: Mapped[str] = mapped_column(String(10), nullable=False, server_default="📚")
+    prerequisite_ids: Mapped[list[uuid.UUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=False, default=list, server_default="{}"
+    )
+    min_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     lessons: Mapped[list["Lesson"]] = relationship("Lesson", back_populates="module")
 
