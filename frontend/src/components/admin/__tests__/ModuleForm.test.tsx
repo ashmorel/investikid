@@ -8,7 +8,12 @@ const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 
 vi.mock('@/api/admin', () => ({
-  useModules: () => ({ data: [], isLoading: false }),
+  useModules: () => ({
+    data: [
+      { id: '1', topic: 'stocks', title: 'Intro to Stocks', icon: '📈', is_premium: false, country_codes: [], order_index: 0, lesson_count: 2, prerequisite_ids: [], min_age: null, max_age: null },
+    ],
+    isLoading: false,
+  }),
   useCreateModule: () => ({ mutateAsync: mockCreate, isPending: false }),
   useUpdateModule: () => ({ mutateAsync: mockUpdate, isPending: false }),
   useLessons: () => ({ data: [], isLoading: false }),
@@ -44,5 +49,16 @@ describe('ModuleForm', () => {
   it('renders save button', () => {
     render(<ModuleForm />, { wrapper });
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+  });
+
+  it('renders prerequisite multi-select in create mode', () => {
+    render(<ModuleForm />, { wrapper });
+    expect(screen.getByText(/prerequisites/i)).toBeInTheDocument();
+  });
+
+  it('renders age range inputs in create mode', () => {
+    render(<ModuleForm />, { wrapper });
+    expect(screen.getByLabelText(/min age/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/max age/i)).toBeInTheDocument();
   });
 });

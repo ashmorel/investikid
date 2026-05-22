@@ -46,17 +46,28 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
   const [icon, setIcon] = useState(existing?.icon ?? '📚');
   const [isPremium, setIsPremium] = useState(existing?.is_premium ?? false);
   const [countryCodes, setCountryCodes] = useState<string[]>(existing?.country_codes ?? []);
+  const [prerequisiteIds, setPrerequisiteIds] = useState<string[]>(existing?.prerequisite_ids ?? []);
+  const [minAge, setMinAge] = useState<string>(existing?.min_age?.toString() ?? '');
+  const [maxAge, setMaxAge] = useState<string>(existing?.max_age?.toString() ?? '');
   const [editingLesson, setEditingLesson] = useState<AdminLesson | null>(null);
   const [showNewLesson, setShowNewLesson] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdminLesson | null>(null);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    const moduleData = {
+      topic, title, icon,
+      is_premium: isPremium,
+      country_codes: countryCodes,
+      prerequisite_ids: prerequisiteIds,
+      min_age: minAge ? Number(minAge) : null,
+      max_age: maxAge ? Number(maxAge) : null,
+    };
     if (isEdit && moduleId) {
-      await updateMod.mutateAsync({ id: moduleId, topic, title, icon, is_premium: isPremium, country_codes: countryCodes });
+      await updateMod.mutateAsync({ id: moduleId, ...moduleData });
     } else {
       const maxOrder = modules.reduce((max, m) => Math.max(max, m.order_index), -1);
-      await createMod.mutateAsync({ topic, title, icon, is_premium: isPremium, country_codes: countryCodes, order_index: maxOrder + 1 });
+      await createMod.mutateAsync({ ...moduleData, order_index: maxOrder + 1 });
     }
     navigate('/admin/modules');
   }
@@ -64,6 +75,12 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
   function toggleCountry(code: string) {
     setCountryCodes((prev) =>
       prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+    );
+  }
+
+  function togglePrerequisite(id: string) {
+    setPrerequisiteIds((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
   }
 
@@ -127,6 +144,46 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Prerequisites */}
+        <div>
+          <span className="mb-1 block text-sm text-slate-400">Prerequisites (optional)</span>
+          <div className="flex flex-wrap gap-2">
+            {modules
+              .filter((m) => m.id !== moduleId)
+              .map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => togglePrerequisite(m.id)}
+                  className={`rounded-md px-3 py-1 text-xs ${
+                    prerequisiteIds.includes(m.id)
+                      ? 'bg-purple-600 text-white'
+                      : 'border border-slate-600 bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {m.icon} {m.title}
+                </button>
+              ))}
+          </div>
+        </div>
+
+        {/* Age Range */}
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <label htmlFor="mod-min-age" className="mb-1 block text-sm text-slate-400">Min Age</label>
+            <input id="mod-min-age" type="number" value={minAge} onChange={(e) => setMinAge(e.target.value)}
+              min={1} max={99} placeholder="Any"
+              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+          </div>
+          <div className="flex-1">
+            <label htmlFor="mod-max-age" className="mb-1 block text-sm text-slate-400">Max Age</label>
+            <input id="mod-max-age" type="number" value={maxAge} onChange={(e) => setMaxAge(e.target.value)}
+              min={1} max={99} placeholder="Any"
+              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+          </div>
+          <p className="self-end pb-2 text-xs text-slate-500">Leave empty for all ages</p>
         </div>
 
         {/* Lessons section — only in edit mode */}
