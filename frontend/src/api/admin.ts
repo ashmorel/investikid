@@ -19,6 +19,9 @@ export interface AdminModule {
   country_codes: string[];
   order_index: number;
   lesson_count: number;
+  prerequisite_ids: string[];
+  min_age: number | null;
+  max_age: number | null;
 }
 
 export interface AdminLesson {
