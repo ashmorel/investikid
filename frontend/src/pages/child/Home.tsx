@@ -1,23 +1,63 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useChildSession } from '@/hooks/useChildSession';
 import { useProgress } from '@/hooks/useProgress';
-import { contentApi, type LessonSummary, type ModuleOut } from '@/api/content';
-import { aiApi, type Recommendations } from '@/api/ai';
+import { contentApi, type ModuleOut } from '@/api/content';
+import { useRecommendations, type RecommendationCategoryItem } from '@/api/ai';
 import { StatsBar } from '@/components/child/StatsBar';
+import { ReviewBanner } from '@/components/child/ReviewBanner';
+import { RecommendationCard } from '@/components/child/RecommendationCard';
 import { Button } from '@/components/ui/button';
 
-type NextUp = {
-  module: ModuleOut;
-  lesson: LessonSummary;
-  hasAnyCompletion: boolean;
-  reason: string;
-} | null;
+type Category = 'continue_learning' | 'practise_again' | 'something_new';
+
+const CATEGORY_META: Record<Category, { label: string; icon: string; color: string }> = {
+  continue_learning: { label: 'Continue Learning', icon: '▶', color: 'text-green-400' },
+  practise_again: { label: 'Practise Again', icon: '🔄', color: 'text-amber-400' },
+  something_new: { label: 'Something New', icon: '✨', color: 'text-sky-400' },
+};
+
+function CategorySection({
+  category,
+  items,
+  modules,
+}: {
+  category: Category;
+  items: RecommendationCategoryItem[];
+  modules: ModuleOut[];
+}) {
+  if (items.length === 0) return null;
+  const meta = CATEGORY_META[category];
+
+  return (
+    <section className="mt-5" aria-label={meta.label}>
+      <h2 className={`${meta.color} text-xs font-bold uppercase tracking-wider mb-2`}>
+        {meta.icon} {meta.label}
+      </h2>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {items.map((item) => {
+          const mod = modules.find((m) => m.id === item.module_id);
+          return (
+            <RecommendationCard
+              key={item.module_id}
+              item={item}
+              category={category}
+              moduleTitle={mod?.title ?? 'Module'}
+              completedCount={0}
+              totalCount={0}
+            />
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
   const { data: me } = useChildSession();
   const { data: progress } = useProgress();
+  const { data: recs, isLoading: recsLoading } = useRecommendations();
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -26,48 +66,16 @@ export default function Home() {
     staleTime: 60_000,
   });
 
-  const recsQ = useQuery<Recommendations | null>({
-    queryKey: ['recommendations'],
-    queryFn: () => aiApi.getRecommendations(),
-    retry: false,
-    staleTime: 60_000,
-  });
-
-  const accessibleModules = (modulesQ.data ?? []).filter((m) => !m.locked);
-
-  const lessonQueries = useQueries({
-    queries: accessibleModules.map((m) => ({
-      queryKey: ['module', m.id, 'lessons'],
-      queryFn: () => contentApi.listLessons(m.id),
-      retry: false,
-      staleTime: 60_000,
-    })),
-  });
-
-  const nextUp: NextUp = (() => {
-    const nq = recsQ.data?.next_quest;
-    if (!nq) return null;
-    const module = accessibleModules.find((m) => m.id === nq.module_id);
-    if (!module) return null;
-    // Find the lesson in the lesson queries
-    const modIdx = accessibleModules.indexOf(module);
-    const lessons = (lessonQueries[modIdx]?.data ?? []) as LessonSummary[];
-    const lesson = lessons.find((l) => l.id === nq.lesson_id);
-    if (!lesson) return null;
-    const hasAnyCompletion = lessonQueries.some((q) =>
-      ((q.data ?? []) as LessonSummary[]).some((l) => l.completed)
-    );
-    return { module, lesson, hasAnyCompletion, reason: nq.reason };
-  })();
-
-  const allDone = recsQ.isSuccess && !recsQ.data?.next_quest
-    && lessonQueries.length > 0
-    && lessonQueries.every((q) => q.isSuccess);
-
+  const modules = modulesQ.data ?? [];
   const level = progress?.level ?? 1;
   const xp = progress?.xp ?? 0;
   const xpInLevel = xp % 100;
   const xpForNext = 100;
+
+  const hasAnything =
+    (recs?.continue_learning?.length ?? 0) > 0 ||
+    (recs?.practise_again?.length ?? 0) > 0 ||
+    (recs?.something_new?.length ?? 0) > 0;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
@@ -101,16 +109,29 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Next Quest card */}
-      <section className="mt-5 rounded-2xl border-2 border-amber-200 bg-white p-4">
-        {nextUp ? (
-          <QuestCard nextUp={nextUp} />
-        ) : allDone ? (
-          <p className="text-sm text-center">🎉 You've completed all available quests — more coming soon!</p>
-        ) : (
-          <p className="text-sm text-gray-500">Loading quests…</p>
-        )}
-      </section>
+      {/* Review nudge banner */}
+      {recs && recs.review_summary.due_count > 0 && (
+        <div className="mt-5">
+          <ReviewBanner dueCount={recs.review_summary.due_count} />
+        </div>
+      )}
+
+      {/* Categorised recommendations */}
+      {recsLoading ? (
+        <p className="mt-5 text-sm text-gray-500">Loading recommendations…</p>
+      ) : hasAnything ? (
+        <>
+          <CategorySection category="continue_learning" items={recs?.continue_learning ?? []} modules={modules} />
+          <CategorySection category="practise_again" items={recs?.practise_again ?? []} modules={modules} />
+          <CategorySection category="something_new" items={recs?.something_new ?? []} modules={modules} />
+        </>
+      ) : (
+        <section className="mt-5 rounded-2xl border-2 border-amber-200 bg-white p-4">
+          <p className="text-sm text-center text-gray-500">
+            Complete a lesson to get personalised recommendations!
+          </p>
+        </section>
+      )}
 
       <div className="mt-5">
         <Button asChild className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl">
@@ -118,31 +139,5 @@ export default function Home() {
         </Button>
       </div>
     </div>
-  );
-}
-
-function QuestCard({ nextUp }: { nextUp: NonNullable<NextUp> }) {
-  const { module, lesson, hasAnyCompletion, reason } = nextUp;
-  const cta = hasAnyCompletion ? 'Resume' : 'Start';
-  return (
-    <>
-      <p className="text-xs font-bold text-amber-700 mb-2">🎯 YOUR NEXT QUEST</p>
-      <div className="flex items-center gap-3">
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 text-2xl">
-          {module.icon}
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-gray-900 truncate">{lesson.title}</p>
-          <p className="text-xs text-gray-500">{module.title} · {lesson.xp_reward} XP</p>
-          <p className="text-xs text-amber-600 mt-0.5">{reason}</p>
-        </div>
-        <Link
-          to={`/lessons/${module.id}/${lesson.id}`}
-          className="shrink-0 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-2 text-sm font-bold text-white hover:from-amber-500 hover:to-orange-600 transition-colors"
-        >
-          {cta} →
-        </Link>
-      </div>
-    </>
   );
 }
