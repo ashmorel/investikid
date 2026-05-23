@@ -60,3 +60,41 @@ class WeakConcept(Base):
         default=lambda: datetime.now(UTC),
         nullable=False,
     )
+
+
+class SpacedRepetitionItem(Base):
+    __tablename__ = "spaced_repetition_items"
+    __table_args__ = (
+        UniqueConstraint("user_id", "weak_concept_id", name="uq_sr_user_concept"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    weak_concept_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("weak_concepts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    ease_factor: Mapped[float] = mapped_column(Float, default=2.5, nullable=False)
+    interval_days: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    repetition_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    next_review_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    last_reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
