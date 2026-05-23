@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel
 
@@ -62,3 +63,38 @@ class WeakConceptOut(BaseModel):
 class MasteryProfileResponse(BaseModel):
     topics: list[TopicMasteryOut]
     weak_concepts: list[WeakConceptOut]
+
+
+class RecommendationCategoryItem(BaseModel):
+    module_id: uuid.UUID
+    lesson_id: uuid.UUID | None = None
+    score: float
+    reason: str
+    review_prompt: str | None = None
+    weak_concepts: list[str] = []
+
+
+class ReviewSummary(BaseModel):
+    due_count: int
+    next_due_at: datetime | None = None
+
+
+class CategorisedRecommendations(BaseModel):
+    continue_learning: list[RecommendationCategoryItem]
+    practise_again: list[RecommendationCategoryItem]
+    something_new: list[RecommendationCategoryItem]
+    review_summary: ReviewSummary
+
+
+class TopicStrength(BaseModel):
+    topic: str
+    mastery_score: float
+    status: str
+    weak_count: int
+    due_for_review: int
+    total_concepts: int
+
+
+class StrengthsAndGaps(BaseModel):
+    topics: list[TopicStrength]
+    overall_mastery: float
