@@ -134,14 +134,96 @@ def _build_reason(
     return "Recommended for you"
 
 
+_MAX_PER_CATEGORY = 2
+
+
+def _categorise_scored_modules(
+    scored: list[dict[str, Any]],
+) -> dict[str, list[dict[str, Any]]]:
+    """Split scored modules into three categories. Pure function, no DB access.
+
+    Priority: partial completion → continue_learning (even if has due SR).
+    Completed with due SR → practise_again.
+    Untouched (0 completed) → something_new.
+    """
+    continue_learning: list[dict[str, Any]] = []
+    practise_again: list[dict[str, Any]] = []
+    something_new: list[dict[str, Any]] = []
+
+    for entry in scored:
+        completed = entry["_completed_count"]
+        total = entry["_total_count"]
+        has_due = entry.get("_has_due_sr", False)
+        weak = entry.get("_weak_concepts", [])
+
+        item: dict[str, Any] = {
+            "module_id": entry["module_id"],
+            "lesson_id": entry.get("_lesson_id"),
+            "score": entry["score"],
+            "reason": entry["reason"],
+            "review_prompt": None,
+            "weak_concepts": [],
+        }
+
+        if 0 < completed < total:
+            # Partial completion takes priority
+            continue_learning.append(item)
+        elif has_due and weak:
+            # Completed module with due SR items
+            item["weak_concepts"] = weak
+            item["review_prompt"] = f"{len(weak)} concept{'s' if len(weak) != 1 else ''} to review"
+            practise_again.append(item)
+        else:
+            # Untouched
+            something_new.append(item)
+
+    # Sort each category by score descending and cap at max
+    continue_learning.sort(key=lambda x: -x["score"])
+    practise_again.sort(key=lambda x: -x["score"])
+    something_new.sort(key=lambda x: -x["score"])
+
+    return {
+        "continue_learning": continue_learning[:_MAX_PER_CATEGORY],
+        "practise_again": practise_again[:_MAX_PER_CATEGORY],
+        "something_new": something_new[:_MAX_PER_CATEGORY],
+    }
+
+
 async def get_recommendations(
     session: AsyncSession,
     user: User,
 ) -> dict[str, Any]:
-    """Return personalised module rankings and a next-quest suggestion."""
+    """Return personalised categorised module recommendations."""
+    from app.services.spaced_repetition_service import (
+        get_due_count,
+        get_due_items,
+        get_next_due_at,
+    )
+
+    empty_result = {
+        "continue_learning": [],
+        "practise_again": [],
+        "something_new": [],
+        "review_summary": {"due_count": 0, "next_due_at": None},
+    }
+
     if not user.profiling_enabled:
         seed = await _topic_path_seed(session, user)
-        return {"next_quest": seed, "suggested_modules": []}
+        if seed:
+            return {
+                "continue_learning": [],
+                "practise_again": [],
+                "something_new": [{
+                    "module_id": seed["module_id"],
+                    "lesson_id": seed["lesson_id"],
+                    "score": 0.0,
+                    "reason": seed["reason"],
+                    "review_prompt": None,
+                    "weak_concepts": [],
+                }],
+                "review_summary": {"due_count": 0, "next_due_at": None},
+            }
+        return empty_result
 
     # Load all modules ordered by order_index
     all_modules = (
@@ -149,7 +231,7 @@ async def get_recommendations(
     ).all()
 
     if not all_modules:
-        return {"next_quest": None, "suggested_modules": []}
+        return empty_result
 
     module_ids = [m.id for m in all_modules]
 
@@ -174,7 +256,6 @@ async def get_recommendations(
         mid for mid in module_ids
         if total_lessons.get(mid, 0) > 0 and completed_lessons.get(mid, 0) >= total_lessons.get(mid, 0)
     }
-    # A module is "completed enough" for prerequisite purposes when all its lessons are done
     completed_module_ids_for_prereqs: set[uuid.UUID] = fully_completed_module_ids.copy()
 
     # Calculate user age
@@ -188,15 +269,38 @@ async def get_recommendations(
     ).all()
     mastery_by_topic: dict[str, TopicMastery] = {tm.topic: tm for tm in mastery_rows}
 
-    # Filter and score modules
+    # Load due SR items to identify topics with due reviews
+    due_items = await get_due_items(session, user.id)
+    # Map: topic -> list of weak concept names that are due
+    from app.models.skill_profile import WeakConcept as WC
+    due_concept_ids = {item.weak_concept_id for item in due_items}
+    due_concepts_by_topic: dict[str, list[str]] = {}
+    if due_concept_ids:
+        concepts = (
+            await session.scalars(
+                select(WC).where(WC.id.in_(due_concept_ids))
+            )
+        ).all()
+        for c in concepts:
+            due_concepts_by_topic.setdefault(c.topic, []).append(c.concept)
+
+    # Filter, score, and find first incomplete lesson per module
     scored: list[dict[str, Any]] = []
 
     for m in all_modules:
         total = total_lessons.get(m.id, 0)
         completed = completed_lessons.get(m.id, 0)
 
-        # Apply hard filters
-        if not _apply_hard_filters(m, user, fully_completed_module_ids, completed_module_ids_for_prereqs, user_age):
+        # For practise_again: include fully completed modules with due SR items
+        has_due_sr = m.topic in due_concepts_by_topic
+        is_fully_completed = m.id in fully_completed_module_ids
+
+        # Apply hard filters (skip completed unless they have due SR items)
+        if is_fully_completed and not has_due_sr:
+            continue
+        if not is_fully_completed and not _apply_hard_filters(
+            m, user, fully_completed_module_ids, completed_module_ids_for_prereqs, user_age
+        ):
             continue
 
         # Score the module
@@ -212,6 +316,28 @@ async def get_recommendations(
             readiness_score=score_result["readiness"],
         )
 
+        # Find first incomplete lesson
+        lesson_id = None
+        if not is_fully_completed:
+            lessons = (
+                await session.scalars(
+                    select(Lesson)
+                    .where(Lesson.module_id == m.id)
+                    .order_by(Lesson.order_index)
+                )
+            ).all()
+            completed_ids_result = await session.scalars(
+                select(LessonCompletion.lesson_id).where(
+                    LessonCompletion.user_id == user.id,
+                    LessonCompletion.lesson_id.in_([l.id for l in lessons]),
+                )
+            )
+            completed_ids = set(completed_ids_result.all())
+            for lesson in lessons:
+                if lesson.id not in completed_ids:
+                    lesson_id = lesson.id
+                    break
+
         scored.append({
             "module_id": m.id,
             "score": score_result["score"],
@@ -220,50 +346,33 @@ async def get_recommendations(
             "_completed_count": completed,
             "_total_count": total,
             "_order_index": m.order_index,
+            "_lesson_id": lesson_id,
+            "_has_due_sr": has_due_sr,
+            "_weak_concepts": due_concepts_by_topic.get(m.topic, []),
         })
 
     if not scored:
-        return {"next_quest": None, "suggested_modules": []}
+        return empty_result
 
     # Sort by score descending, then order_index for ties
     scored.sort(key=lambda s: (-s["score"], s["_order_index"]))
 
-    # Find next quest: first incomplete lesson in the top-ranked module
-    next_quest = None
-    for entry in scored:
-        if entry["_completed_count"] >= entry["_total_count"] and entry["_total_count"] > 0:
-            continue  # skip fully complete modules
-        lessons = (
-            await session.scalars(
-                select(Lesson)
-                .where(Lesson.module_id == entry["module_id"])
-                .order_by(Lesson.order_index)
-            )
-        ).all()
-        completed_ids_result = await session.scalars(
-            select(LessonCompletion.lesson_id).where(
-                LessonCompletion.user_id == user.id,
-                LessonCompletion.lesson_id.in_([lesson.id for lesson in lessons]),
-            )
-        )
-        completed_ids = set(completed_ids_result.all())
-        for lesson in lessons:
-            if lesson.id not in completed_ids:
-                next_quest = {
-                    "module_id": entry["module_id"],
-                    "lesson_id": lesson.id,
-                    "reason": entry["reason"],
-                }
-                break
-        if next_quest:
-            break
+    # Categorise
+    categories = _categorise_scored_modules(scored)
 
-    suggested = [
-        {"module_id": s["module_id"], "score": s["score"], "reason": s["reason"]}
-        for s in scored
-    ]
+    # Build review summary
+    due_count = await get_due_count(session, user.id)
+    next_due = await get_next_due_at(session, user.id)
 
-    return {"next_quest": next_quest, "suggested_modules": suggested}
+    return {
+        "continue_learning": categories["continue_learning"],
+        "practise_again": categories["practise_again"],
+        "something_new": categories["something_new"],
+        "review_summary": {
+            "due_count": due_count,
+            "next_due_at": next_due.isoformat() if next_due else None,
+        },
+    }
 
 
 async def _topic_path_seed(session: AsyncSession, user: User):
