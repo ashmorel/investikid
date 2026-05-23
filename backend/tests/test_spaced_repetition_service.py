@@ -1,8 +1,4 @@
 """Tests for SM-2 lite spaced repetition service."""
-import uuid
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import pytest
 
 from app.services.spaced_repetition_service import calculate_next_review
