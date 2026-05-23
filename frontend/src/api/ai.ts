@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from './client';
 
 export type TopicMasteryOut = {
@@ -20,22 +21,46 @@ export type MasteryProfile = {
   weak_concepts: WeakConceptOut[];
 };
 
-export type NextQuest = {
-  module_id: string;
-  lesson_id: string;
-  reason: string;
-};
+// --- Categorised Recommendations (Phase 2) ---
 
-export type SuggestedModule = {
+export type RecommendationCategoryItem = {
   module_id: string;
+  lesson_id: string | null;
   score: number;
   reason: string;
+  review_prompt: string | null;
+  weak_concepts: string[];
 };
 
-export type Recommendations = {
-  next_quest: NextQuest | null;
-  suggested_modules: SuggestedModule[];
+export type ReviewSummary = {
+  due_count: number;
+  next_due_at: string | null;
 };
+
+export type CategorisedRecommendations = {
+  continue_learning: RecommendationCategoryItem[];
+  practise_again: RecommendationCategoryItem[];
+  something_new: RecommendationCategoryItem[];
+  review_summary: ReviewSummary;
+};
+
+// --- Strengths & Gaps ---
+
+export type TopicStrength = {
+  topic: string;
+  mastery_score: number;
+  status: 'strong' | 'needs_practice' | 'new';
+  weak_count: number;
+  due_for_review: number;
+  total_concepts: number;
+};
+
+export type StrengthsAndGaps = {
+  topics: TopicStrength[];
+  overall_mastery: number;
+};
+
+// --- Practice Quiz ---
 
 export type PracticeQuiz = {
   question: string;
@@ -45,18 +70,25 @@ export type PracticeQuiz = {
   variant_rung?: string | null;
 };
 
+// --- Tutor ---
+
 export type TutorResponse = {
   response: string;
   conversation_id: string;
   messages_remaining: number;
 };
 
+// --- API functions ---
+
 export const aiApi = {
   getRecommendations: () =>
-    apiFetch<Recommendations>('/recommendations'),
+    apiFetch<CategorisedRecommendations>('/recommendations'),
 
   getMasteryProfile: () =>
     apiFetch<MasteryProfile>('/profile/mastery'),
+
+  getStrengths: () =>
+    apiFetch<StrengthsAndGaps>('/profile/strengths'),
 
   getPracticeQuiz: (lessonId: string, wrongAnswerIndex?: number) =>
     apiFetch<PracticeQuiz>(`/lessons/${lessonId}/practice`, {
@@ -74,3 +106,23 @@ export const aiApi = {
       }),
     }),
 };
+
+// --- Hooks ---
+
+export function useRecommendations() {
+  return useQuery({
+    queryKey: ['recommendations'],
+    queryFn: () => aiApi.getRecommendations(),
+    retry: false,
+    staleTime: 60_000,
+  });
+}
+
+export function useStrengths() {
+  return useQuery({
+    queryKey: ['strengths'],
+    queryFn: () => aiApi.getStrengths(),
+    retry: false,
+    staleTime: 60_000,
+  });
+}
