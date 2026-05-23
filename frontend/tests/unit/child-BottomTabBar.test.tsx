@@ -4,14 +4,14 @@ import { MemoryRouter } from 'react-router-dom';
 import { BottomTabBar } from '@/components/child/BottomTabBar';
 
 describe('BottomTabBar', () => {
-  it('renders four nav links', () => {
+  it('renders five nav links', () => {
     render(
       <MemoryRouter initialEntries={['/home']}>
         <BottomTabBar />
       </MemoryRouter>,
     );
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(4);
+    expect(links).toHaveLength(5);
   });
 
   it('highlights the active tab', () => {
@@ -32,6 +32,7 @@ describe('BottomTabBar', () => {
     );
     expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Quests')).toBeInTheDocument();
+    expect(screen.getByText('Progress')).toBeInTheDocument();
     expect(screen.getByText('Simulator')).toBeInTheDocument();
     expect(screen.getByText('Stats')).toBeInTheDocument();
   });

@@ -36,20 +36,20 @@ function renderHome() {
 beforeEach(() => vi.restoreAllMocks());
 
 describe('Home', () => {
-  it('greets, shows StatsBar values, and Continue card pointing at first incomplete lesson', async () => {
+  it('greets and shows StatsBar values with categorised recommendations', async () => {
     mockJsonRoute({
       '/users/me': meBody('kid42'),
       '/users/me/progress': { xp: 320, level: 4, streak_count: 5, last_activity_date: '2026-05-02' },
       '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
-      ],
-      '/modules/mod-1/lessons': [
-        { id: 'L1', type: 'card', title: 'L1 title', xp_reward: 10, order_index: 0, completed: true },
-        { id: 'L2', type: 'quiz', title: 'L2 title', xp_reward: 25, order_index: 1, completed: false },
+        { id: 'mod-1', topic: 'stocks', title: 'Stocks 101', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
       ],
       '/recommendations': {
-        next_quest: { module_id: 'mod-1', lesson_id: 'L2', reason: 'Continue where you left off' },
-        suggested_modules: [],
+        continue_learning: [
+          { module_id: 'mod-1', lesson_id: 'L2', score: 0.8, reason: 'Keep going!', review_prompt: null, weak_concepts: [] },
+        ],
+        practise_again: [],
+        something_new: [],
+        review_summary: { due_count: 0, next_due_at: null },
       },
     });
     renderHome();
@@ -57,48 +57,44 @@ describe('Home', () => {
     expect((await screen.findAllByText(/Level 4/i)).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/320 XP/i).length).toBeGreaterThanOrEqual(1);
     await waitFor(() =>
-      expect(screen.getByText(/L2 title/i)).toBeInTheDocument(),
-    );
-    expect(screen.getByRole('link', { name: /Resume/i })).toHaveAttribute(
-      'href', '/lessons/mod-1/L2',
+      expect(screen.getByText(/Stocks 101/i)).toBeInTheDocument(),
     );
   });
 
-  it('shows "Start" copy when user has zero completions', async () => {
+  it('shows empty state when no recommendations exist', async () => {
     mockJsonRoute({
       '/users/me': meBody(),
       '/users/me/progress': { xp: 0, level: 1, streak_count: 0, last_activity_date: null },
-      '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
-      ],
-      '/modules/mod-1/lessons': [
-        { id: 'L1', type: 'card', title: 'L1', xp_reward: 10, order_index: 0, completed: false },
-      ],
+      '/modules': [],
       '/recommendations': {
-        next_quest: { module_id: 'mod-1', lesson_id: 'L1', reason: 'Start your first quest' },
-        suggested_modules: [],
+        continue_learning: [],
+        practise_again: [],
+        something_new: [],
+        review_summary: { due_count: 0, next_due_at: null },
       },
     });
     renderHome();
-    expect(await screen.findByRole('link', { name: /Start/i })).toBeInTheDocument();
+    expect(await screen.findByText(/Complete a lesson to get personalised recommendations/i)).toBeInTheDocument();
   });
 
-  it('shows all-done message when every lesson is complete', async () => {
+  it('shows review banner when concepts are due', async () => {
     mockJsonRoute({
       '/users/me': meBody(),
       '/users/me/progress': { xp: 100, level: 2, streak_count: 1, last_activity_date: '2026-05-02' },
       '/modules': [
         { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
       ],
-      '/modules/mod-1/lessons': [
-        { id: 'L1', type: 'card', title: 'L1', xp_reward: 10, order_index: 0, completed: true },
-      ],
       '/recommendations': {
-        next_quest: null,
-        suggested_modules: [],
+        continue_learning: [],
+        practise_again: [
+          { module_id: 'mod-1', lesson_id: null, score: 0.6, reason: 'Review time!', review_prompt: '2 concepts to review', weak_concepts: ['APR', 'compound interest'] },
+        ],
+        something_new: [],
+        review_summary: { due_count: 2, next_due_at: '2026-05-02T10:00:00Z' },
       },
     });
     renderHome();
-    expect(await screen.findByText(/completed all available quests/i)).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText(/2 concepts/i)).toBeInTheDocument();
   });
 });

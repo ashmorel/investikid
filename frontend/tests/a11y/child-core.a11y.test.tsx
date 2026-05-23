@@ -91,13 +91,13 @@ describe('a11y: child core surfaces', () => {
       '/modules': [
         { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
       ],
-      '/modules/mod-1/lessons': [
-        { id: 'L1', type: 'card', title: 'L1', xp_reward: 10, order_index: 0, completed: true },
-        { id: 'L2', type: 'quiz', title: 'L2', xp_reward: 25, order_index: 1, completed: false },
-      ],
       '/recommendations': {
-        next_quest: { module_id: 'mod-1', lesson_id: 'L2', reason: 'Continue where you left off' },
-        suggested_modules: [],
+        continue_learning: [
+          { module_id: 'mod-1', lesson_id: 'L2', score: 0.8, reason: 'Continue where you left off', review_prompt: null, weak_concepts: [] },
+        ],
+        practise_again: [],
+        something_new: [],
+        review_summary: { due_count: 0, next_due_at: null },
       },
     });
     const { default: Home } = await import('@/pages/child/Home');
