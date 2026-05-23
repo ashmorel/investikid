@@ -27,25 +27,29 @@ async def _module_with_lesson(db_session, topic, oi):
     return m, lesson
 
 
-async def test_profiling_off_with_topic_path_seeds_next_quest(db_session):
-    _, lesson = await _module_with_lesson(db_session, "savings", 0)
+async def test_profiling_off_with_topic_path_seeds_something_new(db_session):
+    m, lesson = await _module_with_lesson(db_session, "savings", 0)
     user = await _user(db_session, profiling_enabled=False, topic_path="savings")
     rec = await get_recommendations(db_session, user)
-    assert rec["next_quest"]["lesson_id"] == lesson.id
-    assert rec["suggested_modules"] == []
+    assert len(rec["something_new"]) == 1
+    assert rec["something_new"][0]["lesson_id"] == lesson.id
+    assert rec["continue_learning"] == []
+    assert rec["practise_again"] == []
 
 
-async def test_profiling_off_no_topic_path_returns_none(db_session):
+async def test_profiling_off_no_topic_path_returns_empty(db_session):
     await _module_with_lesson(db_session, "savings", 0)
     user = await _user(db_session, profiling_enabled=False, topic_path=None)
     rec = await get_recommendations(db_session, user)
-    assert rec["next_quest"] is None
+    assert rec["continue_learning"] == []
+    assert rec["practise_again"] == []
+    assert rec["something_new"] == []
 
 
-async def test_profiling_off_with_completion_returns_none(db_session):
+async def test_profiling_off_with_completion_returns_empty(db_session):
     _, lesson = await _module_with_lesson(db_session, "savings", 0)
     user = await _user(db_session, profiling_enabled=False, topic_path="savings")
     db_session.add(LessonCompletion(user_id=user.id, lesson_id=lesson.id, score=1.0))
     await db_session.flush()
     rec = await get_recommendations(db_session, user)
-    assert rec["next_quest"] is None
+    assert rec["something_new"] == []

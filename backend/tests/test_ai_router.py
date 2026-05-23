@@ -58,8 +58,10 @@ async def test_get_recommendations(auth_client):
     response = await client.get("/recommendations")
     assert response.status_code == 200
     data = response.json()
-    assert "next_quest" in data
-    assert "suggested_modules" in data
+    assert "continue_learning" in data
+    assert "practise_again" in data
+    assert "something_new" in data
+    assert "review_summary" in data
 
 
 async def test_get_mastery_profile(auth_client):
