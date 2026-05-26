@@ -78,6 +78,22 @@ export type TutorResponse = {
   messages_remaining: number;
 };
 
+// --- Coach Eddie ---
+
+export type CoachAction = {
+  type: 'lesson' | 'module' | 'review';
+  module_id: string;
+  lesson_id: string | null;
+  label: string;
+};
+
+export type CoachChatResponse = {
+  response: string;
+  conversation_id: string;
+  messages_remaining: number;
+  actions: CoachAction[];
+};
+
 // --- API functions ---
 
 export const aiApi = {
@@ -101,6 +117,15 @@ export const aiApi = {
       method: 'POST',
       body: JSON.stringify({
         lesson_id: lessonId,
+        message,
+        conversation_id: conversationId ?? null,
+      }),
+    }),
+
+  sendCoachMessage: (message: string, conversationId?: string) =>
+    apiFetch<CoachChatResponse>('/tutor/coach', {
+      method: 'POST',
+      body: JSON.stringify({
         message,
         conversation_id: conversationId ?? null,
       }),
