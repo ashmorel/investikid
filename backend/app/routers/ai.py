@@ -9,6 +9,8 @@ from app.models.user import User
 from app.routers.users import get_current_user
 from app.schemas.ai import (
     CategorisedRecommendations,
+    CoachChatRequest,
+    CoachChatResponse,
     MasteryProfileResponse,
     PracticeRequest,
     PracticeResponse,
@@ -21,6 +23,7 @@ from app.services.entitlements import is_premium
 from app.services.recommendation_service import get_recommendations
 from app.services.skill_profile_service import get_mastery_profile
 from app.services.spaced_repetition_service import record_review
+from app.services.coach_service import coach_chat
 from app.services.tutor_service import TutorInputTooLong, TutorLimitReached, chat
 
 router = APIRouter(tags=["ai"])
@@ -106,6 +109,28 @@ async def tutor_chat(
             user=current_user,
             lesson=lesson,
             topic=module.topic,
+            message=payload.message,
+            conversation_id=payload.conversation_id,
+            premium=is_premium(current_user),
+        )
+    except TutorInputTooLong as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    except TutorLimitReached as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return result
+
+
+@router.post("/tutor/coach", response_model=CoachChatResponse)
+async def coach_eddie(
+    payload: CoachChatRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        result = await coach_chat(
+            session=session,
+            user=current_user,
             message=payload.message,
             conversation_id=payload.conversation_id,
             premium=is_premium(current_user),
