@@ -14,6 +14,7 @@ import Market from '@/pages/child/Market';
 import Stock from '@/pages/child/Stock';
 import Stats from '@/pages/child/Stats';
 import StrengthsGaps from '@/pages/child/StrengthsGaps';
+import Coach from '@/pages/child/Coach';
 import ConsentVerify from '@/pages/ConsentVerify';
 import ForgotPassword from '@/pages/ForgotPassword';
 import Privacy from '@/pages/Privacy';
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/simulator/stock/:exchange/:ticker" element={<Stock />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="/progress" element={<StrengthsGaps />} />
+          <Route path="/coach" element={<Coach />} />
         </Route>
 
         {/* Existing parent + consent routes (untouched) */}

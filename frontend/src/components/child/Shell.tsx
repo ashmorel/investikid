@@ -13,6 +13,8 @@ import { TierBadge } from './TierBadge';
 import { BottomTabBar } from './BottomTabBar';
 import { SkipLink } from '@/components/a11y/SkipLink';
 import { useRouteFocus } from '@/components/a11y/useRouteFocus';
+import { useRecommendations } from '@/api/ai';
+import { EddieFAB } from './EddieFAB';
 
 export function Shell() {
   const session = useChildSession();
@@ -20,6 +22,7 @@ export function Shell() {
   const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
   useRouteFocus();
+  const { data: recsData } = useRecommendations();
 
   const mainRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<HTMLDivElement>(null);
@@ -73,6 +76,9 @@ export function Shell() {
         </AnimatePresence>
       </div>
       <BottomTabBar />
+      {location.pathname !== '/coach' && (
+        <EddieFAB dueCount={recsData?.review_summary?.due_count ?? 0} />
+      )}
     </div>
   );
 }
