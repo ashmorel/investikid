@@ -98,3 +98,22 @@ class TopicStrength(BaseModel):
 class StrengthsAndGaps(BaseModel):
     topics: list[TopicStrength]
     overall_mastery: float
+
+
+class CoachChatRequest(BaseModel):
+    message: str
+    conversation_id: uuid.UUID | None = None
+
+
+class CoachAction(BaseModel):
+    type: str  # "lesson" | "module" | "review"
+    module_id: str
+    lesson_id: str | None = None
+    label: str
+
+
+class CoachChatResponse(BaseModel):
+    response: str
+    conversation_id: uuid.UUID
+    messages_remaining: int
+    actions: list[CoachAction]
