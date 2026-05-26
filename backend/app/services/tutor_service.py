@@ -54,6 +54,18 @@ _SKILL_INSTRUCTIONS = {
     ),
 }
 
+
+def _build_weak_concept_addendum(concepts: list[str]) -> str:
+    """Return a system prompt addendum for the student's weak concepts in this topic."""
+    if not concepts:
+        return ""
+    concept_list = ", ".join(f'"{c}"' for c in concepts)
+    return (
+        f"\n\nThe student has struggled with these concepts in this topic: {concept_list}. "
+        "If relevant to their question, proactively address these gaps."
+    )
+
+
 def _skill_level(mastery_score: float) -> str:
     if mastery_score < 0.3:
         return "low"
@@ -111,11 +123,26 @@ async def chat(
     mastery_score = mastery.mastery_score if mastery else 0.0
     level = _skill_level(mastery_score)
 
+    # Load weak concepts for this topic
+    from sqlalchemy import select as sa_select
+    from app.models.skill_profile import WeakConcept
+
+    weak_rows = (
+        await session.scalars(
+            sa_select(WeakConcept).where(
+                WeakConcept.user_id == user.id,
+                WeakConcept.topic == topic,
+                WeakConcept.resolved == False,  # noqa: E712
+            )
+        )
+    ).all()
+    weak_concepts = [w.concept for w in weak_rows]
+
     # Build system prompt
     system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(
         skill_level_instruction=_SKILL_INSTRUCTIONS[level],
         lesson_content=json.dumps(lesson.content_json or {}),
-    )
+    ) + _build_weak_concept_addendum(weak_concepts)
 
     # Build message history
     history = [
