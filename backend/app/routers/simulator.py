@@ -4,11 +4,12 @@ from collections import defaultdict
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.core.rate_limit import limiter
 from app.models.audit import AuditLog
 from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import User, UserProgress
@@ -152,7 +153,9 @@ async def get_market_news(
 
 
 @router.get("/market/news-summary", response_model=NewsSummaryOut)
+@limiter.limit("20/hour")
 async def get_news_summary(
+    request: Request,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     provider=Depends(get_price_provider),
@@ -238,7 +241,9 @@ async def get_stock_news(
 
 
 @router.get("/market/news-summary/{exchange}/{ticker}", response_model=NewsSummaryOut)
+@limiter.limit("20/hour")
 async def get_stock_news_summary(
+    request: Request,
     exchange: str,
     ticker: str,
     current_user: User = Depends(get_current_user),
@@ -287,7 +292,9 @@ async def get_stock_news_summary(
 
 
 @router.get("/market/chart-guide/{exchange}/{ticker}", response_model=NewsSummaryOut)
+@limiter.limit("20/hour")
 async def get_chart_guide(
+    request: Request,
     exchange: str,
     ticker: str,
     period: str = "1mo",
@@ -358,7 +365,9 @@ async def get_chart_guide(
 
 
 @router.post("/market/chart-coach", response_model=TutorChatResponse)
+@limiter.limit("10/hour")
 async def chart_coach(
+    request: Request,
     payload: ChartCoachRequest,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -409,7 +418,9 @@ _APPROX_USD_RATES: dict[str, float] = {
 
 
 @router.get("/market/time-machine/{exchange}/{ticker}", response_model=TimeMachineOut)
+@limiter.limit("20/hour")
 async def get_time_machine(
+    request: Request,
     exchange: str,
     ticker: str,
     current_user: User = Depends(get_current_user),

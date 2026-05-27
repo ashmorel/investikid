@@ -1,9 +1,10 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.core.rate_limit import limiter
 from app.models.content import Lesson, Module
 from app.models.user import User
 from app.routers.users import get_current_user
@@ -39,7 +40,9 @@ async def recommendations(
 
 
 @router.post("/lessons/{lesson_id}/practice", response_model=PracticeResponse)
+@limiter.limit("10/hour")
 async def practice_quiz(
+    request: Request,
     lesson_id: uuid.UUID,
     payload: PracticeRequest,
     current_user: User = Depends(get_current_user),
@@ -90,7 +93,9 @@ async def practice_quiz(
 
 
 @router.post("/tutor/chat", response_model=TutorChatResponse)
+@limiter.limit("10/hour")
 async def tutor_chat(
+    request: Request,
     payload: TutorChatRequest,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -122,7 +127,9 @@ async def tutor_chat(
 
 
 @router.post("/tutor/coach", response_model=CoachChatResponse)
+@limiter.limit("10/hour")
 async def coach_eddie(
+    request: Request,
     payload: CoachChatRequest,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
