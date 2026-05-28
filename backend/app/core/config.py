@@ -1,9 +1,23 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _ensure_asyncpg(url: str) -> str:
+    """Convert postgresql:// to postgresql+asyncpg:// for SQLAlchemy async."""
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
 
 
 class Settings(BaseSettings):
     database_url: str
     test_database_url: str
+
+    @model_validator(mode="after")
+    def _fix_db_urls(self) -> "Settings":
+        self.database_url = _ensure_asyncpg(self.database_url)
+        self.test_database_url = _ensure_asyncpg(self.test_database_url)
+        return self
     redis_url: str = "redis://localhost:6379/0"
     jwt_secret: str
     jwt_algorithm: str = "HS256"
