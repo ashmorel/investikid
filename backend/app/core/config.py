@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
     environment: str = "development"
+    cors_origins: str = "http://localhost:5173"
     resend_api_key: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""

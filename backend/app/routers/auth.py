@@ -48,7 +48,9 @@ from app.services.tokens import (
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-_COOKIE_OPTS = dict(httponly=True, samesite="lax")
+def _cookie_samesite() -> str:
+    """Return 'none' in production (cross-origin Capacitor), 'lax' in development."""
+    return "none" if settings.environment != "development" else "lax"
 
 MAX_FAILED_LOGINS = 5
 LOCKOUT_DURATION = timedelta(minutes=15)
@@ -62,7 +64,7 @@ def _set_access_cookie(response: Response, user_id: str, secure: bool) -> None:
     response.set_cookie(
         "access_token", access,
         max_age=settings.access_token_expire_minutes * 60,
-        secure=secure, path="/", **_COOKIE_OPTS,
+        secure=secure, path="/", httponly=True, samesite=_cookie_samesite(),
     )
 
 
@@ -87,7 +89,7 @@ async def _issue_refresh_token(
     response.set_cookie(
         "refresh_token", token,
         max_age=settings.refresh_token_expire_days * 86400,
-        secure=secure, path="/", **_COOKIE_OPTS,
+        secure=secure, path="/", httponly=True, samesite=_cookie_samesite(),
     )
 
 
@@ -96,7 +98,7 @@ def _set_csrf_cookie(response: Response, secure: bool) -> None:
         "csrf_token", generate_csrf_token(),
         max_age=settings.refresh_token_expire_days * 86400,
         httponly=False,  # JS must read it
-        samesite="lax",
+        samesite=_cookie_samesite(),
         secure=secure,
         path="/",
     )
@@ -283,13 +285,13 @@ async def logout(
             # Logout is best-effort; still clear cookies.
             pass
     response.delete_cookie(
-        "access_token", httponly=True, samesite="lax", secure=secure, path="/"
+        "access_token", httponly=True, samesite=_cookie_samesite(), secure=secure, path="/"
     )
     response.delete_cookie(
-        "refresh_token", httponly=True, samesite="lax", secure=secure, path="/"
+        "refresh_token", httponly=True, samesite=_cookie_samesite(), secure=secure, path="/"
     )
     response.delete_cookie(
-        "csrf_token", httponly=False, samesite="lax", secure=secure, path="/"
+        "csrf_token", httponly=False, samesite=_cookie_samesite(), secure=secure, path="/"
     )
     return {"message": "logged out"}
 

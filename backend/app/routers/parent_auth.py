@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.core.rate_limit import limiter
 from app.models.user import User
-from app.routers.auth import _set_csrf_cookie
+from app.routers.auth import _cookie_samesite, _set_csrf_cookie
 from app.schemas.parent import ParentMagicLinkRequest
 from app.services.email import get_email_sender
 from app.services.tokens import (
@@ -68,7 +68,7 @@ async def magic_callback(
     secure = settings.environment != "development"
     response.set_cookie(
         _PARENT_COOKIE, parent_session_token,
-        max_age=7 * 86400, httponly=True, samesite="lax", secure=secure, path="/",
+        max_age=7 * 86400, httponly=True, samesite=_cookie_samesite(), secure=secure, path="/",
     )
     _set_csrf_cookie(response, secure)
     return {"status": "signed_in", "email": record.email}
