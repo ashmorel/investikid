@@ -10,3 +10,7 @@ test-results
 *.tsbuildinfo
 vite.config.d.ts
 vite.config.js
+
+# Capacitor iOS build artifacts
+ios/App/App/public/
+ios/App/Pods/
