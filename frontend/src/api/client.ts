@@ -1,5 +1,7 @@
 import { readCookie } from '@/lib/cookies';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 export class ApiError extends Error {
   constructor(public status: number, public detail: string) {
     super(detail);
@@ -20,7 +22,7 @@ export async function apiFetch<T = unknown>(
     const csrf = readCookie('csrf_token');
     if (csrf) headers['X-CSRF-Token'] = csrf;
   }
-  const res = await fetch(path, { credentials: 'include', ...init, method, headers });
+  const res = await fetch(`${API_BASE}${path}`, { credentials: 'include', ...init, method, headers });
   if (!res.ok) {
     let detail = res.statusText;
     try {
