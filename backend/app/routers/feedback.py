@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +17,7 @@ from app.schemas.feedback import (
     FeedbackCreateResponse,
     FeedbackListResponse,
     FeedbackOut,
+    FeedbackType,
 )
 from app.services.feedback_service import create_feedback, notify_feedback
 
@@ -57,7 +60,7 @@ admin_router = APIRouter(
 @admin_router.get("/feedback", response_model=FeedbackListResponse)
 async def list_feedback(
     session: AsyncSession = Depends(get_session),
-    feedback_type: str | None = Query(default=None, alias="type"),
+    feedback_type: FeedbackType | None = Query(default=None, alias="type"),
     page: int = Query(default=1, ge=1),
     per_page: int = Query(default=20, ge=1, le=100),
 ):
@@ -78,7 +81,7 @@ async def list_feedback(
     ).scalars().all()
 
     user_ids = [r.user_id for r in rows if r.user_id is not None]
-    usernames: dict = {}
+    usernames: dict[uuid.UUID, str] = {}
     if user_ids:
         user_rows = (
             await session.execute(
