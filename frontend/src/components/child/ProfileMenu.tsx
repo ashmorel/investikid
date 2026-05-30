@@ -13,12 +13,14 @@ import {
 } from '@/components/ui/dialog';
 import { BottomSheet } from '@/components/mobile/BottomSheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 
 export function ProfileMenu({ username }: { username: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const isMobile = !useMediaQuery('(min-width: 768px)');
   const [open, setOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [topic, setTopic] = useState('');
 
   function openEditor() {
@@ -85,6 +87,9 @@ export function ProfileMenu({ username }: { username: string }) {
           <DropdownMenuItem onSelect={openEditor}>
             Profile
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setFeedbackOpen(true)}>
+            Send Feedback
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => logout.mutate()}>Log out</DropdownMenuItem>
         </DropdownMenuContent>
@@ -104,6 +109,8 @@ export function ProfileMenu({ username }: { username: string }) {
           </DialogContent>
         </Dialog>
       )}
+
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} audience="child" />
     </>
   );
 }

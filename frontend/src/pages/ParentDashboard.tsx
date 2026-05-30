@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { parentApi, type Child } from '@/api/parent';
 import { useParentAuthGuard } from '@/hooks/useParentAuthGuard';
 import { ChildCard } from '@/components/ChildCard';
@@ -8,6 +8,7 @@ import { SubscriptionCard } from '@/components/SubscriptionCard';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { useToast } from '@/hooks/use-toast';
+import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 
 export default function ParentDashboard() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function ParentDashboard() {
     },
   });
 
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -50,9 +52,14 @@ export default function ParentDashboard() {
           </Link>
           <h1 className="text-lg font-semibold sm:text-2xl">Parent Dashboard</h1>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => logout.mutate()} disabled={logout.isPending}>
-          Log out
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => setFeedbackOpen(true)}>
+            Send Feedback
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => logout.mutate()} disabled={logout.isPending}>
+            Log out
+          </Button>
+        </div>
       </header>
 
       <SubscriptionCard />
@@ -77,6 +84,7 @@ export default function ParentDashboard() {
           ))}
         </ul>
       )}
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} audience="parent" />
     </main>
   );
 }
