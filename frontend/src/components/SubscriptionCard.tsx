@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { billingApi, type SubscriptionStatus } from '@/api/billing';
 import { Button } from '@/components/ui/button';
+import { isNativeApp } from '@/lib/platform';
 
 function daysUntil(dateStr: string): number {
   const diff = new Date(dateStr).getTime() - Date.now();
@@ -35,10 +36,15 @@ export function SubscriptionCard() {
 
   if (isLoading || !sub) return null;
 
+  // In the native app, suppress all external-payment UI (App Store
+  // Guideline 3.1.1). Premium is managed outside the app for now.
+  const native = isNativeApp();
+
   const isActive = sub.has_subscription && sub.status !== 'canceled';
 
-  // No subscription or canceled — show upgrade CTA
+  // No subscription or canceled — show upgrade CTA (web only)
   if (!isActive) {
+    if (native) return null;
     return (
       <section
         className="rounded-lg border-2 border-amber-200 bg-amber-50 px-4 py-4 sm:px-6 sm:py-6"
@@ -79,14 +85,16 @@ export function SubscriptionCard() {
       aria-label="Subscription status"
     >
       <p className="text-sm font-medium text-amber-900">{statusText}</p>
-      <Button
-        variant="outline"
-        className="mt-3"
-        onClick={() => portal.mutate()}
-        disabled={portal.isPending}
-      >
-        {portal.isPending ? 'Redirecting…' : 'Manage Billing'}
-      </Button>
+      {!native && (
+        <Button
+          variant="outline"
+          className="mt-3"
+          onClick={() => portal.mutate()}
+          disabled={portal.isPending}
+        >
+          {portal.isPending ? 'Redirecting…' : 'Manage Billing'}
+        </Button>
+      )}
     </section>
   );
 }

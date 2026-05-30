@@ -28,7 +28,7 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
         <span className="inline-flex items-center gap-1 text-xs text-gray-500">
           <Lock className="h-3.5 w-3.5" /> Premium
         </span>
-        <p className="text-xs text-gray-400">Premium — ask a grown-up to unlock. Billing coming soon.</p>
+        <p className="text-xs text-gray-400">Premium — ask a grown-up to unlock.</p>
       </button>
     );
   }
