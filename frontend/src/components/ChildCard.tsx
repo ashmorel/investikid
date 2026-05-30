@@ -55,6 +55,26 @@ export function ChildCard({ child }: { child: Child }) {
     onSettled: () => qc.invalidateQueries({ queryKey: ['children'] }),
   });
 
+  const premium = useMutation({
+    mutationFn: (value: boolean) => parentApi.setChildPremium(child.user_id, value),
+    onMutate: async (value) => {
+      await qc.cancelQueries({ queryKey: ['children'] });
+      const prev = qc.getQueryData<Child[]>(['children']);
+      qc.setQueryData<Child[]>(['children'], (old) =>
+        old?.map((c) => c.user_id === child.user_id ? { ...c, is_premium: value } : c),
+      );
+      return { prev };
+    },
+    onError: (err, _value, ctx) => {
+      qc.setQueryData(['children'], ctx?.prev);
+      toast({
+        title: 'Could not update premium',
+        description: err instanceof ApiError ? err.detail : 'Please try again.',
+      });
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['children'] }),
+  });
+
   const erase = useMutation({
     mutationFn: () => parentApi.eraseChild(child.user_id),
     onSuccess: () => {
@@ -101,9 +121,17 @@ export function ChildCard({ child }: { child: Child }) {
           </Label>
         </div>
 
-        {child.is_premium && (
-          <span className="text-xs font-medium text-amber-600">Premium ✨</span>
-        )}
+        <div className="flex items-center gap-2">
+          <Switch
+            id={`premium-${child.user_id}`}
+            checked={child.is_premium}
+            disabled={isDeleted || premium.isPending}
+            onCheckedChange={(value) => premium.mutate(value)}
+          />
+          <Label htmlFor={`premium-${child.user_id}`} className="text-sm">
+            {child.is_premium ? 'Premium ✨' : 'Premium'}
+          </Label>
+        </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
