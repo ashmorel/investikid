@@ -241,3 +241,32 @@ export function useDeleteChallenge() {
 export function useCountries() {
   return useQuery({ queryKey: ['admin', 'countries'], queryFn: () => adminFetch<string[]>('/admin/countries') });
 }
+
+// ── Feedback ───────────────────────────────────────────────────────
+export interface AdminFeedback {
+  id: string;
+  submitter: string;
+  submitter_role: string;
+  feedback_type: 'bug' | 'feature' | 'general';
+  message: string;
+  page_url: string | null;
+  created_at: string;
+}
+
+export interface AdminFeedbackList {
+  items: AdminFeedback[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export function useFeedback(params: { type?: string; page: number }) {
+  const search = new URLSearchParams();
+  if (params.type) search.set('type', params.type);
+  search.set('page', String(params.page));
+  const qs = search.toString();
+  return useQuery({
+    queryKey: ['admin', 'feedback', params.type ?? 'all', params.page],
+    queryFn: () => adminFetch<AdminFeedbackList>(`/admin/feedback?${qs}`),
+  });
+}

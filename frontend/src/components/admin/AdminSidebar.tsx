@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { to: '/admin/modules', label: 'Modules', icon: '📖', end: false },
   { to: '/admin/badges', label: 'Badges', icon: '🏆', end: false },
   { to: '/admin/challenges', label: 'Challenges', icon: '⚡', end: false },
+  { to: '/admin/feedback', label: 'Feedback', icon: '💬', end: false },
 ];
 
 export default function AdminSidebar() {
