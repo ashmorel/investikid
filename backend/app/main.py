@@ -11,15 +11,15 @@ from app.core.csrf import CSRFMiddleware
 from app.core.rate_limit import limiter
 from app.routers import admin as admin_router
 from app.routers import ai as ai_router
-from app.routers import billing as billing_router
 from app.routers import auth as auth_router
+from app.routers import billing as billing_router
 from app.routers import consent as consent_router
 from app.routers import content as content_router
+from app.routers import feedback as feedback_router
 from app.routers import gamification as gamification_router
 from app.routers import parent as parent_router
 from app.routers import parent_auth as parent_auth_router
 from app.routers import simulator as simulator_router
-from app.routers import feedback as feedback_router
 from app.routers import users as users_router
 
 
@@ -127,6 +127,7 @@ def create_app() -> FastAPI:
     application.include_router(gamification_router.router)
     application.include_router(simulator_router.router)
     application.include_router(parent_auth_router.router)
+    application.include_router(parent_auth_router.parent_feedback_router)
     application.include_router(parent_router.router)
     application.include_router(ai_router.router)
     application.include_router(billing_router.router)
