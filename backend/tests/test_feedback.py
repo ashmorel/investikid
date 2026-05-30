@@ -55,3 +55,50 @@ async def test_create_feedback_parent(db_session):
     assert fb.parent_email == "mum@example.com"
     assert fb.user_id is None
     assert fb.submitter_role == "parent"
+
+
+async def test_notify_feedback_never_raises(monkeypatch):
+    from app.services import feedback_service
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "email_backend", "resend")
+    monkeypatch.setattr(settings, "feedback_notify_email", "admin@example.com")
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("resend down")
+
+    monkeypatch.setattr(feedback_service.resend.Emails, "send", _boom)
+
+    # Must NOT raise despite the send failing
+    await feedback_service.notify_feedback(
+        submitter="alex",
+        submitter_role="child",
+        feedback_type="bug",
+        message="x",
+        page_url=None,
+    )
+
+
+async def test_notify_feedback_skips_when_not_resend(monkeypatch):
+    from app.services import feedback_service
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "email_backend", "logging")
+    monkeypatch.setattr(settings, "feedback_notify_email", "admin@example.com")
+
+    called = False
+
+    def _track(*args, **kwargs):
+        nonlocal called
+        called = True
+
+    monkeypatch.setattr(feedback_service.resend.Emails, "send", _track)
+
+    await feedback_service.notify_feedback(
+        submitter="alex",
+        submitter_role="child",
+        feedback_type="bug",
+        message="x",
+        page_url=None,
+    )
+    assert called is False
