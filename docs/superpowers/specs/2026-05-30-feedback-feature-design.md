@@ -16,16 +16,24 @@ Three layers:
 
 ### Feedback Table
 
+Parents have no `User` row in this codebase — they authenticate via magic-link
+sessions identified only by email. Children are `User` rows. The table therefore
+captures the submitter via a nullable `user_id` (children) OR a `parent_email`
+(parents), with `submitter_role` recording which.
+
 | Column | Type | Constraints |
 |--------|------|-------------|
-| `id` | UUID | PK, server-default |
-| `user_id` | UUID | FK → users.id, NOT NULL |
+| `id` | UUID | PK, default uuid4 |
+| `user_id` | UUID | FK → users.id, nullable, ondelete CASCADE — set for child submissions |
+| `parent_email` | VARCHAR(255) | Nullable — set for parent submissions |
+| `submitter_role` | VARCHAR(20) | NOT NULL, one of: "child", "parent" |
 | `feedback_type` | VARCHAR(20) | NOT NULL, one of: "bug", "feature", "general" |
 | `message` | TEXT | NOT NULL, max 2000 chars (validated in schema) |
 | `page_url` | VARCHAR(500) | Nullable — auto-captured current route |
-| `created_at` | TIMESTAMP | Server-default UTC now |
+| `created_at` | TIMESTAMP | Default UTC now |
 
-Alembic migration adds the table. No relationships beyond the user FK.
+Exactly one of `user_id` / `parent_email` is set per row. Alembic migration adds
+the table with the FK to users.
 
 ### New Model File
 
@@ -33,10 +41,23 @@ Alembic migration adds the table. No relationships beyond the user FK.
 
 ## Backend API
 
-### POST /api/feedback
+Two POST endpoints share the same request schema and persistence logic but use
+different auth dependencies (children and parents authenticate differently).
 
-- **Auth:** Requires authenticated user (child or parent).
-- **Rate limit:** `5/hour` per user via slowapi.
+### POST /feedback (child)
+
+- **Auth:** `get_current_user` (child `User` via cookie token).
+- **Rate limit:** `5/hour` via slowapi.
+- **Persistence:** sets `user_id = current_user.id`, `submitter_role = "child"`.
+
+### POST /parent/feedback (parent)
+
+- **Auth:** `get_current_parent` (returns parent email from magic-link session).
+- **Rate limit:** `5/hour` via slowapi.
+- **Persistence:** sets `parent_email = <email>`, `submitter_role = "parent"`.
+
+### Shared request/response
+
 - **Request body:**
   ```json
   {
@@ -45,9 +66,9 @@ Alembic migration adds the table. No relationships beyond the user FK.
     "page_url": "/lessons/123/quiz"
   }
   ```
-- **Validation:** `feedback_type` must be one of `bug`, `feature`, `general`. `message` must be 1–2000 characters. `page_url` is optional, max 500 chars.
+- **Validation:** `feedback_type` ∈ {`bug`, `feature`, `general`}. `message` 1–2000 chars. `page_url` optional, max 500 chars.
 - **Response:** 201 with `{ "id": "<uuid>" }`.
-- **Side effect:** After persisting, send notification email (fire-and-forget, failure does not fail the request).
+- **Side effect:** After persisting, send notification email (fire-and-forget; failure does not fail the request).
 
 ### GET /api/admin/feedback
 
@@ -59,8 +80,8 @@ Alembic migration adds the table. No relationships beyond the user FK.
     "items": [
       {
         "id": "...",
-        "username": "alex123",
-        "user_role": "child",
+        "submitter": "alex123",
+        "submitter_role": "child",
         "feedback_type": "bug",
         "message": "...",
         "page_url": "/simulator",
