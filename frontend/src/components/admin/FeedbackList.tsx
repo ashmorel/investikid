@@ -24,9 +24,10 @@ export default function FeedbackList() {
     <div className="p-6">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-50">Feedback</h1>
-        <label className="text-sm text-slate-300">
-          <span className="mr-2">Filter</span>
+        <div className="flex items-center gap-2 text-sm text-slate-300">
+          <label htmlFor="feedback-type-filter">Filter</label>
           <select
+            id="feedback-type-filter"
             className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-sm text-slate-100"
             value={type}
             onChange={(e) => { setType(e.target.value); setPage(1); }}
@@ -36,7 +37,7 @@ export default function FeedbackList() {
             <option value="feature">Feature</option>
             <option value="general">General</option>
           </select>
-        </label>
+        </div>
       </div>
 
       {isLoading && <p className="text-slate-400">Loading…</p>}

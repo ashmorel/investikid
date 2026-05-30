@@ -243,11 +243,13 @@ export function useCountries() {
 }
 
 // ── Feedback ───────────────────────────────────────────────────────
+export type AdminFeedbackType = 'bug' | 'feature' | 'general';
+
 export interface AdminFeedback {
   id: string;
   submitter: string;
   submitter_role: string;
-  feedback_type: 'bug' | 'feature' | 'general';
+  feedback_type: AdminFeedbackType;
   message: string;
   page_url: string | null;
   created_at: string;
