@@ -2,11 +2,33 @@ from datetime import date
 
 import pytest
 
-from app.models.feedback import Feedback
+from app.core.config import settings
 from app.models.user import User
 from app.services.feedback_service import create_feedback
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
+
+_ADMIN_HEADERS = {"Authorization": f"Bearer {settings.admin_token}"}
+
+_REGISTER_URL = "/auth/register"
+_LOGIN_URL = "/auth/login"
+
+
+async def _register_and_login(client, email: str, username: str) -> None:
+    """Register a child user and log in, setting the CSRF header on the client."""
+    await client.post(_REGISTER_URL, json={
+        "email": email,
+        "username": username,
+        "password": "SecurePass123!",
+        "dob": "2010-06-15",
+        "country_code": "GB",
+        "currency_code": "GBP",
+        "parent_email": f"parent_{username}@example.com",
+    })
+    await client.post(_LOGIN_URL, json={"email": email, "password": "SecurePass123!"})
+    csrf = client.cookies.get("csrf_token")
+    if csrf:
+        client.headers["X-CSRF-Token"] = csrf
 
 
 async def _make_user(db_session, *, email: str) -> User:
@@ -58,8 +80,8 @@ async def test_create_feedback_parent(db_session):
 
 
 async def test_notify_feedback_never_raises(monkeypatch):
-    from app.services import feedback_service
     from app.core.config import settings
+    from app.services import feedback_service
 
     monkeypatch.setattr(settings, "email_backend", "resend")
     monkeypatch.setattr(settings, "feedback_notify_email", "admin@example.com")
@@ -80,8 +102,8 @@ async def test_notify_feedback_never_raises(monkeypatch):
 
 
 async def test_notify_feedback_skips_when_not_resend(monkeypatch):
-    from app.services import feedback_service
     from app.core.config import settings
+    from app.services import feedback_service
 
     monkeypatch.setattr(settings, "email_backend", "logging")
     monkeypatch.setattr(settings, "feedback_notify_email", "admin@example.com")
@@ -102,3 +124,82 @@ async def test_notify_feedback_skips_when_not_resend(monkeypatch):
         page_url=None,
     )
     assert called is False
+
+
+# ---------------------------------------------------------------------------
+# Endpoint tests
+# ---------------------------------------------------------------------------
+
+async def test_child_submit_feedback_endpoint(client):
+    await _register_and_login(client, "fb_ep_child@example.com", "fb_ep_child")
+    r = await client.post("/feedback", json={
+        "feedback_type": "bug",
+        "message": "timer broke",
+        "page_url": "/lessons/1",
+    })
+    assert r.status_code == 201
+    body = r.json()
+    assert "id" in body
+
+
+async def test_submit_feedback_rejects_blank_message(client):
+    await _register_and_login(client, "fb_blank@example.com", "fb_blank")
+    r = await client.post("/feedback", json={
+        "feedback_type": "bug",
+        "message": "",
+        "page_url": "/lessons/1",
+    })
+    assert r.status_code == 422
+
+
+async def test_submit_feedback_rejects_bad_type(client):
+    await _register_and_login(client, "fb_badtype@example.com", "fb_badtype")
+    r = await client.post("/feedback", json={
+        "feedback_type": "spam",
+        "message": "this is not a valid type",
+    })
+    assert r.status_code == 422
+
+
+async def test_submit_feedback_requires_auth(client):
+    client.cookies.clear()
+    r = await client.post("/feedback", json={
+        "feedback_type": "bug",
+        "message": "unauthenticated attempt",
+    })
+    assert r.status_code in (401, 403)
+
+
+async def test_admin_list_feedback(client):
+    await _register_and_login(client, "fb_admin_list@example.com", "fb_admin_list")
+    submit = await client.post("/feedback", json={
+        "feedback_type": "bug",
+        "message": "admin list test",
+        "page_url": "/lessons/2",
+    })
+    assert submit.status_code == 201
+
+    r = await client.get("/admin/feedback", headers=_ADMIN_HEADERS)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] >= 1
+    item = body["items"][0]
+    assert "submitter" in item
+    assert item["feedback_type"] in ("bug", "feature", "general")
+
+
+async def test_admin_list_feedback_filters_by_type(client):
+    await _register_and_login(client, "fb_filter@example.com", "fb_filter")
+    submit = await client.post("/feedback", json={
+        "feedback_type": "bug",
+        "message": "filter test bug report",
+        "page_url": "/lessons/3",
+    })
+    assert submit.status_code == 201
+
+    r = await client.get("/admin/feedback?type=bug", headers=_ADMIN_HEADERS)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] >= 1
+    for item in body["items"]:
+        assert item["feedback_type"] == "bug"

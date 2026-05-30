@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Body, Depends, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,7 +28,7 @@ router = APIRouter(tags=["feedback"])
 @limiter.limit("5/hour")
 async def submit_feedback(
     request: Request,
-    payload: FeedbackCreate,
+    payload: Annotated[FeedbackCreate, Body()],
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -62,7 +61,7 @@ parent_feedback_router = APIRouter(prefix="/parent", tags=["parent"])
 @limiter.limit("5/hour")
 async def submit_parent_feedback(
     request: Request,
-    payload: FeedbackCreate,
+    payload: Annotated[FeedbackCreate, Body()],
     parent_email: str = Depends(get_current_parent),
     session: AsyncSession = Depends(get_session),
 ):
