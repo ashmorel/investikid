@@ -11,6 +11,7 @@ from app.core.rate_limit import limiter
 from app.models.feedback import Feedback
 from app.models.user import User
 from app.routers.admin_auth import get_current_admin
+from app.routers.parent_auth import get_current_parent
 from app.routers.users import get_current_user
 from app.schemas.feedback import (
     FeedbackCreate,
@@ -45,6 +46,39 @@ async def submit_feedback(
     await notify_feedback(
         submitter=current_user.username,
         submitter_role="child",
+        feedback_type=payload.feedback_type,
+        message=payload.message,
+        page_url=payload.page_url,
+    )
+    return FeedbackCreateResponse(id=fb.id)
+
+
+parent_feedback_router = APIRouter(prefix="/parent", tags=["parent"])
+
+
+@parent_feedback_router.post(
+    "/feedback", response_model=FeedbackCreateResponse, status_code=201
+)
+@limiter.limit("5/hour")
+async def submit_parent_feedback(
+    request: Request,
+    payload: FeedbackCreate,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    fb = await create_feedback(
+        session,
+        feedback_type=payload.feedback_type,
+        message=payload.message,
+        page_url=payload.page_url,
+        user_id=None,
+        parent_email=parent_email,
+        submitter_role="parent",
+    )
+    await session.commit()
+    await notify_feedback(
+        submitter=parent_email,
+        submitter_role="parent",
         feedback_type=payload.feedback_type,
         message=payload.message,
         page_url=payload.page_url,

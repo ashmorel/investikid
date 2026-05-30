@@ -127,13 +127,13 @@ def create_app() -> FastAPI:
     application.include_router(gamification_router.router)
     application.include_router(simulator_router.router)
     application.include_router(parent_auth_router.router)
-    application.include_router(parent_auth_router.parent_feedback_router)
     application.include_router(parent_router.router)
     application.include_router(ai_router.router)
     application.include_router(billing_router.router)
     application.include_router(admin_router.router)
     application.include_router(feedback_router.router)
     application.include_router(feedback_router.admin_router)
+    application.include_router(feedback_router.parent_feedback_router)
 
     return application
 

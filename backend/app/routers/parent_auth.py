@@ -7,10 +7,8 @@ from app.core.database import get_session
 from app.core.rate_limit import limiter
 from app.models.user import User
 from app.routers.auth import _cookie_samesite, _set_csrf_cookie
-from app.schemas.feedback import FeedbackCreate, FeedbackCreateResponse
 from app.schemas.parent import ParentMagicLinkRequest
 from app.services.email import get_email_sender
-from app.services.feedback_service import create_feedback, notify_feedback
 from app.services.tokens import (
     PARENT_MAGIC_AUDIENCE,
     PARENT_MAGIC_EXPIRY,
@@ -96,32 +94,3 @@ async def get_current_parent(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
 
 
-parent_feedback_router = APIRouter(prefix="/parent", tags=["parent"])
-
-
-@parent_feedback_router.post("/feedback", response_model=FeedbackCreateResponse, status_code=201)
-@limiter.limit("5/hour")
-async def submit_parent_feedback(
-    request: Request,
-    payload: FeedbackCreate,
-    parent_email: str = Depends(get_current_parent),
-    session: AsyncSession = Depends(get_session),
-):
-    fb = await create_feedback(
-        session,
-        feedback_type=payload.feedback_type,
-        message=payload.message,
-        page_url=payload.page_url,
-        user_id=None,
-        parent_email=parent_email,
-        submitter_role="parent",
-    )
-    await session.commit()
-    await notify_feedback(
-        submitter=parent_email,
-        submitter_role="parent",
-        feedback_type=payload.feedback_type,
-        message=payload.message,
-        page_url=payload.page_url,
-    )
-    return FeedbackCreateResponse(id=fb.id)
