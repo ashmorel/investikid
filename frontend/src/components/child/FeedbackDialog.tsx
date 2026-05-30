@@ -42,6 +42,11 @@ export function FeedbackDialog({
     setError('');
   }
 
+  function handleOpenChange(v: boolean) {
+    if (!v) reset();
+    onOpenChange(v);
+  }
+
   function handleSubmit() {
     setError('');
     submit.mutate(
@@ -91,9 +96,9 @@ export function FeedbackDialog({
           {message.length} / {MAX}
         </p>
       </div>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">{error}</p>
-      )}
+      <p role="alert" aria-live="assertive" className="min-h-[1.25rem] text-sm text-destructive">
+        {error}
+      </p>
       <Button
         type="button"
         disabled={submit.isPending || message.trim().length === 0}
@@ -105,11 +110,11 @@ export function FeedbackDialog({
   );
 
   return isMobile ? (
-    <BottomSheet open={open} onOpenChange={onOpenChange} title="Send feedback">
+    <BottomSheet open={open} onOpenChange={handleOpenChange} title="Send feedback">
       {body}
     </BottomSheet>
   ) : (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Send feedback</DialogTitle>
