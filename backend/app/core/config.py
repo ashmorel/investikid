@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     stripe_portal_config_id: str = ""
     email_backend: str = "logging"  # "logging" | "resend"
     email_from: str = "noreply@invest-ed.app"
+    feedback_notify_email: str = ""
     app_base_url: str = "http://localhost:5173"
     data_retention_days: int = 30
     privacy_notice_version: str = "2026-05-16"
