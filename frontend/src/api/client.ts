@@ -1,4 +1,5 @@
 import { readCookie } from '@/lib/cookies';
+import { isNativeApp } from '@/lib/platform';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -21,6 +22,11 @@ export async function apiFetch<T = unknown>(
   if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
     const csrf = readCookie('csrf_token');
     if (csrf) headers['X-CSRF-Token'] = csrf;
+    // Native (Capacitor) requests can't read the cross-domain csrf cookie to
+    // echo it. This header identifies first-party native traffic for the
+    // backend's CSRF check; browsers cannot add it cross-site without a CORS
+    // preflight (which the server denies for untrusted origins).
+    if (isNativeApp()) headers['X-Capacitor-App'] = '1';
   }
   const res = await fetch(`${API_BASE}${path}`, { credentials: 'include', ...init, method, headers });
   if (!res.ok) {

@@ -103,6 +103,18 @@ async def test_native_origin_bypasses_csrf(client):
     assert resp.status_code == 200
 
 
+async def test_native_app_header_bypasses_csrf(client):
+    # Native app sends X-Capacitor-App (its Origin is unreliable). Browsers
+    # can't add custom headers cross-site without a denied CORS preflight.
+    await _register_and_login(client, "caph@example.com", "caphusr")
+    resp = await client.patch(
+        "/users/me",
+        json={"country_code": "US"},
+        headers={"X-Capacitor-App": "1"},  # no X-CSRF-Token, no trusted Origin
+    )
+    assert resp.status_code == 200
+
+
 async def test_trusted_web_origin_bypasses_csrf(client):
     # The hosted web frontend is cross-domain from the API and cannot read the
     # API's csrf cookie; its trusted origin bypasses the double-submit check.

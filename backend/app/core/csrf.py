@@ -89,6 +89,7 @@ class CSRFMiddleware:
         cookie_header = b""
         header_token = b""
         origin = b""
+        native_app = False
         for name, value in headers:
             if name == b"cookie":
                 cookie_header = value
@@ -96,6 +97,16 @@ class CSRFMiddleware:
                 header_token = value
             elif name == b"origin":
                 origin = value
+            elif name == b"x-capacitor-app":
+                native_app = True
+
+        # Native app traffic: identified by a custom header the native HTTP
+        # layer sends (its Origin is unreliable). Browsers cannot add a custom
+        # header cross-site without a CORS preflight, which the server denies
+        # for untrusted origins — so this cannot be forged by a malicious site.
+        if native_app:
+            await self.app(scope, receive, send)
+            return
 
         # Requests from a trusted first-party origin bypass the double-submit
         # check (origin-based CSRF defence) — see _BASELINE_TRUSTED_ORIGINS.
