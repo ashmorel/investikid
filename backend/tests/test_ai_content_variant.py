@@ -1,10 +1,10 @@
-import uuid
 import datetime
+import uuid
+
 import pytest
 
-from app.models.content import Module, Lesson, LessonCompletion
+from app.models.content import Lesson, Module
 from app.models.generated_content import GeneratedContent
-from app.models.skill_profile import TopicMastery
 from app.models.user import User
 from app.services import ai_content_service
 from app.services.ai_content_service import generate_practice_quiz
@@ -17,7 +17,8 @@ _QUIZ = {"question": "What is saving?", "choices": ["A", "B", "C"],
 
 async def _setup(db_session, *, premium, profiling):
     m = Module(topic="savings", title="S", country_codes=[], is_premium=False, order_index=0, icon="🏦")
-    db_session.add(m); await db_session.flush()
+    db_session.add(m)
+    await db_session.flush()
     lesson = Lesson(module_id=m.id, type="quiz",
                     content_json={"question": "q", "choices": ["A", "B"], "answer_index": 0},
                     xp_reward=10, order_index=0)
@@ -26,7 +27,8 @@ async def _setup(db_session, *, premium, profiling):
              dob=datetime.date(2014, 1, 1), country_code="GB", currency_code="GBP",
              is_premium=premium, profiling_enabled=profiling,
              email=f"{uuid.uuid4().hex[:8]}@e.com")
-    db_session.add(u); await db_session.flush()
+    db_session.add(u)
+    await db_session.flush()
     return lesson, u
 
 

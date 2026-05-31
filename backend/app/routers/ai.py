@@ -20,11 +20,12 @@ from app.schemas.ai import (
     TutorChatResponse,
 )
 from app.services.ai_content_service import generate_practice_quiz
+from app.services.coach_service import coach_chat
 from app.services.entitlements import is_premium
+from app.services.gap_detection_service import get_strengths_and_gaps
 from app.services.recommendation_service import get_recommendations
 from app.services.skill_profile_service import get_mastery_profile
 from app.services.spaced_repetition_service import record_review
-from app.services.coach_service import coach_chat
 from app.services.tutor_service import TutorInputTooLong, TutorLimitReached, chat
 
 router = APIRouter(tags=["ai"])
@@ -74,8 +75,9 @@ async def practice_quiz(
     # If wrong_answer_index is provided, the user answered wrong previously
     if payload.wrong_answer_index is not None:
         # Find or create a weak concept for this topic+concept
-        from app.models.skill_profile import WeakConcept
         from sqlalchemy import select as sa_select
+
+        from app.models.skill_profile import WeakConcept
         weak = await session.scalar(
             sa_select(WeakConcept).where(
                 WeakConcept.user_id == current_user.id,
@@ -157,9 +159,6 @@ async def mastery_profile(
 ):
     profile = await get_mastery_profile(session, current_user.id)
     return profile
-
-
-from app.services.gap_detection_service import get_strengths_and_gaps
 
 
 @router.get("/profile/strengths", response_model=StrengthsAndGaps)

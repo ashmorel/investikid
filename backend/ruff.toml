@@ -10,3 +10,5 @@ select = ["E", "F", "I", "UP"]
 
 [lint.per-file-ignores]
 "app/seed/*.py" = ["E501"]
+# Test data/setup lines are often intentionally long for readability.
+"tests/*.py" = ["E501"]

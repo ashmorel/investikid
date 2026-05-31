@@ -329,7 +329,7 @@ async def get_recommendations(
             completed_ids_result = await session.scalars(
                 select(LessonCompletion.lesson_id).where(
                     LessonCompletion.user_id == user.id,
-                    LessonCompletion.lesson_id.in_([l.id for l in lessons]),
+                    LessonCompletion.lesson_id.in_([lsn.id for lsn in lessons]),
                 )
             )
             completed_ids = set(completed_ids_result.all())

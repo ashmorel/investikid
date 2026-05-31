@@ -1,6 +1,7 @@
-import pytest
 import uuid
 from datetime import datetime, timedelta
+
+import pytest
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -85,7 +86,7 @@ async def test_badge_list_empty_returns_empty_list(client):
     # If there are badges, delete them all
     for b in initial_badges:
         # Only delete if no users have earned it
-        resp_delete = await client.delete(f"/admin/badges/{b['id']}", headers=HEADERS)
+        await client.delete(f"/admin/badges/{b['id']}", headers=HEADERS)
         # May return 409 if someone earned it — that's fine, skip those
 
     # Create and immediately delete to verify empty list works
@@ -104,9 +105,6 @@ async def test_badge_list_empty_returns_empty_list(client):
 
 async def test_badge_delete_with_users_returns_conflict(client):
     """Deleting a badge earned by users returns 409 CONFLICT."""
-    from app.models.user import User
-    from app.models.gamification import Badge, UserBadge
-    from datetime import date
 
     # Create a badge
     resp = await client.post("/admin/badges", json={
@@ -116,7 +114,7 @@ async def test_badge_delete_with_users_returns_conflict(client):
         "condition_type": "lesson_count",
         "condition_value": 1,
     }, headers=HEADERS)
-    badge_id = uuid.UUID(resp.json()["id"])
+    assert resp.status_code == 200
 
     # Use the client's db_session to add a user with the badge
     # (This requires accessing the session indirectly through a dependent fixture)
@@ -282,8 +280,9 @@ async def test_countries_endpoint_returns_list(client):
 
 async def test_countries_endpoint_with_users(client, db_session):
     """Countries endpoint returns distinct country codes from users."""
-    from app.models.user import User
     from datetime import date
+
+    from app.models.user import User
 
     # Add users with different country codes
     user1 = User(

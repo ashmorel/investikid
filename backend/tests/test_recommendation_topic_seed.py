@@ -1,8 +1,9 @@
-import uuid
 import datetime
+import uuid
+
 import pytest
 
-from app.models.content import Module, Lesson, LessonCompletion
+from app.models.content import Lesson, LessonCompletion, Module
 from app.models.user import User
 from app.services.recommendation_service import get_recommendations
 
@@ -13,17 +14,20 @@ async def _user(db_session, **kw):
     u = User(username=f"u{uuid.uuid4().hex[:8]}", password_hash="x",
              dob=datetime.date(2014, 1, 1), country_code="GB", currency_code="GBP",
              email=f"{uuid.uuid4().hex[:8]}@e.com", **kw)
-    db_session.add(u); await db_session.flush()
+    db_session.add(u)
+    await db_session.flush()
     return u
 
 
 async def _module_with_lesson(db_session, topic, oi):
     m = Module(topic=topic, title=f"{topic}-m", country_codes=[], is_premium=False,
                order_index=oi, icon="📚")
-    db_session.add(m); await db_session.flush()
+    db_session.add(m)
+    await db_session.flush()
     lesson = Lesson(module_id=m.id, type="card", content_json={"title": "x"},
                     xp_reward=10, order_index=0)
-    db_session.add(lesson); await db_session.flush()
+    db_session.add(lesson)
+    await db_session.flush()
     return m, lesson
 
 
