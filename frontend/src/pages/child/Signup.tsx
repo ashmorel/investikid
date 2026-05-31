@@ -82,7 +82,9 @@ export default function Signup() {
     },
     onSuccess: async (resp) => {
       if (resp && typeof resp === 'object' && 'status' in resp && (resp as { status: string }).status === 'pending_consent') {
-        navigate(`/pending-consent?email=${encodeURIComponent(email)}`, { replace: true });
+        // Keep the email out of the URL (privacy); sessionStorage survives a refresh.
+        sessionStorage.setItem('pendingConsentEmail', email);
+        navigate('/pending-consent', { replace: true });
         return;
       }
       await qc.invalidateQueries({ queryKey: ['me'] });

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
@@ -15,8 +15,7 @@ type State =
   | { kind: 'invalid' };
 
 export default function PendingConsent() {
-  const [params] = useSearchParams();
-  const email = params.get('email') ?? '';
+  const email = sessionStorage.getItem('pendingConsentEmail') ?? '';
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [state, setState] = useState<State>({ kind: 'idle' });

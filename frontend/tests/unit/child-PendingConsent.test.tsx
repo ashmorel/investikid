@@ -5,7 +5,8 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PendingConsent from '@/pages/child/PendingConsent';
 
-function renderAt(url: string) {
+function renderAt(url: string, email?: string) {
+  if (email) sessionStorage.setItem('pendingConsentEmail', email);
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
@@ -20,7 +21,7 @@ function renderAt(url: string) {
   );
 }
 
-beforeEach(() => { vi.spyOn(globalThis, 'fetch'); });
+beforeEach(() => { sessionStorage.clear(); vi.spyOn(globalThis, 'fetch'); });
 
 describe('PendingConsent', () => {
   it('shows expired message when email param missing', () => {
@@ -29,7 +30,7 @@ describe('PendingConsent', () => {
   });
 
   it('Ive-been-approved button reveals password field', async () => {
-    renderAt('/pending-consent?email=k%40x.com');
+    renderAt('/pending-consent', 'k@x.com');
     expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /i've been approved/i }));
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
@@ -39,7 +40,7 @@ describe('PendingConsent', () => {
     (globalThis.fetch as any).mockResolvedValue(
       new Response(JSON.stringify({ detail: 'Account pending parental consent' }), { status: 403 }),
     );
-    renderAt('/pending-consent?email=k%40x.com');
+    renderAt('/pending-consent', 'k@x.com');
     await userEvent.click(screen.getByRole('button', { name: /i've been approved/i }));
     await userEvent.type(screen.getByLabelText(/password/i), 'pw');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
@@ -50,7 +51,7 @@ describe('PendingConsent', () => {
     (globalThis.fetch as any).mockResolvedValue(
       new Response(JSON.stringify({ detail: 'Account access denied' }), { status: 403 }),
     );
-    renderAt('/pending-consent?email=k%40x.com');
+    renderAt('/pending-consent', 'k@x.com');
     await userEvent.click(screen.getByRole('button', { name: /i've been approved/i }));
     await userEvent.type(screen.getByLabelText(/password/i), 'pw');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
@@ -61,7 +62,7 @@ describe('PendingConsent', () => {
     (globalThis.fetch as any).mockResolvedValue(
       new Response(JSON.stringify({ token_type: 'bearer' }), { status: 200 }),
     );
-    renderAt('/pending-consent?email=k%40x.com');
+    renderAt('/pending-consent', 'k@x.com');
     await userEvent.click(screen.getByRole('button', { name: /i've been approved/i }));
     await userEvent.type(screen.getByLabelText(/password/i), 'pw');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
