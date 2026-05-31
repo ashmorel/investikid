@@ -89,3 +89,26 @@ async def test_refresh_without_csrf_header_rejected(client):
     # Explicitly bypass any default headers set on the client.
     resp = await client.post(REFRESH_URL, headers={})
     assert resp.status_code == 403
+
+
+async def test_native_origin_bypasses_csrf(client):
+    # Capacitor native app origin: cannot read the csrf cookie to echo it, and
+    # the origin is unforgeable by a browser — so it bypasses CSRF.
+    await _register_and_login(client, "native@example.com", "nativeusr")
+    resp = await client.patch(
+        "/users/me",
+        json={"country_code": "US"},
+        headers={"Origin": "capacitor://localhost"},  # no X-CSRF-Token
+    )
+    assert resp.status_code == 200
+
+
+async def test_browser_origin_still_requires_csrf(client):
+    # A real website origin must NOT bypass CSRF (double-submit still enforced).
+    await _register_and_login(client, "evil@example.com", "evilusr")
+    resp = await client.patch(
+        "/users/me",
+        json={"country_code": "US"},
+        headers={"Origin": "https://evil.example.com"},  # no X-CSRF-Token
+    )
+    assert resp.status_code == 403

@@ -33,6 +33,15 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
 # Path prefixes that bypass CSRF (for dynamic segments like /consent/request/{id})
 _DEFAULT_EXEMPT_PREFIXES = ("/consent/request/", "/admin/")
 
+# Native-app (Capacitor) origins. These schemes cannot be forged by a browser
+# (JavaScript cannot set the Origin header, and no website can claim these
+# origins), and the native webview cannot read the csrf cookie to echo it in a
+# header. CSRF double-submit defends against browser-driven cross-site requests;
+# requests carrying a native origin are not that threat, so they bypass CSRF.
+# A non-browser attacker could spoof the Origin header but would not possess the
+# victim's auth cookies, so this does not weaken protection.
+_NATIVE_ORIGINS = frozenset({b"capacitor://localhost", b"https://localhost"})
+
 
 class CSRFMiddleware:
     def __init__(
@@ -67,11 +76,20 @@ class CSRFMiddleware:
         headers = scope.get("headers", [])
         cookie_header = b""
         header_token = b""
+        origin = b""
         for name, value in headers:
             if name == b"cookie":
                 cookie_header = value
             elif name == self.header_name:
                 header_token = value
+            elif name == b"origin":
+                origin = value
+
+        # Native app requests (fixed, unforgeable origin) bypass CSRF — see
+        # _NATIVE_ORIGINS above.
+        if origin in _NATIVE_ORIGINS:
+            await self.app(scope, receive, send)
+            return
 
         cookie_token = ""
         if cookie_header:
