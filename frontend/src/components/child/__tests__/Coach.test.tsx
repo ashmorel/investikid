@@ -18,7 +18,7 @@ vi.mock('@/api/ai', async () => {
     useRecommendations: () => ({ data: null, isLoading: false }),
     useStrengths: () => ({ data: null, isLoading: false }),
     aiApi: {
-      ...((actual as any).aiApi ?? {}),
+      ...((actual as { aiApi?: object }).aiApi ?? {}),
       sendCoachMessage: vi.fn().mockResolvedValue({
         response: 'Try Stocks 101!',
         conversation_id: 'c1',
@@ -46,7 +46,7 @@ function renderCoach() {
   );
 }
 
-let Coach: any;
+let Coach: typeof import('@/pages/child/Coach').default;
 
 beforeEach(async () => {
   Coach = (await import('@/pages/child/Coach')).default;

@@ -64,8 +64,8 @@ export function SubscriptionCard() {
     );
   }
 
-  // Active subscription states
-  let statusText = '';
+  // Active subscription states (every branch below assigns statusText)
+  let statusText: string;
   if (sub.status === 'trialing' && sub.trial_ends_at) {
     const days = daysUntil(sub.trial_ends_at);
     statusText = `Premium trial — ${days} day${days !== 1 ? 's' : ''} remaining`;
