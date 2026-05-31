@@ -103,6 +103,18 @@ async def test_native_origin_bypasses_csrf(client):
     assert resp.status_code == 200
 
 
+async def test_trusted_web_origin_bypasses_csrf(client):
+    # The hosted web frontend is cross-domain from the API and cannot read the
+    # API's csrf cookie; its trusted origin bypasses the double-submit check.
+    await _register_and_login(client, "web@example.com", "webusr")
+    resp = await client.patch(
+        "/users/me",
+        json={"country_code": "US"},
+        headers={"Origin": "https://app.investikid.ai"},  # no X-CSRF-Token
+    )
+    assert resp.status_code == 200
+
+
 async def test_browser_origin_still_requires_csrf(client):
     # A real website origin must NOT bypass CSRF (double-submit still enforced).
     await _register_and_login(client, "evil@example.com", "evilusr")

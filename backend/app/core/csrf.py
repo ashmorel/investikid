@@ -33,14 +33,25 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
 # Path prefixes that bypass CSRF (for dynamic segments like /consent/request/{id})
 _DEFAULT_EXEMPT_PREFIXES = ("/consent/request/", "/admin/")
 
-# Native-app (Capacitor) origins. These schemes cannot be forged by a browser
-# (JavaScript cannot set the Origin header, and no website can claim these
-# origins), and the native webview cannot read the csrf cookie to echo it in a
-# header. CSRF double-submit defends against browser-driven cross-site requests;
-# requests carrying a native origin are not that threat, so they bypass CSRF.
-# A non-browser attacker could spoof the Origin header but would not possess the
-# victim's auth cookies, so this does not weaken protection.
-_NATIVE_ORIGINS = frozenset({b"capacitor://localhost", b"https://localhost"})
+# First-party frontend origins (native app + hosted web). Trusting our own
+# origins is a sound CSRF defence (OWASP-recommended) for this cross-domain
+# SPA + API setup: the frontend domain (app.investikid.ai) cannot read the API
+# domain's (railway) csrf cookie, so the double-submit header can never be sent.
+# Browsers cannot forge the Origin header and no malicious site can claim these
+# origins; a non-browser client could spoof Origin but lacks the victim's auth
+# cookies — so this does not weaken protection. Kept in sync with CORS_ORIGINS.
+_BASELINE_TRUSTED_ORIGINS = frozenset({
+    "capacitor://localhost",
+    "https://localhost",
+    "https://app.investikid.ai",
+    "https://lee-local-code-repo.vercel.app",
+})
+
+
+def _trusted_origins() -> frozenset[bytes]:
+    from app.core.config import settings
+    env = {o.strip() for o in settings.cors_origins.split(",") if o.strip()}
+    return frozenset(o.encode("latin-1") for o in (_BASELINE_TRUSTED_ORIGINS | env))
 
 
 class CSRFMiddleware:
@@ -57,6 +68,7 @@ class CSRFMiddleware:
         self.exempt_prefixes = tuple(exempt_prefixes) if exempt_prefixes is not None else _DEFAULT_EXEMPT_PREFIXES
         self.cookie_name = cookie_name
         self.header_name = header_name.lower().encode("latin-1")
+        self.trusted_origins = _trusted_origins()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -85,9 +97,9 @@ class CSRFMiddleware:
             elif name == b"origin":
                 origin = value
 
-        # Native app requests (fixed, unforgeable origin) bypass CSRF — see
-        # _NATIVE_ORIGINS above.
-        if origin in _NATIVE_ORIGINS:
+        # Requests from a trusted first-party origin bypass the double-submit
+        # check (origin-based CSRF defence) — see _BASELINE_TRUSTED_ORIGINS.
+        if origin and origin in self.trusted_origins:
             await self.app(scope, receive, send)
             return
 
