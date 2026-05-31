@@ -7,8 +7,16 @@ import pytest_asyncio
 from app.core.security import hash_password
 from app.models.content import Module
 from app.models.user import User, UserProgress
+from app.services.moderation import ModerationResult
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
+
+
+async def _passthrough_moderation(text, *, surface):
+    """Safe pass-through: keeps coach tests independent of moderation's own
+    LLM client, which has no API key in CI and would otherwise fail closed
+    and strip the response/actions (real moderation runs in production)."""
+    return ModerationResult(True, None, text)
 
 
 @pytest_asyncio.fixture
@@ -48,7 +56,8 @@ async def test_coach_chat_returns_response(coach_client):
         return_value="Try Stocks 101! [ACTION:module:" + str(module.id) + "]"
     )
 
-    with patch("app.services.coach_service.get_llm_client", return_value=mock_client):
+    with patch("app.services.coach_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.coach_service.moderate_output", side_effect=_passthrough_moderation):
         response = await client.post("/tutor/coach", json={
             "message": "What should I learn?",
         })
@@ -68,7 +77,8 @@ async def test_coach_chat_parses_action(coach_client):
         return_value="Go here [ACTION:module:" + str(module.id) + "]"
     )
 
-    with patch("app.services.coach_service.get_llm_client", return_value=mock_client):
+    with patch("app.services.coach_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.coach_service.moderate_output", side_effect=_passthrough_moderation):
         response = await client.post("/tutor/coach", json={
             "message": "What next?",
         })
@@ -85,7 +95,8 @@ async def test_coach_chat_continues_conversation(coach_client):
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(return_value="Sure!")
 
-    with patch("app.services.coach_service.get_llm_client", return_value=mock_client):
+    with patch("app.services.coach_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.coach_service.moderate_output", side_effect=_passthrough_moderation):
         r1 = await client.post("/tutor/coach", json={"message": "Hi"})
         cid = r1.json()["conversation_id"]
         r2 = await client.post("/tutor/coach", json={
