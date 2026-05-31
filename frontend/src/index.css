@@ -28,8 +28,11 @@
   * { @apply border-border; }
   /* Prevent whole-page horizontal scroll/bleed on narrow mobile screens.
      Inner overflow-x-auto carousels are unaffected. */
-  html, body { overflow-x: hidden; }
-  #root { max-width: 100%; overflow-x: hidden; }
+  html, body, #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
   body { @apply bg-background text-foreground; font-family: ui-sans-serif, system-ui, sans-serif; }
   /* WCAG 2.2 SC 2.4.11 focus-not-obscured: keep keyboard focus clear of
      sticky TopNav (~3.5rem) + BottomTabBar (~4rem). */

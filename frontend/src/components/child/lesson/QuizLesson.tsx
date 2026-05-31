@@ -14,9 +14,10 @@ type Props = {
   onComplete: (score: number | null) => void;
   illustration?: React.ReactNode;
   onShowEddie?: () => void;
+  completing?: boolean;
 };
 
-export function QuizLesson({ contentJson, onComplete, illustration, onShowEddie }: Props) {
+export function QuizLesson({ contentJson, onComplete, illustration, onShowEddie, completing = false }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
@@ -73,8 +74,9 @@ export function QuizLesson({ contentJson, onComplete, illustration, onShowEddie 
           <div className="flex justify-end">
             <Button
               onClick={() => onComplete(isCorrect ? 1.0 : 0.0)}
+              disabled={completing}
               className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl"
-            >Continue →</Button>
+            >{completing ? 'Saving...' : 'Continue →'}</Button>
           </div>
         </>
       ) : (

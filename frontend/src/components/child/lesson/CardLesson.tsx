@@ -4,9 +4,10 @@ type Props = {
   contentJson: { title?: string; body?: string };
   onComplete: (score: number | null) => void;
   illustration?: React.ReactNode;
+  completing?: boolean;
 };
 
-export function CardLesson({ contentJson, onComplete, illustration }: Props) {
+export function CardLesson({ contentJson, onComplete, illustration, completing = false }: Props) {
   return (
     <div className="rounded-2xl border-2 border-amber-200 bg-white p-6 space-y-5">
       {illustration && <div>{illustration}</div>}
@@ -15,8 +16,9 @@ export function CardLesson({ contentJson, onComplete, illustration }: Props) {
       <div className="flex justify-end">
         <Button
           onClick={() => onComplete(null)}
+          disabled={completing}
           className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl"
-        >Got it →</Button>
+        >{completing ? 'Saving...' : 'Got it →'}</Button>
       </div>
     </div>
   );

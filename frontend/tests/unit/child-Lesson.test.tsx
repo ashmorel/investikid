@@ -57,4 +57,48 @@ describe('Lesson shell', () => {
       'href', '/lessons/mod-1/L2',
     );
   });
+
+  it('does not submit completion twice while progress is saving', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      const method = (init?.method ?? 'GET').toUpperCase();
+      const key = `${method} ${url}`;
+      if (key === 'GET /lessons/L1') {
+        return new Response(JSON.stringify({
+          id: 'L1', module_id: 'mod-1', type: 'card', xp_reward: 10, order_index: 0,
+          completed: false, locked: false,
+          content_json: { title: 'CardT', body: 'CardB' },
+        }), { status: 200 });
+      }
+      if (key === 'GET /modules/mod-1/lessons') {
+        return new Response(JSON.stringify([
+          { id: 'L1', type: 'card', title: 'CardT', xp_reward: 10, order_index: 0, completed: false },
+        ]), { status: 200 });
+      }
+      if (key === 'POST /lessons/L1/complete') {
+        return new Promise<Response>((resolve) => {
+          setTimeout(() => resolve(new Response(JSON.stringify({
+            xp_awarded: 10, already_completed: false, total_xp: 10, level: 1, streak_count: 1,
+            practice_available: false,
+          }), { status: 200 })), 100);
+        });
+      }
+      return new Response('not mocked: ' + key, { status: 500 });
+    });
+
+    renderAt('/lessons/mod-1/L1');
+    const button = await screen.findByRole('button', { name: /Got it/ });
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      const completionPosts = fetchSpy.mock.calls.filter(([input, init]) => {
+        const url = typeof input === 'string' ? input : input.toString();
+        return url === '/lessons/L1/complete' && (init?.method ?? 'GET').toUpperCase() === 'POST';
+      });
+      expect(completionPosts).toHaveLength(1);
+    });
+
+    await waitFor(() => expect(screen.getByText(/\+10 XP/)).toBeInTheDocument());
+  });
 });

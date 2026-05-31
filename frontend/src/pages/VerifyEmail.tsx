@@ -1,12 +1,13 @@
-import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
-import { authApi } from '@/api/auth';
+import { authApi, type Me } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 
 export default function VerifyEmail() {
   const [params] = useSearchParams();
+  const qc = useQueryClient();
   const token = params.get('token') ?? '';
   const [resendDone, setResendDone] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
@@ -17,6 +18,16 @@ export default function VerifyEmail() {
     enabled: !!token,
     retry: false,
   });
+
+  useEffect(() => {
+    if (verify.isSuccess) {
+      const verifiedAt = new Date().toISOString();
+      qc.setQueryData<Me | null>(['me'], (current) => (
+        current ? { ...current, email_verified_at: current.email_verified_at ?? verifiedAt } : current
+      ));
+      void qc.invalidateQueries({ queryKey: ['me'] });
+    }
+  }, [qc, verify.isSuccess]);
 
   const resend = useMutation({
     mutationFn: () => authApi.resendVerifyEmail(),

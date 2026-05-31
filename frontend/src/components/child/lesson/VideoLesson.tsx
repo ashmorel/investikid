@@ -10,9 +10,10 @@ type Props = {
     captions_available?: boolean;
   };
   onComplete: (score: number | null) => void;
+  completing?: boolean;
 };
 
-export function VideoLesson({ contentJson, onComplete }: Props) {
+export function VideoLesson({ contentJson, onComplete, completing = false }: Props) {
   const [watched, setWatched] = useState(false);
 
   if (!contentJson.youtube_id) {
@@ -20,7 +21,9 @@ export function VideoLesson({ contentJson, onComplete }: Props) {
       <div className="space-y-4">
         <p>Video unavailable.</p>
         <div className="flex justify-end">
-          <Button onClick={() => onComplete(null)}>Continue →</Button>
+          <Button onClick={() => onComplete(null)} disabled={completing}>
+            {completing ? 'Saving...' : 'Continue →'}
+          </Button>
         </div>
       </div>
     );
@@ -49,7 +52,9 @@ export function VideoLesson({ contentJson, onComplete }: Props) {
         I watched this
       </label>
       <div className="flex justify-end">
-        <Button disabled={!watched} onClick={() => onComplete(null)}>Mark complete →</Button>
+        <Button disabled={!watched || completing} onClick={() => onComplete(null)}>
+          {completing ? 'Saving...' : 'Mark complete →'}
+        </Button>
       </div>
     </div>
   );

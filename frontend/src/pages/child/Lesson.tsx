@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { contentApi, type LessonOut, type LessonSummary, type LessonCompletionResult, type ModuleOut } from '@/api/content';
@@ -18,6 +18,7 @@ export default function Lesson() {
   const { toast } = useToast();
   const [showPractice, setShowPractice] = useState(false);
   const [showEddie, setShowEddie] = useState(false);
+  const completionInFlight = useRef(false);
 
   const lessonQ = useQuery<LessonOut | null>({
     queryKey: ['lesson', lessonId],
@@ -47,12 +48,16 @@ export default function Lesson() {
     onError: () => {
       toast({ title: 'Could not save your progress', description: 'Try again.' });
     },
+    onSettled: () => {
+      completionInFlight.current = false;
+    },
   });
 
   // Reset mutation state when navigating to a different lesson so the
   // CompletionPanel from the previous lesson doesn't flash on screen.
   useEffect(() => {
     complete.reset();
+    completionInFlight.current = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting UI state when lessonId changes is intentional; avoids stale panel showing on lesson navigation
     setShowPractice(false);
     setShowEddie(false);
@@ -121,7 +126,11 @@ export default function Lesson() {
     );
   }
 
-  const onComplete = (score: number | null) => complete.mutate(score);
+  const onComplete = (score: number | null) => {
+    if (completionInFlight.current) return;
+    completionInFlight.current = true;
+    complete.mutate(score);
+  };
 
   const currentModule = (modulesQ2.data ?? []).find((m) => m.id === moduleId);
   const topic = currentModule?.topic ?? 'stocks';
@@ -140,10 +149,10 @@ export default function Lesson() {
         <span>Quest {lesson.order_index + 1} of {total || '…'}</span>
         <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">🏆 {lesson.xp_reward} XP</span>
       </header>
-      {lesson.type === 'card' && <CardLesson contentJson={lesson.content_json as { title?: string; body?: string }} onComplete={onComplete} illustration={illustration} />}
-      {lesson.type === 'quiz' && <QuizLesson contentJson={lesson.content_json as { question: string; choices: string[]; answer_index: number; explanation: string }} onComplete={onComplete} illustration={illustration} onShowEddie={() => setShowEddie(true)} />}
-      {lesson.type === 'scenario' && <ScenarioLesson contentJson={lesson.content_json as { prompt: string; choices: { label: string; outcome: string }[]; correct_index: number }} onComplete={onComplete} illustration={illustration} onShowEddie={() => setShowEddie(true)} />}
-      {lesson.type === 'video' && <VideoLesson contentJson={lesson.content_json as { youtube_id?: string; caption?: string }} onComplete={onComplete} />}
+      {lesson.type === 'card' && <CardLesson contentJson={lesson.content_json as { title?: string; body?: string }} onComplete={onComplete} illustration={illustration} completing={complete.isPending} />}
+      {lesson.type === 'quiz' && <QuizLesson contentJson={lesson.content_json as { question: string; choices: string[]; answer_index: number; explanation: string }} onComplete={onComplete} illustration={illustration} onShowEddie={() => setShowEddie(true)} completing={complete.isPending} />}
+      {lesson.type === 'scenario' && <ScenarioLesson contentJson={lesson.content_json as { prompt: string; choices: { label: string; outcome: string }[]; correct_index: number }} onComplete={onComplete} illustration={illustration} onShowEddie={() => setShowEddie(true)} completing={complete.isPending} />}
+      {lesson.type === 'video' && <VideoLesson contentJson={lesson.content_json as { youtube_id?: string; caption?: string }} onComplete={onComplete} completing={complete.isPending} />}
       {showEddie && <CoachEddiePanel lessonId={lessonId!} onClose={() => setShowEddie(false)} />}
     </div>
   );
