@@ -13,14 +13,12 @@ from app.models.audit import AuditLog
 from app.models.content import Module
 from app.models.tutor import TutorConversation
 from app.models.user import User
-from app.services.entitlements import is_premium
 from app.services.gap_detection_service import get_strengths_and_gaps
 from app.services.llm_client import get_llm_client, get_model_name
 from app.services.moderation import moderate_output
 from app.services.recommendation_service import get_recommendations
 from app.services.spaced_repetition_service import get_due_count
 from app.services.tutor_service import TutorInputTooLong, TutorLimitReached, _skill_level
-
 
 _ACTION_RE = re.compile(
     r"\[ACTION:(lesson|module|review):([a-zA-Z0-9][a-zA-Z0-9\-]*)(?::([a-zA-Z0-9][a-zA-Z0-9\-]*))?\]"

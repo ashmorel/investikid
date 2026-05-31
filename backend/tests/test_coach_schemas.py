@@ -1,5 +1,6 @@
 import uuid
-from app.schemas.ai import CoachChatRequest, CoachAction, CoachChatResponse
+
+from app.schemas.ai import CoachAction, CoachChatRequest, CoachChatResponse
 
 
 def test_coach_chat_request_defaults():

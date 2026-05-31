@@ -125,6 +125,7 @@ async def chat(
 
     # Load weak concepts for this topic
     from sqlalchemy import select as sa_select
+
     from app.models.skill_profile import WeakConcept
 
     weak_rows = (

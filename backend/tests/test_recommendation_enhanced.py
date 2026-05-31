@@ -1,15 +1,13 @@
 """Tests for the enhanced recommendation algorithm with DB-driven prerequisites and age filtering."""
 import uuid
-from datetime import UTC, date, datetime
+from datetime import date
 from unittest.mock import MagicMock
 
-import pytest
-
 from app.services.recommendation_service import (
-    _score_module,
     _apply_hard_filters,
     _build_reason,
     _calculate_age,
+    _score_module,
 )
 
 

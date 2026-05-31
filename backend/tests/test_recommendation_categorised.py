@@ -1,8 +1,6 @@
 """Tests for categorised recommendation logic."""
 import uuid
 
-import pytest
-
 from app.services.recommendation_service import _categorise_scored_modules
 
 

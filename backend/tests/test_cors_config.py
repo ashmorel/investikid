@@ -1,5 +1,4 @@
 """Tests for CORS configuration and cookie SameSite behaviour."""
-import pytest
 from unittest.mock import patch
 
 from app.core.config import Settings

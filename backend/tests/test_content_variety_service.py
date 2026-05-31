@@ -1,10 +1,11 @@
 import uuid
+
 import pytest
 
-from app.models.content import Module, Lesson, LessonCompletion
+from app.models.content import Lesson, LessonCompletion, Module
 from app.models.skill_profile import TopicMastery
 from app.models.user import User
-from app.services.content_variety_service import resolve_variant, VariantSpec
+from app.services.content_variety_service import VariantSpec, resolve_variant
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
-import stripe
 from stripe import SignatureVerificationError
 
 from app.core.config import settings

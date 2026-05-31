@@ -3,7 +3,7 @@ import uuid
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.admin import ModuleCreate, ModuleUpdate, ModuleOut
+from app.schemas.admin import ModuleCreate, ModuleOut, ModuleUpdate
 
 
 def test_module_create_with_prerequisites():

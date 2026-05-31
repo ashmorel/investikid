@@ -1,9 +1,9 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.user import UpdatePreferencesRequest
 from app.schemas.auth import RegisterRequest
 from app.schemas.content import TOPIC_PATH_VALUES
+from app.schemas.user import UpdatePreferencesRequest
 
 
 def test_topic_path_values_are_the_nine_module_topics():
