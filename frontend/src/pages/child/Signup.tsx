@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { PrivacyNotice } from '@/components/PrivacyNotice';
+import { AuthPage } from '@/components/AuthPage';
 
 const COUNTRIES: ReadonlyArray<{ code: string; name: string; currency: string }> = [
   { code: 'GB', name: 'United Kingdom', currency: 'GBP' },
@@ -107,7 +108,7 @@ export default function Signup() {
 
   if (step === 1) {
     return (
-      <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
+      <AuthPage>
         <h1 className="text-2xl font-semibold">Create your account</h1>
         <p className="mt-1 text-sm text-muted-foreground">Step 1 of 2</p>
         <form
@@ -152,12 +153,12 @@ export default function Signup() {
         <p className="mt-6 text-sm text-muted-foreground">
           Already have an account? <Link to="/login" className="underline">Sign in</Link>.
         </p>
-      </main>
+      </AuthPage>
     );
   }
 
   return (
-    <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
+    <AuthPage>
       <h1 className="text-2xl font-semibold">Create your account</h1>
       <p className="mt-1 text-sm text-muted-foreground">Step 2 of 2</p>
       <form
@@ -260,6 +261,6 @@ export default function Signup() {
           <PrivacyNotice />
         </DialogContent>
       </Dialog>
-    </main>
+    </AuthPage>
   );
 }

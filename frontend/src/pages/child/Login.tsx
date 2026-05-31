@@ -6,6 +6,7 @@ import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AuthPage } from '@/components/AuthPage';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -38,7 +39,7 @@ export default function Login() {
   });
 
   return (
-    <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
+    <AuthPage>
       <h1 className="text-2xl font-semibold">Sign in to Invest-Ed</h1>
       <form
         className="mt-6 space-y-3"
@@ -65,6 +66,6 @@ export default function Login() {
       <p className="mt-2 text-sm text-muted-foreground">
         New to Invest-Ed? <Link to="/signup" className="underline">Create an account</Link>.
       </p>
-    </main>
+    </AuthPage>
   );
 }

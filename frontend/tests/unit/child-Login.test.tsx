@@ -23,6 +23,14 @@ function renderPage() {
 beforeEach(() => { vi.spyOn(globalThis, 'fetch'); });
 
 describe('Login', () => {
+  it('uses the safe centered auth layout on mobile', () => {
+    const { container } = renderPage();
+    const main = container.querySelector('main');
+    expect(main).toHaveClass('min-h-[100svh]');
+    expect(main).toHaveClass('items-center');
+    expect(main).toHaveClass('overflow-x-hidden');
+  });
+
   it('redirects to /home on success', async () => {
     (globalThis.fetch as any).mockResolvedValue(
       new Response(JSON.stringify({ token_type: 'bearer' }), { status: 200 }),
