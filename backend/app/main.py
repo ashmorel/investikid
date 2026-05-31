@@ -106,11 +106,21 @@ def create_app() -> FastAPI:
     # SecurityHeaders innermost so its response hook observes and augments
     # every response — including the 403 from CSRF and any CORS-handled
     # responses that pass through the stack.
+    # Known first-party frontends are always allowed (native app + hosted web),
+    # merged with any extra origins from CORS_ORIGINS. Baking these in means the
+    # app keeps working regardless of env-var drift between deploys.
+    _baseline_origins = {
+        "capacitor://localhost",
+        "https://localhost",
+        "https://app.investikid.ai",
+        "https://lee-local-code-repo.vercel.app",
+    }
+    _env_origins = {o.strip() for o in settings.cors_origins.split(",") if o.strip()}
     application.add_middleware(SecurityHeadersMiddleware, environment=settings.environment)
     application.add_middleware(CSRFMiddleware)
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
+        allow_origins=sorted(_baseline_origins | _env_origins),
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
         allow_headers=["Content-Type", "X-CSRF-Token", "Authorization"],
