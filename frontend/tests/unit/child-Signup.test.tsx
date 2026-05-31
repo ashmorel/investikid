@@ -68,7 +68,8 @@ describe('Signup step 2 — under-threshold flow', () => {
 
     await userEvent.type(screen.getByLabelText(/^email$/i), 'kid@example.com');
     await userEvent.type(screen.getByLabelText(/username/i), 'kid');
-    await userEvent.type(screen.getByLabelText(/password/i), 'SecurePass123!');
+    await userEvent.type(screen.getByLabelText(/^password/i), 'SecurePass123!');
+    await userEvent.type(screen.getByLabelText(/confirm password/i), 'SecurePass123!');
     await userEvent.type(screen.getByLabelText(/parent email/i), 'parent@example.com');
     await userEvent.click(screen.getByRole('checkbox'));
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
@@ -99,7 +100,8 @@ describe('Signup step 2 — over-threshold flow', () => {
 
     await userEvent.type(screen.getByLabelText(/^email$/i), 'kid@example.com');
     await userEvent.type(screen.getByLabelText(/username/i), 'kid');
-    await userEvent.type(screen.getByLabelText(/password/i), 'SecurePass123!');
+    await userEvent.type(screen.getByLabelText(/^password/i), 'SecurePass123!');
+    await userEvent.type(screen.getByLabelText(/confirm password/i), 'SecurePass123!');
     await userEvent.click(screen.getByRole('checkbox'));
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
@@ -118,12 +120,45 @@ describe('Signup step 2 — error handling', () => {
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
     await userEvent.type(screen.getByLabelText(/^email$/i), 'a@x.com');
     await userEvent.type(screen.getByLabelText(/username/i), 'taken');
-    await userEvent.type(screen.getByLabelText(/password/i), 'SecurePass123!');
+    await userEvent.type(screen.getByLabelText(/^password/i), 'SecurePass123!');
+    await userEvent.type(screen.getByLabelText(/confirm password/i), 'SecurePass123!');
     await userEvent.click(screen.getByRole('checkbox'));
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
     expect(await screen.findByText(/Username already taken/i)).toBeInTheDocument();
   });
 
+  it('mismatched passwords block submit and show an error', async () => {
+    renderPage();
+    await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');
+    await userEvent.selectOptions(screen.getByLabelText(/country/i), 'US');
+    await userEvent.click(screen.getByRole('button', { name: /next/i }));
+    await userEvent.type(screen.getByLabelText(/^email$/i), 'a@x.com');
+    await userEvent.type(screen.getByLabelText(/username/i), 'user1');
+    await userEvent.type(screen.getByLabelText(/^password/i), 'SecurePass123!');
+    await userEvent.type(screen.getByLabelText(/confirm password/i), 'Different123!');
+    await userEvent.click(screen.getByRole('checkbox'));
+    expect(screen.getByText(/passwords don't match/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create account/i })).toBeDisabled();
+  });
+});
+
+describe('Signup step 2 — privacy notice', () => {
+  it('opens the privacy notice in a modal without leaving the form', async () => {
+    renderPage();
+    await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');
+    await userEvent.selectOptions(screen.getByLabelText(/country/i), 'US');
+    await userEvent.click(screen.getByRole('button', { name: /next/i }));
+    await userEvent.type(screen.getByLabelText(/username/i), 'user1');
+    await userEvent.click(screen.getByRole('button', { name: /privacy notice/i }));
+    // Modal content appears...
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText(/what is invest-ed/i)).toBeInTheDocument();
+    // ...and the form is still mounted (username retained)
+    expect(screen.getByLabelText(/username/i)).toHaveValue('user1');
+  });
+});
+
+describe('Signup step 2 — back button', () => {
   it('back button preserves step 1 values', async () => {
     renderPage();
     await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');

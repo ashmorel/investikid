@@ -8,6 +8,10 @@ import { ageInYears, needsParentalConsent } from '@/lib/consent';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { PrivacyNotice } from '@/components/PrivacyNotice';
 
 const COUNTRIES: ReadonlyArray<{ code: string; name: string; currency: string }> = [
   { code: 'GB', name: 'United Kingdom', currency: 'GBP' },
@@ -34,11 +38,16 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [parentEmail, setParentEmail] = useState('');
   const [currency, setCurrency] = useState('');
   const [topic, setTopic] = useState<string>('');
   const [fieldError, setFieldError] = useState<{ field: 'email' | 'username' | 'top'; msg: string } | null>(null);
   const [policyAccepted, setPolicyAccepted] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+
+  const passwordsMatch = password === confirmPassword;
+  const showMismatch = confirmPassword.length > 0 && !passwordsMatch;
 
   const today = useMemo(() => new Date(), []);
   const dobValid = !!dob && !Number.isNaN(Date.parse(dob));
@@ -151,7 +160,15 @@ export default function Signup() {
       <p className="mt-1 text-sm text-muted-foreground">Step 2 of 2</p>
       <form
         className="mt-6 space-y-4"
-        onSubmit={(e) => { e.preventDefault(); setFieldError(null); submit.mutate(); }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!passwordsMatch) {
+            setConfirmPassword((v) => v); // keep value; error shown below
+            return;
+          }
+          setFieldError(null);
+          submit.mutate();
+        }}
       >
         <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
@@ -174,6 +191,18 @@ export default function Signup() {
           <Input id="password" type="password" required minLength={12}
             autoComplete="new-password"
             value={password} onChange={(e) => setPassword(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="confirm_password">Confirm password</Label>
+          <Input id="confirm_password" type="password" required
+            autoComplete="new-password"
+            value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+            aria-invalid={showMismatch} aria-describedby="confirm-password-error" />
+          {showMismatch && (
+            <p id="confirm-password-error" role="alert" className="text-xs text-destructive">
+              Passwords don't match.
+            </p>
+          )}
         </div>
         {needsConsent && (
           <div className="space-y-1.5">
@@ -207,15 +236,28 @@ export default function Signup() {
           <input type="checkbox" checked={policyAccepted}
             onChange={(e) => setPolicyAccepted(e.target.checked)} className="mt-1" />
           <span>I (or my grown-up) have read the{' '}
-            <Link to="/privacy" className="underline text-amber-700">privacy notice</Link>.</span>
+            <button type="button" onClick={() => setPrivacyOpen(true)}
+              className="underline text-amber-700">privacy notice</button>.</span>
         </label>
         <div className="flex gap-3">
           <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
-          <Button type="submit" disabled={submit.isPending || !policyAccepted} className="flex-1">
+          <Button type="submit"
+            disabled={submit.isPending || !policyAccepted || !passwordsMatch}
+            className="flex-1">
             {submit.isPending ? 'Creating account…' : 'Create account'}
           </Button>
         </div>
       </form>
+
+      <Dialog open={privacyOpen} onOpenChange={setPrivacyOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Privacy Notice</DialogTitle>
+            <DialogDescription>How Invest-Ed collects, uses, and protects your information.</DialogDescription>
+          </DialogHeader>
+          <PrivacyNotice />
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
