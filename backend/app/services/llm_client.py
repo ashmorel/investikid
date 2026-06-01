@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Literal, Protocol
 
 from anthropic import AsyncAnthropic
@@ -10,6 +11,22 @@ from openai import AsyncOpenAI
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+_failure_hook: Callable[[str], Awaitable[None]] | None = None
+
+
+def set_failure_hook(hook: Callable[[str], Awaitable[None]] | None) -> None:
+    global _failure_hook
+    _failure_hook = hook
+
+
+def _fire_failure_hook(detail: str) -> None:
+    if _failure_hook is None:
+        return
+    try:
+        asyncio.create_task(_failure_hook(detail))
+    except RuntimeError:
+        pass  # no running loop
 
 
 class LLMError(Exception):
@@ -189,6 +206,7 @@ class FallbackLLMClient:
                     raise
                 logger.warning("Provider %d failed (retryable), trying next: %s", i, e)
                 last_error = e
+                _fire_failure_hook(str(e))
         raise last_error  # type: ignore[misc]  # unreachable if clients is non-empty
 
     async def stream(
@@ -216,6 +234,7 @@ class FallbackLLMClient:
                     raise
                 logger.warning("Provider %d stream failed (retryable), trying next: %s", i, e)
                 last_error = e
+                _fire_failure_hook(str(e))
         raise last_error  # type: ignore[misc]
 
 

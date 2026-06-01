@@ -48,6 +48,14 @@ def _render(template: str, context: dict) -> str:
             f"If you didn't request this, you can ignore this email.\n"
             f"Link expires in 1 hour."
         )
+    if template == "admin_llm_alert":
+        return (
+            f"Invest-Ed system alert\n\n"
+            f"{context['headline']}\n\n"
+            f"Detail: {context['detail']}\n"
+            f"Time (UTC): {context['timestamp']}\n\n"
+            f"This is an automated alert."
+        )
     raise ValueError(f"Unknown template: {template}")
 
 
@@ -56,6 +64,7 @@ _SUBJECT = {
     "parent_magic_link": "Sign in to Invest-Ed",
     "verify_email": "Confirm your Invest-Ed email",
     "password_reset": "Reset your Invest-Ed password",
+    "admin_llm_alert": "⚠️ Invest-Ed system alert",
 }
 
 
@@ -91,6 +100,32 @@ def _render_html(template: str, context: dict) -> str:
         cta_label = "Reset Password"
         cta_url = context["link"]
         footer = "If you didn't request this, ignore this email. Link expires in 1 hour."
+    elif template == "admin_llm_alert":
+        return (
+            '<!DOCTYPE html>'
+            '<html lang="en">'
+            "<head>"
+            '<meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            "</head>"
+            "<body style=\"margin:0;padding:0;background-color:#f4f4f5;"
+            "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;\">"
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+            '<tr><td align="center" style="padding:40px 20px;">'
+            '<table role="presentation" width="100%"'
+            ' style="max-width:480px;background:#ffffff;border-radius:8px;overflow:hidden;">'
+            '<tr><td style="padding:32px 24px;">'
+            '<h1 style="margin:0 0 16px;font-size:20px;color:#111827;">&#x26A0;&#xFE0F; Invest-Ed system alert</h1>'
+            f'<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#374151;">{context["headline"]}</p>'
+            f'<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:#6b7280;">'
+            f'<strong>Detail:</strong> {context["detail"]}</p>'
+            f'<p style="margin:0 0 24px;font-size:13px;color:#6b7280;">'
+            f'<strong>Time (UTC):</strong> {context["timestamp"]}</p>'
+            '<p style="margin:24px 0 0;font-size:13px;color:#6b7280;">This is an automated alert.</p>'
+            "</td></tr></table>"
+            "</td></tr></table>"
+            "</body></html>"
+        )
     else:
         raise ValueError(f"Unknown template: {template}")
 

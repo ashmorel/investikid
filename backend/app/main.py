@@ -1,4 +1,5 @@
 
+import asyncio
 import logging
 
 from fastapi import FastAPI, Request
@@ -23,7 +24,8 @@ from app.routers import parent as parent_router
 from app.routers import parent_auth as parent_auth_router
 from app.routers import simulator as simulator_router
 from app.routers import users as users_router
-from app.services.llm_client import LLMError
+from app.services.alerting import on_all_providers_down, on_provider_degraded
+from app.services.llm_client import LLMError, set_failure_hook
 
 
 class SecurityHeadersMiddleware:
@@ -106,6 +108,10 @@ async def _llm_error_handler(request: Request, exc: LLMError) -> JSONResponse:
     # provider error string never contains the API key (keys are passed as
     # headers, not interpolated into messages — see audit LLM-05).
     logger.warning("LLM request to %s failed: %s", request.url.path, exc)
+    try:
+        asyncio.create_task(on_all_providers_down(str(exc), request.url.path))
+    except RuntimeError:
+        pass
     return JSONResponse(
         status_code=503,
         content={"detail": "The AI helper is unavailable right now. Please try again in a moment."},
@@ -117,6 +123,7 @@ def create_app() -> FastAPI:
     application.state.limiter = limiter
     application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     application.add_exception_handler(LLMError, _llm_error_handler)
+    set_failure_hook(on_provider_degraded)
 
     # Middleware execution order note: add_middleware wraps the app, so the
     # LAST middleware added runs OUTERMOST (first on request, last on response).

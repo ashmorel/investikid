@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     email_backend: str = "logging"  # "logging" | "resend"
     email_from: str = "noreply@invest-ed.app"
     feedback_notify_email: str = ""
+    admin_alert_email: str = ""
+    llm_alert_cooldown_seconds: int = 21600  # 6h — min gap between repeat alerts of the same kind
     app_base_url: str = "http://localhost:5173"
     data_retention_days: int = 30
     privacy_notice_version: str = "2026-05-16"
