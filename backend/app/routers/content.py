@@ -222,19 +222,25 @@ async def _award_completion(
     score: float | None,
     today_local,
 ) -> tuple[int, bool]:
-    """Insert a LessonCompletion and award XP. Idempotent via DB unique constraint."""
-    from sqlalchemy.exc import IntegrityError
+    """Insert a LessonCompletion + award XP once. On repeat, keep the best score."""
+    existing = await session.scalar(
+        select(LessonCompletion).where(
+            LessonCompletion.user_id == user_id,
+            LessonCompletion.lesson_id == lesson.id,
+        )
+    )
+    if existing is not None:
+        # Best-score-wins; XP already awarded on first completion.
+        if score is not None and (existing.score is None or score > existing.score):
+            existing.score = score
+            existing.completed_at = datetime.now(UTC)
+        return 0, True
 
-    completion = LessonCompletion(
+    session.add(LessonCompletion(
         user_id=user_id, lesson_id=lesson.id, score=score,
         completed_at=datetime.now(UTC),
-    )
-    session.add(completion)
-    try:
-        await session.flush()
-    except IntegrityError:
-        await session.rollback()
-        return 0, True
+    ))
+    await session.flush()
 
     progress.xp += lesson.xp_reward
     progress.level = compute_level(progress.xp)
