@@ -159,9 +159,13 @@ def test_get_llm_client_returns_premium_openai():
         mock_settings.llm_premium_provider = "openai"
         mock_settings.llm_premium_api_key = "sk-test"
         mock_settings.llm_premium_model = "gpt-4o"
+        mock_settings.llm_standard_providers = "together"
+        mock_settings.llm_together_api_key = ""  # no fallback configured
 
         client = get_llm_client(tier="premium")
-        assert isinstance(client, OpenAIClient)
+        # Premium is a fallback chain led by the premium provider.
+        assert isinstance(client, FallbackLLMClient)
+        assert isinstance(client.clients[0], OpenAIClient)
 
 
 def test_get_llm_client_returns_premium_anthropic():
@@ -169,9 +173,30 @@ def test_get_llm_client_returns_premium_anthropic():
         mock_settings.llm_premium_provider = "anthropic"
         mock_settings.llm_premium_api_key = "sk-ant-test"
         mock_settings.llm_premium_model = "claude-sonnet-4-20250514"
+        mock_settings.llm_standard_providers = "together"
+        mock_settings.llm_together_api_key = ""  # no fallback configured
 
         client = get_llm_client(tier="premium")
-        assert isinstance(client, AnthropicClient)
+        assert isinstance(client, FallbackLLMClient)
+        assert isinstance(client.clients[0], AnthropicClient)
+
+
+def test_premium_falls_back_to_standard_provider():
+    with patch("app.services.llm_client.settings") as mock_settings:
+        mock_settings.llm_premium_provider = "openai"
+        mock_settings.llm_premium_api_key = "sk-test"
+        mock_settings.llm_premium_model = "gpt-4o"
+        mock_settings.llm_standard_providers = "together"
+        mock_settings.llm_together_api_key = "tg-test"
+        mock_settings.llm_together_base_url = "https://api.together.xyz/v1"
+        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
+
+        client = get_llm_client(tier="premium")
+        # OpenAI premium first, Together as fallback.
+        assert isinstance(client, FallbackLLMClient)
+        assert len(client.clients) == 2
+        assert isinstance(client.clients[0], OpenAIClient)
+        assert isinstance(client.clients[1], OpenAIClient)  # Together via OpenAI SDK
 
 
 def test_get_llm_client_skips_providers_with_empty_key():

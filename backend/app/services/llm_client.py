@@ -275,15 +275,23 @@ def get_llm_client(tier: str = "lite", *, premium: bool | None = None) -> LLMCli
     if premium is not None:
         tier = "premium" if premium else "lite"
     if tier == "premium":
-        if settings.llm_premium_provider == "anthropic":
-            return AnthropicClient(
-                api_key=settings.llm_premium_api_key,
-                model=settings.llm_premium_model,
-            )
-        return OpenAIClient(
-            api_key=settings.llm_premium_api_key,
-            model=settings.llm_premium_model,
-        )
+        clients: list[LLMClient] = []
+        if settings.llm_premium_api_key:
+            if settings.llm_premium_provider == "anthropic":
+                clients.append(AnthropicClient(
+                    api_key=settings.llm_premium_api_key,
+                    model=settings.llm_premium_model,
+                ))
+            else:
+                clients.append(OpenAIClient(
+                    api_key=settings.llm_premium_api_key,
+                    model=settings.llm_premium_model,
+                ))
+        # Fall back to the standard (open-source) providers when the premium
+        # provider is unconfigured or fails (quota/5xx are retryable), so
+        # premium users never lose the AI helper over a billing hiccup.
+        clients.extend(_build_chain(settings.llm_standard_providers).clients)
+        return FallbackLLMClient(clients=clients)
     if tier == "standard":
         return _build_chain(settings.llm_standard_providers)
     return _build_chain(settings.llm_lite_providers)
