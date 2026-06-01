@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.content import Lesson, Module
+from app.models.content import Lesson, Level, Module
 
 _MODULES = [
     {
@@ -22,6 +22,8 @@ _MODULES = [
                 "answer_index": 1,
                 "explanation": "One share out of one million is 1/1,000,000 of the company.",
             }},
+            {"type": "video", "xp_reward": 10, "content_json": {
+                "youtube_id": "p7HKvqRI_Bo", "caption": "What is a stock? (intro)"}},
         ],
     },
     {
@@ -41,6 +43,8 @@ _MODULES = [
                 ],
                 "correct_index": 1,
             }},
+            {"type": "video", "xp_reward": 10, "content_json": {
+                "youtube_id": "MqZmwQoHmAA", "caption": "Compound interest explained simply"}},
         ],
     },
     {
@@ -454,9 +458,20 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
         session.add(module)
         await session.flush()
 
+        level = await session.scalar(
+            select(Level).where(Level.module_id == module.id, Level.order_index == 0)
+        )
+        if level is None:
+            level = Level(
+                module_id=module.id, title="Level 1", order_index=0,
+                is_premium=module.is_premium, pass_threshold=0.7, content_source="authored",
+            )
+            session.add(level)
+            await session.flush()
+
         for idx, lesson_spec in enumerate(spec["lessons"]):
             session.add(Lesson(
-                module_id=module.id, type=lesson_spec["type"],
+                module_id=module.id, level_id=level.id, type=lesson_spec["type"],
                 content_json=lesson_spec["content_json"],
                 xp_reward=lesson_spec["xp_reward"], order_index=idx,
             ))
