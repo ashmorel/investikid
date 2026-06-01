@@ -19,6 +19,7 @@ class UserProfile(BaseModel):
     currency_code: str
     topic_path: str | None
     is_premium: bool
+    is_admin: bool
     parent_email: str | None
     created_at: datetime
     email_verified_at: datetime | None = None

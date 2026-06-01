@@ -1,17 +1,13 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core.config import settings
-
-_bearer = HTTPBearer(auto_error=False)
+from app.models.user import User
+from app.routers.users import get_current_user
 
 
-async def get_current_admin(
-    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
-) -> str:
-    if creds is None or creds.credentials != settings.admin_token:
+async def get_current_admin(user: User = Depends(get_current_user)) -> User:
+    if not (user.is_admin and user.is_active):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing or invalid admin token",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
         )
-    return "admin"
+    return user

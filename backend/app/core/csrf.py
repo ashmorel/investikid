@@ -31,7 +31,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/billing/webhook",
 })
 # Path prefixes that bypass CSRF (for dynamic segments like /consent/request/{id})
-_DEFAULT_EXEMPT_PREFIXES = ("/consent/request/", "/admin/")
+_DEFAULT_EXEMPT_PREFIXES = ("/consent/request/",)
 
 # First-party frontend origins (native app + hosted web). Trusting our own
 # origins is a sound CSRF defence (OWASP-recommended) for this cross-domain
