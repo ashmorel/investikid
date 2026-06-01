@@ -39,6 +39,22 @@ async def test_bootstrap_noop_when_unset(db_session, monkeypatch):
     assert user.is_admin is False
 
 
+async def test_bootstrap_matches_by_username(db_session, monkeypatch):
+    user = await _make_user(db_session, "someone@example.com")  # username "someone"
+    monkeypatch.setattr("app.seed.admin_bootstrap.settings.admin_bootstrap_email", "Someone")
+    await bootstrap_admin(db_session)
+    assert user.is_admin is True
+
+
+async def test_bootstrap_ignores_parent_email(db_session, monkeypatch):
+    user = await _make_user(db_session, "kid@example.com")
+    user.parent_email = "grownup@example.com"
+    await db_session.flush()
+    monkeypatch.setattr("app.seed.admin_bootstrap.settings.admin_bootstrap_email", "grownup@example.com")
+    await bootstrap_admin(db_session)
+    assert user.is_admin is False  # parent_email must NOT grant admin
+
+
 async def test_bootstrap_noop_when_user_missing(db_session, monkeypatch):
     # No user with this email — must not raise.
     monkeypatch.setattr("app.seed.admin_bootstrap.settings.admin_bootstrap_email", "ghost@example.com")
