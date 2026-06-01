@@ -37,3 +37,35 @@ async def set_premium(
     ))
     await session.flush()
     return True
+
+
+def is_admin(user: User) -> bool:
+    """Single read seam for admin entitlement.
+
+    Today this is the per-user `is_admin` column. Callers must never read
+    `user.is_admin` directly.
+    """
+    return user.is_admin
+
+
+async def set_admin(
+    session: AsyncSession, user: User, *, value: bool, actor: str
+) -> bool:
+    """Single write seam for admin entitlement.
+
+    Idempotent: no-op (returns False, no audit row) when already at `value`.
+    On change: flips the column and writes one AuditLog row attributing the
+    change to `actor`. Does NOT commit — the caller owns the transaction
+    (consistent with other service-layer writers).
+    """
+    old = user.is_admin
+    if old == value:
+        return False
+    user.is_admin = value
+    session.add(AuditLog(
+        user_id=user.id,
+        event_type="admin_grant" if value else "admin_revoke",
+        metadata_json={"actor": actor, "old": old, "new": value},
+    ))
+    await session.flush()
+    return True

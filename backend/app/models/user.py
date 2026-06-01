@@ -22,6 +22,7 @@ class User(Base):
     currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
     topic_path: Mapped[str | None] = mapped_column(String(20), nullable=True)
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", default=False)
     parent_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     parent_consent_given_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
