@@ -26,8 +26,13 @@ describe('LessonRow', () => {
     expect(screen.getByLabelText(/not started/i)).toBeInTheDocument();
   });
 
-  it('row is a link to /lessons/:moduleId/:lessonId', () => {
+  it('row without levelId links to /lessons/:moduleId/:lessonId (legacy 2-segment)', () => {
     render(<MemoryRouter><LessonRow moduleId="mod-x" lesson={nextLesson} status="next" /></MemoryRouter>);
     expect(screen.getByRole('link')).toHaveAttribute('href', '/lessons/mod-x/L2');
+  });
+
+  it('row with levelId links to /lessons/:moduleId/:levelId/:lessonId (3-segment)', () => {
+    render(<MemoryRouter><LessonRow moduleId="mod-x" levelId="lv-1" lesson={nextLesson} status="next" /></MemoryRouter>);
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/lessons/mod-x/lv-1/L2');
   });
 });

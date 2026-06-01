@@ -8,6 +8,7 @@ import PendingConsent from '@/pages/child/PendingConsent';
 import Home from '@/pages/child/Home';
 import Lessons from '@/pages/child/Lessons';
 import Module from '@/pages/child/Module';
+import Level from '@/pages/child/Level';
 import Lesson from '@/pages/child/Lesson';
 import Simulator from '@/pages/child/Simulator';
 import Market from '@/pages/child/Market';
@@ -58,7 +59,8 @@ export default function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/lessons" element={<Lessons />} />
           <Route path="/lessons/:moduleId" element={<Module />} />
-          <Route path="/lessons/:moduleId/:lessonId" element={<Lesson />} />
+          <Route path="/lessons/:moduleId/:levelId" element={<Level />} />
+          <Route path="/lessons/:moduleId/:levelId/:lessonId" element={<Lesson />} />
           <Route path="/simulator" element={<Simulator />} />
           <Route path="/simulator/market" element={<Market />} />
           <Route path="/simulator/stock/:exchange/:ticker" element={<Stock />} />

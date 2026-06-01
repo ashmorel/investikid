@@ -1,10 +1,13 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { contentApi, type LessonSummary, type ModuleOut } from '@/api/content';
-import { LessonRow } from '@/components/child/LessonRow';
+import { contentApi, type LevelOut, type ModuleOut } from '@/api/content';
+import { LevelCard } from '@/components/child/LevelCard';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Module() {
   const { moduleId } = useParams<{ moduleId: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -12,17 +15,17 @@ export default function Module() {
     retry: false, staleTime: 60_000,
   });
 
-  const lessonsQ = useQuery<LessonSummary[] | null>({
-    queryKey: ['module', moduleId, 'lessons'],
-    queryFn: () => contentApi.listLessons(moduleId!),
+  const levelsQ = useQuery<LevelOut[] | null>({
+    queryKey: ['module-levels', moduleId],
+    queryFn: () => contentApi.listLevels(moduleId!),
     enabled: !!moduleId, retry: false, staleTime: 60_000,
   });
 
-  if (modulesQ.isLoading || lessonsQ.isLoading) {
+  if (modulesQ.isLoading || levelsQ.isLoading) {
     return <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6 text-sm text-gray-500">Loading…</div>;
   }
 
-  if (modulesQ.isError || lessonsQ.isError) {
+  if (modulesQ.isError || levelsQ.isError) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
         <p>Module not found or locked.</p>
@@ -32,8 +35,7 @@ export default function Module() {
   }
 
   const module = (modulesQ.data ?? []).find((m) => m.id === moduleId);
-  const lessons = (lessonsQ.data ?? []) as LessonSummary[];
-  const completed = lessons.filter((l) => l.completed).length;
+  const levels = (levelsQ.data ?? []) as LevelOut[];
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -42,24 +44,27 @@ export default function Module() {
         <span className="text-5xl">{module?.icon ?? '📚'}</span>
         <h1 className="mt-3 text-2xl font-extrabold text-gray-900">{module?.title ?? 'Module'}</h1>
         <p className="mt-1 text-sm text-gray-600">
-          {completed} / {lessons.length} quests complete
+          {levels.length} {levels.length === 1 ? 'level' : 'levels'}
         </p>
       </div>
 
-      {/* Quest list */}
+      {/* Level list */}
       <div className="px-4 py-4 sm:px-6">
-        <div className="rounded-2xl border-2 border-amber-200 bg-white overflow-hidden">
-          {lessons.map((lesson, i) => {
-            const nextIndex = lessons.findIndex((l) => !l.completed);
-            return (
-              <LessonRow
-                key={lesson.id}
-                moduleId={moduleId!}
-                lesson={lesson}
-                status={lesson.completed ? 'done' : i === nextIndex ? 'next' : 'later'}
-              />
-            );
-          })}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {levels.map((level) => (
+            <LevelCard
+              key={level.id}
+              level={level}
+              onOpen={() => navigate(`/lessons/${moduleId}/${level.id}`)}
+              onLockedClick={() => {
+                if (level.locked_reason === 'premium') {
+                  toast({ title: 'Premium', description: 'Ask a grown-up to unlock.' });
+                } else {
+                  toast({ title: 'Locked', description: 'Finish the previous level first.' });
+                }
+              }}
+            />
+          ))}
         </div>
         <Link to="/lessons" className="mt-4 inline-block text-sm text-amber-600 hover:underline">← Back to modules</Link>
       </div>

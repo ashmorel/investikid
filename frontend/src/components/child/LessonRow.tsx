@@ -4,10 +4,13 @@ import type { LessonSummary } from '@/api/content';
 
 type Status = 'done' | 'next' | 'later';
 
-export function LessonRow({ moduleId, lesson, status }: { moduleId: string; lesson: LessonSummary; status: Status }) {
+export function LessonRow({ moduleId, levelId, lesson, status }: { moduleId: string; levelId?: string; lesson: LessonSummary; status: Status }) {
+  const to = levelId
+    ? `/lessons/${moduleId}/${levelId}/${lesson.id}`
+    : `/lessons/${moduleId}/${lesson.id}`;
   return (
     <Link
-      to={`/lessons/${moduleId}/${lesson.id}`}
+      to={to}
       className="flex items-center gap-3 border-b border-amber-100 px-4 py-3.5 last:border-b-0 hover:bg-amber-50 transition-colors"
     >
       <StatusIcon status={status} />
