@@ -47,6 +47,22 @@ export type LessonOut = {
   locked: boolean;
 };
 
+export type LevelState = 'in_progress' | 'completed' | 'locked';
+
+export type LevelOut = {
+  id: string;
+  module_id: string;
+  title: string;
+  order_index: number;
+  is_premium: boolean;
+  icon: string;
+  state: LevelState;
+  locked_reason: 'premium' | 'progression' | null;
+  passed: boolean;
+  lessons_total: number;
+  lessons_completed: number;
+};
+
 export type LessonCompletionResult = {
   xp_awarded: number;
   already_completed: boolean;
@@ -72,5 +88,9 @@ export const contentApi = {
     apiFetch<LessonCompletionResult>(`/lessons/${lessonId}/complete`, {
       method: 'POST', body: JSON.stringify({ score }),
     }),
+  listLevels: (moduleId: string) =>
+    apiFetch<LevelOut[]>(`/modules/${moduleId}/levels`),
+  listLevelLessons: (levelId: string) =>
+    apiFetch<LessonSummary[]>(`/levels/${levelId}/lessons`),
   getProgress: () => apiFetch<Progress>('/users/me/progress'),
 };

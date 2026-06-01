@@ -33,6 +33,18 @@ export interface AdminLesson {
   order_index: number;
 }
 
+export interface AdminLevel {
+  id: string;
+  module_id: string;
+  title: string;
+  order_index: number;
+  is_premium: boolean;
+  pass_threshold: number;
+  content_source: string;
+  icon: string;
+  lesson_count: number;
+}
+
 export interface AdminBadge {
   id: string;
   name: string;
@@ -172,6 +184,59 @@ export function useReorderLessons() {
     mutationFn: ({ moduleId, order }: { moduleId: string; order: { id: string; order_index: number }[] }) =>
       adminFetch(`/admin/modules/${moduleId}/lessons/reorder`, { method: 'PATCH', body: JSON.stringify({ order }) }),
     onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['admin', 'lessons', vars.moduleId] }),
+  });
+}
+
+// ── Levels ─────────────────────────────────────────────────────────
+export function useLevels(moduleId: string) {
+  return useQuery({
+    queryKey: ['admin', 'levels', moduleId],
+    queryFn: () => adminFetch<AdminLevel[]>(`/admin/modules/${moduleId}/levels`),
+    enabled: !!moduleId,
+  });
+}
+
+export function useCreateLevel(moduleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { title: string; order_index: number; is_premium: boolean; pass_threshold: number; icon: string }) =>
+      adminFetch<AdminLevel>(`/admin/modules/${moduleId}/levels`, { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'levels', moduleId] }),
+  });
+}
+
+export function useUpdateLevel(moduleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string } & Partial<Omit<AdminLevel, 'id' | 'module_id' | 'content_source' | 'lesson_count'>>) =>
+      adminFetch<AdminLevel>(`/admin/levels/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'levels', moduleId] }),
+  });
+}
+
+export function useDeleteLevel(moduleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminFetch(`/admin/levels/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'levels', moduleId] }),
+  });
+}
+
+// ── Level lessons ──────────────────────────────────────────────────
+export function useLevelLessons(levelId: string) {
+  return useQuery({
+    queryKey: ['admin', 'level-lessons', levelId],
+    queryFn: () => adminFetch<AdminLesson[]>(`/admin/levels/${levelId}/lessons`),
+    enabled: !!levelId,
+  });
+}
+
+export function useCreateLevelLesson(levelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<AdminLesson, 'id' | 'module_id'>) =>
+      adminFetch<AdminLesson>(`/admin/levels/${levelId}/lessons`, { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'level-lessons', levelId] }),
   });
 }
 
