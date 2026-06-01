@@ -1,6 +1,10 @@
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Publicly known source default — fine for dev/CI, REJECTED in production
+# by Settings._guard_admin_token so it can never silently authenticate prod.
+_DEFAULT_ADMIN_TOKEN = "test-admin-token-xyz"  # nosec B105
+
 
 def _ensure_asyncpg(url: str) -> str:
     """Convert postgresql:// to postgresql+asyncpg:// for SQLAlchemy async."""
@@ -17,6 +21,19 @@ class Settings(BaseSettings):
     def _fix_db_urls(self) -> "Settings":
         self.database_url = _ensure_asyncpg(self.database_url)
         self.test_database_url = _ensure_asyncpg(self.test_database_url)
+        return self
+
+    @model_validator(mode="after")
+    def _guard_admin_token(self) -> "Settings":
+        """Fail closed: never let the publicly known default authenticate prod."""
+        if self.environment == "production" and self.admin_token in (
+            "",
+            _DEFAULT_ADMIN_TOKEN,
+        ):
+            raise ValueError(
+                "ADMIN_TOKEN must be set to a strong, non-default value when "
+                "ENVIRONMENT=production (the source default is publicly known)."
+            )
         return self
     redis_url: str = "redis://localhost:6379/0"
     jwt_secret: str
@@ -36,7 +53,7 @@ class Settings(BaseSettings):
     app_base_url: str = "http://localhost:5173"
     data_retention_days: int = 30
     privacy_notice_version: str = "2026-05-16"
-    admin_token: str = "test-admin-token-xyz"
+    admin_token: str = _DEFAULT_ADMIN_TOKEN
 
     # LLM / AI — lite + standard tiers (open-source models)
     llm_together_api_key: str = ""
