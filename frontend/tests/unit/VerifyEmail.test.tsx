@@ -14,6 +14,7 @@ const UNVERIFIED_ME: Me = {
   currency_code: 'USD',
   topic_path: null,
   is_premium: false,
+  is_admin: false,
   parent_email: null,
   created_at: '2026-01-01T00:00:00Z',
   email_verified_at: null,

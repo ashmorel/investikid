@@ -13,6 +13,7 @@ export type Me = {
   currency_code: string;
   topic_path: string | null;
   is_premium: boolean;
+  is_admin: boolean;
   parent_email: string | null;
   created_at: string;
   email_verified_at: string | null;

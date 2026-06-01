@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_BASE, ApiError } from './client';
-import { getAdminToken, clearAdminToken } from '@/lib/adminAuth';
+import { apiFetch } from './client';
 
 // ── Types ──────────────────────────────────────────────────────────
 export interface AdminStats {
@@ -68,28 +67,8 @@ export interface AdminChallenge {
 }
 
 // ── Fetch helper ───────────────────────────────────────────────────
-async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = getAdminToken();
-  if (!token) throw new ApiError(401, 'No admin token');
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-    ...((init?.headers as Record<string, string>) ?? {}),
-  };
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
-  if (res.status === 401) {
-    clearAdminToken();
-    throw new ApiError(401, 'Invalid admin token');
-  }
-  if (!res.ok) {
-    let detail = res.statusText;
-    try {
-      const body = await res.json();
-      if (body?.detail) detail = body.detail;
-    } catch { /* ignore */ }
-    throw new ApiError(res.status, detail);
-  }
-  return (await res.json()) as T;
+function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  return apiFetch<T>(path, init) as Promise<T>;
 }
 
 // ── Stats ──────────────────────────────────────────────────────────

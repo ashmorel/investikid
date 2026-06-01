@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { authApi, type Me } from '@/api/auth';
+import { useChildSession } from '@/hooks/useChildSession';
 import { TOPIC_OPTIONS } from '@/api/content';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +19,7 @@ import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 export function ProfileMenu({ username }: { username: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { data: session } = useChildSession();
   const isMobile = !useMediaQuery('(min-width: 768px)');
   const [open, setOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -90,6 +92,11 @@ export function ProfileMenu({ username }: { username: string }) {
           <DropdownMenuItem onSelect={() => setFeedbackOpen(true)}>
             Send Feedback
           </DropdownMenuItem>
+          {session?.is_admin && (
+            <DropdownMenuItem onSelect={() => navigate('/admin')}>
+              Admin
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => logout.mutate()}>Log out</DropdownMenuItem>
         </DropdownMenuContent>

@@ -4,7 +4,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { axe } from 'vitest-axe';
 
-import AdminLogin from '@/components/admin/AdminLogin';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import OrderArrows from '@/components/admin/OrderArrows';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
@@ -30,13 +29,6 @@ function wrap(ui: React.ReactNode) {
 beforeEach(() => vi.restoreAllMocks());
 
 describe('a11y: admin components', () => {
-  it('AdminLogin has no axe violations', async () => {
-    const mockOnAuthenticated = vi.fn();
-    const { container } = wrap(<AdminLogin onAuthenticated={mockOnAuthenticated} />);
-    await waitFor(() => expect(screen.getByText(/Invest-Ed Admin/i)).toBeInTheDocument());
-    expect(await axe(container)).toHaveNoViolations();
-  });
-
   it('AdminDashboard has no axe violations', async () => {
     const { container } = wrap(<AdminDashboard />);
     await waitFor(() => expect(screen.getByText(/Dashboard/i)).toBeInTheDocument());
