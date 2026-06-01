@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -328,11 +329,29 @@ async def _award_completion(
             existing.completed_at = datetime.now(UTC)
         return 0, True
 
-    session.add(LessonCompletion(
-        user_id=user_id, lesson_id=lesson.id, score=score,
-        completed_at=datetime.now(UTC),
-    ))
-    await session.flush()
+    try:
+        async with session.begin_nested():
+            session.add(LessonCompletion(
+                user_id=user_id, lesson_id=lesson.id, score=score,
+                completed_at=datetime.now(UTC),
+            ))
+            await session.flush()
+    except IntegrityError:
+        # Lost a concurrent first-completion race (same user, same lesson).
+        # The SAVEPOINT rollback keeps the outer transaction usable; treat
+        # this as a repeat completion and apply best-score-wins, no XP.
+        existing = await session.scalar(
+            select(LessonCompletion).where(
+                LessonCompletion.user_id == user_id,
+                LessonCompletion.lesson_id == lesson.id,
+            )
+        )
+        if existing is not None and score is not None and (
+            existing.score is None or score > existing.score
+        ):
+            existing.score = score
+            existing.completed_at = datetime.now(UTC)
+        return 0, True
 
     progress.xp += lesson.xp_reward
     progress.level = compute_level(progress.xp)
