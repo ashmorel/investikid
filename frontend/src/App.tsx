@@ -28,6 +28,8 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import ModuleList from '@/components/admin/ModuleList';
 import ModuleForm from '@/components/admin/ModuleForm';
+import LevelList from '@/components/admin/LevelList';
+import LevelLessonList from '@/components/admin/LevelLessonList';
 import BadgeList from '@/components/admin/BadgeList';
 import BadgeForm from '@/components/admin/BadgeForm';
 import ChallengeList from '@/components/admin/ChallengeList';
@@ -81,6 +83,8 @@ export default function App() {
           <Route path="modules" element={<ModuleList />} />
           <Route path="modules/new" element={<ModuleForm />} />
           <Route path="modules/:moduleId" element={<ModuleForm />} />
+          <Route path="modules/:moduleId/levels" element={<LevelList />} />
+          <Route path="modules/:moduleId/levels/:levelId/lessons" element={<LevelLessonList />} />
           <Route path="badges" element={<BadgeList />} />
           <Route path="badges/new" element={<BadgeForm />} />
           <Route path="badges/:badgeId" element={<BadgeForm />} />

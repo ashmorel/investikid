@@ -61,6 +61,9 @@ export default function ModuleList() {
               isFirst={i === 0}
               isLast={i === sorted.length - 1}
             />
+            <Link to={`/admin/modules/${m.id}/levels`} className="text-xs text-blue-400 hover:text-blue-300">
+              Levels
+            </Link>
             <Link to={`/admin/modules/${m.id}`} className="text-xs text-blue-400 hover:text-blue-300">
               Edit
             </Link>
