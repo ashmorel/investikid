@@ -9,6 +9,29 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
     <title>Invest-Ed</title>
+    <script>
+      // iOS WKWebView sometimes computes the wrong viewport width on COLD LAUNCH
+      // — content lays out slightly too wide and gets clipped on the right —
+      // then self-corrects once the app is backgrounded/foregrounded (which
+      // forces a re-layout). Nudging the viewport meta does the same thing
+      // programmatically: changing `content` makes WKWebView recompute the
+      // viewport. We do it on DOMContentLoaded and again after the splash hides.
+      (function () {
+        var BASE = 'width=device-width, initial-scale=1.0, viewport-fit=cover';
+        var ALT = 'width=device-width, initial-scale=1.0001, viewport-fit=cover';
+        function nudge() {
+          var vp = document.querySelector('meta[name="viewport"]');
+          if (!vp) return;
+          vp.setAttribute('content', ALT);
+          requestAnimationFrame(function () { vp.setAttribute('content', BASE); });
+        }
+        document.addEventListener('DOMContentLoaded', nudge);
+        window.addEventListener('load', function () {
+          setTimeout(nudge, 300);
+          setTimeout(nudge, 900);
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
