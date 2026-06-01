@@ -1,7 +1,7 @@
 import { readCookie } from '@/lib/cookies';
 import { isNativeApp } from '@/lib/platform';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export class ApiError extends Error {
   constructor(public status: number, public detail: string) {

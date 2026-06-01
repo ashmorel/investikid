@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError } from './client';
+import { API_BASE, ApiError } from './client';
 import { getAdminToken, clearAdminToken } from '@/lib/adminAuth';
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
     Authorization: `Bearer ${token}`,
     ...((init?.headers as Record<string, string>) ?? {}),
   };
-  const res = await fetch(path, { ...init, headers });
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
   if (res.status === 401) {
     clearAdminToken();
     throw new ApiError(401, 'Invalid admin token');
