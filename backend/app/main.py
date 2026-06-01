@@ -1,4 +1,6 @@
 
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -95,8 +97,15 @@ class SecurityHeadersMiddleware:
         await self.app(scope, receive, send_with_headers)
 
 
+logger = logging.getLogger(__name__)
+
+
 async def _llm_error_handler(request: Request, exc: LLMError) -> JSONResponse:
     """Surface LLM/provider failures as a friendly 503 instead of a raw 500."""
+    # Log the underlying provider error (status/message) for diagnosis. The
+    # provider error string never contains the API key (keys are passed as
+    # headers, not interpolated into messages — see audit LLM-05).
+    logger.warning("LLM request to %s failed: %s", request.url.path, exc)
     return JSONResponse(
         status_code=503,
         content={"detail": "The AI helper is unavailable right now. Please try again in a moment."},
