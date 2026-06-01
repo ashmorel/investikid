@@ -61,3 +61,19 @@ class LessonCompletionResult(BaseModel):
     level: int
     streak_count: int
     practice_available: bool = False
+
+
+class LevelOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    module_id: uuid.UUID
+    title: str
+    order_index: int
+    is_premium: bool
+    icon: str = "📊"
+    state: Literal["in_progress", "completed", "locked"]
+    locked_reason: Literal["premium", "progression"] | None = None
+    passed: bool = False
+    lessons_total: int = 0
+    lessons_completed: int = 0
