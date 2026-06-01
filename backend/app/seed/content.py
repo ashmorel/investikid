@@ -23,7 +23,17 @@ _MODULES = [
                 "explanation": "One share out of one million is 1/1,000,000 of the company.",
             }},
             {"type": "video", "xp_reward": 10, "content_json": {
-                "youtube_id": "p7HKvqRI_Bo", "caption": "What is a stock? (intro)"}},
+                "youtube_id": "p7HKvqRI_Bo", "caption": "What is a stock? (intro)",
+                "captions_available": True,
+                "transcript": (
+                    "A stock is a small piece of ownership in a company. When you buy "
+                    "a share, you own a tiny fraction of that business. If the company "
+                    "does well and grows, your share can become worth more. If it does "
+                    "poorly, your share can be worth less. Companies sell shares to "
+                    "raise money, and people buy them hoping the company will grow over "
+                    "time. Owning a stock does not mean you run the company — it means "
+                    "you own a part of it along with many other shareholders."
+                )}},
         ],
     },
     {
@@ -44,7 +54,18 @@ _MODULES = [
                 "correct_index": 1,
             }},
             {"type": "video", "xp_reward": 10, "content_json": {
-                "youtube_id": "MqZmwQoHmAA", "caption": "Compound interest explained simply"}},
+                "youtube_id": "MqZmwQoHmAA", "caption": "Compound interest explained simply",
+                "captions_available": True,
+                "transcript": (
+                    "Compound interest means you earn interest on your original money "
+                    "and also on the interest you have already earned. Imagine you save "
+                    "100 pounds and earn 5 percent each year. After the first year you "
+                    "have 105 pounds. In the second year you earn 5 percent on 105 "
+                    "pounds, not just on the original 100, so you earn a little more. "
+                    "Each year the amount grows faster because your interest earns its "
+                    "own interest. Over many years this snowball effect can turn small "
+                    "savings into a much larger amount."
+                )}},
         ],
     },
     {
