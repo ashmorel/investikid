@@ -1,0 +1,34 @@
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { LevelCard } from '../LevelCard';
+import type { LevelOut } from '@/api/content';
+
+const base: LevelOut = {
+  id: 'l1', module_id: 'm1', title: 'Level 1', order_index: 0, is_premium: false,
+  icon: '📊', state: 'in_progress', locked_reason: null, passed: false,
+  lessons_total: 4, lessons_completed: 1,
+};
+
+describe('LevelCard', () => {
+  it('unlocked level is clickable', () => {
+    const onOpen = vi.fn();
+    render(<LevelCard level={base} onOpen={onOpen} onLockedClick={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /Level 1/ }));
+    expect(onOpen).toHaveBeenCalled();
+  });
+
+  it('premium-locked shows premium and calls onLockedClick', () => {
+    const onLockedClick = vi.fn();
+    render(<LevelCard level={{ ...base, state: 'locked', locked_reason: 'premium' }}
+      onOpen={() => {}} onLockedClick={onLockedClick} />);
+    expect(screen.getByText(/Premium/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button'));
+    expect(onLockedClick).toHaveBeenCalled();
+  });
+
+  it('progression-locked shows unlock hint', () => {
+    render(<LevelCard level={{ ...base, state: 'locked', locked_reason: 'progression' }}
+      onOpen={() => {}} onLockedClick={() => {}} />);
+    expect(screen.getByText(/unlock/i)).toBeInTheDocument();
+  });
+});
