@@ -1,6 +1,6 @@
 from app.models.audit import AuditLog  # noqa: F401
 from app.models.consent import OneTimeToken, SentEmail  # noqa: F401
-from app.models.content import Lesson, LessonCompletion, Module  # noqa: F401
+from app.models.content import Lesson, LessonCompletion, Level, Module  # noqa: F401
 from app.models.cosmetics import CosmeticItem, UserCosmetic  # noqa: F401
 from app.models.feedback import Feedback  # noqa: F401
 from app.models.gamification import Badge, Challenge, UserBadge, UserChallenge  # noqa: F401

@@ -29,12 +29,35 @@ class Module(Base):
     lessons: Mapped[list["Lesson"]] = relationship("Lesson", back_populates="module")
 
 
+class Level(Base):
+    __tablename__ = "levels"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    module_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("modules.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    pass_threshold: Mapped[float] = mapped_column(Float, nullable=False, server_default="0.7")
+    content_source: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="authored"
+    )
+    icon: Mapped[str] = mapped_column(String(10), nullable=False, server_default="📊")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
 class Lesson(Base):
     __tablename__ = "lessons"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     module_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("modules.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    level_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("levels.id", ondelete="CASCADE"), nullable=True, index=True
     )
     type: Mapped[str] = mapped_column(String(20), nullable=False)
     content_json: Mapped[dict] = mapped_column(JSON, nullable=False)
