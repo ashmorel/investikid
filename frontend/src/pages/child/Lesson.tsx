@@ -13,7 +13,7 @@ import { CoachEddiePanel } from '@/components/child/lesson/CoachEddiePanel';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Lesson() {
-  const { moduleId, lessonId } = useParams<{ moduleId: string; lessonId: string }>();
+  const { moduleId, levelId, lessonId } = useParams<{ moduleId: string; levelId: string; lessonId: string }>();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [showPractice, setShowPractice] = useState(false);
@@ -27,9 +27,9 @@ export default function Lesson() {
   });
 
   const lessonsQ = useQuery<LessonSummary[] | null>({
-    queryKey: ['module', moduleId, 'lessons'],
-    queryFn: () => contentApi.listLessons(moduleId!),
-    enabled: !!moduleId, retry: false, staleTime: 60_000,
+    queryKey: ['level-lessons', levelId],
+    queryFn: () => contentApi.listLevelLessons(levelId!),
+    enabled: !!levelId, retry: false, staleTime: 60_000,
   });
 
   const modulesQ2 = useQuery<ModuleOut[] | null>({
@@ -42,8 +42,8 @@ export default function Lesson() {
     mutationFn: (score) => contentApi.completeLesson(lessonId!, score),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['progress'] });
-      qc.invalidateQueries({ queryKey: ['module', moduleId, 'lessons'] });
-      qc.invalidateQueries({ queryKey: ['modules'] });
+      qc.invalidateQueries({ queryKey: ['level-lessons', levelId] });
+      qc.invalidateQueries({ queryKey: ['module-levels', moduleId] });
     },
     onError: () => {
       toast({ title: 'Could not save your progress', description: 'Try again.' });
@@ -97,6 +97,7 @@ export default function Lesson() {
         <CompletionPanel
           result={complete.data}
           moduleId={moduleId!}
+          levelId={levelId!}
           nextLessonId={next?.id ?? null}
         />
         {complete.data.practice_available && !complete.data.already_completed && (

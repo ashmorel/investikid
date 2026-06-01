@@ -9,10 +9,11 @@ import { Trophy } from './illustrations/Trophy';
 type Props = {
   result: LessonCompletionResult;
   moduleId: string;
+  levelId: string;
   nextLessonId: string | null;
 };
 
-export function CompletionPanel({ result, moduleId, nextLessonId }: Props) {
+export function CompletionPanel({ result, moduleId, levelId, nextLessonId }: Props) {
   const heading = result.already_completed ? "You've already done this one" : 'Quest Complete!';
   const xpInLevel = result.total_xp % 100;
 
@@ -62,7 +63,7 @@ export function CompletionPanel({ result, moduleId, nextLessonId }: Props) {
       <div className="flex justify-center gap-2 pt-2">
         {nextLessonId ? (
           <Button asChild className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl">
-            <Link to={`/lessons/${moduleId}/${nextLessonId}`}>Next Quest →</Link>
+            <Link to={`/lessons/${moduleId}/${levelId}/${nextLessonId}`}>Next Quest →</Link>
           </Button>
         ) : (
           <Button asChild className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl">

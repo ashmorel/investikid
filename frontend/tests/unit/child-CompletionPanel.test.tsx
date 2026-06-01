@@ -11,18 +11,18 @@ describe('CompletionPanel', () => {
   it('shows xp awarded, totals, and Next Quest link when next exists', () => {
     render(
       <MemoryRouter>
-        <CompletionPanel result={baseResult} moduleId="m" nextLessonId="L2" />
+        <CompletionPanel result={baseResult} moduleId="m" levelId="lv1" nextLessonId="L2" />
       </MemoryRouter>,
     );
     expect(screen.getByText(/Quest Complete!/)).toBeInTheDocument();
     expect(screen.getByText(/Total: 320 XP/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Next Quest/ })).toHaveAttribute('href', '/lessons/m/L2');
+    expect(screen.getByRole('link', { name: /Next Quest/ })).toHaveAttribute('href', '/lessons/m/lv1/L2');
   });
 
   it('omits Next Quest link and shows Back to module when no next', () => {
     render(
       <MemoryRouter>
-        <CompletionPanel result={baseResult} moduleId="m" nextLessonId={null} />
+        <CompletionPanel result={baseResult} moduleId="m" levelId="lv1" nextLessonId={null} />
       </MemoryRouter>,
     );
     expect(screen.queryByRole('link', { name: /Next Quest/ })).not.toBeInTheDocument();
@@ -32,7 +32,7 @@ describe('CompletionPanel', () => {
   it('already-completed variant skips XP line and changes heading', () => {
     render(
       <MemoryRouter>
-        <CompletionPanel result={{ ...baseResult, already_completed: true, xp_awarded: 0 }} moduleId="m" nextLessonId={null} />
+        <CompletionPanel result={{ ...baseResult, already_completed: true, xp_awarded: 0 }} moduleId="m" levelId="lv1" nextLessonId={null} />
       </MemoryRouter>,
     );
     expect(screen.getByText(/already done this one/i)).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe('CompletionPanel', () => {
     const confetti = (await import('canvas-confetti')).default;
     render(
       <MemoryRouter>
-        <CompletionPanel result={baseResult} moduleId="m" nextLessonId={null} />
+        <CompletionPanel result={baseResult} moduleId="m" levelId="lv1" nextLessonId={null} />
       </MemoryRouter>,
     );
     expect(confetti).toHaveBeenCalled();
@@ -53,7 +53,7 @@ describe('CompletionPanel', () => {
     (confetti as unknown as ReturnType<typeof vi.fn>).mockClear();
     render(
       <MemoryRouter>
-        <CompletionPanel result={{ ...baseResult, already_completed: true, xp_awarded: 0 }} moduleId="m" nextLessonId={null} />
+        <CompletionPanel result={{ ...baseResult, already_completed: true, xp_awarded: 0 }} moduleId="m" levelId="lv1" nextLessonId={null} />
       </MemoryRouter>,
     );
     expect(confetti).not.toHaveBeenCalled();

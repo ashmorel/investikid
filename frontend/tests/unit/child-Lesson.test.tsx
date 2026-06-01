@@ -26,7 +26,7 @@ function renderAt(path: string) {
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/lessons/:moduleId/:lessonId" element={<Lesson />} />
+          <Route path="/lessons/:moduleId/:levelId/:lessonId" element={<Lesson />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -41,7 +41,7 @@ describe('Lesson shell', () => {
         completed: false, locked: false,
         content_json: { title: 'CardT', body: 'CardB' },
       },
-      'GET /modules/mod-1/lessons': [
+      'GET /levels/lv-1/lessons': [
         { id: 'L1', type: 'card', title: 'CardT', xp_reward: 10, order_index: 0, completed: false },
         { id: 'L2', type: 'card', title: 'NextT', xp_reward: 10, order_index: 1, completed: false },
       ],
@@ -49,12 +49,12 @@ describe('Lesson shell', () => {
         xp_awarded: 10, already_completed: false, total_xp: 10, level: 1, streak_count: 1,
       },
     });
-    renderAt('/lessons/mod-1/L1');
+    renderAt('/lessons/mod-1/lv-1/L1');
     expect(await screen.findByRole('heading', { name: /CardT/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Got it/ }));
     await waitFor(() => expect(screen.getByText(/\+10 XP/)).toBeInTheDocument());
     expect(screen.getByRole('link', { name: /Next Quest/ })).toHaveAttribute(
-      'href', '/lessons/mod-1/L2',
+      'href', '/lessons/mod-1/lv-1/L2',
     );
   });
 
@@ -70,7 +70,7 @@ describe('Lesson shell', () => {
           content_json: { title: 'CardT', body: 'CardB' },
         }), { status: 200 });
       }
-      if (key === 'GET /modules/mod-1/lessons') {
+      if (key === 'GET /levels/lv-1/lessons') {
         return new Response(JSON.stringify([
           { id: 'L1', type: 'card', title: 'CardT', xp_reward: 10, order_index: 0, completed: false },
         ]), { status: 200 });
@@ -86,7 +86,7 @@ describe('Lesson shell', () => {
       return new Response('not mocked: ' + key, { status: 500 });
     });
 
-    renderAt('/lessons/mod-1/L1');
+    renderAt('/lessons/mod-1/lv-1/L1');
     const button = await screen.findByRole('button', { name: /Got it/ });
     fireEvent.click(button);
     fireEvent.click(button);
