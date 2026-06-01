@@ -55,7 +55,7 @@ class ModuleOut(BaseModel):
 
 # ── Lesson ──────────────────────────────────────────────────────────
 class LessonCreate(BaseModel):
-    type: Literal["card", "quiz", "scenario"]
+    type: Literal["card", "quiz", "scenario", "video"]
     content_json: dict
     xp_reward: int
     order_index: int
@@ -86,11 +86,14 @@ class LessonCreate(BaseModel):
                     raise ValueError("Each scenario choice requires label and outcome")
             if not (0 <= v["correct_index"] < len(v["choices"])):
                 raise ValueError("Invalid correct_index — must be within choices range")
+        elif lesson_type == "video":
+            if not isinstance(v.get("youtube_id"), str) or not v["youtube_id"]:
+                raise ValueError("video lessons require a non-empty youtube_id")
         return v
 
 
 class LessonUpdate(BaseModel):
-    type: Literal["card", "quiz", "scenario"] | None = None
+    type: Literal["card", "quiz", "scenario", "video"] | None = None
     content_json: dict | None = None
     xp_reward: int | None = None
 
@@ -182,3 +185,34 @@ class ReorderItem(BaseModel):
 
 class ReorderRequest(BaseModel):
     order: list[ReorderItem]
+
+
+# ── Level ────────────────────────────────────────────────────────────
+class AdminLevelCreate(BaseModel):
+    title: str
+    order_index: int
+    is_premium: bool = False
+    pass_threshold: float = 0.7
+    icon: str = "📊"
+
+
+class AdminLevelUpdate(BaseModel):
+    title: str | None = None
+    order_index: int | None = None
+    is_premium: bool | None = None
+    pass_threshold: float | None = None
+    icon: str | None = None
+
+
+class AdminLevelOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    module_id: uuid.UUID
+    title: str
+    order_index: int
+    is_premium: bool
+    pass_threshold: float
+    content_source: str
+    icon: str
+    lesson_count: int = 0
