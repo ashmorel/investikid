@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
-import { contentApi, type LessonOut, type LessonSummary, type LessonCompletionResult, type ModuleOut } from '@/api/content';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { contentApi, type LessonOut, type LessonSummary, type LessonCompletionResult, type ModuleOut, type LevelOut } from '@/api/content';
 import { CardLesson } from '@/components/child/lesson/CardLesson';
 import { QuizLesson } from '@/components/child/lesson/QuizLesson';
 import { ScenarioLesson } from '@/components/child/lesson/ScenarioLesson';
@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function Lesson() {
   const { moduleId, levelId, lessonId } = useParams<{ moduleId: string; levelId: string; lessonId: string }>();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [showPractice, setShowPractice] = useState(false);
   const [showEddie, setShowEddie] = useState(false);
@@ -36,6 +37,12 @@ export default function Lesson() {
     queryKey: ['modules'],
     queryFn: () => contentApi.listModules(),
     retry: false, staleTime: 60_000,
+  });
+
+  const levelsQ = useQuery<LevelOut[] | null>({
+    queryKey: ['module-levels', moduleId],
+    queryFn: () => contentApi.listLevels(moduleId!),
+    enabled: !!moduleId, retry: false, staleTime: 60_000,
   });
 
   const complete = useMutation<LessonCompletionResult | null, Error, number | null>({
@@ -64,6 +71,26 @@ export default function Lesson() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId]);
 
+  // Compute post-completion destination
+  const curId = lessonQ.data?.id;
+  const levelLessons = (lessonsQ.data ?? []) as LessonSummary[];
+  // Other quests in THIS level still incomplete (exclude the just-finished one so stale data can't mislead)
+  const moreInLevel = !!curId && levelLessons.some(l => l.id !== curId && !l.completed);
+  const allLevels = (levelsQ.data ?? []) as LevelOut[];
+  const moduleComplete = allLevels.length > 0 && allLevels.every(lv => lv.state === 'completed');
+  const postCompleteDest = moreInLevel
+    ? `/lessons/${moduleId}/${levelId}`
+    : moduleComplete
+      ? '/lessons'
+      : `/lessons/${moduleId}`;
+
+  // Auto-navigate 2 s after completion, unless child opened practice
+  useEffect(() => {
+    if (!complete.isSuccess || showPractice) return;
+    const t = setTimeout(() => navigate(postCompleteDest, { replace: true }), 2000);
+    return () => clearTimeout(t);
+  }, [complete.isSuccess, showPractice, postCompleteDest, navigate]);
+
   if (lessonQ.isLoading) {
     return <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6 text-sm text-muted-foreground">Loading…</div>;
   }
@@ -81,9 +108,6 @@ export default function Lesson() {
   const total = lessons.length;
 
   if (complete.isSuccess && complete.data) {
-    const idx = lessons.findIndex((l) => l.id === lesson.id);
-    const next = lessons.slice(idx + 1).find((l) => !l.completed) ?? null;
-
     if (showPractice) {
       return (
         <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
@@ -96,9 +120,7 @@ export default function Lesson() {
       <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
         <CompletionPanel
           result={complete.data}
-          moduleId={moduleId!}
-          levelId={levelId!}
-          nextLessonId={next?.id ?? null}
+          onContinue={() => navigate(postCompleteDest, { replace: true })}
         />
         {complete.data.practice_available && !complete.data.already_completed && (
           <div className="mt-4 text-center">

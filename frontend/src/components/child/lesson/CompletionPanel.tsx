@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import type { LessonCompletionResult } from '@/api/content';
@@ -8,12 +7,10 @@ import { Trophy } from './illustrations/Trophy';
 
 type Props = {
   result: LessonCompletionResult;
-  moduleId: string;
-  levelId: string;
-  nextLessonId: string | null;
+  onContinue: () => void;
 };
 
-export function CompletionPanel({ result, moduleId, levelId, nextLessonId }: Props) {
+export function CompletionPanel({ result, onContinue }: Props) {
   const heading = result.already_completed ? "You've already done this one" : 'Quest Complete!';
   const xpInLevel = result.total_xp % 100;
 
@@ -61,15 +58,12 @@ export function CompletionPanel({ result, moduleId, levelId, nextLessonId }: Pro
         <p className="mt-1 text-xs text-gray-500">{xpInLevel} / 100 XP to Level {result.level + 1}</p>
       </div>
       <div className="flex justify-center gap-2 pt-2">
-        {nextLessonId ? (
-          <Button asChild className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl">
-            <Link to={`/lessons/${moduleId}/${levelId}/${nextLessonId}`}>Next Quest →</Link>
-          </Button>
-        ) : (
-          <Button asChild className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl">
-            <Link to={`/lessons/${moduleId}`}>Back to module</Link>
-          </Button>
-        )}
+        <Button
+          onClick={onContinue}
+          className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl"
+        >
+          Continue →
+        </Button>
       </div>
     </div>
   );
