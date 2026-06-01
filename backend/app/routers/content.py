@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
-from app.models.content import Lesson, LessonCompletion, Module
+from app.models.content import Lesson, LessonCompletion, Level, Module
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
 from app.schemas.content import (
@@ -14,6 +14,7 @@ from app.schemas.content import (
     LessonCompletionResult,
     LessonOut,
     LessonSummary,
+    LevelOut,
     ModuleOut,
 )
 from app.services.content_service import (
@@ -27,6 +28,7 @@ from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
 )
+from app.services.level_service import LevelStateInput, derive_level_states
 from app.services.skill_profile_service import (
     record_weak_concept,
     reinforce_concept,
@@ -116,6 +118,96 @@ async def list_lessons(
             completed=lesson.id in completed_ids,
         )
         for lesson in lessons
+    ]
+
+
+async def _get_accessible_level(level_id, current_user, session) -> Level:
+    level = await session.get(Level, level_id)
+    if not level:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Level not found")
+    # Reuse module access (country/age/premium-module gate)
+    await _get_accessible_module(level.module_id, current_user, session)
+    if level.is_premium and not is_premium(current_user):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Level requires premium")
+    return level
+
+
+@router.get("/modules/{module_id}/levels", response_model=list[LevelOut])
+async def list_levels(
+    module_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    await _get_accessible_module(module_id, current_user, session)
+    levels = list(await session.scalars(
+        select(Level).where(Level.module_id == module_id).order_by(Level.order_index)
+    ))
+    lessons = list(await session.scalars(
+        select(Lesson).where(Lesson.module_id == module_id)
+    ))
+    lessons_by_level: dict = {}
+    for lsn in lessons:
+        if lsn.level_id is not None:
+            lessons_by_level.setdefault(lsn.level_id, []).append(lsn.id)
+
+    all_lesson_ids = [lsn.id for lsn in lessons]
+    completed_ids: set = set()
+    scores: dict = {}
+    if all_lesson_ids:
+        rows = (await session.execute(
+            select(LessonCompletion.lesson_id, LessonCompletion.score).where(
+                LessonCompletion.user_id == current_user.id,
+                LessonCompletion.lesson_id.in_(all_lesson_ids),
+            )
+        )).all()
+        for lid, score in rows:
+            completed_ids.add(lid)
+            scores[lid] = score
+
+    states = derive_level_states(
+        [LevelStateInput(lv.id, lv.order_index, lv.is_premium, lv.pass_threshold) for lv in levels],
+        lessons_by_level=lessons_by_level,
+        completed_ids=completed_ids, scores=scores,
+        user_is_premium=is_premium(current_user),
+    )
+    return [
+        LevelOut(
+            id=lv.id, module_id=lv.module_id, title=lv.title, order_index=lv.order_index,
+            is_premium=lv.is_premium, icon=lv.icon,
+            state=states[lv.id].state, locked_reason=states[lv.id].locked_reason,
+            passed=states[lv.id].passed, lessons_total=states[lv.id].lessons_total,
+            lessons_completed=states[lv.id].lessons_completed,
+        )
+        for lv in levels
+    ]
+
+
+@router.get("/levels/{level_id}/lessons", response_model=list[LessonSummary])
+async def list_level_lessons(
+    level_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    await _get_accessible_level(level_id, current_user, session)
+    lessons = list(await session.scalars(
+        select(Lesson).where(Lesson.level_id == level_id).order_by(Lesson.order_index)
+    ))
+    completed_ids: set = set()
+    if lessons:
+        completed_ids = set(await session.scalars(
+            select(LessonCompletion.lesson_id).where(
+                LessonCompletion.user_id == current_user.id,
+                LessonCompletion.lesson_id.in_([lsn.id for lsn in lessons]),
+            )
+        ))
+    return [
+        LessonSummary(
+            id=lsn.id, type=lsn.type,
+            title=derive_lesson_title(lsn.type, lsn.content_json or {}),
+            xp_reward=lsn.xp_reward, order_index=lsn.order_index,
+            completed=lsn.id in completed_ids,
+        )
+        for lsn in lessons
     ]
 
 
