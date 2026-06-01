@@ -35,6 +35,7 @@ import BadgeForm from '@/components/admin/BadgeForm';
 import ChallengeList from '@/components/admin/ChallengeList';
 import ChallengeForm from '@/components/admin/ChallengeForm';
 import FeedbackList from '@/components/admin/FeedbackList';
+import AdminSettings from '@/components/admin/AdminSettings';
 
 function RootRedirect() {
   // Redirect / to /home; if unauthed, /home's Shell will redirect to /login.
@@ -92,6 +93,7 @@ export default function App() {
           <Route path="challenges/new" element={<ChallengeForm />} />
           <Route path="challenges/:challengeId" element={<ChallengeForm />} />
           <Route path="feedback" element={<FeedbackList />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
 
         <Route path="*" element={<div className="p-6">Not found</div>} />

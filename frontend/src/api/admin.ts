@@ -286,6 +286,24 @@ export function useCountries() {
   return useQuery({ queryKey: ['admin', 'countries'], queryFn: () => adminFetch<string[]>('/admin/countries') });
 }
 
+// ── Settings ───────────────────────────────────────────────────────
+export interface AdminSettings {
+  alert_emails: string[];
+}
+
+export function useAdminSettings() {
+  return useQuery({ queryKey: ['admin', 'settings'], queryFn: () => adminFetch<AdminSettings>('/admin/settings') });
+}
+
+export function useUpdateAdminSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: AdminSettings) =>
+      adminFetch<AdminSettings>('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'settings'] }),
+  });
+}
+
 // ── Feedback ───────────────────────────────────────────────────────
 export type AdminFeedbackType = 'bug' | 'feature' | 'general';
 
