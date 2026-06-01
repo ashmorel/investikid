@@ -2,13 +2,10 @@ from datetime import date
 
 import pytest
 
-from app.core.config import settings
 from app.models.user import User
 from app.services.feedback_service import create_feedback
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
-
-_ADMIN_HEADERS = {"Authorization": f"Bearer {settings.admin_token}"}
 
 _REGISTER_URL = "/auth/register"
 _LOGIN_URL = "/auth/login"
@@ -170,16 +167,15 @@ async def test_submit_feedback_requires_auth(client):
     assert r.status_code in (401, 403)
 
 
-async def test_admin_list_feedback(client):
-    await _register_and_login(client, "fb_admin_list@example.com", "fb_admin_list")
-    submit = await client.post("/feedback", json={
+async def test_admin_list_feedback(admin_client):
+    submit = await admin_client.post("/feedback", json={
         "feedback_type": "bug",
         "message": "admin list test",
         "page_url": "/lessons/2",
     })
     assert submit.status_code == 201
 
-    r = await client.get("/admin/feedback", headers=_ADMIN_HEADERS)
+    r = await admin_client.get("/admin/feedback")
     assert r.status_code == 200
     body = r.json()
     assert body["total"] >= 1
@@ -188,16 +184,15 @@ async def test_admin_list_feedback(client):
     assert item["feedback_type"] in ("bug", "feature", "general")
 
 
-async def test_admin_list_feedback_filters_by_type(client):
-    await _register_and_login(client, "fb_filter@example.com", "fb_filter")
-    submit = await client.post("/feedback", json={
+async def test_admin_list_feedback_filters_by_type(admin_client):
+    submit = await admin_client.post("/feedback", json={
         "feedback_type": "bug",
         "message": "filter test bug report",
         "page_url": "/lessons/3",
     })
     assert submit.status_code == 201
 
-    r = await client.get("/admin/feedback?type=bug", headers=_ADMIN_HEADERS)
+    r = await admin_client.get("/admin/feedback?type=bug")
     assert r.status_code == 200
     body = r.json()
     assert body["total"] >= 1

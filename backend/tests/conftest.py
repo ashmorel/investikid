@@ -98,6 +98,44 @@ async def user_with_module(db_session):
 
 
 @pytest_asyncio.fixture
+async def admin_client(client, db_session):
+    """Authenticated admin session: registers + logs in a user, flags it is_admin.
+
+    Mirrors test_content._register_and_login (register + login set the
+    access_token + csrf_token cookies on the client), then copies the csrf
+    cookie into the X-CSRF-Token header so admin mutations pass CSRF.
+    """
+    from sqlalchemy import select
+
+    from app.models.user import User
+
+    payload = {
+        "email": "admin@example.com",
+        "username": "adminuser",
+        "password": "SecurePass123!",
+        "dob": "2010-05-10",
+        "country_code": "GB",
+        "currency_code": "GBP",
+        "parent_email": "parent@example.com",
+    }
+    await client.post("/auth/register", json=payload)
+    await client.post(
+        "/auth/login",
+        json={"email": payload["email"], "password": payload["password"]},
+    )
+    csrf = client.cookies.get("csrf_token")
+    if csrf:
+        client.headers["X-CSRF-Token"] = csrf
+
+    user = await db_session.scalar(
+        select(User).where(User.username == "adminuser")
+    )
+    user.is_admin = True
+    await db_session.flush()
+    return client
+
+
+@pytest_asyncio.fixture
 async def client(db_session):
     async def override_get_session():
         yield db_session
