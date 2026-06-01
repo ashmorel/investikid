@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
@@ -21,6 +21,7 @@ from app.routers import parent as parent_router
 from app.routers import parent_auth as parent_auth_router
 from app.routers import simulator as simulator_router
 from app.routers import users as users_router
+from app.services.llm_client import LLMError
 
 
 class SecurityHeadersMiddleware:
@@ -94,10 +95,19 @@ class SecurityHeadersMiddleware:
         await self.app(scope, receive, send_with_headers)
 
 
+async def _llm_error_handler(request: Request, exc: LLMError) -> JSONResponse:
+    """Surface LLM/provider failures as a friendly 503 instead of a raw 500."""
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "The AI helper is unavailable right now. Please try again in a moment."},
+    )
+
+
 def create_app() -> FastAPI:
     application = FastAPI(title="Invest-Ed API", version="1.0.0")
     application.state.limiter = limiter
     application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    application.add_exception_handler(LLMError, _llm_error_handler)
 
     # Middleware execution order note: add_middleware wraps the app, so the
     # LAST middleware added runs OUTERMOST (first on request, last on response).

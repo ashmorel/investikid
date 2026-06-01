@@ -189,6 +189,15 @@ def test_get_llm_client_skips_providers_with_empty_key():
         assert len(client.clients) == 1
 
 
+async def test_fallback_client_with_no_providers_raises_llm_error():
+    client = FallbackLLMClient(clients=[])
+    with pytest.raises(LLMError):
+        await client.complete(
+            system_prompt="x",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+
+
 def test_get_model_name():
     with patch("app.services.llm_client.settings") as mock_settings:
         mock_settings.llm_together_model = "meta-llama/Meta-Llama-3-8B-Instruct-Lite"

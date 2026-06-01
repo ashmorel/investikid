@@ -62,8 +62,8 @@ class Settings(BaseSettings):
     llm_groq_api_key: str = ""
     llm_groq_base_url: str = "https://api.groq.com/openai/v1"
     llm_groq_model: str = "llama-3.1-8b-instant"
-    llm_lite_providers: str = "together,groq"
-    llm_standard_providers: str = "together,groq"
+    llm_lite_providers: str = "together"
+    llm_standard_providers: str = "together"
     # LLM / AI — premium tier (OpenAI or Anthropic)
     llm_premium_provider: str = "openai"  # "openai" | "anthropic"
     llm_premium_api_key: str = ""

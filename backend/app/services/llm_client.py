@@ -172,6 +172,8 @@ class FallbackLLMClient:
         max_tokens: int = 500,
         response_format: Literal["text", "json"] = "text",
     ) -> str:
+        if not self.clients:
+            raise LLMError("No LLM providers are configured", retryable=False)
         last_error: LLMError | None = None
         for i, client in enumerate(self.clients):
             try:
@@ -196,6 +198,8 @@ class FallbackLLMClient:
         temperature: float = 0.3,
         max_tokens: int = 500,
     ) -> AsyncIterator[str]:
+        if not self.clients:
+            raise LLMError("No LLM providers are configured", retryable=False)
         last_error: LLMError | None = None
         for i, client in enumerate(self.clients):
             try:

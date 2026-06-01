@@ -79,6 +79,13 @@ export function CoachEddiePanel({ lessonId, onClose }: Props) {
               </div>
             </div>
           )}
+          {sendMessage.isError && (
+            <div className="flex justify-start" role="alert">
+              <div className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+                Coach Eddie couldn't answer just now. Please try again in a moment.
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Input */}
