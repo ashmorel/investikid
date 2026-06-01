@@ -1,3 +1,4 @@
+from app.models.app_setting import AppSetting  # noqa: F401
 from app.models.audit import AuditLog  # noqa: F401
 from app.models.consent import OneTimeToken, SentEmail  # noqa: F401
 from app.models.content import Lesson, LessonCompletion, Level, Module  # noqa: F401

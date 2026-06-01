@@ -14,6 +14,8 @@ from app.schemas.admin import (
     AdminLevelCreate,
     AdminLevelOut,
     AdminLevelUpdate,
+    AdminSettingsOut,
+    AdminSettingsUpdate,
     BadgeCreate,
     BadgeOut,
     BadgeUpdate,
@@ -28,6 +30,7 @@ from app.schemas.admin import (
     ModuleUpdate,
     ReorderRequest,
 )
+from app.services.app_settings import get_alert_emails, set_alert_emails
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
 
@@ -413,3 +416,19 @@ async def list_countries(session: AsyncSession = Depends(get_session)):
         select(User.country_code).where(User.country_code.isnot(None)).distinct()
     )
     return sorted(result.all())
+
+
+# ── Settings ────────────────────────────────────────────────────────
+@router.get("/settings", response_model=AdminSettingsOut)
+async def get_settings(session: AsyncSession = Depends(get_session)):
+    emails = await get_alert_emails(session)
+    return AdminSettingsOut(alert_emails=emails)
+
+
+@router.put("/settings", response_model=AdminSettingsOut)
+async def update_settings(
+    body: AdminSettingsUpdate, session: AsyncSession = Depends(get_session),
+):
+    await set_alert_emails(session, body.alert_emails)
+    await session.commit()
+    return AdminSettingsOut(alert_emails=body.alert_emails)

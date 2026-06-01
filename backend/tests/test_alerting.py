@@ -144,3 +144,92 @@ async def test_degraded_and_down_keys_independent(db_session, monkeypatch):
 
     count = await db_session.scalar(select(func.count()).select_from(SentEmail))
     assert count == 2
+
+
+# ── New: get_alert_emails + fan-out tests ───────────────────────────
+
+async def test_get_alert_emails_db_list_overrides_env(db_session, monkeypatch):
+    """When DB has a list of emails, it takes precedence over the env fallback."""
+    from app.core import config
+    from app.services.app_settings import get_alert_emails, set_alert_emails
+
+    monkeypatch.setattr(config.settings, "admin_alert_email", "env@example.com")
+    await set_alert_emails(db_session, ["db1@example.com", "db2@example.com"])
+    await db_session.flush()
+
+    result = await get_alert_emails(db_session)
+    assert result == ["db1@example.com", "db2@example.com"]
+
+
+async def test_get_alert_emails_env_fallback_when_db_empty(db_session, monkeypatch):
+    """When DB has no setting, the env fallback is returned."""
+    from app.core import config
+    from app.services.app_settings import _ALERT_EMAILS_KEY, get_alert_emails, set_setting
+
+    monkeypatch.setattr(config.settings, "admin_alert_email", "fallback@example.com")
+    # Ensure no DB record exists for alert_emails
+    await set_setting(db_session, _ALERT_EMAILS_KEY, "[]")
+    await db_session.flush()
+
+    result = await get_alert_emails(db_session)
+    assert result == ["fallback@example.com"]
+
+
+async def test_send_alert_fans_out_to_multiple_recipients(db_session, monkeypatch):
+    """_send_alert sends one email per recipient when DB has multiple addresses."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.services import alerting
+    from app.services import app_settings as app_settings_mod
+    from app.services import email as email_mod
+
+    monkeypatch.setattr(email_mod, "get_email_sender", lambda: LoggingEmailSender())
+
+    # Patch get_alert_emails to return two addresses without DB lookup
+    monkeypatch.setattr(
+        app_settings_mod,
+        "get_alert_emails",
+        AsyncMock(return_value=["a@example.com", "b@example.com"]),
+    )
+
+    cm = MagicMock()
+    cm.__aenter__ = AsyncMock(return_value=db_session)
+    cm.__aexit__ = AsyncMock(return_value=False)
+    monkeypatch.setattr(alerting, "async_session_factory", lambda: cm)
+
+    await on_provider_degraded("fan-out test")
+
+    count = await db_session.scalar(select(func.count()).select_from(SentEmail))
+    assert count == 2
+    rows = list(await db_session.scalars(select(SentEmail)))
+    to_addresses = {row.to_email for row in rows}
+    assert to_addresses == {"a@example.com", "b@example.com"}
+
+
+async def test_send_alert_noop_when_recipients_empty(db_session, monkeypatch):
+    """_send_alert does nothing (no email, no throttle record) when recipients list is empty."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.services import alerting
+    from app.services import app_settings as app_settings_mod
+    from app.services import email as email_mod
+
+    monkeypatch.setattr(email_mod, "get_email_sender", lambda: LoggingEmailSender())
+    monkeypatch.setattr(
+        app_settings_mod,
+        "get_alert_emails",
+        AsyncMock(return_value=[]),
+    )
+
+    cm = MagicMock()
+    cm.__aenter__ = AsyncMock(return_value=db_session)
+    cm.__aexit__ = AsyncMock(return_value=False)
+    monkeypatch.setattr(alerting, "async_session_factory", lambda: cm)
+
+    await on_provider_degraded("should not send")
+
+    count = await db_session.scalar(select(func.count()).select_from(SentEmail))
+    assert count == 0
+    # Throttle key must NOT have been set (empty recipients = no-op)
+    from app.services.alerting import _last_sent
+    assert "llm_degraded" not in _last_sent

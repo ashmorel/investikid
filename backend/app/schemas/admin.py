@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
 
 # ── Module ──────────────────────────────────────────────────────────
@@ -216,3 +216,26 @@ class AdminLevelOut(BaseModel):
     content_source: str
     icon: str
     lesson_count: int = 0
+
+
+# ── Settings ────────────────────────────────────────────────────────
+class AdminSettingsOut(BaseModel):
+    alert_emails: list[str]
+
+
+class AdminSettingsUpdate(BaseModel):
+    alert_emails: list[EmailStr]
+
+    @field_validator("alert_emails")
+    @classmethod
+    def _clean(cls, v: list) -> list[str]:
+        seen: set[str] = set()
+        out: list[str] = []
+        for e in v:
+            s = str(e).strip()
+            if s and s.lower() not in seen:
+                seen.add(s.lower())
+                out.append(s)
+        if len(out) > 10:
+            raise ValueError("at most 10 alert emails")
+        return out
