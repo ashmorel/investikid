@@ -6,11 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_session
-from app.models.content import Lesson, Module
+from app.models.content import Lesson, Level, Module
 from app.models.gamification import Badge, Challenge, UserBadge
 from app.models.user import User
 from app.routers.admin_auth import get_current_admin
 from app.schemas.admin import (
+    AdminLevelCreate,
+    AdminLevelOut,
+    AdminLevelUpdate,
     BadgeCreate,
     BadgeOut,
     BadgeUpdate,
@@ -216,6 +219,102 @@ async def reorder_lessons(
         )
     await session.commit()
     return {"status": "ok"}
+
+
+# ── Levels ──────────────────────────────────────────────────────────
+def _level_out(level: Level, lesson_count: int) -> AdminLevelOut:
+    return AdminLevelOut(
+        id=level.id, module_id=level.module_id, title=level.title,
+        order_index=level.order_index, is_premium=level.is_premium,
+        pass_threshold=level.pass_threshold, content_source=level.content_source,
+        icon=level.icon, lesson_count=lesson_count,
+    )
+
+
+@router.get("/modules/{module_id}/levels", response_model=list[AdminLevelOut])
+async def admin_list_levels(module_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
+    levels = list(await session.scalars(
+        select(Level).where(Level.module_id == module_id).order_by(Level.order_index)
+    ))
+    out = []
+    for lv in levels:
+        n = await session.scalar(
+            select(func.count()).select_from(Lesson).where(Lesson.level_id == lv.id)
+        )
+        out.append(_level_out(lv, n or 0))
+    return out
+
+
+@router.post("/modules/{module_id}/levels", response_model=AdminLevelOut)
+async def admin_create_level(
+    module_id: uuid.UUID, payload: AdminLevelCreate, session: AsyncSession = Depends(get_session),
+):
+    module = await session.get(Module, module_id)
+    if not module:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
+    level = Level(
+        module_id=module_id, title=payload.title, order_index=payload.order_index,
+        is_premium=payload.is_premium, pass_threshold=payload.pass_threshold,
+        content_source="authored", icon=payload.icon,
+    )
+    session.add(level)
+    await session.commit()
+    await session.refresh(level)
+    return _level_out(level, 0)
+
+
+@router.put("/levels/{level_id}", response_model=AdminLevelOut)
+async def admin_update_level(
+    level_id: uuid.UUID, payload: AdminLevelUpdate, session: AsyncSession = Depends(get_session),
+):
+    level = await session.get(Level, level_id)
+    if not level:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Level not found")
+    data = payload.model_dump(exclude_unset=True)
+    for k, val in data.items():
+        setattr(level, k, val)
+    await session.commit()
+    await session.refresh(level)
+    n = await session.scalar(
+        select(func.count()).select_from(Lesson).where(Lesson.level_id == level.id)
+    )
+    return _level_out(level, n or 0)
+
+
+@router.delete("/levels/{level_id}")
+async def admin_delete_level(level_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
+    level = await session.get(Level, level_id)
+    if not level:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Level not found")
+    await session.delete(level)
+    await session.commit()
+    return {"status": "deleted"}
+
+
+@router.get("/levels/{level_id}/lessons", response_model=list[LessonOut])
+async def admin_list_level_lessons(level_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
+    lessons = list(await session.scalars(
+        select(Lesson).where(Lesson.level_id == level_id).order_by(Lesson.order_index)
+    ))
+    return [LessonOut.model_validate(lsn) for lsn in lessons]
+
+
+@router.post("/levels/{level_id}/lessons", response_model=LessonOut)
+async def admin_create_level_lesson(
+    level_id: uuid.UUID, payload: LessonCreate, session: AsyncSession = Depends(get_session),
+):
+    level = await session.get(Level, level_id)
+    if not level:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Level not found")
+    lesson = Lesson(
+        module_id=level.module_id, level_id=level.id, type=payload.type,
+        content_json=payload.content_json, xp_reward=payload.xp_reward,
+        order_index=payload.order_index,
+    )
+    session.add(lesson)
+    await session.commit()
+    await session.refresh(lesson)
+    return LessonOut.model_validate(lesson)
 
 
 # ── Badges ──────────────────────────────────────────────────────────
