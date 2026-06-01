@@ -1,22 +1,33 @@
 import { useState } from 'react';
-import { useCreateLesson, useUpdateLesson } from '@/api/admin';
+import { useCreateLesson, useUpdateLesson, useCreateLevelLesson } from '@/api/admin';
 import type { AdminLesson } from '@/api/admin';
 
-const TYPES = ['card', 'quiz', 'scenario'] as const;
+const TYPES = ['card', 'quiz', 'scenario', 'video'] as const;
 type LessonType = (typeof TYPES)[number];
 
-const DEFAULT_XP: Record<LessonType, number> = { card: 10, quiz: 25, scenario: 20 };
+const DEFAULT_XP: Record<LessonType, number> = { card: 10, quiz: 25, scenario: 20, video: 15 };
+
+// Accepts a full YouTube URL or a raw 11-char ID; returns the 11-char ID (or the trimmed input if no match).
+function extractYoutubeId(input: string): string {
+  const s = input.trim();
+  const m = s.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([A-Za-z0-9_-]{11})/);
+  if (m) return m[1];
+  const bare = s.match(/^[A-Za-z0-9_-]{11}$/);
+  return bare ? s : s;
+}
 
 interface LessonFormProps {
   moduleId: string;
+  levelId?: string;
   lesson?: AdminLesson;
   nextOrderIndex: number;
   onClose: () => void;
 }
 
-export default function LessonForm({ moduleId, lesson, nextOrderIndex, onClose }: LessonFormProps) {
+export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, onClose }: LessonFormProps) {
   const isEdit = !!lesson;
   const createLesson = useCreateLesson();
+  const createLevelLesson = useCreateLevelLesson(levelId ?? '');
   const updateLesson = useUpdateLesson();
 
   const [type, setType] = useState<LessonType>((lesson?.type as LessonType) ?? 'card');
@@ -44,6 +55,10 @@ export default function LessonForm({ moduleId, lesson, nextOrderIndex, onClose }
   );
   const [correctIndex, setCorrectIndex] = useState(lesson?.type === 'scenario' ? ((cj?.correct_index as number) ?? 0) : 0);
 
+  // Video fields
+  const [youtubeInput, setYoutubeInput] = useState(lesson?.type === 'video' ? ((cj?.youtube_id as string) ?? '') : '');
+  const [videoCaption, setVideoCaption] = useState(lesson?.type === 'video' ? ((cj?.caption as string) ?? '') : '');
+
   function handleTypeChange(newType: LessonType) {
     setType(newType);
     setXpReward(DEFAULT_XP[newType]);
@@ -52,6 +67,7 @@ export default function LessonForm({ moduleId, lesson, nextOrderIndex, onClose }
   function buildContentJson(): Record<string, unknown> {
     if (type === 'card') return { title: cardTitle, body: cardBody };
     if (type === 'quiz') return { question, choices, answer_index: answerIndex, explanation };
+    if (type === 'video') return { youtube_id: extractYoutubeId(youtubeInput), caption: videoCaption };
     return { prompt, choices: scenarioChoices, correct_index: correctIndex };
   }
 
@@ -60,6 +76,8 @@ export default function LessonForm({ moduleId, lesson, nextOrderIndex, onClose }
     const content_json = buildContentJson();
     if (isEdit && lesson) {
       await updateLesson.mutateAsync({ id: lesson.id, type, content_json, xp_reward: xpReward });
+    } else if (levelId) {
+      await createLevelLesson.mutateAsync({ type, content_json, xp_reward: xpReward, order_index: nextOrderIndex });
     } else {
       await createLesson.mutateAsync({ moduleId, type, content_json, xp_reward: xpReward, order_index: nextOrderIndex });
     }
@@ -207,6 +225,23 @@ export default function LessonForm({ moduleId, lesson, nextOrderIndex, onClose }
                 ))}
                 <button type="button" onClick={() => setScenarioChoices([...scenarioChoices, { label: '', outcome: '' }])}
                   className="text-sm text-blue-400">+ Add Choice</button>
+              </div>
+            </>
+          )}
+
+          {/* Video fields */}
+          {type === 'video' && (
+            <>
+              <div>
+                <label htmlFor="video-youtube" className="mb-1 block text-sm text-slate-400">YouTube URL or ID</label>
+                <input id="video-youtube" value={youtubeInput} onChange={(e) => setYoutubeInput(e.target.value)} required
+                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50"
+                  placeholder="Paste a YouTube link or 11-character ID." />
+              </div>
+              <div>
+                <label htmlFor="video-caption" className="mb-1 block text-sm text-slate-400">Caption</label>
+                <input id="video-caption" value={videoCaption} onChange={(e) => setVideoCaption(e.target.value)}
+                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
               </div>
             </>
           )}

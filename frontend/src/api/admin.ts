@@ -27,7 +27,7 @@ export interface AdminModule {
 export interface AdminLesson {
   id: string;
   module_id: string;
-  type: 'card' | 'quiz' | 'scenario';
+  type: 'card' | 'quiz' | 'scenario' | 'video';
   content_json: Record<string, unknown>;
   xp_reward: number;
   order_index: number;

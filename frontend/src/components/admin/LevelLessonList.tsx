@@ -1,13 +1,9 @@
 import { useState } from 'react';
-import type { ComponentType, ComponentProps } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useLevelLessons, useDeleteLesson } from '@/api/admin';
 import type { AdminLesson } from '@/api/admin';
-import LessonFormBase from './LessonForm';
+import LessonForm from './LessonForm';
 import ConfirmDialog from './ConfirmDialog';
-
-// Cast to accept optional levelId forwarded for Task 15 level-scoped create (LessonForm ignores it until then)
-const LessonForm = LessonFormBase as ComponentType<ComponentProps<typeof LessonFormBase> & { levelId?: string }>;
 
 export default function LevelLessonList() {
   const { moduleId = '', levelId = '' } = useParams<{ moduleId: string; levelId: string }>();
