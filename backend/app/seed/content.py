@@ -34,6 +34,43 @@ _MODULES = [
                     "time. Owning a stock does not mean you run the company — it means "
                     "you own a part of it along with many other shareholders."
                 )}},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What does it mean when a company 'pays a dividend'?",
+                "choices": [
+                    "It shares part of its profits with shareholders, usually as cash",
+                    "It charges shareholders a yearly fee",
+                    "It splits every share into two",
+                    "It buys your shares back whether you want to sell or not",
+                ],
+                "answer_index": 0,
+                "explanation": "A dividend is a slice of the company's profits paid out to shareholders — often as a small cash payment.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "A share's price rises from £2 to £3. If you owned 10 shares, how much did your investment grow?",
+                "choices": ["£1", "£10", "£30", "£100"],
+                "answer_index": 1,
+                "explanation": "Each share gained £1 (£3 − £2). 10 shares × £1 = £10 increase in value.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Why might a company's share price go DOWN?",
+                "choices": [
+                    "Its profits fell, or people expect it to do worse",
+                    "The stock market is open for trading",
+                    "It hired a few new staff",
+                    "Share prices can only ever go up over time",
+                ],
+                "answer_index": 0,
+                "explanation": "Prices fall when more people want to sell than buy — usually because they expect the company to do worse.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "A share you bought for £50 is now worth £40. A friend says 'sell now before it drops more!' What's the wisest first step?",
+                "choices": [
+                    {"label": "Sell immediately to avoid losing more", "outcome": "Selling locks in the £10 loss. Panic-selling on a dip is one of the most common mistakes — the price may well recover."},
+                    {"label": "Check WHY it dropped before deciding anything", "outcome": "Best move. If the company is still healthy, a dip can be temporary. Decisions should be based on the company, not on fear."},
+                    {"label": "Borrow money to buy lots more", "outcome": "Never borrow to invest. 'Buying the dip' can work, but only after research — and never with money you can't afford to lose."},
+                ],
+                "correct_index": 1,
+            }},
         ],
     },
     {
@@ -66,6 +103,41 @@ _MODULES = [
                     "own interest. Over many years this snowball effect can turn small "
                     "savings into a much larger amount."
                 )}},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What makes compound interest different from simple interest?",
+                "choices": [
+                    "You earn interest on your interest, not just your original money",
+                    "It is always paid at a higher rate",
+                    "It is only ever paid once",
+                    "It only applies to loans, never savings",
+                ],
+                "answer_index": 0,
+                "explanation": "Compound interest pays you on your original savings AND on the interest already earned, so it grows faster over time.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "You save £100 at 10% interest a year, compounded yearly. How much after 2 years?",
+                "choices": ["£110", "£120", "£121", "£200"],
+                "answer_index": 2,
+                "explanation": "Year 1: £100 → £110. Year 2: £110 + 10% (£11) = £121. That extra £1 over simple interest is interest earning its own interest.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You're 15. You could start saving £10 a month now, or wait until you're 25. Which is better for long-term growth?",
+                "choices": [
+                    {"label": "Start now at 15", "outcome": "Starting early is the single biggest advantage in saving. Those extra 10 years of compounding can more than double your final amount — even with the same monthly deposit."},
+                    {"label": "Wait until 25 when you earn more", "outcome": "It feels sensible, but you'd lose 10 years of compounding. When you're young, TIME matters even more than the amount."},
+                    {"label": "It makes no real difference", "outcome": "It makes a huge difference — time is compound interest's best friend."},
+                ],
+                "correct_index": 0,
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "Account A pays 3% interest. Account B pays 1% but gives a one-off £5 gift. You'll save £500 for one year. Which earns more?",
+                "choices": [
+                    {"label": "Account A (3%)", "outcome": "Correct. 3% of £500 = £15. Account B gives £5 + 1% (£5) = £10. A wins by £5 — and keeps paying 3% every year after."},
+                    {"label": "Account B (the free gift)", "outcome": "The gift is tempting but one-off. A's higher rate (£15 vs £10) beats it this year and every year after."},
+                    {"label": "They earn exactly the same", "outcome": "Do the maths: A earns £15, B earns £10 in total. A is better."},
+                ],
+                "correct_index": 0,
+            }},
         ],
     },
     {
@@ -85,6 +157,48 @@ _MODULES = [
                 ],
                 "answer_index": 1,
                 "explanation": "REITs trade on exchanges like stocks.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What is the main way a REIT makes money for investors?",
+                "choices": [
+                    "Rental income from the properties it owns, paid out to shareholders",
+                    "Charging investors a monthly membership fee",
+                    "Mining gold and selling it",
+                    "Lending people money for cars",
+                ],
+                "answer_index": 0,
+                "explanation": "REITs own income-producing property — offices, shops, flats — and pass most of the rental income to shareholders.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What's one advantage of a REIT over buying a house to rent out?",
+                "choices": [
+                    "You can invest a small amount and sell your shares easily",
+                    "You get to live in all of the properties",
+                    "A REIT can never lose value",
+                    "It removes all investment risk",
+                ],
+                "answer_index": 0,
+                "explanation": "REITs let you invest in property with a small amount and sell quickly. A house needs a big deposit and can take months to sell.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "If property prices and rents fall sharply, what's most likely to happen to a REIT's share price?",
+                "choices": [
+                    "It's likely to fall too",
+                    "It always rises in a downturn",
+                    "It instantly turns into cash",
+                    "Nothing — REIT prices are fixed",
+                ],
+                "answer_index": 0,
+                "explanation": "REITs are tied to property, so when the property market weakens their value usually falls too. They carry real risk.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You have £100 and want some exposure to property. What's realistic?",
+                "choices": [
+                    {"label": "Buy a house", "outcome": "£100 won't buy a house — you'd need a large deposit (often tens of thousands of pounds) plus a mortgage."},
+                    {"label": "Buy shares in a REIT", "outcome": "Realistic. With £100 you can buy REIT shares, earn a slice of rental income, and sell whenever you like."},
+                    {"label": "Wait until you've saved £500,000", "outcome": "You don't need to wait — REITs exist precisely so people can invest in property with small amounts."},
+                ],
+                "correct_index": 1,
             }},
         ],
     },
@@ -140,6 +254,17 @@ _MODULES = [
                 ],
                 "correct_index": 0,
             }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Your income is £100 and you've spent £90. If you save the remaining £10, what does a budget call it?",
+                "choices": [
+                    "A surplus you can save or invest",
+                    "A debt",
+                    "A fixed cost",
+                    "A loss",
+                ],
+                "answer_index": 0,
+                "explanation": "Spending less than you earn leaves a surplus — money you can save or invest. Spending MORE than you earn creates a deficit (debt).",
+            }},
         ],
     },
     {
@@ -169,6 +294,32 @@ _MODULES = [
                     {"label": "Go but set a stricter budget for the next 2 months to catch up", "outcome": "A balanced approach — you enjoy the experience and commit to recovering. Just make sure the 'stricter budget' is realistic, not wishful thinking."},
                 ],
                 "correct_index": 2,
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Which pair is correctly sorted as (need, then want)?",
+                "choices": [
+                    "School lunch, then designer trainers",
+                    "Cinema ticket, then bus fare",
+                    "Video game, then electricity bill",
+                    "Concert ticket, then weekly food shop",
+                ],
+                "answer_index": 0,
+                "explanation": "School lunch is a need; designer trainers are a want. In every other pair, a want is listed before the need.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "A '£3 a day' treat seems tiny. Bought every school day for a month (20 days), roughly what does it cost?",
+                "choices": ["£6", "£20", "£60", "£3"],
+                "answer_index": 2,
+                "explanation": "£3 × 20 = £60 a month. Small, frequent wants add up fast — which is exactly why tracking them matters.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You have £40 left this month. You need a £25 school item, but there's a £30 game you really want. What do you do?",
+                "choices": [
+                    {"label": "Buy the game now and sort the school item later", "outcome": "Risky — the school item is a need with a deadline. Spending on the want first could leave you stuck."},
+                    {"label": "Buy the school item, save the £15 toward the game", "outcome": "Smart. Needs come first; the £15 left over starts you toward the game, which you can buy guilt-free next month."},
+                    {"label": "Buy both using buy-now-pay-later", "outcome": "You only have £40, so borrowing £15 for a want means fees or owing money. Avoid debt for wants."},
+                ],
+                "correct_index": 1,
             }},
         ],
     },
@@ -222,6 +373,17 @@ _MODULES = [
                 ],
                 "correct_index": 1,
             }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Why can holding shares in 20 different companies be safer than holding just one?",
+                "choices": [
+                    "If one company does badly, the others can cushion the loss",
+                    "Holding 20 companies guarantees a profit",
+                    "20 companies can never all fail",
+                    "It makes all the fees disappear",
+                ],
+                "answer_index": 0,
+                "explanation": "Spreading money across many companies means one failure hurts less. Diversification reduces risk — though it never removes it entirely.",
+            }},
         ],
     },
     {
@@ -266,6 +428,26 @@ _MODULES = [
                 "answer_index": 2,
                 "explanation": "Crypto is the most volatile of the three. Savings accounts are protected (up to £85k by FSCS). Diversified stock funds spread risk across many companies. Crypto has no such protections and can swing wildly in value.",
             }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What mainly drives the price of a cryptocurrency day to day?",
+                "choices": [
+                    "What people believe it's worth — sentiment and speculation",
+                    "The company's profits and dividends",
+                    "A fixed rate set by the government",
+                    "The amount of gold stored behind it",
+                ],
+                "answer_index": 0,
+                "explanation": "Most crypto has no profits, dividends, or assets behind it, so its price swings on sentiment alone — which is why it's so volatile.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You have £50 of savings. How much of it is sensible to put into crypto, if any?",
+                "choices": [
+                    {"label": "All £50 — go big or go home", "outcome": "Putting all your savings into something this volatile is very risky. A 50% drop (common in crypto) would instantly halve your money."},
+                    {"label": "Only money you could afford to lose entirely — if anything", "outcome": "The right mindset. Crypto can crash hard, so never risk money you need. Plenty of sensible investors hold little or none."},
+                    {"label": "Borrow extra so you can buy more", "outcome": "Never borrow to buy something this risky — you could end up owing money AND losing the investment."},
+                ],
+                "correct_index": 1,
+            }},
         ],
     },
     {
@@ -308,6 +490,26 @@ _MODULES = [
                 ],
                 "answer_index": 1,
                 "explanation": "This is the most common tax myth! Tax bands are progressive. If you earn £51,000, only £730 (the amount above £50,270) is taxed at 40%. The rest is taxed at lower rates. A pay rise always means more take-home pay.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What is the UK 'Personal Allowance'?",
+                "choices": [
+                    "The amount you can earn each year before paying any income tax",
+                    "A cash gift the government sends everyone",
+                    "The most you're allowed to save in a year",
+                    "A type of student loan",
+                ],
+                "answer_index": 0,
+                "explanation": "The Personal Allowance (£12,570) is the amount you can earn each year tax-free. You only pay income tax on earnings above it.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You earn £14,000 this year. A friend says 'you'll pay 20% on all of it'. Are they right?",
+                "choices": [
+                    {"label": "Yes — 20% of £14,000 = £2,800", "outcome": "No — that's the common myth. Tax bands are progressive, so the whole amount isn't taxed at 20%."},
+                    {"label": "No — only the £1,430 above the £12,570 allowance is taxed", "outcome": "Correct. £14,000 − £12,570 = £1,430, taxed at 20% = £286. The first £12,570 is tax-free."},
+                    {"label": "No — you pay no tax at all", "outcome": "Not quite — you earn above the allowance, so the portion above £12,570 is taxed at 20%."},
+                ],
+                "correct_index": 1,
             }},
         ],
     },
@@ -358,6 +560,26 @@ _MODULES = [
                 "answer_index": 1,
                 "explanation": "Borrowing to repay other debts is a debt spiral — you're not reducing what you owe, just moving it around (often at higher interest). The other options are either 'good debt' or responsible credit use.",
             }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What does 'APR' tell you?",
+                "choices": [
+                    "How much borrowing costs per year, as a percentage",
+                    "How much you're allowed to borrow",
+                    "Your current bank balance",
+                    "The price of the item you're buying",
+                ],
+                "answer_index": 0,
+                "explanation": "APR (Annual Percentage Rate) shows the yearly cost of borrowing. A higher APR means more expensive debt.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You have a £200 credit card bill. You can pay it all now, or pay just the £10 minimum. What's wiser?",
+                "choices": [
+                    {"label": "Pay it all now", "outcome": "Best choice. Paying in full means £0 interest and it builds a good credit history. This is how to use a credit card well."},
+                    {"label": "Pay just the £10 minimum", "outcome": "The remaining £190 starts charging interest (often 20%+). Minimum-only payments can stretch a small debt out for years and cost far more."},
+                    {"label": "Ignore the bill this month", "outcome": "Missing payments adds fees AND damages your credit score, making future borrowing harder and more expensive."},
+                ],
+                "correct_index": 0,
+            }},
         ],
     },
     {
@@ -391,6 +613,35 @@ _MODULES = [
                     {"label": "Do free work to 'build your portfolio'", "outcome": "A small amount of free work is fine to get started, but don't make it a habit. Your time and skill have value. If someone wants your work, they should pay for it — even a small amount sets the right expectation."},
                 ],
                 "correct_index": 1,
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What's the best foundation for a side hustle?",
+                "choices": [
+                    "A skill you have that other people will pay for",
+                    "A big bank loan to get started",
+                    "An expensive office to work from",
+                    "Waiting until you find the perfect idea",
+                ],
+                "answer_index": 0,
+                "explanation": "The best side hustles match a skill you already have with something people need — so you can start small with little or no money.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You bake great cookies. What's a sensible FIRST step to earning from it?",
+                "choices": [
+                    {"label": "Sell a small batch to neighbours or at a school fair and see if people buy", "outcome": "Smart — test cheaply before scaling. Real sales tell you whether there's demand and what price works."},
+                    {"label": "Spend £500 on packaging and a logo first", "outcome": "Too risky up front. Prove people will actually buy before spending big on branding."},
+                    {"label": "Give them all away free, forever", "outcome": "Free samples can build interest, but a business needs to charge. Your time and ingredients cost money."},
+                ],
+                "correct_index": 0,
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "Your dog-walking side hustle is booming and you can't keep up with bookings. What's a good growth move?",
+                "choices": [
+                    {"label": "Raise prices a little, and/or bring in a friend to help and split the work", "outcome": "Sensible. More demand than you can meet means you can charge more, or expand by sharing the work — both grow your earnings."},
+                    {"label": "Take every booking even if quality slips", "outcome": "Overpromising hurts your reputation. Unhappy customers don't come back or recommend you."},
+                    {"label": "Quit while you're ahead", "outcome": "Walking away from a working business that has demand throws away your effort — manage the growth instead."},
+                ],
+                "correct_index": 0,
             }},
         ],
     },
@@ -426,6 +677,32 @@ _MODULES = [
                 ],
                 "correct_index": 0,
             }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What is 'profit'?",
+                "choices": [
+                    "Revenue minus all your costs",
+                    "The total money that comes in from sales",
+                    "The selling price of one item",
+                    "The amount of money you borrow to start",
+                ],
+                "answer_index": 0,
+                "explanation": "Profit is what's left after subtracting all costs from revenue. High revenue can still mean low profit if your costs are high.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "You sell 20 bracelets at £5 each. Materials cost £30 and a stall costs £20. What's your profit?",
+                "choices": ["£100", "£70", "£50", "£30"],
+                "answer_index": 2,
+                "explanation": "Revenue: 20 × £5 = £100. Costs: £30 + £20 = £50. Profit: £100 − £50 = £50.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "Your craft stall made £80 revenue but only £10 profit because costs were £70. What's the best fix to try FIRST?",
+                "choices": [
+                    {"label": "Raise prices a little, or buy materials in bulk to cut the cost per item", "outcome": "Best first move. Improving your margin — a higher price or a lower cost per item — lifts profit without needing to sell any more."},
+                    {"label": "Sell loads more at the same thin margin", "outcome": "More sales also means more costs. With tiny profit per item you'd have to sell a huge amount — fixing the margin is far easier."},
+                    {"label": "Give up — it's clearly not worth it", "outcome": "£10 profit is a start. Small tweaks to price or cost often turn a thin profit into a healthy one."},
+                ],
+                "correct_index": 0,
+            }},
         ],
     },
     {
@@ -456,28 +733,73 @@ _MODULES = [
                 ],
                 "correct_index": 1,
             }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What's the difference between 'gross pay' and 'net pay'?",
+                "choices": [
+                    "Gross is before deductions; net is what actually lands in your bank",
+                    "Gross is your savings; net is your spending money",
+                    "They mean exactly the same thing",
+                    "Net is before tax; gross is after tax",
+                ],
+                "answer_index": 0,
+                "explanation": "Gross pay is what you earned before anything is taken off. Net pay is your take-home after tax, National Insurance, and pension.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "On a payslip, what does 'NI' stand for?",
+                "choices": [
+                    "National Insurance",
+                    "New Income",
+                    "Net Interest",
+                    "No Income",
+                ],
+                "answer_index": 0,
+                "explanation": "NI is National Insurance — a deduction that helps pay for things like the state pension and the NHS.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "Your payslip has a pension deduction, and your employer adds a matching contribution on top. Should you usually opt out to get more cash now?",
+                "choices": [
+                    {"label": "Opt out — take the maximum cash today", "outcome": "Usually unwise. Opting out means giving up your employer's free matching money and decades of compound growth for your future self."},
+                    {"label": "Usually stay in — the employer match is free money for your future", "outcome": "Right. A workplace pension with an employer match is one of the best deals around: free money now, plus long-term compounding."},
+                    {"label": "It never makes any difference either way", "outcome": "It makes a big difference over time — small contributions now, plus the match, grow significantly by the time you retire."},
+                ],
+                "correct_index": 1,
+            }},
         ],
     },
 ]
 
 
+def _lesson_identity(lesson_type: str, content_json: dict) -> str:
+    """Stable identity for a lesson so re-seeding doesn't duplicate it."""
+    if lesson_type == "quiz":
+        return f"quiz:{content_json.get('question', '')}"
+    if lesson_type == "scenario":
+        return f"scenario:{content_json.get('prompt', '')}"
+    if lesson_type == "video":
+        return f"video:{content_json.get('youtube_id', '')}"
+    return f"card:{content_json.get('title', '')}"
+
+
 async def seed_modules_and_lessons(session: AsyncSession) -> None:
-    """Idempotent: creates modules/lessons matched by (topic, title). Caller commits."""
+    """Idempotent: creates modules (matched by topic+title), ensures each has a
+    Level 1, and ADDITIVELY inserts any spec'd lessons not already present
+    (matched by content identity) — so new content reaches existing DBs on
+    re-seed without duplicating. Caller commits."""
     for spec in _MODULES:
-        existing = await session.scalar(
+        module = await session.scalar(
             select(Module).where(Module.topic == spec["topic"], Module.title == spec["title"])
         )
-        if existing:
-            existing.icon = spec.get("icon", "📚")
-            existing.is_premium = spec["is_premium"]
-            continue
-        module = Module(
-            topic=spec["topic"], title=spec["title"],
-            country_codes=spec["country_codes"], is_premium=spec["is_premium"],
-            order_index=spec["order_index"], icon=spec.get("icon", "📚"),
-        )
-        session.add(module)
-        await session.flush()
+        if module:
+            module.icon = spec.get("icon", "📚")
+            module.is_premium = spec["is_premium"]
+        else:
+            module = Module(
+                topic=spec["topic"], title=spec["title"],
+                country_codes=spec["country_codes"], is_premium=spec["is_premium"],
+                order_index=spec["order_index"], icon=spec.get("icon", "📚"),
+            )
+            session.add(module)
+            await session.flush()
 
         level = await session.scalar(
             select(Level).where(Level.module_id == module.id, Level.order_index == 0)
@@ -490,9 +812,20 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
             session.add(level)
             await session.flush()
 
-        for idx, lesson_spec in enumerate(spec["lessons"]):
+        existing = (await session.scalars(
+            select(Lesson).where(Lesson.level_id == level.id)
+        )).all()
+        seen = {_lesson_identity(le.type, le.content_json) for le in existing}
+        next_order = max((le.order_index for le in existing), default=-1) + 1
+
+        for lesson_spec in spec["lessons"]:
+            ident = _lesson_identity(lesson_spec["type"], lesson_spec["content_json"])
+            if ident in seen:
+                continue
             session.add(Lesson(
                 module_id=module.id, level_id=level.id, type=lesson_spec["type"],
                 content_json=lesson_spec["content_json"],
-                xp_reward=lesson_spec["xp_reward"], order_index=idx,
+                xp_reward=lesson_spec["xp_reward"], order_index=next_order,
             ))
+            seen.add(ident)
+            next_order += 1
