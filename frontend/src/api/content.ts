@@ -88,6 +88,8 @@ export const contentApi = {
     apiFetch<LessonCompletionResult>(`/lessons/${lessonId}/complete`, {
       method: 'POST', body: JSON.stringify({ score }),
     }),
+  recordLessonView: (lessonId: string) =>
+    apiFetch<null>(`/lessons/${lessonId}/view`, { method: 'POST' }),
   listLevels: (moduleId: string) =>
     apiFetch<LevelOut[]>(`/modules/${moduleId}/levels`),
   listLevelLessons: (levelId: string) =>

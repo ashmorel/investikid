@@ -362,3 +362,33 @@ export function useFeedback(params: { type?: string; page: number }) {
     queryFn: () => adminFetch<AdminFeedbackList>(`/admin/feedback?${qs}`),
   });
 }
+
+// ── Engagement ─────────────────────────────────────────────────────
+export interface LessonEngagement {
+  lesson_id: string;
+  type: string;
+  label: string;
+  order: number;
+  views: number;
+  completions: number;
+  completion_rate: number | null;
+  average_score: number | null;
+  drop_off: number;
+}
+
+export interface ModuleEngagement {
+  module_id: string;
+  learners_started: number;
+  learners_completed: number;
+  completion_rate: number | null;
+  average_score: number | null;
+  lessons: LessonEngagement[];
+}
+
+export function useModuleEngagement(moduleId: string) {
+  return useQuery({
+    queryKey: ['admin', 'module-engagement', moduleId],
+    queryFn: () => adminFetch<ModuleEngagement>(`/admin/modules/${moduleId}/engagement`),
+    enabled: !!moduleId,
+  });
+}

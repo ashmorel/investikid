@@ -84,6 +84,11 @@ export default function Lesson() {
       ? '/lessons'
       : `/lessons/${moduleId}`;
 
+  useEffect(() => {
+    if (!lessonId) return;
+    contentApi.recordLessonView(lessonId).catch(() => { /* analytics ping — ignore */ });
+  }, [lessonId]);
+
   // Auto-navigate 2 s after completion, unless child opened practice
   useEffect(() => {
     if (!complete.isSuccess || showPractice) return;
