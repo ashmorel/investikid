@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -26,7 +27,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        // iOS WKWebView can compute the wrong viewport width on first
+        // presentation (content clipped on the right), only correcting after a
+        // background/foreground cycle. This fires on the initial launch too, so
+        // force the web view to re-layout by briefly nudging its frame — the
+        // same effect backgrounding/rotation has.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            guard let webView = self?.findWebView(in: self?.window?.rootViewController?.view) else { return }
+            let original = webView.frame
+            webView.frame = original.insetBy(dx: 0, dy: 1)
+            DispatchQueue.main.async {
+                webView.frame = original
+                webView.setNeedsLayout()
+            }
+        }
+    }
+
+    private func findWebView(in view: UIView?) -> WKWebView? {
+        guard let view = view else { return nil }
+        if let webView = view as? WKWebView { return webView }
+        for subview in view.subviews {
+            if let found = findWebView(in: subview) { return found }
+        }
+        return nil
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

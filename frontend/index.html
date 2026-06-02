@@ -18,6 +18,12 @@
       // viewport — the same effect. A one-shot nudge fires too early to catch the
       // post-login state, so this is a self-healing watchdog: whenever the
       // document is actually wider than the viewport, re-apply the nudge.
+      // NOTE: detection via scrollWidth doesn't work here — `overflow-x:hidden`
+      // on html/#root clamps scrollWidth to the client width, so overflow is
+      // never measurable from JS. The reliable fix is native (AppDelegate forces
+      // a web-view re-layout on activation). This is a belt-and-braces web layer:
+      // re-apply the viewport-meta nudge unconditionally through the first-launch
+      // window and whenever the app is re-presented.
       (function () {
         var BASE = 'width=device-width, initial-scale=1.0, viewport-fit=cover';
         var ALT = 'width=device-width, initial-scale=1.0001, viewport-fit=cover';
@@ -27,27 +33,16 @@
           vp.setAttribute('content', ALT);
           requestAnimationFrame(function () { vp.setAttribute('content', BASE); });
         }
-        function check() {
-          // Only act when there's genuine horizontal overflow, so the poll
-          // doesn't cause needless reflow once the layout has settled.
-          var de = document.documentElement;
-          if (de && de.scrollWidth > window.innerWidth + 2) nudge();
-        }
-        // Re-check on every event that can change the viewport/layout.
-        ['resize', 'orientationchange', 'pageshow', 'focusout'].forEach(function (e) {
-          window.addEventListener(e, check);
-        });
-        document.addEventListener('visibilitychange', function () {
-          if (!document.hidden) check();
-        });
-        if (window.visualViewport) window.visualViewport.addEventListener('resize', check);
+        [0, 200, 500, 1000, 2000, 4000].forEach(function (t) { setTimeout(nudge, t); });
         document.addEventListener('DOMContentLoaded', nudge);
-        // Poll through the first-launch window (splash, login, first navigation).
-        var ticks = 0;
-        var iv = setInterval(function () {
-          check();
-          if (++ticks >= 40) clearInterval(iv); // ~12s at 300ms
-        }, 300);
+        window.addEventListener('load', nudge);
+        window.addEventListener('pageshow', nudge);
+        window.addEventListener('orientationchange', nudge);
+        window.addEventListener('focusout', function () { setTimeout(nudge, 50); });
+        document.addEventListener('visibilitychange', function () {
+          if (!document.hidden) nudge();
+        });
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', nudge);
       })();
     </script>
   </head>
