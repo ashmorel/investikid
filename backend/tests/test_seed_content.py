@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import func, select
 
 from app.models.content import Lesson, Level, Module
-from app.seed.content import _MODULES, seed_modules_and_lessons
+from app.seed.content import _MODULES, _lesson_identity, seed_modules_and_lessons
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -41,6 +41,36 @@ def test_quiz_and_scenario_specs_are_well_formed():
                     )
 
 
+def test_every_module_first_lesson_is_card():
+    """Every module must open with a card (foundational intro)."""
+    for spec in _MODULES:
+        first = spec["lessons"][0]
+        assert first["type"] == "card", (
+            f"module {spec['title']!r}: first lesson is {first['type']!r}, expected 'card'"
+        )
+
+
+def test_scenarios_not_before_first_quiz():
+    """Within each module, scenarios must not appear before the first quiz or card.
+
+    Concretely: the index of the first scenario must be greater than the index of
+    the first quiz (a light pedagogical-order guard).  Modules with no scenario or
+    no quiz are skipped.
+    """
+    for spec in _MODULES:
+        lessons = spec["lessons"]
+        scenario_indices = [i for i, le in enumerate(lessons) if le["type"] == "scenario"]
+        quiz_indices = [i for i, le in enumerate(lessons) if le["type"] == "quiz"]
+        if not scenario_indices or not quiz_indices:
+            continue
+        first_scenario = scenario_indices[0]
+        first_quiz = quiz_indices[0]
+        assert first_scenario > first_quiz, (
+            f"module {spec['title']!r}: first scenario (index {first_scenario}) "
+            f"appears before first quiz (index {first_quiz})"
+        )
+
+
 async def _count_lessons_for(session, topic, title) -> int:
     module = await session.scalar(
         select(Module).where(Module.topic == topic, Module.title == title)
@@ -73,8 +103,21 @@ async def test_seed_is_idempotent_and_meets_criterion(db_session):
     qs = [le for le in lessons if le.type in ("quiz", "scenario")]
     assert len(qs) >= 5
 
-    # Second seed must add nothing (idempotent).
+    # Second seed must add nothing (idempotent) and reconcile order_index.
     await seed_modules_and_lessons(db_session)
     await db_session.flush()
     count_after_second = await _count_lessons_for(db_session, spec["topic"], spec["title"])
     assert count_after_second == count_after_first
+
+    # Verify order reconciliation: each lesson's order_index matches its spec position.
+    lessons_after = (await db_session.scalars(
+        select(Lesson).where(Lesson.level_id == level.id)
+    )).all()
+    by_ident = {_lesson_identity(le.type, le.content_json): le for le in lessons_after}
+    for i, lesson_spec in enumerate(spec["lessons"]):
+        ident = _lesson_identity(lesson_spec["type"], lesson_spec["content_json"])
+        le = by_ident.get(ident)
+        assert le is not None, f"lesson not found in DB: {ident!r}"
+        assert le.order_index == i, (
+            f"lesson {ident!r}: expected order_index={i}, got {le.order_index}"
+        )

@@ -16,12 +16,6 @@ _MODULES = [
                 "title": "Why do people buy stocks?",
                 "body": "Stocks can grow in value over time and some pay dividends — small cash payments to shareholders.",
             }},
-            {"type": "quiz", "xp_reward": 25, "content_json": {
-                "question": "If you own one stock in a company with 1,000,000 shares, what fraction of the company do you own?",
-                "choices": ["1/100", "1/1,000,000", "1%", "All of it"],
-                "answer_index": 1,
-                "explanation": "One share out of one million is 1/1,000,000 of the company.",
-            }},
             {"type": "video", "xp_reward": 10, "content_json": {
                 "youtube_id": "p7HKvqRI_Bo", "caption": "What is a stock? (intro)",
                 "captions_available": True,
@@ -34,6 +28,12 @@ _MODULES = [
                     "time. Owning a stock does not mean you run the company — it means "
                     "you own a part of it along with many other shareholders."
                 )}},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "If you own one stock in a company with 1,000,000 shares, what fraction of the company do you own?",
+                "choices": ["1/100", "1/1,000,000", "1%", "All of it"],
+                "answer_index": 1,
+                "explanation": "One share out of one million is 1/1,000,000 of the company.",
+            }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "What does it mean when a company 'pays a dividend'?",
                 "choices": [
@@ -81,15 +81,6 @@ _MODULES = [
                 "title": "Interest on your interest",
                 "body": "Compound interest means you earn interest not only on your original money, but also on the interest you've already earned.",
             }},
-            {"type": "scenario", "xp_reward": 20, "content_json": {
-                "prompt": "You deposit £100 at 5% annual interest. How much after 10 years?",
-                "choices": [
-                    {"label": "£150", "outcome": "Close — but that's simple interest."},
-                    {"label": "£163", "outcome": "Correct! Compounding added £13 extra."},
-                    {"label": "£200", "outcome": "Too high — compounding isn't that fast at 5%."},
-                ],
-                "correct_index": 1,
-            }},
             {"type": "video", "xp_reward": 10, "content_json": {
                 "youtube_id": "MqZmwQoHmAA", "caption": "Compound interest explained simply",
                 "captions_available": True,
@@ -119,6 +110,15 @@ _MODULES = [
                 "choices": ["£110", "£120", "£121", "£200"],
                 "answer_index": 2,
                 "explanation": "Year 1: £100 → £110. Year 2: £110 + 10% (£11) = £121. That extra £1 over simple interest is interest earning its own interest.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You deposit £100 at 5% annual interest. How much after 10 years?",
+                "choices": [
+                    {"label": "£150", "outcome": "Close — but that's simple interest."},
+                    {"label": "£163", "outcome": "Correct! Compounding added £13 extra."},
+                    {"label": "£200", "outcome": "Too high — compounding isn't that fast at 5%."},
+                ],
+                "correct_index": 1,
             }},
             {"type": "scenario", "xp_reward": 20, "content_json": {
                 "prompt": "You're 15. You could start saving £10 a month now, or wait until you're 25. Which is better for long-term growth?",
@@ -215,6 +215,17 @@ _MODULES = [
                 "body": "A popular starting point: spend roughly 50% of your money on needs (food, transport, phone bill), 30% on wants (games, eating out, clothes you don't strictly need), and save 20%. It's not a law — just a handy guideline. If you can save more, brilliant. The point is to be intentional, not perfect.",
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Your income is £100 and you've spent £90. If you save the remaining £10, what does a budget call it?",
+                "choices": [
+                    "A surplus you can save or invest",
+                    "A debt",
+                    "A fixed cost",
+                    "A loss",
+                ],
+                "answer_index": 0,
+                "explanation": "Spending less than you earn leaves a surplus — money you can save or invest. Spending MORE than you earn creates a deficit (debt).",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "Using the 50/30/20 rule, which of these is a 'need'?",
                 "choices": [
                     "Concert tickets",
@@ -224,15 +235,6 @@ _MODULES = [
                 ],
                 "answer_index": 1,
                 "explanation": "A bus pass for getting to school is a need — it's essential transport. The others are wants, even if they feel important!",
-            }},
-            {"type": "scenario", "xp_reward": 20, "content_json": {
-                "prompt": "You get £200 per month from a part-time job. How would you split it?",
-                "choices": [
-                    {"label": "Spend it all — you earned it!", "outcome": "It feels great now, but one unexpected cost (broken phone, birthday gift) and you're stuck. No cushion."},
-                    {"label": "50/30/20 split: £100 needs, £60 wants, £40 savings", "outcome": "Solid plan. You cover essentials, still have fun, and build a safety net. After 6 months you'd have £240 saved."},
-                    {"label": "Save every penny", "outcome": "Impressive discipline, but unsustainable. You'll likely crack and splurge. A balanced approach lasts longer."},
-                ],
-                "correct_index": 1,
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "Alex earns £150/month and budgets: £80 food & transport, £50 entertainment, £40 clothes. What's wrong?",
@@ -246,6 +248,15 @@ _MODULES = [
                 "explanation": "£80 + £50 + £40 = £170, but Alex only earns £150. This budget is £20 over — it doesn't add up. The first rule: don't plan to spend more than you have.",
             }},
             {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You get £200 per month from a part-time job. How would you split it?",
+                "choices": [
+                    {"label": "Spend it all — you earned it!", "outcome": "It feels great now, but one unexpected cost (broken phone, birthday gift) and you're stuck. No cushion."},
+                    {"label": "50/30/20 split: £100 needs, £60 wants, £40 savings", "outcome": "Solid plan. You cover essentials, still have fun, and build a safety net. After 6 months you'd have £240 saved."},
+                    {"label": "Save every penny", "outcome": "Impressive discipline, but unsustainable. You'll likely crack and splurge. A balanced approach lasts longer."},
+                ],
+                "correct_index": 1,
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
                 "prompt": "Your phone screen cracks and a repair costs £80. You have £120 in savings. What do you do?",
                 "choices": [
                     {"label": "Use £80 from savings", "outcome": "This is exactly what savings are for — unexpected costs. You still have £40 left, and you can rebuild. Smart move."},
@@ -253,17 +264,6 @@ _MODULES = [
                     {"label": "Ignore it — just use the cracked phone", "outcome": "Sometimes this is fine for a cosmetic crack, but if it's affecting usability, delaying can make it worse and cost more later."},
                 ],
                 "correct_index": 0,
-            }},
-            {"type": "quiz", "xp_reward": 25, "content_json": {
-                "question": "Your income is £100 and you've spent £90. If you save the remaining £10, what does a budget call it?",
-                "choices": [
-                    "A surplus you can save or invest",
-                    "A debt",
-                    "A fixed cost",
-                    "A loss",
-                ],
-                "answer_index": 0,
-                "explanation": "Spending less than you earn leaves a surplus — money you can save or invest. Spending MORE than you earn creates a deficit (debt).",
             }},
         ],
     },
@@ -286,15 +286,6 @@ _MODULES = [
                 "answer_index": 1,
                 "explanation": "A school uniform is required — you literally can't attend without it. The others are wants, even if they feel essential. A basic phone is a need; the latest model is a want.",
             }},
-            {"type": "scenario", "xp_reward": 20, "content_json": {
-                "prompt": "Your friends invite you to a music festival (£150 ticket). You've been saving for a laptop (£500, currently saved £350). What do you do?",
-                "choices": [
-                    {"label": "Go to the festival — YOLO", "outcome": "It'll be fun, but your laptop fund drops to £200 and you're months further from your goal. Big wants can derail bigger plans."},
-                    {"label": "Skip it and keep saving", "outcome": "You'll reach your laptop goal sooner, but you might feel left out. Consider: is there a cheaper way to see your friends that weekend?"},
-                    {"label": "Go but set a stricter budget for the next 2 months to catch up", "outcome": "A balanced approach — you enjoy the experience and commit to recovering. Just make sure the 'stricter budget' is realistic, not wishful thinking."},
-                ],
-                "correct_index": 2,
-            }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "Which pair is correctly sorted as (need, then want)?",
                 "choices": [
@@ -311,6 +302,15 @@ _MODULES = [
                 "choices": ["£6", "£20", "£60", "£3"],
                 "answer_index": 2,
                 "explanation": "£3 × 20 = £60 a month. Small, frequent wants add up fast — which is exactly why tracking them matters.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "Your friends invite you to a music festival (£150 ticket). You've been saving for a laptop (£500, currently saved £350). What do you do?",
+                "choices": [
+                    {"label": "Go to the festival — YOLO", "outcome": "It'll be fun, but your laptop fund drops to £200 and you're months further from your goal. Big wants can derail bigger plans."},
+                    {"label": "Skip it and keep saving", "outcome": "You'll reach your laptop goal sooner, but you might feel left out. Consider: is there a cheaper way to see your friends that weekend?"},
+                    {"label": "Go but set a stricter budget for the next 2 months to catch up", "outcome": "A balanced approach — you enjoy the experience and commit to recovering. Just make sure the 'stricter budget' is realistic, not wishful thinking."},
+                ],
+                "correct_index": 2,
             }},
             {"type": "scenario", "xp_reward": 20, "content_json": {
                 "prompt": "You have £40 left this month. You need a £25 school item, but there's a £30 game you really want. What do you do?",
@@ -336,6 +336,17 @@ _MODULES = [
                 "body": "Diversification means spreading your money across different investments — different companies, different sectors, even different countries. If one investment tanks, the others can cushion the blow. It's not about avoiding risk entirely; it's about not letting one bad bet ruin everything.",
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Why can holding shares in 20 different companies be safer than holding just one?",
+                "choices": [
+                    "If one company does badly, the others can cushion the loss",
+                    "Holding 20 companies guarantees a profit",
+                    "20 companies can never all fail",
+                    "It makes all the fees disappear",
+                ],
+                "answer_index": 0,
+                "explanation": "Spreading money across many companies means one failure hurts less. Diversification reduces risk — though it never removes it entirely.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "Which portfolio is most diversified?",
                 "choices": [
                     "100% in one tech company's shares",
@@ -344,15 +355,6 @@ _MODULES = [
                 ],
                 "answer_index": 2,
                 "explanation": "The mix spreads risk across asset types and geographies. Two tech stocks are both exposed to the same sector risk — if tech crashes, both fall.",
-            }},
-            {"type": "scenario", "xp_reward": 20, "content_json": {
-                "prompt": "Your friend tells you to put all your money into one company because 'it's definitely going to 10x'. What do you do?",
-                "choices": [
-                    {"label": "Go all in — your friend seems confident", "outcome": "Confidence isn't evidence. Even experts get single-stock picks wrong regularly. If it crashes, you lose everything."},
-                    {"label": "Invest a small amount and diversify the rest", "outcome": "Smart. You get some upside if your friend is right, but you're protected if they're wrong. This is how professionals think."},
-                    {"label": "Research the company yourself before deciding", "outcome": "Great instinct. Never invest based on someone else's hype alone. Look at the company's financials, what it does, and whether the price makes sense."},
-                ],
-                "correct_index": 1,
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "Rank these from lowest to highest risk: savings account, single stock, index fund.",
@@ -365,6 +367,15 @@ _MODULES = [
                 "explanation": "Savings accounts are lowest risk (protected up to £85k by FSCS). Index funds spread risk across many stocks. Single stocks are highest risk — one company's fate determines your return.",
             }},
             {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "Your friend tells you to put all your money into one company because 'it's definitely going to 10x'. What do you do?",
+                "choices": [
+                    {"label": "Go all in — your friend seems confident", "outcome": "Confidence isn't evidence. Even experts get single-stock picks wrong regularly. If it crashes, you lose everything."},
+                    {"label": "Invest a small amount and diversify the rest", "outcome": "Smart. You get some upside if your friend is right, but you're protected if they're wrong. This is how professionals think."},
+                    {"label": "Research the company yourself before deciding", "outcome": "Great instinct. Never invest based on someone else's hype alone. Look at the company's financials, what it does, and whether the price makes sense."},
+                ],
+                "correct_index": 1,
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
                 "prompt": "You have £1,000 to invest for 5 years. How do you split it?",
                 "choices": [
                     {"label": "£1,000 in a single exciting stock", "outcome": "High risk. It could double — or halve. With your entire amount in one stock, there's no safety net."},
@@ -372,17 +383,6 @@ _MODULES = [
                     {"label": "£1,000 in a savings account", "outcome": "Very safe, but over 5 years inflation may eat into your returns. A little more risk could mean significantly more growth."},
                 ],
                 "correct_index": 1,
-            }},
-            {"type": "quiz", "xp_reward": 25, "content_json": {
-                "question": "Why can holding shares in 20 different companies be safer than holding just one?",
-                "choices": [
-                    "If one company does badly, the others can cushion the loss",
-                    "Holding 20 companies guarantees a profit",
-                    "20 companies can never all fail",
-                    "It makes all the fees disappear",
-                ],
-                "answer_index": 0,
-                "explanation": "Spreading money across many companies means one failure hurts less. Diversification reduces risk — though it never removes it entirely.",
             }},
         ],
     },
@@ -397,6 +397,27 @@ _MODULES = [
             {"type": "card", "xp_reward": 10, "content_json": {
                 "title": "Why is crypto so volatile?",
                 "body": "Unlike stocks, crypto has no earnings, no dividends, and no physical assets backing it. Its price is driven almost entirely by what people believe it's worth — sentiment and speculation. That's why it can rise 50% in a month and drop 50% the next. It's exciting but extremely risky, especially for money you can't afford to lose.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What mainly drives the price of a cryptocurrency day to day?",
+                "choices": [
+                    "What people believe it's worth — sentiment and speculation",
+                    "The company's profits and dividends",
+                    "A fixed rate set by the government",
+                    "The amount of gold stored behind it",
+                ],
+                "answer_index": 0,
+                "explanation": "Most crypto has no profits, dividends, or assets behind it, so its price swings on sentiment alone — which is why it's so volatile.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Comparing crypto, stocks, and savings accounts — which has the HIGHEST risk?",
+                "choices": [
+                    "Savings account",
+                    "Stocks (diversified index fund)",
+                    "Cryptocurrency",
+                ],
+                "answer_index": 2,
+                "explanation": "Crypto is the most volatile of the three. Savings accounts are protected (up to £85k by FSCS). Diversified stock funds spread risk across many companies. Crypto has no such protections and can swing wildly in value.",
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "Which of these statements about cryptocurrency is TRUE?",
@@ -417,27 +438,6 @@ _MODULES = [
                     {"label": "Research independently before making any decision", "outcome": "The best approach. Look at historical volatility, understand what you're actually buying, and never invest more than you could afford to lose entirely."},
                 ],
                 "correct_index": 2,
-            }},
-            {"type": "quiz", "xp_reward": 25, "content_json": {
-                "question": "Comparing crypto, stocks, and savings accounts — which has the HIGHEST risk?",
-                "choices": [
-                    "Savings account",
-                    "Stocks (diversified index fund)",
-                    "Cryptocurrency",
-                ],
-                "answer_index": 2,
-                "explanation": "Crypto is the most volatile of the three. Savings accounts are protected (up to £85k by FSCS). Diversified stock funds spread risk across many companies. Crypto has no such protections and can swing wildly in value.",
-            }},
-            {"type": "quiz", "xp_reward": 25, "content_json": {
-                "question": "What mainly drives the price of a cryptocurrency day to day?",
-                "choices": [
-                    "What people believe it's worth — sentiment and speculation",
-                    "The company's profits and dividends",
-                    "A fixed rate set by the government",
-                    "The amount of gold stored behind it",
-                ],
-                "answer_index": 0,
-                "explanation": "Most crypto has no profits, dividends, or assets behind it, so its price swings on sentiment alone — which is why it's so volatile.",
             }},
             {"type": "scenario", "xp_reward": 20, "content_json": {
                 "prompt": "You have £50 of savings. How much of it is sensible to put into crypto, if any?",
@@ -463,6 +463,17 @@ _MODULES = [
                 "body": "In the UK, you don't pay tax on the first £12,570 you earn each year — that's your Personal Allowance. After that, you pay 20% on earnings up to £50,270 (basic rate), then 40% above that (higher rate). Crucially, it's progressive: only the money in each band gets taxed at that band's rate, not your whole income.",
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What is the UK 'Personal Allowance'?",
+                "choices": [
+                    "The amount you can earn each year before paying any income tax",
+                    "A cash gift the government sends everyone",
+                    "The most you're allowed to save in a year",
+                    "A type of student loan",
+                ],
+                "answer_index": 0,
+                "explanation": "The Personal Allowance (£12,570) is the amount you can earn each year tax-free. You only pay income tax on earnings above it.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "Someone earns £20,000 per year. How much income tax do they pay?",
                 "choices": [
                     "£4,000 (20% of the whole amount)",
@@ -473,15 +484,6 @@ _MODULES = [
                 "answer_index": 1,
                 "explanation": "Only the amount above the Personal Allowance is taxed: £20,000 − £12,570 = £7,430. At 20%, that's £1,486. A common mistake is thinking the entire £20,000 is taxed at 20%.",
             }},
-            {"type": "scenario", "xp_reward": 20, "content_json": {
-                "prompt": "You start a part-time job: £8/hour, 10 hours/week, 48 weeks/year. That's £3,840/year. Will you pay income tax?",
-                "choices": [
-                    {"label": "Yes — everyone who works pays income tax", "outcome": "Not quite. £3,840 is well below the £12,570 Personal Allowance, so you owe £0 income tax. You might still see National Insurance on your payslip if you earn above £242/week though."},
-                    {"label": "No — it's under the Personal Allowance", "outcome": "Correct! You won't pay income tax because your total earnings (£3,840) are below the £12,570 tax-free allowance. You keep every penny of your income tax — though NI may still apply."},
-                    {"label": "Only if you're over 18", "outcome": "Age doesn't determine income tax — your earnings do. A 14-year-old earning £15,000 would pay the same tax as a 30-year-old earning £15,000."},
-                ],
-                "correct_index": 1,
-            }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "True or false: 'If a pay rise pushes you into the higher tax band, all your income gets taxed at the higher rate.'",
                 "choices": [
@@ -491,16 +493,14 @@ _MODULES = [
                 "answer_index": 1,
                 "explanation": "This is the most common tax myth! Tax bands are progressive. If you earn £51,000, only £730 (the amount above £50,270) is taxed at 40%. The rest is taxed at lower rates. A pay rise always means more take-home pay.",
             }},
-            {"type": "quiz", "xp_reward": 25, "content_json": {
-                "question": "What is the UK 'Personal Allowance'?",
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You start a part-time job: £8/hour, 10 hours/week, 48 weeks/year. That's £3,840/year. Will you pay income tax?",
                 "choices": [
-                    "The amount you can earn each year before paying any income tax",
-                    "A cash gift the government sends everyone",
-                    "The most you're allowed to save in a year",
-                    "A type of student loan",
+                    {"label": "Yes — everyone who works pays income tax", "outcome": "Not quite. £3,840 is well below the £12,570 Personal Allowance, so you owe £0 income tax. You might still see National Insurance on your payslip if you earn above £242/week though."},
+                    {"label": "No — it's under the Personal Allowance", "outcome": "Correct! You won't pay income tax because your total earnings (£3,840) are below the £12,570 tax-free allowance. You keep every penny of your income tax — though NI may still apply."},
+                    {"label": "Only if you're over 18", "outcome": "Age doesn't determine income tax — your earnings do. A 14-year-old earning £15,000 would pay the same tax as a 30-year-old earning £15,000."},
                 ],
-                "answer_index": 0,
-                "explanation": "The Personal Allowance (£12,570) is the amount you can earn each year tax-free. You only pay income tax on earnings above it.",
+                "correct_index": 1,
             }},
             {"type": "scenario", "xp_reward": 20, "content_json": {
                 "prompt": "You earn £14,000 this year. A friend says 'you'll pay 20% on all of it'. Are they right?",
@@ -525,6 +525,21 @@ _MODULES = [
                 "title": "Good debt vs bad debt",
                 "body": "Not all debt is equal. A mortgage can be 'good debt' — you're borrowing to buy an asset that typically grows in value. A student loan increases your earning potential. But racking up credit card debt on things that lose value (fast fashion, gadgets you'll replace) is generally 'bad debt'. The question to ask: is this borrowing helping me build something, or just letting me consume more now?",
             }},
+            {"type": "card", "xp_reward": 10, "content_json": {
+                "title": "What is a credit score?",
+                "body": "A credit score is a number (usually 0–999 in the UK) that shows lenders how reliable you are at repaying debt. It's built over time based on your history: do you pay bills on time? Have you ever missed payments? How much credit do you use? A good score means cheaper borrowing (lower interest rates on mortgages, easier phone contracts). A bad score means higher costs or being declined.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What does 'APR' tell you?",
+                "choices": [
+                    "How much borrowing costs per year, as a percentage",
+                    "How much you're allowed to borrow",
+                    "Your current bank balance",
+                    "The price of the item you're buying",
+                ],
+                "answer_index": 0,
+                "explanation": "APR (Annual Percentage Rate) shows the yearly cost of borrowing. A higher APR means more expensive debt.",
+            }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "You borrow £500 at 10% APR for one year. How much do you pay back in total?",
                 "choices": [
@@ -535,19 +550,6 @@ _MODULES = [
                 ],
                 "answer_index": 2,
                 "explanation": "10% of £500 = £50 in interest. So you repay £500 + £50 = £550. The interest is the cost of borrowing — it's how lenders make money.",
-            }},
-            {"type": "card", "xp_reward": 10, "content_json": {
-                "title": "What is a credit score?",
-                "body": "A credit score is a number (usually 0–999 in the UK) that shows lenders how reliable you are at repaying debt. It's built over time based on your history: do you pay bills on time? Have you ever missed payments? How much credit do you use? A good score means cheaper borrowing (lower interest rates on mortgages, easier phone contracts). A bad score means higher costs or being declined.",
-            }},
-            {"type": "scenario", "xp_reward": 20, "content_json": {
-                "prompt": "You want to buy a £300 guitar. You have three options. Which is the smartest?",
-                "choices": [
-                    {"label": "Save £50/month for 6 months, then buy it", "outcome": "The financially optimal choice. You pay exactly £300, earn a bit of interest while saving, and feel the satisfaction of buying it outright. Plus, the wait helps you confirm you really want it."},
-                    {"label": "Buy Now Pay Later — 0% if paid within 3 months", "outcome": "This works IF you're disciplined. You'd need to pay £100/month for 3 months. Miss the deadline and interest kicks in — often 20%+. It's a trap for the disorganised."},
-                    {"label": "Put it on a credit card at 20% APR", "outcome": "The most expensive option. If you only make minimum payments, that £300 guitar could end up costing £350+ over a year. Credit cards are useful for building credit history, but carrying a balance is costly."},
-                ],
-                "correct_index": 0,
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "Which of these is a warning sign of risky borrowing?",
@@ -560,16 +562,14 @@ _MODULES = [
                 "answer_index": 1,
                 "explanation": "Borrowing to repay other debts is a debt spiral — you're not reducing what you owe, just moving it around (often at higher interest). The other options are either 'good debt' or responsible credit use.",
             }},
-            {"type": "quiz", "xp_reward": 25, "content_json": {
-                "question": "What does 'APR' tell you?",
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You want to buy a £300 guitar. You have three options. Which is the smartest?",
                 "choices": [
-                    "How much borrowing costs per year, as a percentage",
-                    "How much you're allowed to borrow",
-                    "Your current bank balance",
-                    "The price of the item you're buying",
+                    {"label": "Save £50/month for 6 months, then buy it", "outcome": "The financially optimal choice. You pay exactly £300, earn a bit of interest while saving, and feel the satisfaction of buying it outright. Plus, the wait helps you confirm you really want it."},
+                    {"label": "Buy Now Pay Later — 0% if paid within 3 months", "outcome": "This works IF you're disciplined. You'd need to pay £100/month for 3 months. Miss the deadline and interest kicks in — often 20%+. It's a trap for the disorganised."},
+                    {"label": "Put it on a credit card at 20% APR", "outcome": "The most expensive option. If you only make minimum payments, that £300 guitar could end up costing £350+ over a year. Credit cards are useful for building credit history, but carrying a balance is costly."},
                 ],
-                "answer_index": 0,
-                "explanation": "APR (Annual Percentage Rate) shows the yearly cost of borrowing. A higher APR means more expensive debt.",
+                "correct_index": 0,
             }},
             {"type": "scenario", "xp_reward": 20, "content_json": {
                 "prompt": "You have a £200 credit card bill. You can pay it all now, or pay just the £10 minimum. What's wiser?",
@@ -595,6 +595,17 @@ _MODULES = [
                 "body": "The sweet spot for a side hustle is where your skills meet demand. Ask yourself: what am I good at? What do people around me need? Where do those overlap? Good at maths? Tutoring. Love baking? Sell at school fairs. Great at social media? Help a local shop with their posts. Start small, learn fast, and don't be afraid to pivot if something isn't working.",
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What's the best foundation for a side hustle?",
+                "choices": [
+                    "A skill you have that other people will pay for",
+                    "A big bank loan to get started",
+                    "An expensive office to work from",
+                    "Waiting until you find the perfect idea",
+                ],
+                "answer_index": 0,
+                "explanation": "The best side hustles match a skill you already have with something people need — so you can start small with little or no money.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "Which side hustle best matches someone who's good at explaining things clearly?",
                 "choices": [
                     "Reselling trainers",
@@ -613,17 +624,6 @@ _MODULES = [
                     {"label": "Do free work to 'build your portfolio'", "outcome": "A small amount of free work is fine to get started, but don't make it a habit. Your time and skill have value. If someone wants your work, they should pay for it — even a small amount sets the right expectation."},
                 ],
                 "correct_index": 1,
-            }},
-            {"type": "quiz", "xp_reward": 25, "content_json": {
-                "question": "What's the best foundation for a side hustle?",
-                "choices": [
-                    "A skill you have that other people will pay for",
-                    "A big bank loan to get started",
-                    "An expensive office to work from",
-                    "Waiting until you find the perfect idea",
-                ],
-                "answer_index": 0,
-                "explanation": "The best side hustles match a skill you already have with something people need — so you can start small with little or no money.",
             }},
             {"type": "scenario", "xp_reward": 20, "content_json": {
                 "prompt": "You bake great cookies. What's a sensible FIRST step to earning from it?",
@@ -658,26 +658,6 @@ _MODULES = [
                 "body": "Fixed costs stay the same regardless of how much you sell: website hosting, a market stall fee, insurance. Variable costs change with each sale: ingredients, packaging, shipping. Knowing the difference helps you predict your expenses. If you sell nothing, you still pay fixed costs — that's your risk.",
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
-                "question": "You sell 50 cupcakes at £2 each. Ingredients cost £40, packaging £10, stall fee £15. What's your profit?",
-                "choices": [
-                    "£100",
-                    "£50",
-                    "£35",
-                    "£65",
-                ],
-                "answer_index": 2,
-                "explanation": "Revenue: 50 × £2 = £100. Costs: £40 + £10 + £15 = £65. Profit: £100 − £65 = £35. That's your actual earnings — less than half the revenue.",
-            }},
-            {"type": "scenario", "xp_reward": 20, "content_json": {
-                "prompt": "Your sticker business made £200 in revenue this month, but you spent £150 on supplies and shipping. Your profit is only £50. How could you improve?",
-                "choices": [
-                    {"label": "Raise your prices slightly", "outcome": "Often the simplest fix. If you raise prices by 20% (e.g., £2 stickers become £2.40), your revenue jumps to £240 with the same costs — doubling your profit to £90. Just make sure the price is still fair for the market."},
-                    {"label": "Find cheaper supplies without sacrificing quality", "outcome": "Smart. Buying materials in bulk, switching suppliers, or reducing packaging can cut variable costs. Even saving £20/month on supplies would boost your profit by 40%."},
-                    {"label": "Sell more volume at the same prices", "outcome": "More sales mean more revenue, but also more variable costs (supplies, shipping). You'd need to sell significantly more to make a big difference. It works, but it's harder than improving margins."},
-                ],
-                "correct_index": 0,
-            }},
-            {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "What is 'profit'?",
                 "choices": [
                     "Revenue minus all your costs",
@@ -689,10 +669,30 @@ _MODULES = [
                 "explanation": "Profit is what's left after subtracting all costs from revenue. High revenue can still mean low profit if your costs are high.",
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "You sell 50 cupcakes at £2 each. Ingredients cost £40, packaging £10, stall fee £15. What's your profit?",
+                "choices": [
+                    "£100",
+                    "£50",
+                    "£35",
+                    "£65",
+                ],
+                "answer_index": 2,
+                "explanation": "Revenue: 50 × £2 = £100. Costs: £40 + £10 + £15 = £65. Profit: £100 − £65 = £35. That's your actual earnings — less than half the revenue.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "You sell 20 bracelets at £5 each. Materials cost £30 and a stall costs £20. What's your profit?",
                 "choices": ["£100", "£70", "£50", "£30"],
                 "answer_index": 2,
                 "explanation": "Revenue: 20 × £5 = £100. Costs: £30 + £20 = £50. Profit: £100 − £50 = £50.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "Your sticker business made £200 in revenue this month, but you spent £150 on supplies and shipping. Your profit is only £50. How could you improve?",
+                "choices": [
+                    {"label": "Raise your prices slightly", "outcome": "Often the simplest fix. If you raise prices by 20% (e.g., £2 stickers become £2.40), your revenue jumps to £240 with the same costs — doubling your profit to £90. Just make sure the price is still fair for the market."},
+                    {"label": "Find cheaper supplies without sacrificing quality", "outcome": "Smart. Buying materials in bulk, switching suppliers, or reducing packaging can cut variable costs. Even saving £20/month on supplies would boost your profit by 40%."},
+                    {"label": "Sell more volume at the same prices", "outcome": "More sales mean more revenue, but also more variable costs (supplies, shipping). You'd need to sell significantly more to make a big difference. It works, but it's harder than improving margins."},
+                ],
+                "correct_index": 0,
             }},
             {"type": "scenario", "xp_reward": 20, "content_json": {
                 "prompt": "Your craft stall made £80 revenue but only £10 profit because costs were £70. What's the best fix to try FIRST?",
@@ -712,26 +712,6 @@ _MODULES = [
             {"type": "card", "xp_reward": 10, "content_json": {
                 "title": "Reading a payslip",
                 "body": "Your payslip shows two key numbers: gross pay (what you earned before anything is taken off) and net pay (what actually lands in your bank). The difference? Deductions — income tax, National Insurance (NI), and sometimes a pension contribution. It's not the company taking your money; it's taxes and savings being handled automatically.",
-            }},
-            {"type": "quiz", "xp_reward": 25, "content_json": {
-                "question": "Match the payslip term to its meaning: 'Net pay' is…",
-                "choices": [
-                    "Your total earnings before any deductions",
-                    "The National Insurance contribution",
-                    "The amount that actually goes into your bank account",
-                    "Your employer's pension contribution",
-                ],
-                "answer_index": 2,
-                "explanation": "Net pay is your take-home pay — what's left after income tax, National Insurance, and any other deductions. Gross pay is the 'before deductions' number.",
-            }},
-            {"type": "scenario", "xp_reward": 20, "content_json": {
-                "prompt": "Your first payslip shows: Gross pay £600, Income tax £30, NI £25, Pension £15, Net pay £530. But you expected £600! What happened?",
-                "choices": [
-                    {"label": "The company made an error — demand the full £600", "outcome": "No error here. Deductions are normal and required by law. Income tax and NI go to HMRC; pension is saving for your future. Your actual earnings were £600 — you just don't keep all of it."},
-                    {"label": "These deductions are normal — tax, NI, and pension are standard", "outcome": "Exactly right. £30 tax + £25 NI + £15 pension = £70 in deductions. Your net pay of £530 is correct. This happens every pay cycle and it's completely normal."},
-                    {"label": "Opt out of everything to get the full £600", "outcome": "You can opt out of the pension (though it's usually unwise — your employer often matches contributions). But income tax and NI are mandatory. There's no way to get the full gross amount."},
-                ],
-                "correct_index": 1,
             }},
             {"type": "quiz", "xp_reward": 25, "content_json": {
                 "question": "What's the difference between 'gross pay' and 'net pay'?",
@@ -754,6 +734,26 @@ _MODULES = [
                 ],
                 "answer_index": 0,
                 "explanation": "NI is National Insurance — a deduction that helps pay for things like the state pension and the NHS.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Match the payslip term to its meaning: 'Net pay' is…",
+                "choices": [
+                    "Your total earnings before any deductions",
+                    "The National Insurance contribution",
+                    "The amount that actually goes into your bank account",
+                    "Your employer's pension contribution",
+                ],
+                "answer_index": 2,
+                "explanation": "Net pay is your take-home pay — what's left after income tax, National Insurance, and any other deductions. Gross pay is the 'before deductions' number.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "Your first payslip shows: Gross pay £600, Income tax £30, NI £25, Pension £15, Net pay £530. But you expected £600! What happened?",
+                "choices": [
+                    {"label": "The company made an error — demand the full £600", "outcome": "No error here. Deductions are normal and required by law. Income tax and NI go to HMRC; pension is saving for your future. Your actual earnings were £600 — you just don't keep all of it."},
+                    {"label": "These deductions are normal — tax, NI, and pension are standard", "outcome": "Exactly right. £30 tax + £25 NI + £15 pension = £70 in deductions. Your net pay of £530 is correct. This happens every pay cycle and it's completely normal."},
+                    {"label": "Opt out of everything to get the full £600", "outcome": "You can opt out of the pension (though it's usually unwise — your employer often matches contributions). But income tax and NI are mandatory. There's no way to get the full gross amount."},
+                ],
+                "correct_index": 1,
             }},
             {"type": "scenario", "xp_reward": 20, "content_json": {
                 "prompt": "Your payslip has a pension deduction, and your employer adds a matching contribution on top. Should you usually opt out to get more cash now?",
@@ -782,9 +782,9 @@ def _lesson_identity(lesson_type: str, content_json: dict) -> str:
 
 async def seed_modules_and_lessons(session: AsyncSession) -> None:
     """Idempotent: creates modules (matched by topic+title), ensures each has a
-    Level 1, and ADDITIVELY inserts any spec'd lessons not already present
-    (matched by content identity) — so new content reaches existing DBs on
-    re-seed without duplicating. Caller commits."""
+    Level 1, and reconciles lesson order so spec is the source of truth — inserts
+    missing lessons and re-sets order_index for all existing ones to match the
+    curriculum. Caller commits."""
     for spec in _MODULES:
         module = await session.scalar(
             select(Module).where(Module.topic == spec["topic"], Module.title == spec["title"])
@@ -815,17 +815,18 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
         existing = (await session.scalars(
             select(Lesson).where(Lesson.level_id == level.id)
         )).all()
-        seen = {_lesson_identity(le.type, le.content_json) for le in existing}
-        next_order = max((le.order_index for le in existing), default=-1) + 1
+        by_ident = {_lesson_identity(le.type, le.content_json): le for le in existing}
 
-        for lesson_spec in spec["lessons"]:
+        for i, lesson_spec in enumerate(spec["lessons"]):
             ident = _lesson_identity(lesson_spec["type"], lesson_spec["content_json"])
-            if ident in seen:
-                continue
-            session.add(Lesson(
-                module_id=module.id, level_id=level.id, type=lesson_spec["type"],
-                content_json=lesson_spec["content_json"],
-                xp_reward=lesson_spec["xp_reward"], order_index=next_order,
-            ))
-            seen.add(ident)
-            next_order += 1
+            le = by_ident.get(ident)
+            if le is None:
+                session.add(Lesson(
+                    module_id=module.id, level_id=level.id,
+                    type=lesson_spec["type"],
+                    content_json=lesson_spec["content_json"],
+                    xp_reward=lesson_spec["xp_reward"],
+                    order_index=i,
+                ))
+            else:
+                le.order_index = i  # reconcile order to match the curriculum
