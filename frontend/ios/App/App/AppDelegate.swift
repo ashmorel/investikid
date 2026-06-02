@@ -27,19 +27,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // iOS WKWebView can compute the wrong viewport width on first
-        // presentation (content clipped on the right), only correcting after a
-        // background/foreground cycle. This fires on the initial launch too, so
-        // force the web view to re-layout by briefly nudging its frame — the
-        // same effect backgrounding/rotation has.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            guard let webView = self?.findWebView(in: self?.window?.rootViewController?.view) else { return }
-            let original = webView.frame
-            webView.frame = original.insetBy(dx: 0, dy: 1)
-            DispatchQueue.main.async {
-                webView.frame = original
+        // On a cold launch WKWebView can end up WIDER than its container, so
+        // content spills past the right edge until a background/foreground cycle
+        // re-lays it out. We replicate that re-layout: snap the web view back to
+        // its parent's bounds (the correct screen width) and force a layout pass.
+        // Repeated across the launch-settling window because didBecomeActive can
+        // fire before the safe-area/splash settle on a cold start.
+        relayoutWebView(attempt: 0)
+    }
+
+    private func relayoutWebView(attempt: Int) {
+        let delay = attempt == 0 ? 0.05 : 0.25
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self = self else { return }
+            if let webView = self.findWebView(in: self.window?.rootViewController?.view),
+               let parent = webView.superview {
+                if webView.frame != parent.bounds {
+                    webView.frame = parent.bounds  // correct the too-wide frame
+                }
+                parent.setNeedsLayout()
+                parent.layoutIfNeeded()
                 webView.setNeedsLayout()
+                webView.layoutIfNeeded()
             }
+            if attempt < 4 { self.relayoutWebView(attempt: attempt + 1) }
         }
     }
 
