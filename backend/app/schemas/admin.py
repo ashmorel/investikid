@@ -239,3 +239,29 @@ class AdminSettingsUpdate(BaseModel):
         if len(out) > 10:
             raise ValueError("at most 10 alert emails")
         return out
+
+
+# ── Engagement ───────────────────────────────────────────────────────
+class LessonEngagementOut(BaseModel):
+    lesson_id: uuid.UUID
+    type: str
+    label: str
+    order: int
+    views: int
+    completions: int
+    completion_rate: float | None
+    average_score: float | None
+    drop_off: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ModuleEngagementOut(BaseModel):
+    module_id: uuid.UUID
+    learners_started: int
+    learners_completed: int
+    completion_rate: float | None
+    average_score: float | None
+    lessons: list[LessonEngagementOut]
+
+    model_config = ConfigDict(from_attributes=True)
