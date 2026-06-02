@@ -780,11 +780,32 @@ def _lesson_identity(lesson_type: str, content_json: dict) -> str:
     return f"card:{content_json.get('title', '')}"
 
 
+# Difficulty ranking by lesson type, foundational → challenging:
+# cards (concepts) → intro video → quizzes (recall/calculation) →
+# scenarios (real-world application). Used to slot newly-appended lessons
+# into the right band without disturbing lessons already placed.
+_TYPE_RANK = {"card": 0, "video": 1, "quiz": 2, "scenario": 3}
+
+
+def _insert_position(ordered_types: list[str], new_type: str) -> int:
+    """Index at which to insert a new lesson so it lands at the END of its
+    difficulty band: just after the last existing lesson whose type ranks at or
+    below the new lesson's type. Preserves the relative order of every existing
+    lesson (so manual admin reordering is never disturbed)."""
+    rank = _TYPE_RANK.get(new_type, _TYPE_RANK["quiz"])
+    pos = 0
+    for idx, t in enumerate(ordered_types):
+        if _TYPE_RANK.get(t, _TYPE_RANK["quiz"]) <= rank:
+            pos = idx + 1
+    return pos
+
+
 async def seed_modules_and_lessons(session: AsyncSession) -> None:
     """Idempotent: creates modules (matched by topic+title), ensures each has a
-    Level 1, and reconciles lesson order so spec is the source of truth — inserts
-    missing lessons and re-sets order_index for all existing ones to match the
-    curriculum. Caller commits."""
+    Level 1, and inserts any lessons missing from the curriculum. New lessons are
+    slotted into their difficulty band by type (card → video → quiz → scenario)
+    rather than appended at the end; lessons already present keep their relative
+    order, so manual admin reordering survives re-seeding. Caller commits."""
     for spec in _MODULES:
         module = await session.scalar(
             select(Module).where(Module.topic == spec["topic"], Module.title == spec["title"])
@@ -812,21 +833,31 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
             session.add(level)
             await session.flush()
 
-        existing = (await session.scalars(
-            select(Lesson).where(Lesson.level_id == level.id)
-        )).all()
-        by_ident = {_lesson_identity(le.type, le.content_json): le for le in existing}
+        # Start from the CURRENT order (which reflects any manual admin
+        # reordering) and only insert lessons missing from the curriculum,
+        # slotting each into its difficulty band by type. Lessons already
+        # placed keep their relative order; we only normalise the integer
+        # order_index across the merged sequence at the end.
+        ordered = list((await session.scalars(
+            select(Lesson).where(Lesson.level_id == level.id).order_by(Lesson.order_index)
+        )).all())
+        by_ident = {_lesson_identity(le.type, le.content_json): le for le in ordered}
 
-        for i, lesson_spec in enumerate(spec["lessons"]):
+        for lesson_spec in spec["lessons"]:
             ident = _lesson_identity(lesson_spec["type"], lesson_spec["content_json"])
-            le = by_ident.get(ident)
-            if le is None:
-                session.add(Lesson(
-                    module_id=module.id, level_id=level.id,
-                    type=lesson_spec["type"],
-                    content_json=lesson_spec["content_json"],
-                    xp_reward=lesson_spec["xp_reward"],
-                    order_index=i,
-                ))
-            else:
-                le.order_index = i  # reconcile order to match the curriculum
+            if ident in by_ident:
+                continue  # already present — leave its position untouched
+            new_lesson = Lesson(
+                module_id=module.id, level_id=level.id,
+                type=lesson_spec["type"],
+                content_json=lesson_spec["content_json"],
+                xp_reward=lesson_spec["xp_reward"],
+                order_index=0,  # normalised below
+            )
+            session.add(new_lesson)
+            by_ident[ident] = new_lesson
+            pos = _insert_position([le.type for le in ordered], new_lesson.type)
+            ordered.insert(pos, new_lesson)
+
+        for i, le in enumerate(ordered):
+            le.order_index = i

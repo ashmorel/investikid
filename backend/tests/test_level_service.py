@@ -61,3 +61,27 @@ def test_premium_precedence_over_progression():
     )
     # L2 is both progression-locked and premium → premium wins
     assert states[l2.level_id].locked_reason == "premium"
+
+
+def test_appending_lesson_reverts_completed_level_to_in_progress():
+    """Progress is computed live from total vs completed lessons, so adding a
+    new lesson to a level the child already finished re-opens it and updates the
+    counts — no stored state to migrate."""
+    l1 = _mk(0)
+    a, b = uuid.uuid4(), uuid.uuid4()
+
+    done = derive_level_states(
+        [l1], lessons_by_level={l1.level_id: [a, b]},
+        completed_ids={a, b}, scores={}, user_is_premium=False,
+    )[l1.level_id]
+    assert done.state == "completed"
+    assert (done.lessons_total, done.lessons_completed) == (2, 2)
+
+    # A new (uncompleted) lesson is appended to the same level.
+    c = uuid.uuid4()
+    after = derive_level_states(
+        [l1], lessons_by_level={l1.level_id: [a, b, c]},
+        completed_ids={a, b}, scores={}, user_is_premium=False,
+    )[l1.level_id]
+    assert after.state == "in_progress"
+    assert (after.lessons_total, after.lessons_completed) == (3, 2)

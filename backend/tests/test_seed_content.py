@@ -2,7 +2,12 @@ import pytest
 from sqlalchemy import func, select
 
 from app.models.content import Lesson, Level, Module
-from app.seed.content import _MODULES, _lesson_identity, seed_modules_and_lessons
+from app.seed.content import (
+    _MODULES,
+    _insert_position,
+    _lesson_identity,
+    seed_modules_and_lessons,
+)
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -71,6 +76,24 @@ def test_scenarios_not_before_first_quiz():
         )
 
 
+def test_insert_position_slots_into_type_band():
+    """A newly-appended lesson lands at the END of its difficulty band:
+    cards -> video -> quizzes -> scenarios, without reordering existing lessons."""
+    seq = ["card", "card", "video", "quiz", "scenario"]
+    # A new card goes after the existing cards (index 2), before the video.
+    assert _insert_position(seq, "card") == 2
+    # A new video goes after the existing video (index 3).
+    assert _insert_position(seq, "video") == 3
+    # A new quiz goes after the existing quiz (index 4), before the scenario.
+    assert _insert_position(seq, "quiz") == 4
+    # A new scenario goes at the very end (index 5).
+    assert _insert_position(seq, "scenario") == 5
+    # Empty level -> position 0.
+    assert _insert_position([], "quiz") == 0
+    # All scenarios -> a new quiz slots in front of them.
+    assert _insert_position(["scenario", "scenario"], "quiz") == 0
+
+
 async def _count_lessons_for(session, topic, title) -> int:
     module = await session.scalar(
         select(Module).where(Module.topic == topic, Module.title == title)
@@ -103,13 +126,13 @@ async def test_seed_is_idempotent_and_meets_criterion(db_session):
     qs = [le for le in lessons if le.type in ("quiz", "scenario")]
     assert len(qs) >= 5
 
-    # Second seed must add nothing (idempotent) and reconcile order_index.
+    # Second seed must add nothing (idempotent).
     await seed_modules_and_lessons(db_session)
     await db_session.flush()
     count_after_second = await _count_lessons_for(db_session, spec["topic"], spec["title"])
     assert count_after_second == count_after_first
 
-    # Verify order reconciliation: each lesson's order_index matches its spec position.
+    # On a fresh DB the seeded order matches the curriculum spec exactly.
     lessons_after = (await db_session.scalars(
         select(Lesson).where(Lesson.level_id == level.id)
     )).all()
@@ -121,3 +144,37 @@ async def test_seed_is_idempotent_and_meets_criterion(db_session):
         assert le.order_index == i, (
             f"lesson {ident!r}: expected order_index={i}, got {le.order_index}"
         )
+
+
+async def test_reseed_preserves_manual_reorder(db_session):
+    """A manual admin reorder must survive re-seeding: the seeder only places
+    new lessons, it never re-sorts lessons already positioned."""
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    spec = _MODULES[0]
+    module = await db_session.scalar(
+        select(Module).where(Module.topic == spec["topic"], Module.title == spec["title"])
+    )
+    level = await db_session.scalar(
+        select(Level).where(Level.module_id == module.id, Level.order_index == 0)
+    )
+    lessons = list((await db_session.scalars(
+        select(Lesson).where(Lesson.level_id == level.id).order_by(Lesson.order_index)
+    )).all())
+
+    # Simulate an admin manually reversing the lesson order (via OrderArrows).
+    reversed_lessons = list(reversed(lessons))
+    for i, le in enumerate(reversed_lessons):
+        le.order_index = i
+    await db_session.flush()
+    expected_order = [le.id for le in reversed_lessons]
+
+    # Re-seed: must NOT reset to the curriculum order.
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    after = list((await db_session.scalars(
+        select(Lesson).where(Lesson.level_id == level.id).order_by(Lesson.order_index)
+    )).all())
+    assert [le.id for le in after] == expected_order
