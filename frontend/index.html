@@ -10,12 +10,14 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
     <title>Invest-Ed</title>
     <script>
-      // iOS WKWebView sometimes computes the wrong viewport width on COLD LAUNCH
-      // — content lays out slightly too wide and gets clipped on the right —
-      // then self-corrects once the app is backgrounded/foregrounded (which
-      // forces a re-layout). Nudging the viewport meta does the same thing
-      // programmatically: changing `content` makes WKWebView recompute the
-      // viewport. We do it on DOMContentLoaded and again after the splash hides.
+      // iOS WKWebView can compute the wrong viewport width during the first-
+      // launch sequence (splash hide / login keyboard / first SPA navigation),
+      // leaving content laid out too wide and clipped on the right. It only
+      // self-corrects after the app is backgrounded/foregrounded (a re-layout).
+      // Changing the viewport meta's `content` forces WKWebView to recompute the
+      // viewport — the same effect. A one-shot nudge fires too early to catch the
+      // post-login state, so this is a self-healing watchdog: whenever the
+      // document is actually wider than the viewport, re-apply the nudge.
       (function () {
         var BASE = 'width=device-width, initial-scale=1.0, viewport-fit=cover';
         var ALT = 'width=device-width, initial-scale=1.0001, viewport-fit=cover';
@@ -25,11 +27,27 @@
           vp.setAttribute('content', ALT);
           requestAnimationFrame(function () { vp.setAttribute('content', BASE); });
         }
-        document.addEventListener('DOMContentLoaded', nudge);
-        window.addEventListener('load', function () {
-          setTimeout(nudge, 300);
-          setTimeout(nudge, 900);
+        function check() {
+          // Only act when there's genuine horizontal overflow, so the poll
+          // doesn't cause needless reflow once the layout has settled.
+          var de = document.documentElement;
+          if (de && de.scrollWidth > window.innerWidth + 2) nudge();
+        }
+        // Re-check on every event that can change the viewport/layout.
+        ['resize', 'orientationchange', 'pageshow', 'focusout'].forEach(function (e) {
+          window.addEventListener(e, check);
         });
+        document.addEventListener('visibilitychange', function () {
+          if (!document.hidden) check();
+        });
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', check);
+        document.addEventListener('DOMContentLoaded', nudge);
+        // Poll through the first-launch window (splash, login, first navigation).
+        var ticks = 0;
+        var iv = setInterval(function () {
+          check();
+          if (++ticks >= 40) clearInterval(iv); // ~12s at 300ms
+        }, 300);
       })();
     </script>
   </head>
