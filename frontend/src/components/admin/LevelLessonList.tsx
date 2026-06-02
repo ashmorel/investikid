@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useLevelLessons, useDeleteLesson } from '@/api/admin';
+import { useLevelLessons, useDeleteLesson, lessonLabel } from '@/api/admin';
 import type { AdminLesson } from '@/api/admin';
 import LessonForm from './LessonForm';
 import ConfirmDialog from './ConfirmDialog';
@@ -46,10 +46,7 @@ export default function LevelLessonList() {
               : 'bg-yellow-500/20 text-yellow-400'
             }`}>{lesson.type}</span>
             <span className="flex-1 truncate text-sm text-slate-50">
-              {(lesson.content_json as Record<string, string>).title
-                || (lesson.content_json as Record<string, string>).question
-                || (lesson.content_json as Record<string, string>).prompt
-                || 'Untitled'}
+              {lessonLabel(lesson)}
             </span>
             <span className="text-xs text-slate-500">{lesson.xp_reward} XP</span>
             <button

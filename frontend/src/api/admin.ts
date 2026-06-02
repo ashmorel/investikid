@@ -32,6 +32,17 @@ export interface AdminLesson {
   order_index: number;
 }
 
+/** Human-readable label for a lesson row in the admin UI. Each lesson type
+ *  stores its display text under a different key (cards: title, quizzes:
+ *  question, scenarios: prompt, videos: caption/youtube_id). */
+export function lessonLabel(lesson: Pick<AdminLesson, 'type' | 'content_json'>): string {
+  const cj = lesson.content_json as Record<string, string>;
+  if (lesson.type === 'video') {
+    return cj.caption || (cj.youtube_id ? `Video (${cj.youtube_id})` : 'Video');
+  }
+  return cj.title || cj.question || cj.prompt || 'Untitled';
+}
+
 export interface AdminLevel {
   id: string;
   module_id: string;

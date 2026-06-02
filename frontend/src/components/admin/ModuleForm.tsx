@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   useModules, useCreateModule, useUpdateModule,
   useLessons, useDeleteLesson, useReorderLessons,
-  useCountries,
+  useCountries, lessonLabel,
 } from '@/api/admin';
 import type { AdminModule, AdminLesson } from '@/api/admin';
 import OrderArrows from './OrderArrows';
@@ -209,10 +209,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
                     : 'bg-yellow-500/20 text-yellow-400'
                   }`}>{l.type}</span>
                   <span className="flex-1 truncate text-sm text-slate-50">
-                    {(l.content_json as Record<string, string>).title
-                      || (l.content_json as Record<string, string>).question
-                      || (l.content_json as Record<string, string>).prompt
-                      || 'Untitled'}
+                    {lessonLabel(l)}
                   </span>
                   <span className="text-xs text-slate-500">{l.xp_reward} XP</span>
                   <button type="button" onClick={() => { setEditingLesson(l); setShowNewLesson(false); }}
