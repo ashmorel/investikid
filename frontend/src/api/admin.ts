@@ -64,6 +64,23 @@ export interface AdminBadge {
   condition_value: number;
 }
 
+const BADGE_CONDITION_EMOJI: Record<string, string> = {
+  lesson_count: '📚',
+  streak_days: '🔥',
+  trade_count: '📈',
+  total_xp: '⭐',
+};
+
+/** Display icon for a badge. The icon_url field is meant to hold an emoji,
+ *  but some rows store a (non-existent) /badges/*.svg path. If the value is a
+ *  usable emoji/label we show it; otherwise we fall back to an icon derived
+ *  from the badge's condition type so a badge always renders something. */
+export function badgeIcon(badge: Pick<AdminBadge, 'icon_url' | 'condition_type'>): string {
+  const v = (badge.icon_url || '').trim();
+  if (v && !v.startsWith('/') && !v.startsWith('http')) return v;
+  return BADGE_CONDITION_EMOJI[badge.condition_type] ?? '🏅';
+}
+
 export interface AdminChallenge {
   id: string;
   title: string;

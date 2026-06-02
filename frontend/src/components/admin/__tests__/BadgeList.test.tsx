@@ -13,6 +13,7 @@ vi.mock('@/api/admin', () => ({
     isLoading: false,
   }),
   useDeleteBadge: () => ({ mutate: vi.fn() }),
+  badgeIcon: (b: { icon_url: string }) => b.icon_url,
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {

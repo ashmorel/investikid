@@ -5,17 +5,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.gamification import Badge, Challenge
 
+# icon_url holds a display emoji (rendered directly in the UI); the previous
+# /badges/*.svg paths pointed at assets that never existed.
 _BADGES = [
     {"name": "First Step", "description": "Complete your first lesson",
-     "icon_url": "/badges/first-step.svg", "condition_type": "lesson_count", "condition_value": 1},
+     "icon_url": "👣", "condition_type": "lesson_count", "condition_value": 1},
     {"name": "Quiz Ace", "description": "Complete 10 lessons",
-     "icon_url": "/badges/quiz-ace.svg", "condition_type": "lesson_count", "condition_value": 10},
+     "icon_url": "🎯", "condition_type": "lesson_count", "condition_value": 10},
     {"name": "Streak Master", "description": "Maintain a 7-day streak",
-     "icon_url": "/badges/streak-master.svg", "condition_type": "streak_days", "condition_value": 7},
+     "icon_url": "🔥", "condition_type": "streak_days", "condition_value": 7},
     {"name": "First Trade", "description": "Execute your first paper trade",
-     "icon_url": "/badges/first-trade.svg", "condition_type": "trade_count", "condition_value": 1},
+     "icon_url": "📈", "condition_type": "trade_count", "condition_value": 1},
     {"name": "Century Club", "description": "Earn 100 XP",
-     "icon_url": "/badges/century.svg", "condition_type": "total_xp", "condition_value": 100},
+     "icon_url": "💯", "condition_type": "total_xp", "condition_value": 100},
 ]
 
 
@@ -38,6 +40,9 @@ async def seed_badges_and_challenges(session: AsyncSession) -> None:
     for spec in _BADGES:
         existing = await session.scalar(select(Badge).where(Badge.name == spec["name"]))
         if existing:
+            # Heal legacy rows whose icon_url is a dead /badges/*.svg path.
+            if existing.icon_url.startswith("/"):
+                existing.icon_url = spec["icon_url"]
             continue
         session.add(Badge(**spec))
 

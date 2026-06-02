@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useBadges, useDeleteBadge } from '@/api/admin';
+import { useBadges, useDeleteBadge, badgeIcon } from '@/api/admin';
 import ConfirmDialog from './ConfirmDialog';
 import type { AdminBadge } from '@/api/admin';
 
@@ -22,7 +22,7 @@ export default function BadgeList() {
       <div className="flex flex-col gap-2">
         {badges.map((b) => (
           <div key={b.id} className="flex items-center gap-3 rounded-lg border border-slate-700 bg-slate-900 p-3">
-            <span className="text-xl">{b.icon_url}</span>
+            <span className="text-xl" aria-hidden="true">{badgeIcon(b)}</span>
             <div className="flex-1">
               <div className="font-medium text-slate-50">{b.name}</div>
               <div className="text-xs text-slate-500">{b.condition_type} ≥ {b.condition_value}</div>
