@@ -7,7 +7,12 @@ import './index.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 2, refetchOnWindowFocus: false },
+    // refetchOnWindowFocus: refresh stale data when the app returns to the
+    // foreground. On native (WKWebView) the page never remounts on resume, so
+    // without this, server-side changes (e.g. new quests/progress) only appear
+    // after a full cold start. TanStack's focus manager listens to
+    // `visibilitychange`, which fires when the app is foregrounded.
+    queries: { retry: 2, refetchOnWindowFocus: true },
     mutations: { retry: 0 },
   },
 });
