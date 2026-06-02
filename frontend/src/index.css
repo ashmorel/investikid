@@ -34,6 +34,18 @@
     overflow-x: hidden;
   }
   body { @apply bg-background text-foreground; font-family: ui-sans-serif, system-ui, sans-serif; }
+  /* iOS zooms into any form field whose font-size is < 16px when it gains focus,
+     and frequently does NOT zoom back out — which enlarges the layout viewport
+     and pushes content off the right edge (the post-login overflow). Keep form
+     controls at >=16px on touch devices to prevent the auto-zoom, without
+     disabling user pinch-zoom (we must not set maximum-scale — WCAG 1.4.4). */
+  @media (pointer: coarse) {
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
   /* WCAG 2.2 SC 2.4.11 focus-not-obscured: keep keyboard focus clear of
      sticky TopNav (~3.5rem) + BottomTabBar (~4rem). */
   :focus-visible { scroll-margin-top: 4.5rem; scroll-margin-bottom: 5rem; }
