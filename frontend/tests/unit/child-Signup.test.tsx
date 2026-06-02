@@ -20,26 +20,33 @@ function renderPage() {
   );
 }
 
+async function fillDob(dateStr: string) {
+  const [y, m, d] = dateStr.split('-');
+  await userEvent.selectOptions(screen.getByLabelText('Year'), String(Number(y)));
+  await userEvent.selectOptions(screen.getByLabelText('Month'), String(Number(m)));
+  await userEvent.selectOptions(screen.getByLabelText('Day'), String(Number(d)));
+}
+
 beforeEach(() => { vi.restoreAllMocks(); vi.spyOn(globalThis, 'fetch'); });
 
 describe('Signup step 1', () => {
   it('shows under-threshold banner for UK 11', async () => {
     renderPage();
-    await userEvent.type(screen.getByLabelText(/date of birth/i), '2015-01-01');
+    await fillDob('2015-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'GB');
     expect(screen.getByText(/parent's email will be required/i)).toBeInTheDocument();
   });
 
   it('shows over-threshold banner for US 14', async () => {
     renderPage();
-    await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');
+    await fillDob('2012-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'US');
     expect(screen.getByText(/you can set up your own account/i)).toBeInTheDocument();
   });
 
   it('shows under-threshold banner for IE 14 (16 threshold)', async () => {
     renderPage();
-    await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');
+    await fillDob('2012-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'IE');
     expect(screen.getByText(/parent's email will be required/i)).toBeInTheDocument();
   });
@@ -47,7 +54,7 @@ describe('Signup step 1', () => {
   it('Next is disabled until both fields filled', async () => {
     renderPage();
     expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
-    await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');
+    await fillDob('2012-01-01');
     expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'US');
     expect(screen.getByRole('button', { name: /next/i })).toBeEnabled();
@@ -60,7 +67,7 @@ describe('Signup step 2 — under-threshold flow', () => {
       new Response(JSON.stringify({ status: 'pending_consent', user_id: 'u1' }), { status: 201 }),
     );
     renderPage();
-    await userEvent.type(screen.getByLabelText(/date of birth/i), '2015-01-01');
+    await fillDob('2015-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'GB');
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
 
@@ -92,7 +99,7 @@ describe('Signup step 2 — over-threshold flow', () => {
         new Response(JSON.stringify({ token_type: 'bearer' }), { status: 200 }),
       );
     renderPage();
-    await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');
+    await fillDob('2012-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'US');
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
 
@@ -115,7 +122,7 @@ describe('Signup step 2 — error handling', () => {
       new Response(JSON.stringify({ detail: 'Username already taken' }), { status: 409 }),
     );
     renderPage();
-    await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');
+    await fillDob('2012-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'US');
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
     await userEvent.type(screen.getByLabelText(/^email$/i), 'a@x.com');
@@ -129,7 +136,7 @@ describe('Signup step 2 — error handling', () => {
 
   it('mismatched passwords block submit and show an error', async () => {
     renderPage();
-    await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');
+    await fillDob('2012-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'US');
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
     await userEvent.type(screen.getByLabelText(/^email$/i), 'a@x.com');
@@ -145,7 +152,7 @@ describe('Signup step 2 — error handling', () => {
 describe('Signup step 2 — privacy notice', () => {
   it('opens the privacy notice in a modal without leaving the form', async () => {
     renderPage();
-    await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');
+    await fillDob('2012-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'US');
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
     await userEvent.type(screen.getByLabelText(/username/i), 'user1');
@@ -161,11 +168,11 @@ describe('Signup step 2 — privacy notice', () => {
 describe('Signup step 2 — back button', () => {
   it('back button preserves step 1 values', async () => {
     renderPage();
-    await userEvent.type(screen.getByLabelText(/date of birth/i), '2012-01-01');
+    await fillDob('2012-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'US');
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
     await userEvent.click(screen.getByRole('button', { name: /back/i }));
-    expect(screen.getByLabelText(/date of birth/i)).toHaveValue('2012-01-01');
+    expect(screen.getByLabelText('Year')).toHaveValue('2012');
     expect(screen.getByLabelText(/country/i)).toHaveValue('US');
   });
 });

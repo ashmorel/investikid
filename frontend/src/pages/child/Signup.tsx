@@ -14,6 +14,11 @@ import {
 import { PrivacyNotice } from '@/components/PrivacyNotice';
 import { AuthPage } from '@/components/AuthPage';
 
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+] as const;
+
 const COUNTRIES: ReadonlyArray<{ code: string; name: string; currency: string }> = [
   { code: 'GB', name: 'United Kingdom', currency: 'GBP' },
   { code: 'US', name: 'United States', currency: 'USD' },
@@ -33,6 +38,9 @@ export default function Signup() {
 
   // Step 1
   const [dob, setDob] = useState('');
+  const [dobY, setDobY] = useState('');
+  const [dobM, setDobM] = useState('');
+  const [dobD, setDobD] = useState('');
   const [country, setCountry] = useState('');
 
   // Step 2
@@ -51,6 +59,19 @@ export default function Signup() {
   const showMismatch = confirmPassword.length > 0 && !passwordsMatch;
 
   const today = useMemo(() => new Date(), []);
+  const dobYears = useMemo(() => {
+    const cy = today.getFullYear();
+    return Array.from({ length: 100 }, (_, i) => cy - i);
+  }, [today]);
+  const dobDayCount = dobY && dobM ? new Date(Number(dobY), Number(dobM), 0).getDate() : 31;
+  function updateDob(y: string, m: string, d: string) {
+    // Clamp the day to the chosen month/year so invalid dates (e.g. 31 Feb) can't be built.
+    if (y && m && d && Number(d) > new Date(Number(y), Number(m), 0).getDate()) {
+      d = String(new Date(Number(y), Number(m), 0).getDate());
+    }
+    setDobY(y); setDobM(m); setDobD(d);
+    setDob(y && m && d ? `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}` : '');
+  }
   const dobValid = !!dob && !Number.isNaN(Date.parse(dob));
   const age = dobValid ? ageInYears(new Date(dob), today) : null;
   const needsConsent = dobValid && country
@@ -116,9 +137,33 @@ export default function Signup() {
           onSubmit={(e) => { e.preventDefault(); if (step1Valid) setStep(2); }}
         >
           <div className="space-y-1.5">
-            <Label htmlFor="dob">Date of birth</Label>
-            <Input id="dob" type="date" required value={dob}
-              onChange={(e) => setDob(e.target.value)} />
+            <span id="dob-label" className="text-sm font-medium leading-none">Date of birth</span>
+            <div className="flex gap-2" role="group" aria-labelledby="dob-label">
+              <select required aria-label="Day"
+                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                value={dobD} onChange={(e) => updateDob(dobY, dobM, e.target.value)}>
+                <option value="">Day</option>
+                {Array.from({ length: dobDayCount }, (_, i) => String(i + 1)).map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+              <select required aria-label="Month"
+                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                value={dobM} onChange={(e) => updateDob(dobY, e.target.value, dobD)}>
+                <option value="">Month</option>
+                {MONTHS.map((name, i) => (
+                  <option key={name} value={String(i + 1)}>{name}</option>
+                ))}
+              </select>
+              <select required aria-label="Year"
+                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                value={dobY} onChange={(e) => updateDob(e.target.value, dobM, dobD)}>
+                <option value="">Year</option>
+                {dobYears.map((y) => (
+                  <option key={y} value={String(y)}>{y}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="country">Country</Label>
