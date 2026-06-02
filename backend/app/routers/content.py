@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
-from app.models.content import Lesson, LessonCompletion, Level, Module
+from app.models.content import Lesson, LessonCompletion, LessonView, Level, Module
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
 from app.schemas.content import (
@@ -235,6 +235,30 @@ async def get_lesson(
         content_json=lesson.content_json, xp_reward=lesson.xp_reward,
         order_index=lesson.order_index, completed=completed is not None, locked=False,
     )
+
+
+@router.post("/lessons/{lesson_id}/view", status_code=204)
+async def record_lesson_view(
+    lesson_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    lesson = await session.get(Lesson, lesson_id)
+    if not lesson:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
+    existing = await session.scalar(
+        select(LessonView).where(
+            LessonView.user_id == current_user.id,
+            LessonView.lesson_id == lesson_id,
+        )
+    )
+    if existing is None:
+        session.add(LessonView(user_id=current_user.id, lesson_id=lesson_id))
+        try:
+            await session.commit()
+        except IntegrityError:
+            await session.rollback()  # another request already recorded the view
+    return None
 
 
 @router.post("/lessons/{lesson_id}/complete", response_model=LessonCompletionResult)

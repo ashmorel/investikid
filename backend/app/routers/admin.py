@@ -26,11 +26,13 @@ from app.schemas.admin import (
     LessonOut,
     LessonUpdate,
     ModuleCreate,
+    ModuleEngagementOut,
     ModuleOut,
     ModuleUpdate,
     ReorderRequest,
 )
 from app.services.app_settings import get_alert_emails, set_alert_emails
+from app.services.engagement_service import get_module_engagement
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
 
@@ -159,6 +161,17 @@ async def list_lessons(module_id: uuid.UUID, session: AsyncSession = Depends(get
         select(Lesson).where(Lesson.module_id == module_id).order_by(Lesson.order_index)
     )
     return list(result.all())
+
+
+@router.get("/modules/{module_id}/engagement", response_model=ModuleEngagementOut)
+async def module_engagement(
+    module_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    result = await get_module_engagement(session, module_id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
+    return result
 
 
 @router.post("/modules/{module_id}/lessons", response_model=LessonOut)
