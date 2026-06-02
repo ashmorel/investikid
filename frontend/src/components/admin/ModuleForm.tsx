@@ -9,6 +9,7 @@ import type { AdminModule, AdminLesson } from '@/api/admin';
 import OrderArrows from './OrderArrows';
 import LessonForm from './LessonForm';
 import ConfirmDialog from './ConfirmDialog';
+import ModuleEngagement from './ModuleEngagement';
 
 export default function ModuleForm() {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -219,6 +220,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
                 </div>
               ))}
             </div>
+            <ModuleEngagement moduleId={moduleId} />
           </div>
         )}
 
