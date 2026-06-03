@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { motion, useMotionValue, animate } from 'framer-motion';
+import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import type { LessonCompletionResult } from '@/api/content';
 import { StatChip } from '@/components/child/ui/StatChip';
@@ -14,8 +14,6 @@ export function CompletionPanel({ result, onContinue }: Props) {
   const heading = result.already_completed ? "You've already done this one" : 'Lesson complete!';
   const xpInLevel = result.total_xp % 100;
 
-  const xpCount = useMotionValue(0);
-
   useEffect(() => {
     if (!result.already_completed) {
       if (
@@ -24,9 +22,8 @@ export function CompletionPanel({ result, onContinue }: Props) {
       ) {
         confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
       }
-      animate(xpCount, result.xp_awarded, { duration: 0.6 });
     }
-  }, [result.already_completed, result.xp_awarded, xpCount]);
+  }, [result.already_completed]);
 
   return (
     <div className="flex flex-col items-center gap-4 text-center rounded-2xl border-2 border-amber-200 bg-white p-8">
