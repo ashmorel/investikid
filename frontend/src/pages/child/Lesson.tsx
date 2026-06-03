@@ -10,6 +10,7 @@ import { CompletionPanel } from '@/components/child/lesson/CompletionPanel';
 import { LessonIllustration } from '@/components/child/lesson/LessonIllustration';
 import { PracticeQuiz } from '@/components/child/lesson/PracticeQuiz';
 import { CoachEddiePanel } from '@/components/child/lesson/CoachEddiePanel';
+import { LessonChrome } from '@/components/child/lesson/LessonChrome';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Lesson() {
@@ -173,10 +174,12 @@ export default function Lesson() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
-      <header className="mb-4 flex items-center justify-between text-sm text-gray-500">
-        <span>Quest {lesson.order_index + 1} of {total || '…'}</span>
-        <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">🏆 {lesson.xp_reward} XP</span>
-      </header>
+      <LessonChrome
+        position={lesson.order_index + 1}
+        total={total}
+        xpReward={lesson.xp_reward}
+        onBack={() => navigate(-1)}
+      />
       {lesson.type === 'card' && <CardLesson contentJson={lesson.content_json as { title?: string; body?: string }} onComplete={onComplete} illustration={illustration} completing={complete.isPending} />}
       {lesson.type === 'quiz' && <QuizLesson contentJson={lesson.content_json as { question: string; choices: string[]; answer_index: number; explanation: string }} onComplete={onComplete} illustration={illustration} onShowEddie={() => setShowEddie(true)} completing={complete.isPending} />}
       {lesson.type === 'scenario' && <ScenarioLesson contentJson={lesson.content_json as { prompt: string; choices: { label: string; outcome: string }[]; correct_index: number }} onComplete={onComplete} illustration={illustration} onShowEddie={() => setShowEddie(true)} completing={complete.isPending} />}
