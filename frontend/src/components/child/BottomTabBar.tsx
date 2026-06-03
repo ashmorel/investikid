@@ -13,7 +13,7 @@ const TABS = [
 export function BottomTabBar() {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-20 border-t border-amber-200 bg-white/95 backdrop-blur md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-20 border-t border-gray-200/70 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.05)] md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label="Primary mobile"
     >
@@ -24,8 +24,8 @@ export function BottomTabBar() {
             to={to}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition-colors min-h-[44px] min-w-[44px] justify-center',
-                isActive ? 'text-amber-600' : 'text-gray-400',
+                'flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors min-h-[44px] min-w-[44px] justify-center',
+                isActive ? 'text-amber-600 font-extrabold' : 'text-gray-400 font-medium',
               )
             }
           >
