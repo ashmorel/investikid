@@ -12,6 +12,8 @@ from app.schemas.ai import (
     CategorisedRecommendations,
     CoachChatRequest,
     CoachChatResponse,
+    HomeGreetingRequest,
+    HomeGreetingResponse,
     MasteryProfileResponse,
     PracticeRequest,
     PracticeResponse,
@@ -23,6 +25,7 @@ from app.services.ai_content_service import generate_practice_quiz
 from app.services.coach_service import coach_chat
 from app.services.entitlements import is_premium
 from app.services.gap_detection_service import get_strengths_and_gaps
+from app.services.home_greeting_service import generate_home_greeting
 from app.services.recommendation_service import get_recommendations
 from app.services.skill_profile_service import get_mastery_profile
 from app.services.spaced_repetition_service import record_review
@@ -159,6 +162,27 @@ async def mastery_profile(
 ):
     profile = await get_mastery_profile(session, current_user.id)
     return profile
+
+
+@router.post("/home-greeting", response_model=HomeGreetingResponse)
+async def home_greeting(
+    payload: HomeGreetingRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not is_premium(current_user):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Premium required")
+    try:
+        text = await generate_home_greeting(
+            name=current_user.username or payload.name,
+            mode=payload.mode,
+            lesson_label=payload.lesson_label,
+            streak_count=payload.streak_count,
+            due_count=payload.due_count,
+        )
+    except Exception as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Greeting unavailable") from exc
+    return HomeGreetingResponse(greeting=text)
 
 
 @router.get("/profile/strengths", response_model=StrengthsAndGaps)
