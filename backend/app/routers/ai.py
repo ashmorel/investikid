@@ -165,10 +165,11 @@ async def mastery_profile(
 
 
 @router.post("/home-greeting", response_model=HomeGreetingResponse)
+@limiter.limit("30/hour")
 async def home_greeting(
+    request: Request,
     payload: HomeGreetingRequest,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
 ):
     if not is_premium(current_user):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Premium required")
