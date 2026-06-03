@@ -94,6 +94,17 @@ export type CoachChatResponse = {
   actions: CoachAction[];
 };
 
+// --- Home Greeting ---
+
+export type HomeGreetingCtxBody = {
+  name: string;
+  mode: 'start' | 'continue' | 'caught_up';
+  lesson_label: string | null;
+  streak_count: number;
+  due_count: number;
+};
+export type HomeGreetingResponse = { greeting: string };
+
 // --- API functions ---
 
 export const aiApi = {
@@ -130,6 +141,9 @@ export const aiApi = {
         conversation_id: conversationId ?? null,
       }),
     }),
+
+  homeGreeting: (body: HomeGreetingCtxBody) =>
+    apiFetch<HomeGreetingResponse>('/home-greeting', { method: 'POST', body: JSON.stringify(body) }),
 };
 
 // --- Hooks ---
@@ -149,5 +163,15 @@ export function useStrengths() {
     queryFn: () => aiApi.getStrengths(),
     retry: false,
     staleTime: 60_000,
+  });
+}
+
+export function useHomeGreeting(body: HomeGreetingCtxBody, enabled: boolean) {
+  return useQuery({
+    queryKey: ['home-greeting', body.mode, body.lesson_label, body.streak_count, body.due_count, body.name],
+    queryFn: () => aiApi.homeGreeting(body),
+    enabled,
+    staleTime: Infinity,
+    retry: false,
   });
 }
