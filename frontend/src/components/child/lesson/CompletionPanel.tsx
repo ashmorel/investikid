@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion, useMotionValue, animate } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import type { LessonCompletionResult } from '@/api/content';
-import { Button } from '@/components/ui/button';
-import { Trophy } from './illustrations/Trophy';
+import { StatChip } from '@/components/child/ui/StatChip';
+import { GradientButton } from '@/components/child/ui/GradientButton';
 
 type Props = {
   result: LessonCompletionResult;
@@ -11,42 +11,45 @@ type Props = {
 };
 
 export function CompletionPanel({ result, onContinue }: Props) {
-  const heading = result.already_completed ? "You've already done this one" : 'Quest Complete!';
+  const heading = result.already_completed ? "You've already done this one" : 'Lesson complete!';
   const xpInLevel = result.total_xp % 100;
 
   const xpCount = useMotionValue(0);
-  const xpDisplay = useTransform(xpCount, (v) => `+${Math.round(v)} XP`);
 
   useEffect(() => {
     if (!result.already_completed) {
-      confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+      if (
+        typeof window !== 'undefined' &&
+        !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      ) {
+        confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+      }
       animate(xpCount, result.xp_awarded, { duration: 0.6 });
     }
   }, [result.already_completed, result.xp_awarded, xpCount]);
 
   return (
-    <div className="rounded-2xl border-2 border-amber-200 bg-white p-8 text-center space-y-4">
+    <div className="flex flex-col items-center gap-4 text-center rounded-2xl border-2 border-amber-200 bg-white p-8">
       <motion.div
+        className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-4xl shadow-lg shadow-orange-500/40"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
       >
-        <Trophy />
+        <span aria-hidden="true">⭐</span>
       </motion.div>
+
       <h2 className="text-2xl font-extrabold text-gray-900">{heading}</h2>
-      {!result.already_completed && (
-        <motion.p className="text-3xl font-extrabold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-          {xpDisplay}
-        </motion.p>
-      )}
-      <div className="flex justify-center gap-3 text-sm text-gray-500">
-        <span>Total: {result.total_xp} XP</span>
-        <span>·</span>
-        <span>Level {result.level}</span>
-        <span>·</span>
-        <span>🔥 {result.streak_count}-day streak</span>
+
+      <div className="text-2xl" aria-hidden="true">⭐ ⭐ ⭐</div>
+
+      <div className="flex w-full gap-3">
+        <StatChip emoji="⭐" value={`+${result.xp_awarded}`} label="XP" />
+        <StatChip emoji="🏆" value={String(result.level)} label="Level" />
+        <StatChip emoji="🔥" value={String(result.streak_count)} label="Streak" />
       </div>
-      <div className="mx-auto max-w-[240px]">
+
+      <div className="w-full max-w-[240px]">
         <div className="h-2 w-full overflow-hidden rounded-full bg-amber-100">
           <motion.div
             className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
@@ -57,14 +60,10 @@ export function CompletionPanel({ result, onContinue }: Props) {
         </div>
         <p className="mt-1 text-xs text-gray-500">{xpInLevel} / 100 XP to Level {result.level + 1}</p>
       </div>
-      <div className="flex justify-center gap-2 pt-2">
-        <Button
-          onClick={onContinue}
-          className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl"
-        >
-          Continue →
-        </Button>
-      </div>
+
+      <GradientButton full onClick={onContinue}>
+        Continue <span aria-hidden="true">→</span>
+      </GradientButton>
     </div>
   );
 }
