@@ -10,7 +10,6 @@ export default tseslint.config(
       'dist/',
       'node_modules/',
       'playwright.config.*',
-      'tailwind.config.js',
       'vite.config.js',
       'public/sw.js',
       'scripts/',
