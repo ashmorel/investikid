@@ -4,13 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import Home from '@/pages/child/Home';
 
-function meBody(username = 'kid42') {
-  return {
-    id: 'u1', email: 'k@x.com', username, dob: '2012-01-01',
-    country_code: 'US', currency_code: 'USD', topic_path: 'core', is_premium: false,
-    parent_email: null, created_at: '2026-04-29T00:00:00Z',
-  };
-}
+vi.mock('@/components/child/HomeHero', () => ({ default: () => null }));
 
 function mockJsonRoute(routeMap: Record<string, unknown>) {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
@@ -36,9 +30,8 @@ function renderHome() {
 beforeEach(() => vi.restoreAllMocks());
 
 describe('Home', () => {
-  it('greets and shows StatsBar values with categorised recommendations', async () => {
+  it('shows StatsBar values with categorised recommendations', async () => {
     mockJsonRoute({
-      '/users/me': meBody('kid42'),
       '/users/me/progress': { xp: 320, level: 4, streak_count: 5, last_activity_date: '2026-05-02' },
       '/modules': [
         { id: 'mod-1', topic: 'stocks', title: 'Stocks 101', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
@@ -53,7 +46,6 @@ describe('Home', () => {
       },
     });
     renderHome();
-    expect(await screen.findByText(/Hey kid42/i)).toBeInTheDocument();
     expect((await screen.findAllByText(/Level 4/i)).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/320 XP/i).length).toBeGreaterThanOrEqual(1);
     await waitFor(() =>
@@ -61,9 +53,8 @@ describe('Home', () => {
     );
   });
 
-  it('shows empty state when no recommendations exist', async () => {
+  it('renders nothing in the recommendations slot when no recommendations exist', async () => {
     mockJsonRoute({
-      '/users/me': meBody(),
       '/users/me/progress': { xp: 0, level: 1, streak_count: 0, last_activity_date: null },
       '/modules': [],
       '/recommendations': {
@@ -74,12 +65,15 @@ describe('Home', () => {
       },
     });
     renderHome();
-    expect(await screen.findByText(/Complete a lesson to get personalised recommendations/i)).toBeInTheDocument();
+    // Wait for recs query to settle (loading text disappears)
+    await waitFor(() =>
+      expect(screen.queryByText(/Loading recommendations/i)).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText(/Complete a lesson to get personalised recommendations/i)).not.toBeInTheDocument();
   });
 
   it('shows review banner when concepts are due', async () => {
     mockJsonRoute({
-      '/users/me': meBody(),
       '/users/me/progress': { xp: 100, level: 2, streak_count: 1, last_activity_date: '2026-05-02' },
       '/modules': [
         { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },

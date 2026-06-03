@@ -82,6 +82,7 @@ vi.mock('@/hooks/useChildSession', () => ({
   useChildSession: () => ({ data: { username: 'kid42' } }),
 }));
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
+vi.mock('@/components/child/HomeHero', () => ({ default: () => <p>HomeHero</p> }));
 
 describe('a11y: child core surfaces', () => {
   it('Home has no axe violations', async () => {
@@ -102,7 +103,7 @@ describe('a11y: child core surfaces', () => {
     });
     const { default: Home } = await import('@/pages/child/Home');
     const { container } = renderAt('/home', <Home />, '/home');
-    await waitFor(() => expect(screen.getByText(/Hey kid42/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/HomeHero/i)).toBeInTheDocument());
     expect(await axe(container)).toHaveNoViolations();
   });
 

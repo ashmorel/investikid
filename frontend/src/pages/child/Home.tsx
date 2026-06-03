@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { useChildSession } from '@/hooks/useChildSession';
 import { useProgress } from '@/hooks/useProgress';
 import { contentApi, type ModuleOut } from '@/api/content';
 import { useRecommendations, type RecommendationCategoryItem } from '@/api/ai';
@@ -9,6 +8,7 @@ import { StatsBar } from '@/components/child/StatsBar';
 import { ReviewBanner } from '@/components/child/ReviewBanner';
 import { RecommendationCard } from '@/components/child/RecommendationCard';
 import { Button } from '@/components/ui/button';
+import HomeHero from '@/components/child/HomeHero';
 
 type Category = 'continue_learning' | 'practise_again' | 'something_new';
 
@@ -55,7 +55,6 @@ function CategorySection({
 }
 
 export default function Home() {
-  const { data: me } = useChildSession();
   const { data: progress } = useProgress();
   const { data: recs, isLoading: recsLoading } = useRecommendations();
 
@@ -79,10 +78,8 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-      <h1 className="text-2xl font-extrabold text-gray-900">
-        Hey {me?.username ?? '…'}! 👋
-      </h1>
-      <p className="mt-1 text-sm text-gray-500">Ready to level up your money skills?</p>
+      <h1 className="sr-only">Your learning home</h1>
+      <HomeHero />
 
       <div className="mt-4">
         <StatsBar
@@ -125,13 +122,7 @@ export default function Home() {
           <CategorySection category="practise_again" items={recs?.practise_again ?? []} modules={modules} />
           <CategorySection category="something_new" items={recs?.something_new ?? []} modules={modules} />
         </>
-      ) : (
-        <section className="mt-5 rounded-2xl border-2 border-amber-200 bg-white p-4">
-          <p className="text-sm text-center text-gray-500">
-            Complete a lesson to get personalised recommendations!
-          </p>
-        </section>
-      )}
+      ) : null}
 
       <div className="mt-5">
         <Button asChild className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl">
