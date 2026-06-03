@@ -159,7 +159,7 @@ describe('Signup step 2 — privacy notice', () => {
     await userEvent.click(screen.getByRole('button', { name: /privacy notice/i }));
     // Modal content appears...
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText(/what is invest-ed/i)).toBeInTheDocument();
+    expect(screen.getByText(/what is investikid/i)).toBeInTheDocument();
     // ...and the form is still mounted (username retained)
     expect(screen.getByLabelText(/username/i)).toHaveValue('user1');
   });

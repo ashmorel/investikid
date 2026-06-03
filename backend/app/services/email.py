@@ -23,7 +23,7 @@ def _render(template: str, context: dict) -> str:
     if template == "consent_request":
         return (
             f"Hi,\n\n"
-            f"{context['child_username']} signed up for Invest-Ed and listed you as their parent.\n"
+            f"{context['child_username']} signed up for InvestiKid and listed you as their parent.\n"
             f"They are {context['age']} years old in {context['country_code']}.\n"
             f"To approve their account, click: {context['link']}\n\n"
             f"If you did not expect this, you can ignore this email — the account will stay inactive.\n"
@@ -31,26 +31,26 @@ def _render(template: str, context: dict) -> str:
         )
     if template == "parent_magic_link":
         return (
-            f"Click to sign in to your Invest-Ed parent dashboard: {context['link']}\n\n"
+            f"Click to sign in to your InvestiKid parent dashboard: {context['link']}\n\n"
             f"Link expires in 15 minutes."
         )
     if template == "verify_email":
         return (
             f"Hi {context['username']},\n\n"
-            f"Please confirm your Invest-Ed email address by clicking: {context['link']}\n\n"
+            f"Please confirm your InvestiKid email address by clicking: {context['link']}\n\n"
             f"If you didn't create an account you can ignore this email.\n"
             f"Link expires in 24 hours."
         )
     if template == "password_reset":
         return (
-            f"We received a request to reset the password for an Invest-Ed account.\n"
+            f"We received a request to reset the password for an InvestiKid account.\n"
             f"Click to choose a new password: {context['link']}\n\n"
             f"If you didn't request this, you can ignore this email.\n"
             f"Link expires in 1 hour."
         )
     if template == "admin_llm_alert":
         return (
-            f"Invest-Ed system alert\n\n"
+            f"InvestiKid system alert\n\n"
             f"{context['headline']}\n\n"
             f"Detail: {context['detail']}\n"
             f"Time (UTC): {context['timestamp']}\n\n"
@@ -60,43 +60,43 @@ def _render(template: str, context: dict) -> str:
 
 
 _SUBJECT = {
-    "consent_request": "Approve your child's Invest-Ed account",
-    "parent_magic_link": "Sign in to Invest-Ed",
-    "verify_email": "Confirm your Invest-Ed email",
-    "password_reset": "Reset your Invest-Ed password",
-    "admin_llm_alert": "⚠️ Invest-Ed system alert",
+    "consent_request": "Approve your child's InvestiKid account",
+    "parent_magic_link": "Sign in to InvestiKid",
+    "verify_email": "Confirm your InvestiKid email",
+    "password_reset": "Reset your InvestiKid password",
+    "admin_llm_alert": "⚠️ InvestiKid system alert",
 }
 
 
 def _email_subject(template: str) -> str:
-    return _SUBJECT.get(template, "Invest-Ed")
+    return _SUBJECT.get(template, "InvestiKid")
 
 
 def _render_html(template: str, context: dict) -> str:
     if template == "consent_request":
-        heading = f"Approve {context['child_username']}'s Invest-Ed account"
+        heading = f"Approve {context['child_username']}'s InvestiKid account"
         body_text = (
             f"{context['child_username']} (age {context['age']}, {context['country_code']}) "
-            f"signed up for Invest-Ed and listed you as their parent."
+            f"signed up for InvestiKid and listed you as their parent."
         )
         cta_label = "Approve Account"
         cta_url = context["link"]
         footer = "If you didn't expect this, you can ignore this email. Link expires in 24 hours."
     elif template == "parent_magic_link":
-        heading = "Sign in to Invest-Ed"
+        heading = "Sign in to InvestiKid"
         body_text = "Click below to access your parent dashboard."
         cta_label = "Sign In"
         cta_url = context["link"]
         footer = "Link expires in 15 minutes."
     elif template == "verify_email":
         heading = "Confirm your email"
-        body_text = f"Hi {context['username']}, please confirm your Invest-Ed email address."
+        body_text = f"Hi {context['username']}, please confirm your InvestiKid email address."
         cta_label = "Confirm Email"
         cta_url = context["link"]
         footer = "If you didn't create an account, ignore this email. Link expires in 24 hours."
     elif template == "password_reset":
         heading = "Reset your password"
-        body_text = "Click below to choose a new password for your Invest-Ed account."
+        body_text = "Click below to choose a new password for your InvestiKid account."
         cta_label = "Reset Password"
         cta_url = context["link"]
         footer = "If you didn't request this, ignore this email. Link expires in 1 hour."
@@ -115,7 +115,7 @@ def _render_html(template: str, context: dict) -> str:
             '<table role="presentation" width="100%"'
             ' style="max-width:480px;background:#ffffff;border-radius:8px;overflow:hidden;">'
             '<tr><td style="padding:32px 24px;">'
-            '<h1 style="margin:0 0 16px;font-size:20px;color:#111827;">&#x26A0;&#xFE0F; Invest-Ed system alert</h1>'
+            '<h1 style="margin:0 0 16px;font-size:20px;color:#111827;">&#x26A0;&#xFE0F; InvestiKid system alert</h1>'
             f'<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#374151;">{context["headline"]}</p>'
             f'<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:#6b7280;">'
             f'<strong>Detail:</strong> {context["detail"]}</p>'

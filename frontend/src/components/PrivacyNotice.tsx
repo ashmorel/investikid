@@ -12,15 +12,15 @@ export function PrivacyNotice() {
       </p>
 
       <p className="mt-4 text-sm">
-        When you sign up to Invest-Ed, we show you this notice and record that you (or your parent
+        When you sign up to InvestiKid, we show you this notice and record that you (or your parent
         or guardian) agreed to it. If we make important changes, we will show you the updated
         notice and ask you to agree again before you can keep using the app.
       </p>
 
       <section className="mt-6">
-        <h2 className="text-lg font-semibold">What is Invest-Ed?</h2>
+        <h2 className="text-lg font-semibold">What is InvestiKid?</h2>
         <p className="mt-2 text-sm">
-          Invest-Ed is a learning app that teaches you about money — how to save it, how to spend
+          InvestiKid is a learning app that teaches you about money — how to save it, how to spend
           it wisely, and how the world of investing works. To do that, we need to know a few things
           about you so the app works properly and keeps you safe.
         </p>
@@ -67,7 +67,7 @@ export function PrivacyNotice() {
         <ul className="mt-2 list-disc pl-5 text-sm space-y-1">
           <li><strong>You</strong> — you can always see your own information inside the app.</li>
           <li><strong>Your parent or guardian</strong> — if they gave permission for your account, they can see your progress and ask for a copy of your data.</li>
-          <li><strong>The Invest-Ed team</strong> — to keep the app running, fix problems, and make sure it is safe. The team is not allowed to share your information with anyone else.</li>
+          <li><strong>The InvestiKid team</strong> — to keep the app running, fix problems, and make sure it is safe. The team is not allowed to share your information with anyone else.</li>
         </ul>
         <p className="mt-3 text-sm">
           We do <strong>not</strong> share your personal information with advertisers, data brokers,

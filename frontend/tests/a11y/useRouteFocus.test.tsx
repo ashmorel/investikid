@@ -20,7 +20,7 @@ function Nav() {
 }
 
 it('moves focus to #main and announces on route change', async () => {
-  document.title = 'Page B — Invest-Ed';
+  document.title = 'Page B — InvestiKid';
   render(
     <LiveRegion>
       <MemoryRouter initialEntries={['/a']}>

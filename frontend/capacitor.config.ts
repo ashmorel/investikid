@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'leeashmore.investikid.ai.app',
-  appName: 'Invest-Ed',
+  appName: 'InvestiKid',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

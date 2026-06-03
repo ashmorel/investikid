@@ -54,7 +54,7 @@ async def notify_feedback(
     if settings.email_backend != "resend" or not settings.feedback_notify_email:
         return
     label = _TYPE_LABEL.get(feedback_type, "Feedback")
-    subject = f"[Invest-Ed] {label} from {submitter}"
+    subject = f"[InvestiKid] {label} from {submitter}"
     text = (
         f"Type: {label}\n"
         f"From: {submitter} ({submitter_role})\n"

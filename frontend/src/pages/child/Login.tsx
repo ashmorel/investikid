@@ -40,7 +40,7 @@ export default function Login() {
 
   return (
     <AuthPage>
-      <h1 className="text-2xl font-semibold">Sign in to Invest-Ed</h1>
+      <h1 className="text-2xl font-semibold">Sign in to InvestiKid</h1>
       <form
         className="mt-6 space-y-3"
         onSubmit={(e) => { e.preventDefault(); setError(null); submit.mutate(); }}
@@ -64,7 +64,7 @@ export default function Login() {
         <Link to="/forgot-password" className="underline">Forgot password?</Link>
       </p>
       <p className="mt-2 text-sm text-muted-foreground">
-        New to Invest-Ed? <Link to="/signup" className="underline">Create an account</Link>.
+        New to InvestiKid? <Link to="/signup" className="underline">Create an account</Link>.
       </p>
     </AuthPage>
   );

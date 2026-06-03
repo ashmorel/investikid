@@ -16,7 +16,7 @@ export function TopNav({ username }: { username: string }) {
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
         <Link to="/home" className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-center text-sm font-extrabold text-white">IE</span>
-          <span className="text-lg font-extrabold text-gray-900">Invest-Ed</span>
+          <span className="text-lg font-extrabold text-gray-900">InvestiKid</span>
         </Link>
 
         <nav className="ml-6 hidden items-center gap-1 md:flex" aria-label="Primary">

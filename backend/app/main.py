@@ -119,7 +119,7 @@ async def _llm_error_handler(request: Request, exc: LLMError) -> JSONResponse:
 
 
 def create_app() -> FastAPI:
-    application = FastAPI(title="Invest-Ed API", version="1.0.0")
+    application = FastAPI(title="InvestiKid API", version="1.0.0")
     application.state.limiter = limiter
     application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     application.add_exception_handler(LLMError, _llm_error_handler)

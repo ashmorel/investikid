@@ -42,7 +42,7 @@ export default function ConsentVerify() {
   }
 
   if (done === 'approve') {
-    return <Page><Success title="Account approved" message="Your child can now sign in to Invest-Ed." /></Page>;
+    return <Page><Success title="Account approved" message="Your child can now sign in to InvestiKid." /></Page>;
   }
   if (done === 'decline') {
     return <Page><Success title="Decision recorded" message="The account will remain inactive." /></Page>;
@@ -56,7 +56,7 @@ export default function ConsentVerify() {
       <h1 className="text-2xl font-semibold">Approve your child's account?</h1>
       <p className="mt-3 text-sm text-muted-foreground">
         <span className="font-medium text-foreground">{child.username}</span> ({child.age}, {child.country_code})
-        signed up for Invest-Ed and listed you as their parent.
+        signed up for InvestiKid and listed you as their parent.
       </p>
       {decideError && (
         <ErrorBanner

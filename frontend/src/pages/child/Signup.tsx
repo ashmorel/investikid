@@ -178,7 +178,7 @@ export default function Signup() {
           </div>
           {age !== null && age < 8 && (
             <p role="alert" className="text-sm text-destructive">
-              You must be at least 8 years old to use Invest-Ed.
+              You must be at least 8 years old to use InvestiKid.
             </p>
           )}
           {step1Valid && needsConsent && (
@@ -301,7 +301,7 @@ export default function Signup() {
         <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Privacy Notice</DialogTitle>
-            <DialogDescription>How Invest-Ed collects, uses, and protects your information.</DialogDescription>
+            <DialogDescription>How InvestiKid collects, uses, and protects your information.</DialogDescription>
           </DialogHeader>
           <PrivacyNotice />
         </DialogContent>

@@ -1,6 +1,6 @@
 {
-  "name": "Invest-Ed",
-  "short_name": "Invest-Ed",
+  "name": "InvestiKid",
+  "short_name": "InvestiKid",
   "description": "Learn money skills with virtual investing",
   "display": "standalone",
   "start_url": "/home",

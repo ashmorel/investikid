@@ -22,7 +22,7 @@ export default function ParentLogin() {
       <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
         <h1 className="text-2xl font-semibold">Check your inbox</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          If an Invest-Ed account is linked to {email}, we've sent a sign-in link.
+          If an InvestiKid account is linked to {email}, we've sent a sign-in link.
           The link will expire in 15 minutes.
         </p>
       </main>

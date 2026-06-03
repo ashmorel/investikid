@@ -63,7 +63,7 @@ async def test_resend_sender_calls_api_and_persists(db_session):
         call_params = call_args[0][1]
         assert call_params["from"] == "test@example.com"
         assert call_params["to"] == ["parent@example.com"]
-        assert call_params["subject"] == "Approve your child's Invest-Ed account"
+        assert call_params["subject"] == "Approve your child's InvestiKid account"
         assert "bob" in call_params["html"]
         assert "bob" in call_params["text"]
 

@@ -12,7 +12,7 @@ const NAV_ITEMS = [
 export default function AdminSidebar() {
   return (
     <aside className="flex w-52 flex-col border-r border-slate-700 bg-slate-900 p-4">
-      <div className="mb-6 text-lg font-bold text-slate-50">📚 Invest-Ed Admin</div>
+      <div className="mb-6 text-lg font-bold text-slate-50">📚 InvestiKid Admin</div>
       <nav className="flex flex-col gap-1" aria-label="Admin navigation">
         {NAV_ITEMS.map((item) => (
           <NavLink
