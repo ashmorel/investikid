@@ -4,7 +4,7 @@ A children's finance-education app (web + iOS), heading to a TestFlight beta. Th
 
 ## Structure
 - `backend/` — FastAPI + SQLAlchemy 2.0 (async) + Alembic + Postgres. Deployed on **Railway**.
-- `frontend/` — React 18 + Vite + TypeScript + TanStack Query + Tailwind + shadcn/ui, with a **Capacitor iOS** app in `frontend/ios/`. Web deployed on **Vercel**.
+- `frontend/` — React 18 + Vite + TypeScript + TanStack Query + Tailwind v4 (CSS-first @theme) + shadcn/ui, with a **Capacitor iOS** app in `frontend/ios/`. Web deployed on **Vercel**.
 - `docs/superpowers/specs/` & `docs/superpowers/plans/` — dated design specs and implementation plans. Read the relevant one before changing a feature.
 
 ## Commands

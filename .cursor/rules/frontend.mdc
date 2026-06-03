@@ -19,7 +19,7 @@ React 18 + Vite + TypeScript + TanStack Query + Tailwind + shadcn/ui. Capacitor 
 ## Conventions
 - API base comes from `VITE_API_BASE_URL`. Call the API via `apiFetch` (`src/api/client.ts`); admin calls via `adminFetch`. Cross-domain CSRF is handled with a token cookie + an `X-Capacitor-App` header for native traffic.
 - Data fetching: TanStack Query hooks in `src/api/*` and `src/hooks/*`. Put **pure logic in `src/lib/*` and unit-test it** (the data resolvers/builders follow this pattern).
-- Styling: Tailwind + the design tokens in `src/index.css` (`hsl(var(--token))`) and `tailwind.config.js`. Brand = an amber→orange gradient on a cream background. A matching Figma token file exists (see `AGENTS.md`).
+- Styling: Tailwind v4 (CSS-first) + the design tokens in `src/index.css` — semantic tokens live in the `@theme` block and the `:root` HSL vars; there is no `tailwind.config.js`. Brand = an amber→orange gradient on a cream background. A matching Figma token file exists (see `AGENTS.md`).
 - Components: child UI in `src/components/child/` and `src/pages/child/`; admin UI in `src/components/admin/`; shadcn/ui primitives in `src/components/ui/`.
 - New user-facing UI needs a component test **and** a `vitest-axe` a11y check — the app targets **WCAG 2.2 AA**.
 
