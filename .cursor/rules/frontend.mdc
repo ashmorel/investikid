@@ -1,0 +1,28 @@
+---
+description: Invest-Ed frontend conventions (React / Vite / Tailwind / Capacitor)
+globs: **/frontend/**
+alwaysApply: false
+---
+
+# Frontend (`invest-ed/frontend`)
+
+React 18 + Vite + TypeScript + TanStack Query + Tailwind + shadcn/ui. Capacitor iOS app in `ios/`.
+
+## Commands — run from `frontend/`
+- Dev server: `npm run dev`
+- Typecheck: `npx tsc -b`
+- Lint: `npm run lint` (one pre-existing `src/components/ui/button.tsx` fast-refresh warning is expected — 0 errors otherwise)
+- Unit tests: `npm test` (Vitest); accessibility via `vitest-axe`
+- Build: `npm run build`
+- iOS sync after a build: `npx cap sync ios` (then rebuild in Xcode for native changes)
+
+## Conventions
+- API base comes from `VITE_API_BASE_URL`. Call the API via `apiFetch` (`src/api/client.ts`); admin calls via `adminFetch`. Cross-domain CSRF is handled with a token cookie + an `X-Capacitor-App` header for native traffic.
+- Data fetching: TanStack Query hooks in `src/api/*` and `src/hooks/*`. Put **pure logic in `src/lib/*` and unit-test it** (the data resolvers/builders follow this pattern).
+- Styling: Tailwind + the design tokens in `src/index.css` (`hsl(var(--token))`) and `tailwind.config.js`. Brand = an amber→orange gradient on a cream background. A matching Figma token file exists (see `AGENTS.md`).
+- Components: child UI in `src/components/child/` and `src/pages/child/`; admin UI in `src/components/admin/`; shadcn/ui primitives in `src/components/ui/`.
+- New user-facing UI needs a component test **and** a `vitest-axe` a11y check — the app targets **WCAG 2.2 AA**.
+
+## iOS / mobile constraints — do NOT regress
+- Form controls must stay **≥16px font on touch** (the `@media (pointer: coarse)` rule in `index.css`) to prevent iOS input auto-zoom. Do **not** add `maximum-scale` / `user-scalable=no` to the viewport — that breaks WCAG 1.4.4 zoom.
+- A native `AppDelegate` re-layout fixes a WKWebView cold-launch right-edge overflow; keep `viewport-fit=cover` and the safe-area (`--safe-*`) handling intact.

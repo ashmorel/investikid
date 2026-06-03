@@ -1,0 +1,26 @@
+---
+description: Invest-Ed project overview and golden rules (always applied)
+alwaysApply: true
+---
+
+# Invest-Ed
+
+A children's finance-education app (web + iOS), heading to a TestFlight beta.
+
+## Layout
+- `backend/` — FastAPI + SQLAlchemy 2.0 (async) + Alembic + Postgres. Deployed on **Railway**.
+- `frontend/` — React 18 + Vite + TypeScript + TanStack Query + Tailwind + shadcn/ui, with a **Capacitor iOS** app in `frontend/ios/`. Web deployed on **Vercel**.
+- `docs/superpowers/specs/` and `docs/superpowers/plans/` — dated design specs and implementation plans. Read the relevant spec/plan before changing a feature.
+
+## Golden rules
+- **Never read or modify any `.env` file.** Secrets live there; `.env.example` lists the variables.
+- Commit to `main`. End commit messages with the project trailer: `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` (match existing style).
+- **Railway deploys the backend only when CI is green** (5 jobs: frontend, backend, security, a11y, responsive). Don't treat a backend change as deployed until CI passes. Vercel auto-deploys the frontend from `main`.
+- Follow **TDD**: write the failing test first, then the minimal code to pass. Keep changes small and focused; touch only what the task needs.
+- DB schema changes require a **hand-written, chained Alembic migration** (set `down_revision` to the current head — check `alembic heads` first). No blind autogenerate.
+- After frontend changes that must reach the iOS app, run `npm run build && npx cap sync ios`; native changes then need an Xcode rebuild.
+
+## Toolchain note
+- The Python virtualenv is at the **git-repo root**: `/Users/leeashmore/Local Repo/.venv` (one level above `backend/`). Backend commands below invoke it explicitly.
+
+See `backend/` and `frontend/` rules for stack-specific commands and conventions, and `AGENTS.md` for a portable summary.

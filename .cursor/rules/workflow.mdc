@@ -1,0 +1,20 @@
+---
+description: How to add or change a feature in Invest-Ed (spec → plan → TDD)
+alwaysApply: true
+---
+
+# Feature workflow
+
+For any non-trivial feature or behaviour change, follow the same pipeline the project already uses (see `docs/superpowers/specs/` and `docs/superpowers/plans/` for examples):
+
+1. **Design first.** Before writing code, agree the approach. For anything beyond a trivial fix, write a short design spec to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` covering: goal, scope (in/out), data model + API, UX, edge cases, and a test plan. Surface trade-offs and unknowns instead of assuming.
+2. **Plan it.** Turn the approved spec into a task-by-task plan in `docs/superpowers/plans/YYYY-MM-DD-<topic>.md` — small, bite-sized tasks, each with the test first, then the minimal implementation, then a commit.
+3. **Implement with TDD.** Per task: write the failing test → run it (confirm it fails) → minimal code → run it (passes) → commit. Keep each task self-contained.
+4. **Verify before done.** Backend: `ruff` + `pytest`. Frontend: `npx tsc -b` + `npm run lint` + `npm test` + `npm run build`. New user-facing UI also needs a `vitest-axe` a11y check.
+5. **Ship.** Commit to `main`; push; confirm **all 5 CI jobs are green** (Railway only deploys the backend on green CI; Vercel auto-deploys the frontend). For iOS-visible changes, `npm run build && npx cap sync ios`, then rebuild in Xcode.
+
+## Principles
+- Minimum code that solves the problem — nothing speculative (YAGNI).
+- Touch only what the task needs; clean up only your own mess.
+- Don't assume or hide confusion — state trade-offs and ask when genuinely blocked.
+- Define success criteria up front and loop until verified.

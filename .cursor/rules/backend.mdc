@@ -1,0 +1,27 @@
+---
+description: Invest-Ed backend conventions (FastAPI / SQLAlchemy / Alembic)
+globs: **/backend/**
+alwaysApply: false
+---
+
+# Backend (`invest-ed/backend`)
+
+FastAPI + SQLAlchemy 2.0 **async** + Alembic + Postgres. App entry: `app.main:app`.
+
+## Commands — run from `backend/`; the venv is at the repo root
+- Tests: `/Users/leeashmore/Local Repo/.venv/bin/pytest`
+- Lint: `/Users/leeashmore/Local Repo/.venv/bin/ruff check .`
+- Migrate: `/Users/leeashmore/Local Repo/.venv/bin/alembic upgrade head` (current head: `/Users/leeashmore/Local Repo/.venv/bin/alembic heads`)
+- Run: `/Users/leeashmore/Local Repo/.venv/bin/uvicorn app.main:app --reload`
+
+## Conventions
+- Structure: routers in `app/routers/`, services (business logic) in `app/services/`, models in `app/models/`, **Pydantic v2** schemas in `app/schemas/`, seed data in `app/seed/`.
+- Async tests use `pytestmark = pytest.mark.asyncio(loop_scope="session")` and the `client` / `admin_client` / `db_session` fixtures in `tests/conftest.py`. **Never** instantiate a raw `AsyncClient` against the app engine.
+- Migrations are hand-written with explicit chained `revision` / `down_revision`. `ruff.toml` ignores E501 in `tests/` and `app/seed/`.
+- The seed (`python -m app.seed.run`) is **idempotent** and runs on every deploy — keep it so.
+- **LLM features** (it's a kids' app): use the tiered client `app/services/llm_client.get_llm_client(tier=...)`, ALWAYS pass model output through `moderate_output(...)`, gate premium features with `is_premium(user)`, and rate-limit LLM endpoints with `@limiter.limit(...)` (mirror the tutor/coach endpoints in `app/routers/ai.py`).
+- Keep pure/business logic in services so it can be unit-tested without a DB.
+
+## Gotchas
+- The **local test Postgres can hang** after a killed pytest run. If a DB-backed test run hangs for ~90s+, it's environmental — kill it and rely on CI.
+- Do not read or modify `.env`.
