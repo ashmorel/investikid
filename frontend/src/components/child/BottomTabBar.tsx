@@ -24,8 +24,10 @@ export function BottomTabBar() {
             to={to}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition-colors min-h-[44px] min-w-[44px] justify-center',
-                isActive ? 'text-amber-600' : 'text-gray-400',
+                'flex min-h-[44px] min-w-[56px] flex-col items-center justify-center gap-0.5 px-3 py-1 text-xs font-bold transition',
+                isActive
+                  ? 'rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm'
+                  : 'text-gray-400 hover:text-orange-500',
               )
             }
           >

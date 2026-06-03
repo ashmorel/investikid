@@ -51,6 +51,9 @@ describe('Home', () => {
     await waitFor(() =>
       expect(screen.getByText(/Stocks 101/i)).toBeInTheDocument(),
     );
+    expect(screen.getByRole('region', { name: /up next/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /your quests/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /stocks 101/i })).toHaveClass('rounded-3xl');
   });
 
   it('renders nothing in the recommendations slot when no recommendations exist', async () => {
@@ -69,6 +72,7 @@ describe('Home', () => {
     await waitFor(() =>
       expect(screen.queryByText(/Loading recommendations/i)).not.toBeInTheDocument(),
     );
+    expect(screen.getByRole('region', { name: /your quests/i })).toBeInTheDocument();
     expect(screen.queryByText(/Complete a lesson to get personalised recommendations/i)).not.toBeInTheDocument();
   });
 

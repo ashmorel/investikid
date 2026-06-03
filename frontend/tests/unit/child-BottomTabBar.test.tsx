@@ -21,7 +21,8 @@ describe('BottomTabBar', () => {
       </MemoryRouter>,
     );
     const questsLink = screen.getByRole('link', { name: /quests/i });
-    expect(questsLink.className).toContain('text-amber-600');
+    expect(questsLink.className).toContain('bg-gradient-to-r');
+    expect(questsLink.className).toContain('rounded-2xl');
   });
 
   it('shows correct labels for all tabs', () => {
