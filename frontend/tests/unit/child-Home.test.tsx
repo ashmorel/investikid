@@ -30,11 +30,12 @@ function renderHome() {
 beforeEach(() => vi.restoreAllMocks());
 
 describe('Home', () => {
-  it('shows StatsBar values with categorised recommendations', async () => {
+  it('shows StatsBar values and renders module tiles', async () => {
     mockJsonRoute({
       '/users/me/progress': { xp: 320, level: 4, streak_count: 5, last_activity_date: '2026-05-02' },
       '/modules': [
         { id: 'mod-1', topic: 'stocks', title: 'Stocks 101', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
+        { id: 'mod-2', topic: 'savings', title: 'Savings Basics', country_codes: [], is_premium: false, order_index: 1, locked: false, icon: '💰' },
       ],
       '/recommendations': {
         continue_learning: [
@@ -51,12 +52,15 @@ describe('Home', () => {
     await waitFor(() =>
       expect(screen.getByText(/Stocks 101/i)).toBeInTheDocument(),
     );
+    expect(screen.getByText(/Savings Basics/i)).toBeInTheDocument();
   });
 
-  it('renders nothing in the recommendations slot when no recommendations exist', async () => {
+  it('renders the module grid when modules are returned', async () => {
     mockJsonRoute({
       '/users/me/progress': { xp: 0, level: 1, streak_count: 0, last_activity_date: null },
-      '/modules': [],
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'Stocks', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
+      ],
       '/recommendations': {
         continue_learning: [],
         practise_again: [],
@@ -65,11 +69,10 @@ describe('Home', () => {
       },
     });
     renderHome();
-    // Wait for recs query to settle (loading text disappears)
     await waitFor(() =>
-      expect(screen.queryByText(/Loading recommendations/i)).not.toBeInTheDocument(),
+      expect(screen.getByText(/Stocks/i)).toBeInTheDocument(),
     );
-    expect(screen.queryByText(/Complete a lesson to get personalised recommendations/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Your quests/i)).toBeInTheDocument();
   });
 
   it('shows review banner when concepts are due', async () => {
@@ -90,5 +93,27 @@ describe('Home', () => {
     renderHome();
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.getByText(/2 concepts/i)).toBeInTheDocument();
+  });
+
+  it('marks the recommended module tile', async () => {
+    mockJsonRoute({
+      '/users/me/progress': { xp: 50, level: 1, streak_count: 0, last_activity_date: null },
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'Stocks', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
+        { id: 'mod-2', topic: 'savings', title: 'Savings', country_codes: [], is_premium: false, order_index: 1, locked: false, icon: '💰' },
+      ],
+      '/recommendations': {
+        continue_learning: [
+          { module_id: 'mod-1', lesson_id: 'L1', score: 0.9, reason: 'Continue', review_prompt: null, weak_concepts: [] },
+        ],
+        practise_again: [],
+        something_new: [],
+        review_summary: { due_count: 0, next_due_at: null },
+      },
+    });
+    renderHome();
+    await waitFor(() => expect(screen.getByText(/Stocks/i)).toBeInTheDocument());
+    // The recommended tile shows the "Next" badge
+    expect(screen.getByText(/Next/i)).toBeInTheDocument();
   });
 });

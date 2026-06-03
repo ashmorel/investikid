@@ -83,6 +83,16 @@ vi.mock('@/hooks/useChildSession', () => ({
 }));
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('@/components/child/HomeHero', () => ({ default: () => <p>HomeHero</p> }));
+vi.mock('@/api/ai', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/api/ai')>();
+  return {
+    ...actual,
+    useRecommendations: () => ({
+      data: { continue_learning: [], something_new: [], practise_again: [], review_summary: { due_count: 0, next_due_at: null } },
+      isLoading: false,
+    }),
+  };
+});
 
 describe('a11y: child core surfaces', () => {
   it('Home has no axe violations', async () => {
@@ -90,20 +100,14 @@ describe('a11y: child core surfaces', () => {
       '/users/me': ME,
       '/users/me/progress': { xp: 320, level: 4, streak_count: 5, last_activity_date: '2026-05-02' },
       '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
+        { id: 'mod-1', topic: 'stocks', title: 'Stocks 101', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
+        { id: 'mod-2', topic: 'savings', title: 'Savings Basics', country_codes: [], is_premium: false, order_index: 1, locked: false, icon: '💰' },
       ],
-      '/recommendations': {
-        continue_learning: [
-          { module_id: 'mod-1', lesson_id: 'L2', score: 0.8, reason: 'Continue where you left off', review_prompt: null, weak_concepts: [] },
-        ],
-        practise_again: [],
-        something_new: [],
-        review_summary: { due_count: 0, next_due_at: null },
-      },
     });
     const { default: Home } = await import('@/pages/child/Home');
     const { container } = renderAt('/home', <Home />, '/home');
     await waitFor(() => expect(screen.getByText(/HomeHero/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Stocks 101/i)).toBeInTheDocument());
     expect(await axe(container)).toHaveNoViolations();
   });
 

@@ -3,60 +3,29 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { useProgress } from '@/hooks/useProgress';
 import { contentApi, type ModuleOut } from '@/api/content';
-import { useRecommendations, type RecommendationCategoryItem } from '@/api/ai';
+import { useRecommendations } from '@/api/ai';
 import { StatsBar } from '@/components/child/StatsBar';
 import { ReviewBanner } from '@/components/child/ReviewBanner';
-import { RecommendationCard } from '@/components/child/RecommendationCard';
 import { Button } from '@/components/ui/button';
 import HomeHero from '@/components/child/HomeHero';
+import { ModuleTile } from '@/components/child/ui/ModuleTile';
 
-type Category = 'continue_learning' | 'practise_again' | 'something_new';
-
-const CATEGORY_META: Record<Category, { label: string; icon: string; color: string }> = {
-  continue_learning: { label: 'Continue Learning', icon: '▶', color: 'text-green-400' },
-  practise_again: { label: 'Practise Again', icon: '🔄', color: 'text-amber-400' },
-  something_new: { label: 'Something New', icon: '✨', color: 'text-sky-400' },
+const TOPIC_STYLE: Record<string, { accent: string; tint: string }> = {
+  stocks: { accent: '#fbbf24', tint: '#fff4d6' },
+  savings: { accent: '#38bdf8', tint: '#e0f2fe' },
+  budgeting: { accent: '#34d399', tint: '#dcfce7' },
+  risk: { accent: '#a78bfa', tint: '#ede9fe' },
+  crypto: { accent: '#6366f1', tint: '#e6e9ff' },
+  taxes: { accent: '#f43f72', tint: '#ffe4ec' },
+  debt: { accent: '#14b8a6', tint: '#d7f5f1' },
+  entrepreneurship: { accent: '#f97316', tint: '#ffedd5' },
+  real_estate: { accent: '#eab308', tint: '#fef9c3' },
 };
-
-function CategorySection({
-  category,
-  items,
-  modules,
-}: {
-  category: Category;
-  items: RecommendationCategoryItem[];
-  modules: ModuleOut[];
-}) {
-  if (items.length === 0) return null;
-  const meta = CATEGORY_META[category];
-
-  return (
-    <section className="mt-5" aria-label={meta.label}>
-      <h2 className={`${meta.color} text-xs font-bold uppercase tracking-wider mb-2`}>
-        {meta.icon} {meta.label}
-      </h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {items.map((item) => {
-          const mod = modules.find((m) => m.id === item.module_id);
-          return (
-            <RecommendationCard
-              key={item.module_id}
-              item={item}
-              category={category}
-              moduleTitle={mod?.title ?? 'Module'}
-              completedCount={0}
-              totalCount={0}
-            />
-          );
-        })}
-      </div>
-    </section>
-  );
-}
+const styleFor = (t: string) => TOPIC_STYLE[t] ?? { accent: '#fbbf24', tint: '#fff4d6' };
 
 export default function Home() {
   const { data: progress } = useProgress();
-  const { data: recs, isLoading: recsLoading } = useRecommendations();
+  const { data: recs } = useRecommendations();
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -65,16 +34,16 @@ export default function Home() {
     staleTime: 60_000,
   });
 
-  const modules = modulesQ.data ?? [];
+  const modules = [...(modulesQ.data ?? [])].sort((a, b) => a.order_index - b.order_index);
   const level = progress?.level ?? 1;
   const xp = progress?.xp ?? 0;
   const xpInLevel = xp % 100;
   const xpForNext = 100;
 
-  const hasAnything =
-    (recs?.continue_learning?.length ?? 0) > 0 ||
-    (recs?.practise_again?.length ?? 0) > 0 ||
-    (recs?.something_new?.length ?? 0) > 0;
+  const recommendedModuleId =
+    recs?.continue_learning?.[0]?.module_id ??
+    recs?.something_new?.[0]?.module_id ??
+    null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
@@ -113,16 +82,30 @@ export default function Home() {
         </div>
       )}
 
-      {/* Categorised recommendations */}
-      {recsLoading ? (
-        <p className="mt-5 text-sm text-gray-500">Loading recommendations…</p>
-      ) : hasAnything ? (
-        <>
-          <CategorySection category="continue_learning" items={recs?.continue_learning ?? []} modules={modules} />
-          <CategorySection category="practise_again" items={recs?.practise_again ?? []} modules={modules} />
-          <CategorySection category="something_new" items={recs?.something_new ?? []} modules={modules} />
-        </>
-      ) : null}
+      {/* Your quests module grid */}
+      {modules.length > 0 && (
+        <section className="mt-5" aria-label="Your quests">
+          <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Your quests</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {modules.map((m) => {
+              const { accent, tint } = styleFor(m.topic);
+              return (
+                <ModuleTile
+                  key={m.id}
+                  emoji={m.icon}
+                  title={m.title}
+                  subtitle={m.locked ? 'Locked' : 'Open'}
+                  accent={accent}
+                  tint={tint}
+                  to={`/lessons/${m.id}`}
+                  locked={m.locked}
+                  recommended={m.id === recommendedModuleId}
+                />
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="mt-5">
         <Button asChild className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl">
