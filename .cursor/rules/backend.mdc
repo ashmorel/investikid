@@ -1,5 +1,5 @@
 ---
-description: Invest-Ed backend conventions (FastAPI / SQLAlchemy / Alembic)
+description: InvestiKid backend conventions (FastAPI / SQLAlchemy / Alembic)
 globs: **/backend/**
 alwaysApply: false
 ---

@@ -1,9 +1,9 @@
 ---
-description: Invest-Ed project overview and golden rules (always applied)
+description: InvestiKid project overview and golden rules (always applied)
 alwaysApply: true
 ---
 
-# Invest-Ed
+# InvestiKid
 
 A children's finance-education app (web + iOS), heading to a TestFlight beta.
 

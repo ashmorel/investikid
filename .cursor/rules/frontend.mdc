@@ -1,5 +1,5 @@
 ---
-description: Invest-Ed frontend conventions (React / Vite / Tailwind / Capacitor)
+description: InvestiKid frontend conventions (React / Vite / Tailwind / Capacitor)
 globs: **/frontend/**
 alwaysApply: false
 ---

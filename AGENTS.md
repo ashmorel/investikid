@@ -1,4 +1,4 @@
-# Invest-Ed
+# InvestiKid
 
 A children's finance-education app (web + iOS), heading to a TestFlight beta. This is the active project in this repository.
 
@@ -26,6 +26,9 @@ Frontend (run from `frontend/`):
 - Async backend tests use `pytestmark = pytest.mark.asyncio(loop_scope="session")` + the `client`/`admin_client`/`db_session` fixtures — never a raw `AsyncClient` on the app engine.
 - LLM output is always moderated (`moderate_output`); premium-gate with `is_premium`; rate-limit LLM endpoints. It's a kids' app — keep it safe and WCAG 2.2 AA accessible.
 - iOS: keep form controls ≥16px on touch (no `maximum-scale`); keep the WKWebView re-layout + safe-area handling.
+
+## Feature workflow
+For any non-trivial feature/change: **design spec → implementation plan → TDD**. Write a short spec to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` (goal, scope, data/API, UX, edge cases, test plan), then a task-by-task plan in `docs/superpowers/plans/`, then implement test-first (failing test → minimal code → commit per task). Verify (ruff + pytest; tsc + lint + test + build, plus `vitest-axe` for new UI), push, confirm green CI. Surface trade-offs instead of assuming; minimum code; touch only what the task needs.
 
 ## Gotchas
 - The local test Postgres can hang after a killed pytest run — if a DB test hangs ~90s+, it's environmental; rely on CI.
