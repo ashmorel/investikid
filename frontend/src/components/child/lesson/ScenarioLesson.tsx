@@ -38,7 +38,7 @@ export function ScenarioLesson({ contentJson, onComplete, illustration, onShowEd
       <p className="text-lg font-extrabold leading-snug text-gray-900">{contentJson.prompt}</p>
       <div className="space-y-3" role="radiogroup" aria-label="Answer choices">
         {contentJson.choices.map((choice, i) => (
-          <OptionCard key={i} letter={LETTERS[i] ?? '?'} state={optionState(i)} disabled={submitted} onSelect={() => setSelected(i)}>
+          <OptionCard key={i} letter={LETTERS[i] ?? '?'} state={optionState(i)} checked={selected === i} disabled={submitted} onSelect={() => setSelected(i)}>
             {choice.label}
           </OptionCard>
         ))}

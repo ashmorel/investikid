@@ -12,6 +12,10 @@ describe('OptionCard', () => {
     r.click();
     expect(onSelect).toHaveBeenCalled();
   });
+  it('aria-checked reflects selection, not correctness (correct + unchecked => false)', () => {
+    render(<OptionCard letter="B" state="correct" checked={false}>£20</OptionCard>);
+    expect(screen.getByRole('radio', { name: /£20/ })).toHaveAttribute('aria-checked', 'false');
+  });
   it('no a11y violations inside a radiogroup', async () => {
     const { container } = render(
       <div role="radiogroup" aria-label="answers">

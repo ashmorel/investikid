@@ -5,17 +5,19 @@ export type OptionState = 'default' | 'selected' | 'correct' | 'incorrect';
 type Props = {
   letter: string;
   state?: OptionState;
+  checked?: boolean;
   disabled?: boolean;
   onSelect?: () => void;
   children: React.ReactNode;
 };
 
-export function OptionCard({ letter, state = 'default', disabled, onSelect, children }: Props) {
+export function OptionCard({ letter, state = 'default', checked, disabled, onSelect, children }: Props) {
+  const isChecked = checked ?? state === 'selected';
   return (
     <button
       type="button"
       role="radio"
-      aria-checked={state === 'selected' || state === 'correct'}
+      aria-checked={isChecked}
       disabled={disabled}
       onClick={onSelect}
       className={cn(
