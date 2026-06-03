@@ -1,25 +1,14 @@
-import { Button } from '@/components/ui/button';
+import { GradientButton } from '@/components/child/ui/GradientButton';
 
-type Props = {
-  contentJson: { title?: string; body?: string };
-  onComplete: (score: number | null) => void;
-  illustration?: React.ReactNode;
-  completing?: boolean;
-};
+type Props = { contentJson: { title?: string; body?: string }; onComplete: (score: number | null) => void; illustration?: React.ReactNode; completing?: boolean };
 
 export function CardLesson({ contentJson, onComplete, illustration, completing = false }: Props) {
   return (
-    <div className="rounded-2xl border-2 border-amber-200 bg-white p-6 space-y-5">
-      {illustration && <div>{illustration}</div>}
-      <h2 className="text-xl font-extrabold text-gray-900">{contentJson.title ?? ''}</h2>
-      <p className="leading-relaxed text-gray-700">{contentJson.body ?? ''}</p>
-      <div className="flex justify-end">
-        <Button
-          onClick={() => onComplete(null)}
-          disabled={completing}
-          className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl"
-        >{completing ? 'Saving...' : 'Got it →'}</Button>
-      </div>
+    <div className="space-y-5 rounded-3xl bg-white p-7 text-center shadow-lg shadow-orange-500/10">
+      {illustration && <div className="flex justify-center">{illustration}</div>}
+      <h2 className="text-2xl font-extrabold leading-tight text-gray-900">{contentJson.title ?? ''}</h2>
+      <p className="text-[15px] leading-relaxed text-gray-600">{contentJson.body ?? ''}</p>
+      <GradientButton full onClick={() => onComplete(null)} disabled={completing}>{completing ? 'Saving…' : 'Got it →'}</GradientButton>
     </div>
   );
 }
