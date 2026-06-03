@@ -51,6 +51,7 @@ async def generate_home_greeting(
         system_prompt=system_prompt,
         messages=messages,
         max_tokens=60,
+        temperature=0.3,
     )
     text = (raw or "").strip().strip('"')[:_MAX_LEN]
     if not text:
@@ -59,4 +60,4 @@ async def generate_home_greeting(
     _mod = await moderate_output(text, surface="coach")
     if not _mod.safe:
         raise ValueError("greeting blocked by moderation")
-    return _mod.text
+    return _mod.text[:_MAX_LEN]
