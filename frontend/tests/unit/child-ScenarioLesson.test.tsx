@@ -13,9 +13,9 @@ const scenario = {
 };
 
 describe('ScenarioLesson', () => {
-  it('Submit disabled until selection; outcome shown after submit', () => {
+  it('Check answer disabled until selection; outcome shown after check', () => {
     render(<ScenarioLesson contentJson={scenario} onComplete={() => {}} />);
-    const submit = screen.getByRole('button', { name: /Submit/ });
+    const submit = screen.getByRole('button', { name: /Check answer/ });
     expect(submit).toBeDisabled();
     fireEvent.click(screen.getByRole('radio', { name: '£163' }));
     fireEvent.click(submit);
@@ -26,7 +26,7 @@ describe('ScenarioLesson', () => {
     const onComplete = vi.fn();
     render(<ScenarioLesson contentJson={scenario} onComplete={onComplete} />);
     fireEvent.click(screen.getByRole('radio', { name: '£163' }));
-    fireEvent.click(screen.getByRole('button', { name: /Submit/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Check answer/ }));
     fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
     expect(onComplete).toHaveBeenCalledWith(1.0);
   });
@@ -35,7 +35,7 @@ describe('ScenarioLesson', () => {
     const onComplete = vi.fn();
     render(<ScenarioLesson contentJson={scenario} onComplete={onComplete} />);
     fireEvent.click(screen.getByRole('radio', { name: '£150' }));
-    fireEvent.click(screen.getByRole('button', { name: /Submit/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Check answer/ }));
     expect(screen.getByText(/Simple interest only\./)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
     expect(onComplete).toHaveBeenCalledWith(0.0);

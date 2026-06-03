@@ -10,20 +10,20 @@ const quiz = {
 };
 
 describe('QuizLesson', () => {
-  it('Submit is disabled until a choice is selected', () => {
+  it('Check answer is disabled until a choice is selected', () => {
     render(<QuizLesson contentJson={quiz} onComplete={() => {}} />);
-    const submit = screen.getByRole('button', { name: /Submit/ });
+    const submit = screen.getByRole('button', { name: /Check answer/ });
     expect(submit).toBeDisabled();
     fireEvent.click(screen.getByRole('radio', { name: 'A' }));
     expect(submit).toBeEnabled();
   });
 
-  it('submit reveals explanation and disables further selection', () => {
+  it('checking answer reveals explanation and disables further selection', () => {
     render(<QuizLesson contentJson={quiz} onComplete={() => {}} />);
     fireEvent.click(screen.getByRole('radio', { name: 'A' }));
-    fireEvent.click(screen.getByRole('button', { name: /Submit/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Check answer/ }));
     expect(screen.getByText(/Because C\./)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Submit/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Check answer/ })).not.toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'A' })).toBeDisabled();
   });
 
@@ -31,7 +31,7 @@ describe('QuizLesson', () => {
     const onComplete = vi.fn();
     render(<QuizLesson contentJson={quiz} onComplete={onComplete} />);
     fireEvent.click(screen.getByRole('radio', { name: 'C' }));
-    fireEvent.click(screen.getByRole('button', { name: /Submit/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Check answer/ }));
     fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
     expect(onComplete).toHaveBeenCalledWith(1.0);
   });
@@ -40,7 +40,7 @@ describe('QuizLesson', () => {
     const onComplete = vi.fn();
     render(<QuizLesson contentJson={quiz} onComplete={onComplete} />);
     fireEvent.click(screen.getByRole('radio', { name: 'A' }));
-    fireEvent.click(screen.getByRole('button', { name: /Submit/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Check answer/ }));
     fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
     expect(onComplete).toHaveBeenCalledWith(0.0);
   });

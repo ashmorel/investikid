@@ -62,7 +62,7 @@ describe('Lesson shell', () => {
     renderAt('/lessons/mod-1/lv-1/L1');
     expect(await screen.findByRole('heading', { name: /CardT/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Got it/ }));
-    await waitFor(() => expect(screen.getByText(/\+10 XP/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/\+10/)).toBeInTheDocument());
     // Continue button present
     expect(screen.getByRole('button', { name: /Continue/ })).toBeInTheDocument();
   });
@@ -164,6 +164,6 @@ describe('Lesson shell', () => {
       expect(completionPosts).toHaveLength(1);
     });
 
-    await waitFor(() => expect(screen.getByText(/\+10 XP/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/\+10/)).toBeInTheDocument());
   });
 });

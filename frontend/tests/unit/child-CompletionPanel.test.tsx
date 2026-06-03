@@ -7,11 +7,14 @@ vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 const baseResult = { xp_awarded: 25, already_completed: false, total_xp: 320, level: 4, streak_count: 5, practice_available: false };
 
 describe('CompletionPanel', () => {
-  it('shows xp awarded and totals', () => {
+  it('shows heading, xp awarded, level and streak', () => {
     const onContinue = vi.fn();
     render(<CompletionPanel result={baseResult} onContinue={onContinue} />);
-    expect(screen.getByText(/Quest Complete!/)).toBeInTheDocument();
-    expect(screen.getByText(/Total: 320 XP/)).toBeInTheDocument();
+    expect(screen.getByText(/Lesson complete!/)).toBeInTheDocument();
+    expect(screen.getByText(/\+25/)).toBeInTheDocument();
+    expect(screen.getByText('XP')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
   });
 
   it('calls onContinue when Continue button is clicked', () => {
