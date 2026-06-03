@@ -117,3 +117,15 @@ class CoachChatResponse(BaseModel):
     conversation_id: uuid.UUID
     messages_remaining: int
     actions: list[CoachAction]
+
+
+class HomeGreetingRequest(BaseModel):
+    name: str = ""
+    mode: str  # "start" | "continue" | "caught_up"
+    lesson_label: str | None = None
+    streak_count: int = 0
+    due_count: int = 0
+
+
+class HomeGreetingResponse(BaseModel):
+    greeting: str
