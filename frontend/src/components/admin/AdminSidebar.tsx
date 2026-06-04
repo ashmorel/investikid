@@ -22,7 +22,7 @@ export default function AdminSidebar() {
             className={({ isActive }) =>
               `rounded-md px-3 py-2 text-sm font-medium ${
                 isActive
-                  ? 'bg-brand-gradient text-white'
+                  ? 'bg-brand-600 text-white'
                   : 'text-muted-foreground hover:bg-brand-50 hover:text-ink'
               }`
             }
