@@ -13,6 +13,7 @@ const UNVERIFIED_ME: Me = {
   country_code: 'US',
   currency_code: 'USD',
   topic_path: null,
+  content_region: null,
   is_premium: false,
   is_admin: false,
   parent_email: null,
