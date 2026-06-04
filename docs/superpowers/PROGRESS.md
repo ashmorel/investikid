@@ -22,14 +22,15 @@ from GitHub `ashmorel/Investikidyasminschoice` if gone).
 | **SP-B** Child core layouts | ✅ shipped | gamified Home, learning-path progress, card Stats, Coach/Progress polish |
 | **SP-C** Simulator suite | ✅ shipped | Practice Portfolio hero, quick-stats, Stock/Market polish |
 | **SP-D1** Parent social login | ✅ shipped | Apple+Google (web+native) ID-token verification, `parent_identity` table; **needs user OAuth setup** |
-| **SP-D2** Auth polish + Coach panel | 📝 **PLANNED — execute next** | spec + plan written, NOT implemented |
-| **SP-E** Parent/admin polish | ⬜ not started | layout-only |
+| **SP-D2** Auth polish + Coach panel | ✅ shipped (in Codex) | branded `AuthPage`, polished + friendlier auth screens, `CoachChat` extracted, Coach slide-over panel; CI green |
+| **SP-E** Parent/admin polish | 📝 **next** | layout-only restyle of parent dashboard + admin panel |
 
-## ▶ Resume here: execute SP-D2
-- **Spec:** `docs/superpowers/specs/2026-06-04-auth-screen-polish-design.md`
-- **Plan:** `docs/superpowers/plans/2026-06-04-auth-screen-polish.md` — **7 tasks, self-contained (full code + commands).**
-- Scope: (1) brand the shared `AuthPage` (Penny + "InvestiKid" wordmark + white card + `title`/`subtitle`) and adopt across all 8 auth screens; (2) friendlier auth copy (copy-only — no field/validation/route change); (3) global Coach Penny opens an in-context **slide-over panel** (extract `CoachChat`, add `CoachPanel` on `ui/sheet.tsx`, `PennyFAB`→`onOpen`, `Shell` `coachOpen`; keep the `/coach` route).
-- **How to execute:** work the plan task-by-task; TDD where the plan specifies; run `npx tsc -b && npm run lint && npm test && npm run build` from `invest-ed/frontend` per task; commit per task; push; confirm green CI. (Claude Code can use the `superpowers:subagent-driven-development` skill; Codex/others just follow the plan's checkboxes.)
+> **Also added by Codex during SP-D2 (beyond the plan):** a new CI job **"iOS (Capacitor sync · simulator build)"** (macOS — `npx cap sync ios` → resolve packages → `xcodebuild` simulator build), and YouTube-embed fixes for the Capacitor WebView. CI is now **6 jobs**; all green on HEAD.
+>
+> **Note on local "no such module 'Capacitor'":** the iOS CI job proves the SPM build is sound. If a *local* Xcode build hits this, it's a stale package graph: quit Xcode → `npm run build && npx cap sync ios` from `invest-ed/frontend` → reopen `ios/App/App.xcodeproj` (Capacitor 8 = SPM project, no workspace/Podfile) → File ▸ Packages ▸ Reset Package Caches + Resolve → Clean Build Folder → Build. (Capacitor's `capacitor-swift-pm` is a remote SPM dep Xcode must fetch.)
+
+## ▶ Resume here: SP-E (parent/admin polish)
+Final layout sub-project. Brainstorm → spec → plan → execute as usual. Scope: sky-blue card/Penny polish of the **parent dashboard** (`src/pages/ParentDashboard.tsx` + `src/components/parent/*`) and the **admin panel** (`src/components/admin/*`, admin pages) — layout-only, no behaviour/route change. (Per the SP-B/C/D2 lesson: READ each screen first — some may already be fine post-SP-A, e.g. the parent `SignInMethods` card from SP-D1.)
 
 ## Pending USER actions (not code)
 - **SP-D1 OAuth setup** before real social sign-in works: see `invest-ed/docs/parent-social-login-setup.md` (Google Cloud web+iOS client IDs; Apple Developer Sign-in-with-Apple + Services ID; Xcode capability + Google URL scheme; set the 4 backend env ids + `VITE_` frontend ids). Until set, the OAuth endpoints return `503 not_configured` — expected.

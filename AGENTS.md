@@ -3,7 +3,7 @@
 A children's finance-education app (web + iOS), heading to a TestFlight beta. This is the active project in this repository.
 
 ## ▶ Current work — resume here
-The **"Yasmin's Choice" rebrand** programme is in progress. **`docs/superpowers/PROGRESS.md` is the single source of truth** for status and the next step. Currently: SP-0/A/B/C/D1 shipped; **SP-D2 (auth polish + Coach panel) is planned and ready to execute** — work the plan at `docs/superpowers/plans/2026-06-04-auth-screen-polish.md` task-by-task. Workflow = design spec → implementation plan → execute (specs/plans in `docs/superpowers/`).
+The **"Yasmin's Choice" rebrand** programme is in progress. **`docs/superpowers/PROGRESS.md` is the single source of truth** for status and the next step. Currently: SP-0/A/B/C/D1/D2 shipped (CI green, 6 jobs incl. an iOS Capacitor simulator build); **SP-E (parent/admin polish) is next** — brainstorm → spec → plan → execute. Workflow + full status in `docs/superpowers/PROGRESS.md`.
 
 ## Structure
 - `backend/` — FastAPI + SQLAlchemy 2.0 (async) + Alembic + Postgres. Deployed on **Railway**.
