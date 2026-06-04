@@ -22,7 +22,7 @@ export default function ModuleForm() {
 
   // Wait for data to load in edit mode before rendering the form
   if (isEdit && !existing) {
-    return <div className="text-slate-400">Loading…</div>;
+    return <div className="text-muted-foreground">Loading…</div>;
   }
 
   return <ModuleFormInner key={existing?.id ?? 'new'} existing={existing} modules={modules} lessons={lessons} countries={countries} isEdit={isEdit} moduleId={moduleId} />;
@@ -101,34 +101,34 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
 
   return (
     <div className="max-w-2xl">
-      <h2 className="mb-4 text-xl font-semibold text-slate-50">
+      <h2 className="mb-4 text-xl font-semibold text-ink">
         {isEdit ? 'Edit Module' : 'New Module'}
       </h2>
       <form onSubmit={handleSave} className="flex flex-col gap-4">
         <div>
-          <label htmlFor="mod-topic" className="mb-1 block text-sm text-slate-400">Topic</label>
+          <label htmlFor="mod-topic" className="mb-1 block text-sm text-ink">Topic</label>
           <input id="mod-topic" value={topic} onChange={(e) => setTopic(e.target.value)} required
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
         </div>
         <div>
-          <label htmlFor="mod-title" className="mb-1 block text-sm text-slate-400">Title</label>
+          <label htmlFor="mod-title" className="mb-1 block text-sm text-ink">Title</label>
           <input id="mod-title" value={title} onChange={(e) => setTitle(e.target.value)} required
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
         </div>
         <div className="flex gap-4">
           <div className="flex-1">
-            <label htmlFor="mod-icon" className="mb-1 block text-sm text-slate-400">Icon</label>
+            <label htmlFor="mod-icon" className="mb-1 block text-sm text-ink">Icon</label>
             <input id="mod-icon" value={icon} onChange={(e) => setIcon(e.target.value)} required
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
           <div className="flex items-end gap-2 pb-2">
             <input id="mod-premium" type="checkbox" checked={isPremium} onChange={(e) => setIsPremium(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-600 bg-slate-800" />
-            <label htmlFor="mod-premium" className="text-sm text-slate-400">Premium</label>
+              className="h-4 w-4 rounded border-input bg-background" />
+            <label htmlFor="mod-premium" className="text-sm text-ink">Premium</label>
           </div>
         </div>
         <div>
-          <span className="mb-1 block text-sm text-slate-400">Countries (empty = global)</span>
+          <span className="mb-1 block text-sm text-ink">Countries (empty = global)</span>
           <div className="flex flex-wrap gap-2">
             {countries.map((code) => (
               <button
@@ -137,8 +137,8 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
                 onClick={() => toggleCountry(code)}
                 className={`rounded-md px-3 py-1 text-xs ${
                   countryCodes.includes(code)
-                    ? 'bg-blue-600 text-white'
-                    : 'border border-slate-600 bg-slate-800 text-slate-400'
+                    ? 'bg-brand-600 text-white'
+                    : 'border border-input bg-background text-muted-foreground'
                 }`}
               >
                 {code}
@@ -149,7 +149,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
 
         {/* Prerequisites */}
         <div>
-          <span className="mb-1 block text-sm text-slate-400">Prerequisites (optional)</span>
+          <span className="mb-1 block text-sm text-ink">Prerequisites (optional)</span>
           <div className="flex flex-wrap gap-2">
             {modules
               .filter((m) => m.id !== moduleId)
@@ -161,7 +161,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
                   className={`rounded-md px-3 py-1 text-xs ${
                     prerequisiteIds.includes(m.id)
                       ? 'bg-purple-600 text-white'
-                      : 'border border-slate-600 bg-slate-800 text-slate-400'
+                      : 'border border-input bg-background text-muted-foreground'
                   }`}
                 >
                   {m.icon} {m.title}
@@ -173,31 +173,31 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
         {/* Age Range */}
         <div className="flex gap-4">
           <div className="flex-1">
-            <label htmlFor="mod-min-age" className="mb-1 block text-sm text-slate-400">Min Age</label>
+            <label htmlFor="mod-min-age" className="mb-1 block text-sm text-ink">Min Age</label>
             <input id="mod-min-age" type="number" value={minAge} onChange={(e) => setMinAge(e.target.value)}
               min={1} max={99} placeholder="Any"
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
           <div className="flex-1">
-            <label htmlFor="mod-max-age" className="mb-1 block text-sm text-slate-400">Max Age</label>
+            <label htmlFor="mod-max-age" className="mb-1 block text-sm text-ink">Max Age</label>
             <input id="mod-max-age" type="number" value={maxAge} onChange={(e) => setMaxAge(e.target.value)}
               min={1} max={99} placeholder="Any"
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
-          <p className="self-end pb-2 text-xs text-slate-500">Leave empty for all ages</p>
+          <p className="self-end pb-2 text-xs text-muted-foreground">Leave empty for all ages</p>
         </div>
 
         {/* Lessons section — only in edit mode */}
         {isEdit && moduleId && (
-          <div className="mt-4 border-t border-slate-700 pt-4">
+          <div className="mt-4 border-t border-line pt-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-base font-medium text-slate-50">Lessons ({sortedLessons.length})</h3>
+              <h3 className="text-base font-medium text-ink">Lessons ({sortedLessons.length})</h3>
               <button type="button" onClick={() => { setEditingLesson(null); setShowNewLesson(true); }}
-                className="text-sm text-blue-400 hover:text-blue-300">+ Add Lesson</button>
+                className="text-sm text-brand-600 hover:text-brand-700">+ Add Lesson</button>
             </div>
             <div className="flex flex-col gap-2">
               {sortedLessons.map((l, i) => (
-                <div key={l.id} className="flex items-center gap-2 rounded-md border border-slate-700 bg-slate-900 px-3 py-2">
+                <div key={l.id} className="flex items-center gap-2 rounded-md border border-line bg-card px-3 py-2">
                   <OrderArrows
                     onMoveUp={() => handleLessonMove(i, 'up')}
                     onMoveDown={() => handleLessonMove(i, 'down')}
@@ -205,16 +205,16 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
                     isLast={i === sortedLessons.length - 1}
                   />
                   <span className={`rounded px-2 py-0.5 text-xs ${
-                    l.type === 'card' ? 'bg-blue-500/20 text-blue-400'
+                    l.type === 'card' ? 'bg-brand-500/20 text-brand-600'
                     : l.type === 'quiz' ? 'bg-success-500/20 text-success-600'
                     : 'bg-accent-500/20 text-accent-500'
                   }`}>{l.type}</span>
-                  <span className="flex-1 truncate text-sm text-slate-50">
+                  <span className="flex-1 truncate text-sm text-ink">
                     {lessonLabel(l)}
                   </span>
-                  <span className="text-xs text-slate-500">{l.xp_reward} XP</span>
+                  <span className="text-xs text-muted-foreground">{l.xp_reward} XP</span>
                   <button type="button" onClick={() => { setEditingLesson(l); setShowNewLesson(false); }}
-                    className="text-xs text-blue-400">Edit</button>
+                    className="text-xs text-brand-600">Edit</button>
                   <button type="button" onClick={() => setDeleteTarget(l)}
                     className="text-xs text-danger-500">Delete</button>
                 </div>
@@ -225,11 +225,11 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
         )}
 
         <div className="mt-4 flex gap-3">
-          <button type="submit" className="rounded-md bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-500">
+          <button type="submit" className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700">
             Save
           </button>
           <button type="button" onClick={() => navigate('/admin/modules')}
-            className="rounded-md border border-slate-600 px-6 py-2 text-sm text-slate-300 hover:bg-slate-800">
+            className="rounded-md border border-line px-6 py-2 text-sm text-muted-foreground hover:bg-brand-50">
             Cancel
           </button>
         </div>

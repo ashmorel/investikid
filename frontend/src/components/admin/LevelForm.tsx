@@ -33,35 +33,35 @@ export default function LevelForm({ moduleId, existing, nextOrderIndex, onClose 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" role="dialog" aria-label={isEdit ? 'Edit level' : 'Add level'}>
-      <div className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-900 p-6">
-        <h3 className="mb-4 text-lg font-semibold text-slate-50">{isEdit ? 'Edit Level' : 'Add Level'}</h3>
+      <div className="w-full max-w-md rounded-lg border border-line bg-card p-6">
+        <h3 className="mb-4 text-lg font-semibold text-ink">{isEdit ? 'Edit Level' : 'Add Level'}</h3>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
           <div>
-            <label htmlFor="level-title" className="mb-1 block text-sm text-slate-400">Title</label>
+            <label htmlFor="level-title" className="mb-1 block text-sm text-ink">Title</label>
             <input
               id="level-title"
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
             />
           </div>
 
           <div>
-            <label htmlFor="level-order-index" className="mb-1 block text-sm text-slate-400">Order index</label>
+            <label htmlFor="level-order-index" className="mb-1 block text-sm text-ink">Order index</label>
             <input
               id="level-order-index"
               type="number"
               value={orderIndex}
               onChange={(e) => setOrderIndex(Number(e.target.value))}
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
             />
           </div>
 
           <div>
-            <label htmlFor="level-pass-threshold" className="mb-1 block text-sm text-slate-400">Pass threshold (0–1)</label>
+            <label htmlFor="level-pass-threshold" className="mb-1 block text-sm text-ink">Pass threshold (0–1)</label>
             <input
               id="level-pass-threshold"
               type="number"
@@ -70,18 +70,18 @@ export default function LevelForm({ moduleId, existing, nextOrderIndex, onClose 
               max={1}
               value={passThreshold}
               onChange={(e) => setPassThreshold(Number(e.target.value))}
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
             />
           </div>
 
           <div>
-            <label htmlFor="level-icon" className="mb-1 block text-sm text-slate-400">Icon</label>
+            <label htmlFor="level-icon" className="mb-1 block text-sm text-ink">Icon</label>
             <input
               id="level-icon"
               type="text"
               value={icon}
               onChange={(e) => setIcon(e.target.value)}
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
             />
           </div>
 
@@ -91,26 +91,26 @@ export default function LevelForm({ moduleId, existing, nextOrderIndex, onClose 
               type="checkbox"
               checked={isPremium}
               onChange={(e) => setIsPremium(e.target.checked)}
-              className="h-4 w-4 accent-blue-500"
+              className="h-4 w-4 accent-brand-600"
             />
-            <label htmlFor="level-is-premium" className="text-sm text-slate-400">Premium</label>
+            <label htmlFor="level-is-premium" className="text-sm text-ink">Premium</label>
           </div>
 
           <div>
-            <p className="text-xs text-slate-500">Content source: <span className="text-slate-400">authored</span></p>
+            <p className="text-xs text-muted-foreground">Content source: <span className="text-muted-foreground">authored</span></p>
           </div>
 
           <div className="flex gap-3 pt-1">
             <button
               type="submit"
-              className="rounded-md bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-500"
+              className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700"
             >
               Save
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-slate-600 px-6 py-2 text-sm text-slate-300 hover:bg-slate-800"
+              className="rounded-md border border-line px-6 py-2 text-sm text-muted-foreground hover:bg-brand-50"
             >
               Cancel
             </button>

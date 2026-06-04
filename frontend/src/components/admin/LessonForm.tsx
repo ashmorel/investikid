@@ -86,8 +86,8 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-      <div className="w-full max-w-lg rounded-lg border border-slate-700 bg-slate-900 p-6 max-h-[90vh] overflow-y-auto">
-        <h3 className="mb-4 text-lg font-semibold text-slate-50">
+      <div className="w-full max-w-lg rounded-lg border border-line bg-card p-6 max-h-[90vh] overflow-y-auto">
+        <h3 className="mb-4 text-lg font-semibold text-ink">
           {isEdit ? 'Edit Lesson' : 'New Lesson'}
         </h3>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -100,7 +100,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                 aria-label={t}
                 onClick={() => handleTypeChange(t)}
                 className={`rounded-full px-4 py-1 text-sm ${
-                  type === t ? 'bg-blue-600 text-white' : 'border border-slate-600 text-slate-400'
+                  type === t ? 'bg-brand-600 text-white' : 'border border-input text-muted-foreground'
                 }`}
               >
                 {t}
@@ -110,23 +110,23 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
 
           {/* XP Reward */}
           <div>
-            <label htmlFor="lesson-xp" className="mb-1 block text-sm text-slate-400">XP Reward</label>
+            <label htmlFor="lesson-xp" className="mb-1 block text-sm text-ink">XP Reward</label>
             <input id="lesson-xp" type="number" value={xpReward} onChange={(e) => setXpReward(Number(e.target.value))}
-              className="w-24 rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+              className="w-24 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
 
           {/* Card fields */}
           {type === 'card' && (
             <>
               <div>
-                <label htmlFor="card-title" className="mb-1 block text-sm text-slate-400">Title</label>
+                <label htmlFor="card-title" className="mb-1 block text-sm text-ink">Title</label>
                 <input id="card-title" value={cardTitle} onChange={(e) => setCardTitle(e.target.value)} required
-                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
               <div>
-                <label htmlFor="card-body" className="mb-1 block text-sm text-slate-400">Body</label>
+                <label htmlFor="card-body" className="mb-1 block text-sm text-ink">Body</label>
                 <textarea id="card-body" value={cardBody} onChange={(e) => setCardBody(e.target.value)} required rows={3}
-                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
             </>
           )}
@@ -135,12 +135,12 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
           {type === 'quiz' && (
             <>
               <div>
-                <label htmlFor="quiz-question" className="mb-1 block text-sm text-slate-400">Question</label>
+                <label htmlFor="quiz-question" className="mb-1 block text-sm text-ink">Question</label>
                 <input id="quiz-question" value={question} onChange={(e) => setQuestion(e.target.value)} required
-                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
               <div>
-                <span className="mb-1 block text-sm text-slate-400">Choices</span>
+                <span className="mb-1 block text-sm text-ink">Choices</span>
                 {choices.map((c, i) => (
                   <div key={i} className="mb-2 flex items-center gap-2">
                     <input
@@ -154,7 +154,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                     <input
                       value={c}
                       onChange={(e) => { const nc = [...choices]; nc[i] = e.target.value; setChoices(nc); }}
-                      className="flex-1 rounded-md border border-slate-600 bg-slate-800 px-3 py-1 text-slate-50"
+                      className="flex-1 rounded-md border border-input bg-background px-3 py-1 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
                       placeholder={`Choice ${i + 1}`}
                       required
                     />
@@ -168,12 +168,12 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                   </div>
                 ))}
                 <button type="button" onClick={() => setChoices([...choices, ''])}
-                  className="text-sm text-blue-400">+ Add Choice</button>
+                  className="text-sm text-brand-600">+ Add Choice</button>
               </div>
               <div>
-                <label htmlFor="quiz-explanation" className="mb-1 block text-sm text-slate-400">Explanation</label>
+                <label htmlFor="quiz-explanation" className="mb-1 block text-sm text-ink">Explanation</label>
                 <input id="quiz-explanation" value={explanation} onChange={(e) => setExplanation(e.target.value)} required
-                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
             </>
           )}
@@ -182,14 +182,14 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
           {type === 'scenario' && (
             <>
               <div>
-                <label htmlFor="scenario-prompt" className="mb-1 block text-sm text-slate-400">Prompt</label>
+                <label htmlFor="scenario-prompt" className="mb-1 block text-sm text-ink">Prompt</label>
                 <textarea id="scenario-prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} required rows={2}
-                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
               <div>
-                <span className="mb-1 block text-sm text-slate-400">Choices</span>
+                <span className="mb-1 block text-sm text-ink">Choices</span>
                 {scenarioChoices.map((c, i) => (
-                  <div key={i} className="mb-3 rounded-md border border-slate-700 bg-slate-800 p-3">
+                  <div key={i} className="mb-3 rounded-md border border-line bg-card p-3">
                     <div className="mb-2 flex items-center gap-2">
                       <input
                         type="radio"
@@ -202,7 +202,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                       <input
                         value={c.label}
                         onChange={(e) => { const nc = [...scenarioChoices]; nc[i] = { ...nc[i], label: e.target.value }; setScenarioChoices(nc); }}
-                        className="flex-1 rounded-md border border-slate-600 bg-slate-900 px-3 py-1 text-slate-50"
+                        className="flex-1 rounded-md border border-input bg-background px-3 py-1 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
                         placeholder="Label"
                         required
                       />
@@ -217,14 +217,14 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                     <input
                       value={c.outcome}
                       onChange={(e) => { const nc = [...scenarioChoices]; nc[i] = { ...nc[i], outcome: e.target.value }; setScenarioChoices(nc); }}
-                      className="ml-6 w-[calc(100%-1.5rem)] rounded-md border border-slate-600 bg-slate-900 px-3 py-1 text-sm text-slate-50"
+                      className="ml-6 w-[calc(100%-1.5rem)] rounded-md border border-input bg-background px-3 py-1 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
                       placeholder="Outcome message"
                       required
                     />
                   </div>
                 ))}
                 <button type="button" onClick={() => setScenarioChoices([...scenarioChoices, { label: '', outcome: '' }])}
-                  className="text-sm text-blue-400">+ Add Choice</button>
+                  className="text-sm text-brand-600">+ Add Choice</button>
               </div>
             </>
           )}
@@ -233,25 +233,25 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
           {type === 'video' && (
             <>
               <div>
-                <label htmlFor="video-youtube" className="mb-1 block text-sm text-slate-400">YouTube URL or ID</label>
+                <label htmlFor="video-youtube" className="mb-1 block text-sm text-ink">YouTube URL or ID</label>
                 <input id="video-youtube" value={youtubeInput} onChange={(e) => setYoutubeInput(e.target.value)} required
-                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
                   placeholder="Paste a YouTube link or 11-character ID." />
               </div>
               <div>
-                <label htmlFor="video-caption" className="mb-1 block text-sm text-slate-400">Caption</label>
+                <label htmlFor="video-caption" className="mb-1 block text-sm text-ink">Caption</label>
                 <input id="video-caption" value={videoCaption} onChange={(e) => setVideoCaption(e.target.value)}
-                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
             </>
           )}
 
           <div className="mt-2 flex gap-3">
-            <button type="submit" className="rounded-md bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-500">
+            <button type="submit" className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700">
               {isEdit ? 'Update' : 'Create'}
             </button>
             <button type="button" onClick={onClose}
-              className="rounded-md border border-slate-600 px-6 py-2 text-sm text-slate-300 hover:bg-slate-800">
+              className="rounded-md border border-line px-6 py-2 text-sm text-muted-foreground hover:bg-brand-50">
               Cancel
             </button>
           </div>

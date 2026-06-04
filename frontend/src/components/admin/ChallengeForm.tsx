@@ -14,7 +14,7 @@ export default function ChallengeForm() {
   const existing = isEdit ? challenges.find((c) => c.id === challengeId) : undefined;
 
   if (isEdit && !existing) {
-    return <div className="text-slate-400">Loading…</div>;
+    return <div className="text-muted-foreground">Loading…</div>;
   }
 
   return <ChallengeFormInner key={existing?.id ?? 'new'} existing={existing} badges={badges} isEdit={isEdit} challengeId={challengeId} />;
@@ -61,66 +61,66 @@ function ChallengeFormInner({ existing, badges, isEdit, challengeId }: {
 
   return (
     <div className="max-w-lg">
-      <h2 className="mb-4 text-xl font-semibold text-slate-50">{isEdit ? 'Edit Challenge' : 'New Challenge'}</h2>
+      <h2 className="mb-4 text-xl font-semibold text-ink">{isEdit ? 'Edit Challenge' : 'New Challenge'}</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label htmlFor="ch-title" className="mb-1 block text-sm text-slate-400">Title</label>
+          <label htmlFor="ch-title" className="mb-1 block text-sm text-ink">Title</label>
           <input id="ch-title" value={title} onChange={(e) => setTitle(e.target.value)} required
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
         </div>
         <div>
-          <label htmlFor="ch-desc" className="mb-1 block text-sm text-slate-400">Description</label>
+          <label htmlFor="ch-desc" className="mb-1 block text-sm text-ink">Description</label>
           <textarea id="ch-desc" value={description} onChange={(e) => setDescription(e.target.value)} required rows={2}
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
         </div>
         <div className="flex gap-4">
           <div className="flex-1">
-            <label htmlFor="ch-type" className="mb-1 block text-sm text-slate-400">Type</label>
+            <label htmlFor="ch-type" className="mb-1 block text-sm text-ink">Type</label>
             <select id="ch-type" value={type} onChange={(e) => setType(e.target.value)}
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50">
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300">
               {CHALLENGE_TYPES.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
             </select>
           </div>
           <div className="w-28">
-            <label htmlFor="ch-target" className="mb-1 block text-sm text-slate-400">Target</label>
+            <label htmlFor="ch-target" className="mb-1 block text-sm text-ink">Target</label>
             <input id="ch-target" type="number" value={targetValue} onChange={(e) => setTargetValue(Number(e.target.value))} min={1} required
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
           <div className="w-28">
-            <label htmlFor="ch-xp" className="mb-1 block text-sm text-slate-400">XP</label>
+            <label htmlFor="ch-xp" className="mb-1 block text-sm text-ink">XP</label>
             <input id="ch-xp" type="number" value={xpReward} onChange={(e) => setXpReward(Number(e.target.value))} min={1} required
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
         </div>
         <div>
-          <label htmlFor="ch-badge" className="mb-1 block text-sm text-slate-400">Linked Badge (optional)</label>
+          <label htmlFor="ch-badge" className="mb-1 block text-sm text-ink">Linked Badge (optional)</label>
           <select id="ch-badge" value={badgeId ?? ''} onChange={(e) => setBadgeId(e.target.value || null)}
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50">
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300">
             <option value="">None</option>
             {badges.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </div>
         <div className="flex gap-4">
           <div className="flex-1">
-            <label htmlFor="ch-starts" className="mb-1 block text-sm text-slate-400">Starts At</label>
+            <label htmlFor="ch-starts" className="mb-1 block text-sm text-ink">Starts At</label>
             <input id="ch-starts" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
           <div className="flex-1">
-            <label htmlFor="ch-ends" className="mb-1 block text-sm text-slate-400">Ends At</label>
+            <label htmlFor="ch-ends" className="mb-1 block text-sm text-ink">Ends At</label>
             <input id="ch-ends" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-slate-50" />
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
         </div>
         <div className="flex items-center gap-2">
           <input id="ch-premium" type="checkbox" checked={isPremium} onChange={(e) => setIsPremium(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-600 bg-slate-800" />
-          <label htmlFor="ch-premium" className="text-sm text-slate-400">Premium only</label>
+            className="h-4 w-4 rounded border-input bg-background" />
+          <label htmlFor="ch-premium" className="text-sm text-ink">Premium only</label>
         </div>
         <div className="mt-2 flex gap-3">
-          <button type="submit" className="rounded-md bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-500">Save</button>
+          <button type="submit" className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700">Save</button>
           <button type="button" onClick={() => navigate('/admin/challenges')}
-            className="rounded-md border border-slate-600 px-6 py-2 text-sm text-slate-300 hover:bg-slate-800">Cancel</button>
+            className="rounded-md border border-line px-6 py-2 text-sm text-muted-foreground hover:bg-brand-50">Cancel</button>
         </div>
       </form>
     </div>
