@@ -25,16 +25,20 @@ from GitHub `ashmorel/Investikidyasminschoice` if gone).
 | **SP-D2** Auth polish + Coach panel | ✅ shipped (in Codex) | branded `AuthPage`, polished + friendlier auth screens, `CoachChat` extracted, Coach slide-over panel; CI green |
 | **SP-F** Coach panel float + inline iOS video | ✅ shipped | Coach panel = **bottom sheet on mobile** / right panel on desktop; `VideoLesson` plays **inline on iOS (B1)** instead of thumbnail hand-off; also un-tracked the Xcode-churned `Package.resolved` (gitignored) |
 | **Country switcher** | ✅ shipped | **two independent settings** — `content_region` learning-region focus (US/GB/HK) gates content + currency, plus a **child-editable practice currency**; legal `country_code` untouched (consent regime intact); simulator features the chosen region's exchange first |
-| **SP-E** Parent/admin polish | 📝 **next** | layout-only restyle of parent dashboard + admin panel |
+| **SP-E** Parent/admin polish | ✅ shipped | parent dashboard Penny header + polish; admin panel converted dark→light sky-blue across all 18 files; two WCAG AA contrast fixes (active nav + a card badge) |
+
+> **🎉 The "Yasmin's Choice" rebrand programme is now COMPLETE.** All sub-projects shipped: SP-0, SP-A, SP-B, SP-C, SP-D1, SP-D2, SP-F, Country/Region switcher (+ `country_code`-immutability hardening), and SP-E. Only standing **USER-only** actions remain (see "Pending USER actions" below).
 
 > **Also added by Codex during SP-D2 (beyond the plan):** a new CI job **"iOS (Capacitor sync · simulator build)"** (macOS — `npx cap sync ios` → resolve packages → `xcodebuild` simulator build), and YouTube-embed fixes for the Capacitor WebView. CI is now **6 jobs**; all green on HEAD.
 >
 > **Note on local "no such module 'Capacitor'":** the iOS CI job proves the SPM build is sound. If a *local* Xcode build hits this, it's a stale package graph: quit Xcode → `npm run build && npx cap sync ios` from `invest-ed/frontend` → reopen `ios/App/App.xcodeproj` (Capacitor 8 = SPM project, no workspace/Podfile) → File ▸ Packages ▸ Reset Package Caches + Resolve → Clean Build Folder → Build. (Capacitor's `capacitor-swift-pm` is a remote SPM dep Xcode must fetch.)
 
-## ▶ Resume here: SP-E (parent/admin polish)
-- **Country switcher (shipped):** decoupled into **two independent settings** — a `content_region` learning-region focus (US/GB/HK) that gates content + drives default currency, and a **child-editable practice currency**. The legal `country_code` is never written by the feature (consent regime untouched); the simulator features the chosen region's key exchange (NASDAQ/LSE/HKEX) first. Spec + plan in `docs/superpowers/`.
-- **SP-E (next):** sky-blue card/Penny polish of the **parent dashboard** (`src/pages/ParentDashboard.tsx` + `src/components/parent/*`) and **admin panel** (`src/components/admin/*`) — layout-only. (Per the SP-B/C/D2 lesson: READ each screen first — some may already be fine post-SP-A.)
-- **Simulator verify (pending, manual):** confirm on the iOS simulator that the inline lesson video plays *inline* (not forced fullscreen). If it forces fullscreen, add the Capacitor iOS WebView media setting (confirm the exact key first) — that's the only remaining SP-F follow-up.
+## ▶ Resume here: rebrand programme COMPLETE — only standing USER-only items remain
+The "Yasmin's Choice" rebrand programme is fully shipped (SP-0/A/B/C/D1/D2/F + Country/Region switcher + `country_code`-immutability hardening + SP-E). No further code work is queued. The remaining items are all **USER-only** (see "Pending USER actions" below):
+- **iOS Xcode device rebuild** to see the rebrand on a physical device (Vercel web already reflects everything).
+- **SP-D1 OAuth credential setup** before real social sign-in works.
+- **App Store Connect display name** → "InvestiKid".
+- **Verify inline iOS video on the simulator:** confirm the inline lesson video plays *inline* (not forced fullscreen). If it forces fullscreen, add the Capacitor iOS WebView media setting (confirm the exact key first) — the only remaining SP-F follow-up.
 
 ## Pending USER actions (not code)
 - **SP-D1 OAuth setup** before real social sign-in works: see `invest-ed/docs/parent-social-login-setup.md` (Google Cloud web+iOS client IDs; Apple Developer Sign-in-with-Apple + Services ID; Xcode capability + Google URL scheme; set the 4 backend env ids + `VITE_` frontend ids). Until set, the OAuth endpoints return `503 not_configured` — expected.
