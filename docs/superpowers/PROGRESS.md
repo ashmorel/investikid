@@ -29,6 +29,13 @@ from GitHub `ashmorel/Investikidyasminschoice` if gone).
 
 > **🎉 The "Yasmin's Choice" rebrand programme is now COMPLETE.** All sub-projects shipped: SP-0, SP-A, SP-B, SP-C, SP-D1, SP-D2, SP-F, Country/Region switcher (+ `country_code`-immutability hardening), and SP-E. Only standing **USER-only** actions remain (see "Pending USER actions" below).
 
+## Post-launch fixes (after programme completion)
+| Fix | State | Notes |
+|---|---|---|
+| `country_code` immutability hardening | ✅ shipped | `PATCH /users/me` no longer lets a user change `country_code` (drives COPPA/UK-GDPR consent regime); dropped from `UpdatePreferencesRequest` + router write; regression-tested. Spec was a spawned follow-up. |
+| Next-quest resolver | ✅ shipped | Fixed false "You've finished everything" on Home. New backend `next_lesson_service.resolve_next_lesson` + `GET /next-lesson` walk all accessible modules (reusing `derive_level_states`) → true next lesson, or null only when genuinely caught up. `useNextLesson` collapsed to one call; retired client-side `pickTarget*` helpers. Spec/plan `docs/superpowers/{specs,plans}/2026-06-04-next-quest-and-back-nav*`. |
+| Consistent Back navigation | ✅ shipped | New reusable accessible `BackButton` (≥44px, focus-visible, `aria-label`) on all child drill-down pages (Module/Level/Lesson/Stock + **Market**, which had no back affordance), replacing the subtle text links; deterministic up-one-level targets. |
+
 > **Also added by Codex during SP-D2 (beyond the plan):** a new CI job **"iOS (Capacitor sync · simulator build)"** (macOS — `npx cap sync ios` → resolve packages → `xcodebuild` simulator build), and YouTube-embed fixes for the Capacitor WebView. CI is now **6 jobs**; all green on HEAD.
 >
 > **Note on local "no such module 'Capacitor'":** the iOS CI job proves the SPM build is sound. If a *local* Xcode build hits this, it's a stale package graph: quit Xcode → `npm run build && npx cap sync ios` from `invest-ed/frontend` → reopen `ios/App/App.xcodeproj` (Capacitor 8 = SPM project, no workspace/Podfile) → File ▸ Packages ▸ Reset Package Caches + Resolve → Clean Build Folder → Build. (Capacitor's `capacitor-swift-pm` is a remote SPM dep Xcode must fetch.)
