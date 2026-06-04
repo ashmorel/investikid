@@ -11,19 +11,19 @@ interface LessonChromeProps {
   onBack: () => void;
 }
 
-const EDDIE_LINES = [
+const PENNY_LINES = [
   "Let's learn something new!",
   "You're doing great!",
   "Let's go, investor!",
 ];
 
 /**
- * Lesson progress header: back control + progress bar + XP badge + Eddie speech bubble.
+ * Lesson progress header: back control + progress bar + XP badge + Penny speech bubble.
  * Rendered above the active lesson renderer; never shown on the CompletionPanel screen.
  */
 export function LessonChrome({ position, total, xpReward, onBack }: LessonChromeProps) {
   // Pick a stable line based on position so it doesn't change on re-render
-  const line = EDDIE_LINES[(position - 1) % EDDIE_LINES.length];
+  const line = PENNY_LINES[(position - 1) % PENNY_LINES.length];
   const pct = total > 0 ? Math.min(100, Math.round(((position - 1) / total) * 100)) : 0;
 
   return (

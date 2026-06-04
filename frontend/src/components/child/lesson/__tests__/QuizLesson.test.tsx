@@ -52,13 +52,13 @@ describe('QuizLesson', () => {
     expect(screen.getByRole('button', { name: /Check answer/i })).toBeDisabled();
   });
 
-  it('renders Ask Coach Eddie button when onShowEddie provided', async () => {
+  it('renders Ask Coach Penny button when onShowPenny provided', async () => {
     const user = userEvent.setup();
-    const onShowEddie = vi.fn();
-    render(<QuizLesson contentJson={content} onComplete={() => {}} onShowEddie={onShowEddie} />);
-    const btn = screen.getByRole('button', { name: /Ask Coach Eddie/i });
+    const onShowPenny = vi.fn();
+    render(<QuizLesson contentJson={content} onComplete={() => {}} onShowPenny={onShowPenny} />);
+    const btn = screen.getByRole('button', { name: /Ask Coach Penny/i });
     await user.click(btn);
-    expect(onShowEddie).toHaveBeenCalled();
+    expect(onShowPenny).toHaveBeenCalled();
   });
 
   it('no a11y violations in the radiogroup', async () => {

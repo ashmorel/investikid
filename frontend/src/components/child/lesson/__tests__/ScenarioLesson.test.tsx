@@ -57,12 +57,12 @@ describe('ScenarioLesson', () => {
     expect(screen.getByRole('button', { name: /Check answer/i })).toBeDisabled();
   });
 
-  it('renders Ask Coach Eddie when onShowEddie provided', async () => {
+  it('renders Ask Coach Penny when onShowPenny provided', async () => {
     const user = userEvent.setup();
-    const onShowEddie = vi.fn();
-    render(<ScenarioLesson contentJson={content} onComplete={() => {}} onShowEddie={onShowEddie} />);
-    await user.click(screen.getByRole('button', { name: /Ask Coach Eddie/i }));
-    expect(onShowEddie).toHaveBeenCalled();
+    const onShowPenny = vi.fn();
+    render(<ScenarioLesson contentJson={content} onComplete={() => {}} onShowPenny={onShowPenny} />);
+    await user.click(screen.getByRole('button', { name: /Ask Coach Penny/i }));
+    expect(onShowPenny).toHaveBeenCalled();
   });
 
   it('no a11y violations in the radiogroup', async () => {

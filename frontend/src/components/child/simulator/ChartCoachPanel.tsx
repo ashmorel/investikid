@@ -57,7 +57,7 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
         <div className="flex items-center justify-between border-b border-amber-100 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">💡</span>
-            <span className="font-bold text-gray-900">Coach Eddie</span>
+            <span className="font-bold text-gray-900">Coach Penny</span>
             <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">{ticker} Chart</span>
           </div>
           <div className="flex items-center gap-3">

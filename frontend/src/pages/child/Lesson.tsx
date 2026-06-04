@@ -9,7 +9,7 @@ import { VideoLesson } from '@/components/child/lesson/VideoLesson';
 import { CompletionPanel } from '@/components/child/lesson/CompletionPanel';
 import { LessonIllustration } from '@/components/child/lesson/LessonIllustration';
 import { PracticeQuiz } from '@/components/child/lesson/PracticeQuiz';
-import { CoachEddiePanel } from '@/components/child/lesson/CoachEddiePanel';
+import { CoachPennyPanel } from '@/components/child/lesson/CoachPennyPanel';
 import { LessonChrome } from '@/components/child/lesson/LessonChrome';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,7 +19,7 @@ export default function Lesson() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPractice, setShowPractice] = useState(false);
-  const [showEddie, setShowEddie] = useState(false);
+  const [showPenny, setShowPenny] = useState(false);
   const completionInFlight = useRef(false);
 
   const lessonQ = useQuery<LessonOut | null>({
@@ -68,7 +68,7 @@ export default function Lesson() {
     completionInFlight.current = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting UI state when lessonId changes is intentional; avoids stale panel showing on lesson navigation
     setShowPractice(false);
-    setShowEddie(false);
+    setShowPenny(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId]);
 
@@ -181,10 +181,10 @@ export default function Lesson() {
         onBack={() => navigate(-1)}
       />
       {lesson.type === 'card' && <CardLesson contentJson={lesson.content_json as { title?: string; body?: string }} onComplete={onComplete} illustration={illustration} completing={complete.isPending} />}
-      {lesson.type === 'quiz' && <QuizLesson contentJson={lesson.content_json as { question: string; choices: string[]; answer_index: number; explanation: string }} onComplete={onComplete} illustration={illustration} onShowEddie={() => setShowEddie(true)} completing={complete.isPending} />}
-      {lesson.type === 'scenario' && <ScenarioLesson contentJson={lesson.content_json as { prompt: string; choices: { label: string; outcome: string }[]; correct_index: number }} onComplete={onComplete} illustration={illustration} onShowEddie={() => setShowEddie(true)} completing={complete.isPending} />}
+      {lesson.type === 'quiz' && <QuizLesson contentJson={lesson.content_json as { question: string; choices: string[]; answer_index: number; explanation: string }} onComplete={onComplete} illustration={illustration} onShowPenny={() => setShowPenny(true)} completing={complete.isPending} />}
+      {lesson.type === 'scenario' && <ScenarioLesson contentJson={lesson.content_json as { prompt: string; choices: { label: string; outcome: string }[]; correct_index: number }} onComplete={onComplete} illustration={illustration} onShowPenny={() => setShowPenny(true)} completing={complete.isPending} />}
       {lesson.type === 'video' && <VideoLesson contentJson={lesson.content_json as { youtube_id?: string; caption?: string }} onComplete={onComplete} completing={complete.isPending} />}
-      {showEddie && <CoachEddiePanel lessonId={lessonId!} onClose={() => setShowEddie(false)} />}
+      {showPenny && <CoachPennyPanel lessonId={lessonId!} onClose={() => setShowPenny(false)} />}
     </div>
   );
 }

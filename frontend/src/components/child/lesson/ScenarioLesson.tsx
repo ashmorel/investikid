@@ -13,13 +13,13 @@ type Props = {
   contentJson: ScenarioContent;
   onComplete: (score: number | null) => void;
   illustration?: React.ReactNode;
-  onShowEddie?: () => void;
+  onShowPenny?: () => void;
   completing?: boolean;
 };
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-export function ScenarioLesson({ contentJson, onComplete, illustration, onShowEddie, completing = false }: Props) {
+export function ScenarioLesson({ contentJson, onComplete, illustration, onShowPenny, completing = false }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const isCorrect = selected === contentJson.correct_index;
@@ -52,8 +52,8 @@ export function ScenarioLesson({ contentJson, onComplete, illustration, onShowEd
         </>
       ) : (
         <div className="flex items-center justify-between gap-4">
-          {onShowEddie ? (
-            <button type="button" onClick={onShowEddie} className="text-sm font-bold text-amber-600 underline hover:text-amber-700">Ask Coach Eddie</button>
+          {onShowPenny ? (
+            <button type="button" onClick={onShowPenny} className="text-sm font-bold text-brand-700 underline hover:text-brand-800">Ask Coach Penny</button>
           ) : <span />}
           <GradientButton disabled={selected === null} onClick={() => setSubmitted(true)}>Check answer</GradientButton>
         </div>

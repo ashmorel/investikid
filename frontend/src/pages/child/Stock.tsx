@@ -20,7 +20,7 @@ export default function Stock() {
   const { toast } = useToast();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [chartPeriod, setChartPeriod] = useState('1mo');
-  const [showCoachEddie, setShowCoachEddie] = useState(false);
+  const [showCoachPenny, setShowCoachPenny] = useState(false);
 
   const quoteQ = useQuery<QuoteOut | null, ApiError>({
     queryKey: ['quote', exchange, ticker],
@@ -106,7 +106,7 @@ export default function Stock() {
       </div>
 
       <div className="mb-4">
-        <ChartGuide exchange={quote.exchange} ticker={quote.ticker} period={chartPeriod} onAskEddie={() => setShowCoachEddie(true)} />
+        <ChartGuide exchange={quote.exchange} ticker={quote.ticker} period={chartPeriod} onAskPenny={() => setShowCoachPenny(true)} />
       </div>
 
       <div className="mb-4">
@@ -139,12 +139,12 @@ export default function Stock() {
         <StockNewsSection exchange={quote.exchange} ticker={quote.ticker} />
       </div>
 
-      {showCoachEddie && (
+      {showCoachPenny && (
         <ChartCoachPanel
           ticker={quote.ticker}
           exchange={quote.exchange}
           period={chartPeriod}
-          onClose={() => setShowCoachEddie(false)}
+          onClose={() => setShowCoachPenny(false)}
         />
       )}
     </div>

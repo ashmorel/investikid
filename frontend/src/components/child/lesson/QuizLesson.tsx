@@ -4,10 +4,10 @@ import { GradientButton } from '@/components/child/ui/GradientButton';
 import { FeedbackPanel } from '@/components/child/ui/FeedbackPanel';
 
 type QuizContent = { question: string; choices: string[]; answer_index: number; explanation: string };
-type Props = { contentJson: QuizContent; onComplete: (score: number | null) => void; illustration?: React.ReactNode; onShowEddie?: () => void; completing?: boolean };
+type Props = { contentJson: QuizContent; onComplete: (score: number | null) => void; illustration?: React.ReactNode; onShowPenny?: () => void; completing?: boolean };
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-export function QuizLesson({ contentJson, onComplete, illustration, onShowEddie, completing = false }: Props) {
+export function QuizLesson({ contentJson, onComplete, illustration, onShowPenny, completing = false }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const isCorrect = selected === contentJson.answer_index;
@@ -39,8 +39,8 @@ export function QuizLesson({ contentJson, onComplete, illustration, onShowEddie,
         </>
       ) : (
         <div className="flex items-center justify-between gap-4">
-          {onShowEddie ? (
-            <button type="button" onClick={onShowEddie} className="text-sm font-bold text-amber-600 underline hover:text-amber-700">Ask Coach Eddie</button>
+          {onShowPenny ? (
+            <button type="button" onClick={onShowPenny} className="text-sm font-bold text-brand-700 underline hover:text-brand-800">Ask Coach Penny</button>
           ) : <span />}
           <GradientButton disabled={selected === null} onClick={() => setSubmitted(true)}>Check answer</GradientButton>
         </div>

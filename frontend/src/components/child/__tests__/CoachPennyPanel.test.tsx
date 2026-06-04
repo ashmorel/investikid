@@ -14,25 +14,25 @@ vi.mock('@/api/ai', async () => {
   };
 });
 
-let CoachEddiePanel: typeof import('@/components/child/lesson/CoachEddiePanel').CoachEddiePanel;
+let CoachPennyPanel: typeof import('@/components/child/lesson/CoachPennyPanel').CoachPennyPanel;
 
 beforeEach(async () => {
-  CoachEddiePanel = (await import('@/components/child/lesson/CoachEddiePanel')).CoachEddiePanel;
+  CoachPennyPanel = (await import('@/components/child/lesson/CoachPennyPanel')).CoachPennyPanel;
 });
 
 function renderPanel() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <CoachEddiePanel lessonId="lesson-1" onClose={() => {}} />
+      <CoachPennyPanel lessonId="lesson-1" onClose={() => {}} />
     </QueryClientProvider>,
   );
 }
 
-describe('CoachEddiePanel', () => {
+describe('CoachPennyPanel', () => {
   it('shows a friendly error when the tutor request fails', async () => {
     renderPanel();
-    await userEvent.type(screen.getByPlaceholderText('Ask Coach Eddie...'), 'What is a stock?');
+    await userEvent.type(screen.getByPlaceholderText('Ask Coach Penny...'), 'What is a stock?');
     await userEvent.click(screen.getByRole('button', { name: 'Send' }));
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(/couldn't answer/i),

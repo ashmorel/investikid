@@ -6,7 +6,7 @@ type Props = {
   exchange: string;
   ticker: string;
   period: string;
-  onAskEddie?: () => void;
+  onAskPenny?: () => void;
 };
 
 const CHART_TIPS = [
@@ -28,7 +28,7 @@ const CHART_TIPS = [
   },
 ];
 
-export function ChartGuide({ exchange, ticker, period, onAskEddie }: Props) {
+export function ChartGuide({ exchange, ticker, period, onAskPenny }: Props) {
   const { data, isLoading } = useQuery<NewsSummary | null>({
     queryKey: ['chart-guide', exchange, ticker, period],
     queryFn: () => simulatorApi.getChartGuide(exchange, ticker, period),
@@ -67,13 +67,13 @@ export function ChartGuide({ exchange, ticker, period, onAskEddie }: Props) {
         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700">{staticTip.title}</p>
         <p className="text-sm leading-relaxed text-gray-700">{staticTip.tip}</p>
       </div>
-      {onAskEddie && (
+      {onAskPenny && (
         <button
-          onClick={onAskEddie}
+          onClick={onAskPenny}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-600"
         >
           <span>💡</span>
-          Ask Coach Eddie about this chart
+          Ask Coach Penny about this chart
         </button>
       )}
     </div>

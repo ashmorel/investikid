@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { LessonChrome } from '@/components/child/lesson/LessonChrome';
 
 describe('LessonChrome', () => {
-  it('renders back button, progress bar, count, XP badge, and Eddie speech bubble', () => {
+  it('renders back button, progress bar, count, XP badge, and Penny speech bubble', () => {
     render(
       <LessonChrome position={2} total={5} xpReward={20} onBack={vi.fn()} />,
     );
@@ -22,7 +22,7 @@ describe('LessonChrome', () => {
     // XP badge
     expect(screen.getByText(/20 XP/i)).toBeInTheDocument();
 
-    // Eddie speech bubble (static text)
+    // Penny speech bubble (static text)
     expect(screen.getByText(/you're doing great/i)).toBeInTheDocument();
   });
 

@@ -10,7 +10,7 @@ type Props = {
   onClose: () => void;
 };
 
-export function CoachEddiePanel({ lessonId, onClose }: Props) {
+export function CoachPennyPanel({ lessonId, onClose }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [conversationId, setConversationId] = useState<string | undefined>();
@@ -44,7 +44,7 @@ export function CoachEddiePanel({ lessonId, onClose }: Props) {
         <div className="flex items-center justify-between border-b border-amber-100 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">💡</span>
-            <span className="font-bold text-gray-900">Coach Eddie</span>
+            <span className="font-bold text-gray-900">Coach Penny</span>
           </div>
           <div className="flex items-center gap-3">
             {remaining !== null && (
@@ -82,7 +82,7 @@ export function CoachEddiePanel({ lessonId, onClose }: Props) {
           {sendMessage.isError && (
             <div className="flex justify-start" role="alert">
               <div className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
-                Coach Eddie couldn't answer just now. Please try again in a moment.
+                Coach Penny couldn't answer just now. Please try again in a moment.
               </div>
             </div>
           )}
@@ -95,7 +95,7 @@ export function CoachEddiePanel({ lessonId, onClose }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask Coach Eddie..."
+            placeholder="Ask Coach Penny..."
             maxLength={200}
             className="flex-1 rounded-xl border border-amber-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
             disabled={remaining === 0}

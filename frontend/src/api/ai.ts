@@ -78,7 +78,7 @@ export type TutorResponse = {
   messages_remaining: number;
 };
 
-// --- Coach Eddie ---
+// --- Coach Penny ---
 
 export type CoachAction = {
   type: 'lesson' | 'module' | 'review';

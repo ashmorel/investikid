@@ -74,7 +74,7 @@ export default function Coach() {
         </button>
         <div className="flex items-center gap-2">
           <span className="text-xl">💡</span>
-          <span className="font-bold text-gray-900">Coach Eddie</span>
+          <span className="font-bold text-gray-900">Coach Penny</span>
         </div>
         {remaining !== null && (
           <span className="ml-auto text-xs text-gray-400">{remaining} messages left</span>
@@ -161,7 +161,7 @@ export default function Coach() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Ask Coach Eddie…"
+          placeholder="Ask Coach Penny…"
           maxLength={200}
           className="flex-1 rounded-xl border border-amber-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
           disabled={remaining === 0}
