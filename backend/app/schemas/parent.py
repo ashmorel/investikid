@@ -51,3 +51,13 @@ class FreezeRequest(BaseModel):
 
 class PremiumToggleRequest(BaseModel):
     premium: bool
+
+
+class OAuthSignInRequest(BaseModel):
+    id_token: str
+    nonce: str
+
+
+class IdentityOut(BaseModel):
+    provider: str
+    parent_email: str

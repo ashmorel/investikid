@@ -29,6 +29,8 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/consent/decide",
     "/parent/auth/request",
     "/billing/webhook",
+    "/parent/auth/oauth/google",
+    "/parent/auth/oauth/apple",
 })
 # Path prefixes that bypass CSRF (for dynamic segments like /consent/request/{id})
 _DEFAULT_EXEMPT_PREFIXES = ("/consent/request/",)

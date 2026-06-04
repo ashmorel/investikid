@@ -1,3 +1,6 @@
+import uuid
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,10 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_session
 from app.core.rate_limit import limiter
+from app.models.parent_identity import ParentIdentity
 from app.models.user import User
 from app.routers.auth import _cookie_samesite, _set_csrf_cookie
-from app.schemas.parent import ParentMagicLinkRequest
+from app.schemas.parent import OAuthSignInRequest, ParentMagicLinkRequest
 from app.services.email import get_email_sender
+from app.services.oidc import OidcError, OidcNotConfigured, verify_id_token
 from app.services.tokens import (
     PARENT_MAGIC_AUDIENCE,
     PARENT_MAGIC_EXPIRY,
@@ -78,6 +83,61 @@ async def magic_callback(
 async def logout(response: Response):
     response.delete_cookie(_PARENT_COOKIE, path="/")
     return {"status": "ok"}
+
+
+_OAUTH_PROVIDERS = {"google", "apple"}
+
+
+def _set_parent_cookies(response: Response, email: str) -> None:
+    secure = settings.environment != "development"
+    response.set_cookie(
+        _PARENT_COOKIE, issue_parent_session(email),
+        max_age=7 * 86400, httponly=True, samesite=_cookie_samesite(), secure=secure, path="/",
+    )
+    _set_csrf_cookie(response, secure)
+
+
+@router.post("/oauth/{provider}", status_code=200)
+@limiter.limit("10/hour")
+async def oauth_sign_in(
+    request: Request,  # noqa: ARG001  -- required by slowapi
+    provider: str,
+    payload: OAuthSignInRequest,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
+):
+    if provider not in _OAUTH_PROVIDERS:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown provider")
+    try:
+        identity = await verify_id_token(provider, payload.id_token, payload.nonce)
+    except OidcNotConfigured:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Provider not configured")
+    except OidcError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid sign-in")
+
+    link = await session.scalar(
+        select(ParentIdentity).where(
+            ParentIdentity.provider == provider,
+            ParentIdentity.provider_subject == identity.sub,
+        ).limit(1)
+    )
+    parent_email: str | None = link.parent_email if link else None
+
+    if parent_email is None and identity.email and identity.email_verified:
+        match = await session.scalar(select(User).where(User.parent_email == identity.email).limit(1))
+        if match is not None:
+            parent_email = identity.email
+            session.add(ParentIdentity(
+                id=uuid.uuid4(), provider=provider, provider_subject=identity.sub,
+                parent_email=parent_email, created_at=datetime.now(UTC),
+            ))
+            await session.commit()
+
+    if parent_email is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No parent account for this sign-in")
+
+    _set_parent_cookies(response, parent_email)
+    return {"status": "signed_in", "email": parent_email}
 
 
 async def get_current_parent(
