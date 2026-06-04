@@ -8,6 +8,7 @@ from app.schemas.content import TOPIC_PATH_VALUES
 
 _COUNTRY_RE = re.compile(r"^[A-Z]{2}$")
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
+_SUPPORTED_REGIONS = {"US", "GB", "HK"}
 
 
 class UserProfile(BaseModel):
@@ -18,6 +19,7 @@ class UserProfile(BaseModel):
     country_code: str
     currency_code: str
     topic_path: str | None
+    content_region: str | None = None
     is_premium: bool
     is_admin: bool
     parent_email: str | None
@@ -31,6 +33,7 @@ class UpdatePreferencesRequest(BaseModel):
     country_code: str | None = None
     currency_code: str | None = None
     topic_path: str | None = Field(default=None, max_length=20)
+    content_region: str | None = None
 
     @field_validator("country_code", mode="before")
     @classmethod
@@ -62,6 +65,22 @@ class UpdatePreferencesRequest(BaseModel):
             return v
         if not _CURRENCY_RE.match(v):
             raise ValueError("currency_code must be a 3-letter ISO 4217 code")
+        return v
+
+    @field_validator("content_region", mode="before")
+    @classmethod
+    def uppercase_region(cls, v):
+        if isinstance(v, str):
+            return v.upper().strip()
+        return v
+
+    @field_validator("content_region")
+    @classmethod
+    def validate_region(cls, v):
+        if v is None:
+            return v
+        if v not in _SUPPORTED_REGIONS:
+            raise ValueError("content_region must be one of US, GB, HK")
         return v
 
     @field_validator("topic_path", mode="before")

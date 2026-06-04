@@ -54,6 +54,8 @@ async def update_preferences(
         current_user.currency_code = payload.currency_code
     if payload.topic_path is not None:
         current_user.topic_path = payload.topic_path
+    if payload.content_region is not None:
+        current_user.content_region = payload.content_region
     await session.commit()
     await session.refresh(current_user)
     return current_user
