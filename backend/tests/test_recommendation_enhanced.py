@@ -17,6 +17,7 @@ def _make_user(*, dob=date(2015, 1, 1), topic_path="stocks", country_code="GB", 
     user.dob = dob
     user.topic_path = topic_path
     user.country_code = country_code
+    user.content_region = None
     user.is_premium = is_premium_val
     user.profiling_enabled = profiling_enabled
     return user

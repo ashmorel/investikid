@@ -11,6 +11,7 @@ from app.models.user import User
 from app.routers.parent_auth import get_current_parent
 from app.schemas.parent import ChildOut, FreezeRequest, PremiumToggleRequest
 from app.services.analytics_service import build_child_analytics
+from app.services.content_service import content_region_for
 from app.services.entitlements import set_premium
 from app.services.export_service import build_user_export
 
@@ -46,7 +47,7 @@ async def list_children(
     for r in rows:
         analytics = None
         if r.deleted_at is None:
-            analytics = await build_child_analytics(session, r.id, r.country_code)
+            analytics = await build_child_analytics(session, r.id, content_region_for(r))
         children.append(
             ChildOut(
                 user_id=r.id, username=r.username, country_code=r.country_code,

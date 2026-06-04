@@ -20,6 +20,7 @@ from app.schemas.content import (
 )
 from app.services.content_service import (
     compute_level,
+    content_region_for,
     derive_lesson_title,
     is_module_accessible,
     streak_after_activity,
@@ -47,11 +48,11 @@ async def _get_accessible_module(
     module = await session.get(Module, module_id)
     if not module:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
-    country_ok = not module.country_codes or current_user.country_code in module.country_codes
+    country_ok = not module.country_codes or content_region_for(current_user) in module.country_codes
     if not country_ok:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     if not is_module_accessible(
-        current_user.country_code, is_premium(current_user),
+        content_region_for(current_user), is_premium(current_user),
         module.country_codes, module.is_premium,
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Module requires premium")
@@ -67,11 +68,11 @@ async def list_modules(
     modules = result.all()
     out: list[ModuleOut] = []
     for m in modules:
-        country_ok = not m.country_codes or current_user.country_code in m.country_codes
+        country_ok = not m.country_codes or content_region_for(current_user) in m.country_codes
         if not country_ok:
             continue
         accessible = is_module_accessible(
-            current_user.country_code, is_premium(current_user),
+            content_region_for(current_user), is_premium(current_user),
             m.country_codes, m.is_premium,
         )
         out.append(ModuleOut(

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.content import Lesson, LessonCompletion, Module
 from app.models.skill_profile import TopicMastery
 from app.models.user import User
+from app.services.content_service import content_region_for
 from app.services.entitlements import is_premium
 
 # Scoring weights
@@ -57,7 +58,7 @@ def _apply_hard_filters(
         return False
 
     # 5. Country filtering
-    if module.country_codes and user.country_code not in module.country_codes:
+    if module.country_codes and content_region_for(user) not in module.country_codes:
         return False
 
     return True
@@ -401,7 +402,7 @@ async def _topic_path_seed(session: AsyncSession, user: User):
         # Basic accessibility check: premium and country
         if m.is_premium and not is_premium(user):
             continue
-        if m.country_codes and user.country_code not in m.country_codes:
+        if m.country_codes and content_region_for(user) not in m.country_codes:
             continue
         lessons = (
             await session.scalars(
