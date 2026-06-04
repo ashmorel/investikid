@@ -5,7 +5,7 @@ import { useProgress } from '@/hooks/useProgress';
 import { useRecommendations, useHomeGreeting } from '@/api/ai';
 import { buildHeroGreeting } from '@/lib/homeHero';
 import { HeroCard } from '@/components/child/ui/HeroCard';
-import { RobotEddie } from '@/components/child/ui/RobotEddie';
+import { Penny } from '@/components/child/ui/Penny';
 import { GradientButton } from '@/components/child/ui/GradientButton';
 
 export default function HomeHero() {
@@ -31,7 +31,7 @@ export default function HomeHero() {
     <section aria-labelledby="home-hero-greeting" className="mb-2">
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 shadow" aria-hidden="true">
-          <RobotEddie size={44} />
+          <Penny size={44} mood="happy" />
         </div>
         <motion.p
           id="home-hero-greeting"

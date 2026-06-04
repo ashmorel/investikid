@@ -37,7 +37,7 @@ vi.mock('@/api/ai', async () => {
 
 beforeEach(() => vi.restoreAllMocks());
 
-describe('a11y: Coach Eddie', () => {
+describe('a11y: Coach Penny', () => {
   it('Coach page has no axe violations', async () => {
     const { default: Coach } = await import('@/pages/child/Coach');
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -54,13 +54,13 @@ describe('a11y: Coach Eddie', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('EddieFAB has no axe violations', async () => {
-    const { EddieFAB } = await import('@/components/child/EddieFAB');
+  it('PennyFAB has no axe violations', async () => {
+    const { PennyFAB } = await import('@/components/child/PennyFAB');
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { container } = render(
       <QueryClientProvider client={qc}>
         <MemoryRouter>
-          <EddieFAB dueCount={2} />
+          <PennyFAB dueCount={2} />
         </MemoryRouter>
       </QueryClientProvider>,
     );

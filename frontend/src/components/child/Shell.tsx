@@ -14,7 +14,7 @@ import { BottomTabBar } from './BottomTabBar';
 import { SkipLink } from '@/components/a11y/SkipLink';
 import { useRouteFocus } from '@/components/a11y/useRouteFocus';
 import { useRecommendations } from '@/api/ai';
-import { EddieFAB } from './EddieFAB';
+import { PennyFAB } from './PennyFAB';
 
 export function Shell() {
   const session = useChildSession();
@@ -77,7 +77,7 @@ export function Shell() {
       </div>
       <BottomTabBar />
       {location.pathname !== '/coach' && (
-        <EddieFAB dueCount={recsData?.review_summary?.due_count ?? 0} />
+        <PennyFAB dueCount={recsData?.review_summary?.due_count ?? 0} />
       )}
     </div>
   );

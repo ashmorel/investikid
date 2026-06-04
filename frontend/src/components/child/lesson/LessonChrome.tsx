@@ -1,4 +1,4 @@
-import { RobotEddie } from '@/components/child/ui/RobotEddie';
+import { Penny } from '@/components/child/ui/Penny';
 
 interface LessonChromeProps {
   /** 1-based current lesson position within the level */
@@ -70,10 +70,10 @@ export function LessonChrome({ position, total, xpReward, onBack }: LessonChrome
         </span>
       </div>
 
-      {/* Row 2: Eddie + speech bubble */}
+      {/* Row 2: Penny + speech bubble */}
       <div className="flex items-center gap-2">
-        <RobotEddie size={40} />
-        {/* Speech bubble */}
+        <Penny size={40} mood="thinking" />
+        {/* Penny speech bubble */}
         <div className="relative rounded-2xl rounded-tl-none bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-brand-200">
           {line}
           {/* Tail */}

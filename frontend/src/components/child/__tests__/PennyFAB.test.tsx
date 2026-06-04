@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { EddieFAB } from '../EddieFAB';
+import { PennyFAB } from '../PennyFAB';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -10,25 +10,25 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate, useLocation: () => ({ pathname: '/home' }) };
 });
 
-describe('EddieFAB', () => {
+describe('PennyFAB', () => {
   it('renders with accessible label', () => {
-    render(<MemoryRouter><EddieFAB dueCount={0} /></MemoryRouter>);
-    expect(screen.getByRole('button', { name: /open coach eddie/i })).toBeInTheDocument();
+    render(<MemoryRouter><PennyFAB dueCount={0} /></MemoryRouter>);
+    expect(screen.getByRole('button', { name: /open coach penny/i })).toBeInTheDocument();
   });
 
   it('shows badge dot when dueCount > 0', () => {
-    render(<MemoryRouter><EddieFAB dueCount={3} /></MemoryRouter>);
-    expect(screen.getByTestId('eddie-badge')).toBeInTheDocument();
+    render(<MemoryRouter><PennyFAB dueCount={3} /></MemoryRouter>);
+    expect(screen.getByTestId('penny-badge')).toBeInTheDocument();
   });
 
   it('hides badge dot when dueCount is 0', () => {
-    render(<MemoryRouter><EddieFAB dueCount={0} /></MemoryRouter>);
-    expect(screen.queryByTestId('eddie-badge')).not.toBeInTheDocument();
+    render(<MemoryRouter><PennyFAB dueCount={0} /></MemoryRouter>);
+    expect(screen.queryByTestId('penny-badge')).not.toBeInTheDocument();
   });
 
   it('navigates to /coach on click', async () => {
-    render(<MemoryRouter><EddieFAB dueCount={0} /></MemoryRouter>);
-    await userEvent.click(screen.getByRole('button', { name: /open coach eddie/i }));
+    render(<MemoryRouter><PennyFAB dueCount={0} /></MemoryRouter>);
+    await userEvent.click(screen.getByRole('button', { name: /open coach penny/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/coach');
   });
 });
