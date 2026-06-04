@@ -6,7 +6,6 @@ import { CashCard } from '@/components/child/simulator/CashCard';
 function renderCard(props: Partial<Parameters<typeof CashCard>[0]> = {}) {
   const defaults = {
     virtualCash: '10000.00',
-    totalValue: '12500.00',
     currencyCode: 'USD',
     hasMultiCurrency: false,
   };
@@ -18,10 +17,21 @@ function renderCard(props: Partial<Parameters<typeof CashCard>[0]> = {}) {
 }
 
 describe('CashCard', () => {
-  it('renders virtual cash and total value', () => {
+  it('renders available cash', () => {
     renderCard();
+    expect(screen.getByText(/Available Cash/i)).toBeInTheDocument();
     expect(screen.getByText(/\$10,000\.00 USD/)).toBeInTheDocument();
-    expect(screen.getByText(/\$12,500\.00 USD/)).toBeInTheDocument();
+  });
+
+  it('renders week change when provided', () => {
+    renderCard({ weekChange: { value: '+$130.00 USD', up: true } });
+    expect(screen.getByText(/This Week/i)).toBeInTheDocument();
+    expect(screen.getByText(/\+\$130\.00 USD/)).toBeInTheDocument();
+  });
+
+  it('renders dash when no weekChange', () => {
+    renderCard();
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 
   it('shows multi-currency footnote when hasMultiCurrency is true', () => {

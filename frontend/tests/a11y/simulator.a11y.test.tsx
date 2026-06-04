@@ -53,7 +53,7 @@ describe('a11y: simulator surfaces', () => {
       '/portfolio/trades': [],
     });
     const { container } = wrap(<Simulator />, '/simulator');
-    await waitFor(() => expect(screen.getByText(/practice mode/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/practice portfolio/i)).toBeInTheDocument());
     expect(await axe(container)).toHaveNoViolations();
   });
 

@@ -31,25 +31,25 @@ function renderPage() {
 }
 
 describe('Simulator page', () => {
-  it('renders practice mode badge', async () => {
+  it('renders practice portfolio hero', async () => {
     mockFetchRoutes({
       '/portfolio': { id: 'p1', virtual_cash: '10000.00', currency_code: 'USD', total_value: '10000.00', holdings: [] },
       '/portfolio/trades': [],
     });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText(/practice mode/i)).toBeInTheDocument();
+      expect(screen.getByText(/practice portfolio/i)).toBeInTheDocument();
     });
   });
 
-  it('shows empty holdings state and CashCard', async () => {
+  it('shows empty holdings state and Available Cash card', async () => {
     mockFetchRoutes({
       '/portfolio': { id: 'p1', virtual_cash: '10000.00', currency_code: 'USD', total_value: '10000.00', holdings: [] },
       '/portfolio/trades': [],
     });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText(/\$10,000\.00 USD/)).toBeInTheDocument();
+      expect(screen.getByText(/Available Cash/i)).toBeInTheDocument();
       expect(screen.getByText(/No stocks yet!/i)).toBeInTheDocument();
     });
   });
@@ -81,6 +81,18 @@ describe('Simulator page', () => {
     await waitFor(() => {
       expect(screen.getByText('AAPL')).toBeInTheDocument();
       expect(screen.getByText('Buy')).toBeInTheDocument();
+    });
+  });
+
+  it('renders Browse stocks link to /simulator/market', async () => {
+    mockFetchRoutes({
+      '/portfolio': { id: 'p1', virtual_cash: '10000.00', currency_code: 'USD', total_value: '10000.00', holdings: [] },
+      '/portfolio/trades': [],
+    });
+    renderPage();
+    await waitFor(() => {
+      const link = screen.getByRole('link', { name: /browse stocks/i });
+      expect(link).toHaveAttribute('href', '/simulator/market');
     });
   });
 });
