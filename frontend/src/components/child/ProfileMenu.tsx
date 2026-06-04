@@ -15,6 +15,9 @@ import {
 import { BottomSheet } from '@/components/mobile/BottomSheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
+import { RegionSwitcher } from '@/components/child/RegionSwitcher';
+import { CurrencySelector } from '@/components/child/CurrencySelector';
+import type { RegionCode } from '@/lib/region';
 
 export function ProfileMenu({ username }: { username: string }) {
   const navigate = useNavigate();
@@ -24,6 +27,10 @@ export function ProfileMenu({ username }: { username: string }) {
   const [open, setOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [topic, setTopic] = useState('');
+
+  const me = qc.getQueryData<Me>(['me']);
+  const currentRegion = (me?.content_region ?? me?.country_code ?? 'US') as RegionCode;
+  const currentCurrency = me?.currency_code ?? 'USD';
 
   function openEditor() {
     const me = qc.getQueryData<Me>(['me']);
@@ -63,6 +70,16 @@ export function ProfileMenu({ username }: { username: string }) {
             <option key={t.value} value={t.value}>{t.label}</option>
           ))}
         </select>
+      </div>
+      <div className="space-y-3 border-t border-line pt-4">
+        <p className="text-sm font-semibold text-muted-foreground">Preferences</p>
+        <div className="space-y-1.5">
+          {/* RegionSwitcher carries its own role="group" label, so this heading
+              is decorative-only (aria-hidden) to avoid a double accessible name. */}
+          <span aria-hidden="true" className="text-sm font-medium">Learning region</span>
+          <RegionSwitcher currentRegion={currentRegion} />
+        </div>
+        <CurrencySelector currentCurrency={currentCurrency} />
       </div>
       <Button
         type="button"

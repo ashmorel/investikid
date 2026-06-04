@@ -1,10 +1,16 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { contentApi, type LessonSummary, type ModuleOut } from '@/api/content';
 import { ModuleCard } from '@/components/child/ModuleCard';
+import { RegionSwitcher } from '@/components/child/RegionSwitcher';
+import { authApi, type Me } from '@/api/auth';
+import type { RegionCode } from '@/lib/region';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Lessons() {
   const { toast } = useToast();
+
+  const { data: me } = useQuery<Me | null>({ queryKey: ['me'], queryFn: () => authApi.me(), staleTime: 60_000 });
+  const currentRegion = (me?.content_region ?? me?.country_code ?? 'US') as RegionCode;
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -38,7 +44,10 @@ export default function Lessons() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 sm:py-6">
-      <h1 className="text-2xl font-extrabold text-gray-900">Quests</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-extrabold text-gray-900">Quests</h1>
+        <RegionSwitcher currentRegion={currentRegion} />
+      </div>
       <p className="mt-1 text-sm text-gray-500">{modules.length} modules · {modules.reduce((acc, m) => acc + (lessonsByModuleId.get(m.id)?.length ?? 0), 0)} quests</p>
       {modules.length > 0 && (() => {
         const started = modules.filter((m) => (lessonsByModuleId.get(m.id) ?? []).some((l) => l.completed)).length;
