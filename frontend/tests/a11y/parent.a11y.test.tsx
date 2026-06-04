@@ -20,6 +20,16 @@ vi.mock('@/api/billing', () => ({
   },
 }));
 
+// Prevent SignInMethods from making real fetch calls during a11y tests
+vi.mock('@/api/parentAuth', () => ({
+  parentAuthApi: {
+    listIdentities: vi.fn().mockResolvedValue([]),
+    linkProvider: vi.fn(),
+    unlinkProvider: vi.fn(),
+  },
+}));
+vi.mock('@/lib/socialLogin', () => ({ socialIdToken: vi.fn() }));
+
 function wrap(ui: React.ReactNode, initial = '/parent') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(

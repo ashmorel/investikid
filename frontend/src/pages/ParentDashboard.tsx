@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { useToast } from '@/hooks/use-toast';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
+import { SignInMethods } from '@/components/parent/SignInMethods';
 
 export default function ParentDashboard() {
   const navigate = useNavigate();
@@ -84,6 +85,7 @@ export default function ParentDashboard() {
           ))}
         </ul>
       )}
+      <SignInMethods />
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} audience="parent" />
     </main>
   );

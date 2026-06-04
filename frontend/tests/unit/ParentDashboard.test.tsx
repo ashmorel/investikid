@@ -13,6 +13,16 @@ vi.mock('@/api/billing', () => ({
   },
 }));
 
+// Prevent SignInMethods from interfering with fetch mock
+vi.mock('@/api/parentAuth', () => ({
+  parentAuthApi: {
+    listIdentities: () => new Promise(() => {}), // never resolves → section stays in loading state
+    linkProvider: vi.fn(),
+    unlinkProvider: vi.fn(),
+  },
+}));
+vi.mock('@/lib/socialLogin', () => ({ socialIdToken: vi.fn() }));
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
