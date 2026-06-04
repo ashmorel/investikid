@@ -16,7 +16,7 @@ export function HoldingsTable({ holdings }: Props) {
 
   if (holdings.length === 0) {
     return (
-      <div className="rounded-2xl border-2 border-brand-200 bg-white p-8 text-center space-y-3">
+      <div className="rounded-2xl border border-brand-100 shadow-sm bg-white p-8 text-center space-y-3">
         <span className="text-5xl">📈</span>
         <p className="font-bold text-gray-900">No stocks yet!</p>
         <p className="text-sm text-gray-500">Start by browsing the market and making your first trade.</p>
@@ -41,10 +41,11 @@ export function HoldingsTable({ holdings }: Props) {
             <Link
               key={`${h.exchange}-${h.ticker}`}
               to={`/simulator/stock/${h.exchange}/${h.ticker}`}
-              className="block rounded-xl border-2 border-brand-200 bg-white p-3 transition-shadow hover:shadow-md"
+              className="block rounded-xl border border-brand-100 shadow-sm bg-white p-3 transition-shadow hover:shadow-md"
             >
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-100 text-xs font-extrabold text-brand-700" aria-hidden="true">{h.ticker.slice(0, 2)}</span>
                   <span className="font-bold">{h.ticker}</span>
                   <span className="rounded bg-muted px-1.5 py-0.5 text-xs">{h.exchange}</span>
                 </span>
@@ -68,7 +69,7 @@ export function HoldingsTable({ holdings }: Props) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto rounded-2xl border border-brand-100 shadow-sm">
       <table className="w-full text-sm">
         <thead className="border-b bg-muted/50">
           <tr>
