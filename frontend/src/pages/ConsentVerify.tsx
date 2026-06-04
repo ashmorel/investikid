@@ -5,6 +5,7 @@ import { consentApi, type Decision } from '@/api/consent';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ErrorBanner';
+import { AuthPage } from '@/components/AuthPage';
 
 export default function ConsentVerify() {
   const [params] = useSearchParams();
@@ -25,36 +26,53 @@ export default function ConsentVerify() {
 
   if (!token) {
     return (
-      <Page>
+      <AuthPage title="That link didn't work" subtitle="Please use the approval link from your email.">
         <ErrorBanner title="Invalid link" message="This link is missing its token." />
-      </Page>
+      </AuthPage>
     );
   }
 
-  if (peek.isLoading) return <Page><p>Loading…</p></Page>;
+  if (peek.isLoading) {
+    return (
+      <AuthPage title="Checking the approval link...">
+        <p className="text-sm text-muted-foreground">This should only take a moment.</p>
+      </AuthPage>
+    );
+  }
 
   if (peek.isError) {
     const status = peek.error instanceof ApiError ? peek.error.status : 0;
     const message = status === 410
       ? 'This link is invalid, expired, or already used.'
       : 'Something went wrong. Please try again.';
-    return <Page><ErrorBanner title="Link unavailable" message={message} /></Page>;
+    return (
+      <AuthPage title="Link unavailable" subtitle="This approval link may have already been used.">
+        <ErrorBanner title="Link unavailable" message={message} />
+      </AuthPage>
+    );
   }
 
   if (done === 'approve') {
-    return <Page><Success title="Account approved" message="Your child can now sign in to InvestiKid." /></Page>;
+    return (
+      <AuthPage title="All set — thank you!">
+        <Success message="Your child can now sign in to InvestiKid." />
+      </AuthPage>
+    );
   }
   if (done === 'decline') {
-    return <Page><Success title="Decision recorded" message="The account will remain inactive." /></Page>;
+    return (
+      <AuthPage title="Decision recorded">
+        <Success message="The account will remain inactive." />
+      </AuthPage>
+    );
   }
 
   const child = peek.data!;
   const decideError = decide.error instanceof ApiError ? decide.error : null;
 
   return (
-    <Page>
-      <h1 className="text-2xl font-semibold">Approve your child's account?</h1>
-      <p className="mt-3 text-sm text-muted-foreground">
+    <AuthPage title="Approve your child's account" subtitle="Review the request before your child signs in.">
+      <p className="text-sm text-muted-foreground">
         <span className="font-medium text-foreground">{child.username}</span> ({child.age}, {child.country_code})
         signed up for InvestiKid and listed you as their parent.
       </p>
@@ -73,19 +91,14 @@ export default function ConsentVerify() {
           Decline
         </Button>
       </div>
-    </Page>
+    </AuthPage>
   );
 }
 
-function Page({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto max-w-lg px-4 py-4 sm:px-6 sm:py-6">{children}</main>;
-}
-
-function Success({ title, message }: { title: string; message: string }) {
+function Success({ message }: { message: string }) {
   return (
     <div role="status" className="rounded-md border bg-muted/30 p-6">
-      <h1 className="text-xl font-semibold">{title}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+      <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }

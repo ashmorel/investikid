@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { authApi, type Me } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
+import { AuthPage } from '@/components/AuthPage';
 
 export default function VerifyEmail() {
   const [params] = useSearchParams();
@@ -43,27 +44,31 @@ export default function VerifyEmail() {
 
   if (!token) {
     return (
-      <Page>
+      <AuthPage title="That link didn't work" subtitle="Please use the verification link from your email.">
         <p role="alert" className="text-sm text-destructive">
           Invalid link. Please use the verification link from your email.
         </p>
-      </Page>
+      </AuthPage>
     );
   }
 
   if (verify.isLoading) {
-    return <Page><p className="text-sm text-muted-foreground">Verifying…</p></Page>;
+    return (
+      <AuthPage title="Verifying your email...">
+        <p className="text-sm text-muted-foreground">This should only take a moment.</p>
+      </AuthPage>
+    );
   }
 
   if (verify.isError) {
     const status = verify.error instanceof ApiError ? verify.error.status : 0;
     const isExpired = status === 410;
     return (
-      <Page>
-        <h1 className="text-2xl font-semibold">
-          {isExpired ? 'Link expired' : 'Verification failed'}
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+      <AuthPage
+        title={isExpired ? 'That link expired' : 'That link didn’t work'}
+        subtitle={isExpired ? 'Request a fresh verification email.' : 'Try again or head back to sign in.'}
+      >
+        <p className="text-sm text-muted-foreground">
           {isExpired
             ? 'This link is invalid or expired.'
             : 'Something went wrong. Please try again.'}
@@ -95,14 +100,13 @@ export default function VerifyEmail() {
             )}
           </div>
         )}
-      </Page>
+      </AuthPage>
     );
   }
 
   return (
-    <Page>
-      <h1 className="text-2xl font-semibold">Email confirmed!</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
+    <AuthPage title="Email verified!">
+      <p className="text-sm text-muted-foreground">
         Your email is confirmed. You're all set.
       </p>
       <p className="mt-4 text-sm text-muted-foreground">
@@ -110,10 +114,6 @@ export default function VerifyEmail() {
         {' · '}
         <Link to="/login" className="underline">Sign in</Link>
       </p>
-    </Page>
+    </AuthPage>
   );
-}
-
-function Page({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto max-w-md p-6">{children}</main>;
 }

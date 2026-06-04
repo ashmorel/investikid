@@ -31,9 +31,10 @@ describe('ConsentVerify', () => {
       new Response(JSON.stringify({ status: 'ok', decision: 'approve' }), { status: 200 }),
     );
     renderAt('/consent/verify?token=abc');
+    expect(await screen.findByRole('heading', { name: /approve your child's account/i })).toBeInTheDocument();
     expect(await screen.findByText(/kid/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /approve/i }));
-    await waitFor(() => expect(screen.getByText(/Account approved/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /all set/i })).toBeInTheDocument());
   });
 
   it('shows 410 error when verify returns 410', async () => {
@@ -41,6 +42,6 @@ describe('ConsentVerify', () => {
       new Response(JSON.stringify({ detail: 'Already decided' }), { status: 410 }),
     );
     renderAt('/consent/verify?token=abc');
-    expect(await screen.findByText(/Link unavailable/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /link unavailable/i, level: 1 })).toBeInTheDocument();
   });
 });

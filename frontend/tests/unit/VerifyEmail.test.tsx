@@ -46,7 +46,7 @@ describe('VerifyEmail', () => {
 
     renderVerifyEmail(qc);
 
-    expect(await screen.findByRole('heading', { name: /email confirmed/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /email verified/i })).toBeInTheDocument();
     await waitFor(() => {
       expect(qc.getQueryData<Me>(['me'])?.email_verified_at).not.toBeNull();
     });
