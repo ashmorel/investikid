@@ -19,7 +19,7 @@ export function LessonRow({ moduleId, levelId, lesson, status }: { moduleId: str
       </div>
       <div className="flex items-center gap-2 text-xs shrink-0">
         <span className="rounded-lg bg-brand-100 px-2 py-0.5 font-semibold text-brand-800 capitalize">{lesson.type}</span>
-        <span className="text-gray-500">{lesson.xp_reward} XP</span>
+        <span className="font-semibold text-accent-700">{lesson.xp_reward} XP</span>
       </div>
     </Link>
   );

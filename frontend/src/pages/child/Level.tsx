@@ -43,9 +43,22 @@ export default function Level() {
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
       <Link to={`/lessons/${moduleId ?? ''}`} className="text-sm text-brand-700 hover:underline">← Back to levels</Link>
 
-      <p className="mt-3 text-sm text-gray-500">
-        {completed} / {lessons.length} quests complete
-      </p>
+      <div className="mt-3 rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
+        <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+          <span>Level progress</span>
+          <span>{completed} / {lessons.length} quests</span>
+        </div>
+        <div
+          className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-brand-100"
+          role="progressbar"
+          aria-valuenow={completed}
+          aria-valuemin={0}
+          aria-valuemax={lessons.length}
+          aria-label="Level progress"
+        >
+          <div className="h-full rounded-full bg-brand-gradient transition-all" style={{ width: `${lessons.length ? Math.round((completed / lessons.length) * 100) : 0}%` }} />
+        </div>
+      </div>
 
       <div className="mt-4 rounded-2xl border-2 border-brand-200 bg-white overflow-hidden">
         {lessons.map((lesson, i) => {

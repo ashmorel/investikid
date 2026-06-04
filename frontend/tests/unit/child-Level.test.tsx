@@ -42,7 +42,7 @@ describe('Level page', () => {
       ],
     });
     renderAt('/lessons/mod-1/lv-1');
-    expect(await screen.findByText(/1 \/ 3 quests complete/i)).toBeInTheDocument();
+    expect(await screen.findByText(/1 \/ 3 quests/i)).toBeInTheDocument();
     expect(await screen.findByText(/1\. First/)).toBeInTheDocument();
     expect(screen.getByLabelText('completed')).toBeInTheDocument();
     expect(screen.getByLabelText('next up')).toBeInTheDocument();
