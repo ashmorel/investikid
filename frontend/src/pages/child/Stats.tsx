@@ -10,7 +10,7 @@ import { ChallengeList } from '@/components/child/stats/ChallengeList';
 import { LeaderboardTable } from '@/components/child/stats/LeaderboardTable';
 
 function SectionSkeleton() {
-  return <div className="h-32 animate-pulse rounded-lg bg-muted" />;
+  return <div className="h-32 animate-pulse rounded-2xl bg-muted" />;
 }
 
 export default function Stats() {
@@ -37,8 +37,8 @@ export default function Stats() {
       ) : null}
 
       {/* Badges */}
-      <section>
-        <h2 className="mb-4 text-xl font-semibold">Badges</h2>
+      <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
+        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Badges</h2>
         {allBadges.isLoading || earnedBadges.isLoading ? (
           <SectionSkeleton />
         ) : allBadges.data && earnedBadges.data ? (
@@ -47,8 +47,8 @@ export default function Stats() {
       </section>
 
       {/* Weekly Challenges */}
-      <section>
-        <h2 className="mb-4 text-xl font-semibold">Weekly Challenges</h2>
+      <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
+        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Weekly Challenges</h2>
         {challenges.isLoading ? (
           <SectionSkeleton />
         ) : challenges.data ? (
@@ -57,8 +57,8 @@ export default function Stats() {
       </section>
 
       {/* Weekly Leaderboard */}
-      <section>
-        <h2 className="mb-4 text-xl font-semibold">Weekly Leaderboard</h2>
+      <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
+        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Weekly Leaderboard</h2>
         {leaderboard.isLoading ? (
           <SectionSkeleton />
         ) : leaderboard.data ? (
