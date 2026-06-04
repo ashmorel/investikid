@@ -4,8 +4,24 @@ from datetime import UTC, date, datetime
 import pytest
 
 from app.services import oidc
+from app.services.tokens import issue_parent_session
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
+
+# ---------------------------------------------------------------------------
+# Helpers for authenticated parent requests
+# ---------------------------------------------------------------------------
+
+_TRUSTED_ORIGIN = {"Origin": "https://localhost"}
+
+
+def _auth_headers(parent_email: str) -> dict:
+    """Return headers that carry a valid parent session and bypass CSRF."""
+    token = issue_parent_session(parent_email)
+    return {
+        "Origin": "https://localhost",
+        "Cookie": f"parent_session={token}",
+    }
 
 
 def _patch_verify(monkeypatch, *, sub, email, email_verified=True):
@@ -82,3 +98,188 @@ async def test_unknown_provider(client, monkeypatch):
         headers={"Origin": "https://localhost"},
     )
     assert r.status_code == 404
+
+
+# ===========================================================================
+# Task 5 — link / unlink / list
+# ===========================================================================
+
+async def test_link_creates_identity(client, db_session, monkeypatch):
+    """POST /link for an authenticated parent creates a ParentIdentity row."""
+    from sqlalchemy import select
+
+    from app.models.parent_identity import ParentIdentity
+
+    parent = "linkparent1@example.com"
+    db_session.add(_make_user(parent, "lp1"))
+    await db_session.commit()
+
+    _patch_verify(monkeypatch, sub="link-sub-1", email=parent)
+    r = await client.post(
+        "/parent/auth/oauth/google/link",
+        json={"id_token": "tok", "nonce": "n"},
+        headers=_auth_headers(parent),
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "linked"
+
+    row = await db_session.scalar(
+        select(ParentIdentity).where(
+            ParentIdentity.provider == "google",
+            ParentIdentity.provider_subject == "link-sub-1",
+        )
+    )
+    assert row is not None
+    assert row.parent_email == parent
+
+
+async def test_link_idempotent(client, db_session, monkeypatch):
+    """POST /link twice with the same token creates exactly one row."""
+    from sqlalchemy import func, select
+
+    from app.models.parent_identity import ParentIdentity
+
+    parent = "linkparent2@example.com"
+    db_session.add(_make_user(parent, "lp2"))
+    await db_session.commit()
+
+    _patch_verify(monkeypatch, sub="link-sub-2", email=parent)
+    headers = _auth_headers(parent)
+    payload = {"id_token": "tok", "nonce": "n"}
+
+    r1 = await client.post("/parent/auth/oauth/google/link", json=payload, headers=headers)
+    assert r1.status_code == 200
+
+    r2 = await client.post("/parent/auth/oauth/google/link", json=payload, headers=headers)
+    assert r2.status_code == 200
+
+    count = await db_session.scalar(
+        select(func.count()).select_from(ParentIdentity).where(
+            ParentIdentity.provider == "google",
+            ParentIdentity.provider_subject == "link-sub-2",
+        )
+    )
+    assert count == 1
+
+
+async def test_link_conflict_different_parent(client, db_session, monkeypatch):
+    """POST /link by a different parent for an already-linked identity → 409."""
+    from app.models.parent_identity import ParentIdentity
+
+    owner = "linkowner@example.com"
+    intruder = "intruder@example.com"
+    db_session.add(_make_user(owner, "lo"))
+    db_session.add(_make_user(intruder, "li"))
+    db_session.add(
+        ParentIdentity(
+            id=_uuid.uuid4(), provider="google", provider_subject="link-sub-conflict",
+            parent_email=owner, created_at=datetime.now(UTC),
+        )
+    )
+    await db_session.commit()
+
+    _patch_verify(monkeypatch, sub="link-sub-conflict", email=intruder)
+    r = await client.post(
+        "/parent/auth/oauth/google/link",
+        json={"id_token": "tok", "nonce": "n"},
+        headers=_auth_headers(intruder),
+    )
+    assert r.status_code == 409
+
+
+async def test_list_identities(client, db_session, monkeypatch):
+    """GET /identities returns the linked providers for the authenticated parent only."""
+    from app.models.parent_identity import ParentIdentity
+
+    parent_a = "listparent_a@example.com"
+    parent_b = "listparent_b@example.com"
+    db_session.add(_make_user(parent_a, "la"))
+    db_session.add(_make_user(parent_b, "lb"))
+    db_session.add(
+        ParentIdentity(
+            id=_uuid.uuid4(), provider="google", provider_subject="list-sub-a",
+            parent_email=parent_a, created_at=datetime.now(UTC),
+        )
+    )
+    db_session.add(
+        ParentIdentity(
+            id=_uuid.uuid4(), provider="apple", provider_subject="list-sub-b",
+            parent_email=parent_b, created_at=datetime.now(UTC),
+        )
+    )
+    await db_session.commit()
+
+    r = await client.get(
+        "/parent/auth/identities",
+        headers=_auth_headers(parent_a),
+    )
+    assert r.status_code == 200
+    providers = [item["provider"] for item in r.json()]
+    assert "google" in providers
+    # Must NOT expose parent_b's apple identity
+    assert "apple" not in providers
+
+
+async def test_unlink_removes_identity(client, db_session, monkeypatch):
+    """DELETE /link removes the row; GET /identities no longer lists it."""
+    from sqlalchemy import select
+
+    from app.models.parent_identity import ParentIdentity
+
+    parent = "unlinkparent@example.com"
+    db_session.add(_make_user(parent, "ulp"))
+    db_session.add(
+        ParentIdentity(
+            id=_uuid.uuid4(), provider="google", provider_subject="unlink-sub-1",
+            parent_email=parent, created_at=datetime.now(UTC),
+        )
+    )
+    await db_session.commit()
+
+    headers = _auth_headers(parent)
+
+    r_del = await client.delete("/parent/auth/oauth/google/link", headers=headers)
+    assert r_del.status_code == 200
+    assert r_del.json()["status"] == "unlinked"
+
+    # Row gone
+    row = await db_session.scalar(
+        select(ParentIdentity).where(
+            ParentIdentity.provider == "google",
+            ParentIdentity.parent_email == parent,
+        )
+    )
+    assert row is None
+
+    # GET /identities no longer shows it
+    r_list = await client.get("/parent/auth/identities", headers=headers)
+    assert r_list.status_code == 200
+    providers = [item["provider"] for item in r_list.json()]
+    assert "google" not in providers
+
+
+async def test_unauthenticated_link(client, monkeypatch):
+    """Requests without a parent session → 401."""
+    _patch_verify(monkeypatch, sub="x", email="x@example.com")
+    r = await client.post(
+        "/parent/auth/oauth/google/link",
+        json={"id_token": "tok", "nonce": "n"},
+        headers=_TRUSTED_ORIGIN,
+    )
+    assert r.status_code == 401
+
+
+async def test_unauthenticated_unlink(client):
+    """DELETE without a parent session → 401."""
+    r = await client.delete(
+        "/parent/auth/oauth/google/link",
+        headers=_TRUSTED_ORIGIN,
+    )
+    assert r.status_code == 401
+
+
+async def test_unauthenticated_list(client):
+    """GET /identities without a parent session → 401."""
+    r = await client.get("/parent/auth/identities")
+    assert r.status_code == 401

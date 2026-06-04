@@ -11,7 +11,7 @@ from app.core.rate_limit import limiter
 from app.models.parent_identity import ParentIdentity
 from app.models.user import User
 from app.routers.auth import _cookie_samesite, _set_csrf_cookie
-from app.schemas.parent import OAuthSignInRequest, ParentMagicLinkRequest
+from app.schemas.parent import IdentityOut, OAuthSignInRequest, ParentMagicLinkRequest
 from app.services.email import get_email_sender
 from app.services.oidc import OidcError, OidcNotConfigured, verify_id_token
 from app.services.tokens import (
@@ -152,5 +152,66 @@ async def get_current_parent(
         return decode_parent_session(token)
     except TokenInvalid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+
+
+@router.post("/oauth/{provider}/link", status_code=200)
+async def link_provider(
+    provider: str,
+    payload: OAuthSignInRequest,
+    session: AsyncSession = Depends(get_session),
+    parent_email: str = Depends(get_current_parent),
+):
+    if provider not in _OAUTH_PROVIDERS:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown provider")
+    try:
+        identity = await verify_id_token(provider, payload.id_token, payload.nonce)
+    except OidcNotConfigured:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Provider not configured")
+    except OidcError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    existing = await session.scalar(
+        select(ParentIdentity).where(
+            ParentIdentity.provider == provider,
+            ParentIdentity.provider_subject == identity.sub,
+        ).limit(1)
+    )
+    if existing is None:
+        session.add(ParentIdentity(
+            id=uuid.uuid4(), provider=provider, provider_subject=identity.sub,
+            parent_email=parent_email, created_at=datetime.now(UTC),
+        ))
+        await session.commit()
+    elif existing.parent_email != parent_email:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already linked to another account")
+    return {"status": "linked", "provider": provider}
+
+
+@router.delete("/oauth/{provider}/link", status_code=200)
+async def unlink_provider(
+    provider: str,
+    session: AsyncSession = Depends(get_session),
+    parent_email: str = Depends(get_current_parent),
+):
+    rows = (await session.scalars(
+        select(ParentIdentity).where(
+            ParentIdentity.provider == provider,
+            ParentIdentity.parent_email == parent_email,
+        )
+    )).all()
+    for row in rows:
+        await session.delete(row)
+    await session.commit()
+    return {"status": "unlinked", "provider": provider}
+
+
+@router.get("/identities", response_model=list[IdentityOut])
+async def list_identities(
+    session: AsyncSession = Depends(get_session),
+    parent_email: str = Depends(get_current_parent),
+):
+    rows = (await session.scalars(
+        select(ParentIdentity).where(ParentIdentity.parent_email == parent_email)
+    )).all()
+    return [IdentityOut(provider=r.provider, parent_email=r.parent_email) for r in rows]
 
 
