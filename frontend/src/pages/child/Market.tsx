@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, Search } from 'lucide-react';
 import { simulatorApi, type QuoteOut } from '@/api/simulator';
+import { authApi, type Me } from '@/api/auth';
+import { REGION_EXCHANGES, type RegionCode } from '@/lib/region';
 import { EduTooltip } from '@/components/child/simulator/EduTooltip';
 import { MarketMovers } from '@/components/child/simulator/MarketMovers';
 import { MarketNews } from '@/components/child/simulator/MarketNews';
@@ -27,12 +29,16 @@ const EXCHANGE_GROUP_LABELS: Record<string, string> = {
   HKEX: 'Hong Kong Stocks',
 };
 
-function groupByExchange(stocks: QuoteOut[]) {
+export function groupByExchange(stocks: QuoteOut[], priority: string[] = []) {
   const groups: Record<string, QuoteOut[]> = {};
   for (const s of stocks) {
     (groups[s.exchange] ??= []).push(s);
   }
-  return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  const rank = (ex: string) => {
+    const i = priority.indexOf(ex);
+    return i === -1 ? priority.length : i;
+  };
+  return Object.entries(groups).sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
 export default function Market() {
@@ -41,6 +47,14 @@ export default function Market() {
   const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const { data: me } = useQuery<Me | null>({
+    queryKey: ['me'],
+    queryFn: () => authApi.me(),
+    staleTime: 60_000,
+  });
+  const region = (me?.content_region ?? me?.country_code ?? 'US') as RegionCode;
+  const priorityExchanges = REGION_EXCHANGES[region] ?? [];
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -89,7 +103,7 @@ export default function Market() {
     );
   }
 
-  const groups = groupByExchange(stocks);
+  const groups = groupByExchange(stocks, priorityExchanges);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
