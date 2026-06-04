@@ -25,8 +25,8 @@ function MasteryRing({ value }: { value: number }) {
           {pct}%
         </span>
       </div>
-      <p className="mt-2 text-sm font-semibold text-purple-400">Overall Mastery</p>
-      <p className="text-xs text-slate-400">Across all topics you've studied</p>
+      <p className="mt-2 text-sm font-semibold text-brand-600">Overall Mastery</p>
+      <p className="text-xs text-muted-foreground">Across all topics you've studied</p>
     </div>
   );
 }
