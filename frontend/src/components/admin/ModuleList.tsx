@@ -23,17 +23,17 @@ export default function ModuleList() {
     reorder.mutate(updated);
   }
 
-  if (isLoading) return <p className="text-slate-400">Loading...</p>;
+  if (isLoading) return <p className="text-muted-foreground">Loading...</p>;
 
   const sorted = [...modules].sort((a, b) => a.order_index - b.order_index);
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-50">Modules</h2>
+        <h2 className="text-xl font-semibold text-ink">Modules</h2>
         <Link
           to="/admin/modules/new"
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-500"
+          className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700"
         >
           + New Module
         </Link>
@@ -42,14 +42,14 @@ export default function ModuleList() {
         {sorted.map((m, i) => (
           <div
             key={m.id}
-            className={`flex items-center gap-3 rounded-lg border bg-slate-900 p-3 ${
-              m.is_premium ? 'border-accent-500/30' : 'border-slate-700'
+            className={`flex items-center gap-3 rounded-lg border bg-card p-3 ${
+              m.is_premium ? 'border-accent-500/30' : 'border-line'
             }`}
           >
             <span className="text-xl">{m.icon}</span>
             <div className="flex-1">
-              <div className="font-medium text-slate-50">{m.title}</div>
-              <div className="text-xs text-slate-500">
+              <div className="font-medium text-ink">{m.title}</div>
+              <div className="text-xs text-muted-foreground">
                 {m.topic} · {m.lesson_count} lessons
                 {m.country_codes.length > 0 && ` · ${m.country_codes.join(', ')}`}
                 {m.is_premium && <span className="ml-1 text-accent-500">⭐ Premium</span>}
@@ -61,10 +61,10 @@ export default function ModuleList() {
               isFirst={i === 0}
               isLast={i === sorted.length - 1}
             />
-            <Link to={`/admin/modules/${m.id}/levels`} className="text-xs text-blue-400 hover:text-blue-300">
+            <Link to={`/admin/modules/${m.id}/levels`} className="text-xs text-brand-600 hover:text-brand-700">
               Levels
             </Link>
-            <Link to={`/admin/modules/${m.id}`} className="text-xs text-blue-400 hover:text-blue-300">
+            <Link to={`/admin/modules/${m.id}`} className="text-xs text-brand-600 hover:text-brand-700">
               Edit
             </Link>
             <button

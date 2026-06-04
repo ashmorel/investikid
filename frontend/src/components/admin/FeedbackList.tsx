@@ -4,7 +4,7 @@ import { useFeedback } from '@/api/admin';
 const TYPE_BADGE: Record<string, string> = {
   bug: 'bg-danger-100 text-danger-700',
   feature: 'bg-info-100 text-info-600',
-  general: 'bg-slate-100 text-slate-800',
+  general: 'bg-brand-50 text-ink',
 };
 
 const TYPE_LABEL: Record<string, string> = {
@@ -23,12 +23,12 @@ export default function FeedbackList() {
   return (
     <div className="p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-50">Feedback</h1>
-        <div className="flex items-center gap-2 text-sm text-slate-300">
+        <h1 className="text-xl font-bold text-ink">Feedback</h1>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <label htmlFor="feedback-type-filter">Filter</label>
           <select
             id="feedback-type-filter"
-            className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-sm text-slate-100"
+            className="rounded-md border border-input bg-background px-2 py-1 text-sm text-ink"
             value={type}
             onChange={(e) => { setType(e.target.value); setPage(1); }}
           >
@@ -40,14 +40,14 @@ export default function FeedbackList() {
         </div>
       </div>
 
-      {isLoading && <p className="text-slate-400">Loading…</p>}
+      {isLoading && <p className="text-muted-foreground">Loading…</p>}
       {isError && <p className="text-danger-500">Failed to load feedback.</p>}
 
       {data && (
         <>
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-slate-700 text-left text-slate-400">
+              <tr className="border-b border-line text-left text-muted-foreground">
                 <th className="py-2 pr-4">Date</th>
                 <th className="py-2 pr-4">User</th>
                 <th className="py-2 pr-4">Type</th>
@@ -57,13 +57,13 @@ export default function FeedbackList() {
             </thead>
             <tbody>
               {data.items.map((f) => (
-                <tr key={f.id} className="border-b border-slate-800 align-top text-slate-200">
+                <tr key={f.id} className="border-b border-line align-top text-ink">
                   <td className="py-2 pr-4 whitespace-nowrap">
                     {new Date(f.created_at).toLocaleDateString()}
                   </td>
                   <td className="py-2 pr-4 whitespace-nowrap">
                     {f.submitter}
-                    <span className="ml-1 text-xs text-slate-500">({f.submitter_role})</span>
+                    <span className="ml-1 text-xs text-muted-foreground">({f.submitter_role})</span>
                   </td>
                   <td className="py-2 pr-4">
                     <span className={`rounded px-2 py-0.5 text-xs font-medium ${TYPE_BADGE[f.feedback_type] ?? ''}`}>
@@ -71,18 +71,18 @@ export default function FeedbackList() {
                     </span>
                   </td>
                   <td className="py-2 pr-4 max-w-md">{f.message}</td>
-                  <td className="py-2 pr-4 text-slate-400">{f.page_url ?? '—'}</td>
+                  <td className="py-2 pr-4 text-muted-foreground">{f.page_url ?? '—'}</td>
                 </tr>
               ))}
               {data.items.length === 0 && (
-                <tr><td colSpan={5} className="py-6 text-center text-slate-500">No feedback yet.</td></tr>
+                <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">No feedback yet.</td></tr>
               )}
             </tbody>
           </table>
 
-          <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
+          <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
             <button
-              className="rounded border border-slate-600 px-3 py-1 disabled:opacity-40"
+              className="rounded border border-line px-3 py-1 disabled:opacity-40"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
             >
@@ -90,7 +90,7 @@ export default function FeedbackList() {
             </button>
             <span>Page {page} of {totalPages}</span>
             <button
-              className="rounded border border-slate-600 px-3 py-1 disabled:opacity-40"
+              className="rounded border border-line px-3 py-1 disabled:opacity-40"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
             >

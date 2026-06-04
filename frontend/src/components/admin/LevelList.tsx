@@ -27,22 +27,22 @@ export default function LevelList() {
     updateLevel.mutate({ id: neighbour.id, order_index: current.order_index });
   }
 
-  if (isLoading) return <p className="text-slate-400">Loading...</p>;
+  if (isLoading) return <p className="text-muted-foreground">Loading...</p>;
 
   return (
     <div>
       <div className="mb-2">
-        <Link to="/admin/modules" className="text-xs text-slate-400 hover:text-slate-200">
+        <Link to="/admin/modules" className="text-xs text-muted-foreground hover:text-ink">
           ← Back to modules
         </Link>
       </div>
 
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-50">Levels</h2>
+        <h2 className="text-xl font-semibold text-ink">Levels</h2>
         <button
           type="button"
           onClick={() => { setEditingLevel(null); setShowNewLevel(true); }}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-500"
+          className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700"
         >
           + Add Level
         </button>
@@ -52,8 +52,8 @@ export default function LevelList() {
         {sorted.map((level, i) => (
           <div
             key={level.id}
-            className={`flex items-center gap-3 rounded-lg border bg-slate-900 p-3 ${
-              level.is_premium ? 'border-accent-500/30' : 'border-slate-700'
+            className={`flex items-center gap-3 rounded-lg border bg-card p-3 ${
+              level.is_premium ? 'border-accent-500/30' : 'border-line'
             }`}
           >
             <OrderArrows
@@ -64,22 +64,22 @@ export default function LevelList() {
             />
             <span className="text-xl">{level.icon}</span>
             <div className="flex-1">
-              <div className="font-medium text-slate-50">{level.title}</div>
-              <div className="text-xs text-slate-500">
+              <div className="font-medium text-ink">{level.title}</div>
+              <div className="text-xs text-muted-foreground">
                 {level.lesson_count} lessons
                 {level.is_premium && <span className="ml-1 text-accent-500">⭐ Premium</span>}
               </div>
             </div>
             <Link
               to={`/admin/modules/${moduleId}/levels/${level.id}/lessons`}
-              className="text-xs text-blue-400 hover:text-blue-300"
+              className="text-xs text-brand-600 hover:text-brand-700"
             >
               Lessons
             </Link>
             <button
               type="button"
               onClick={() => { setEditingLevel(level); setShowNewLevel(false); }}
-              className="text-xs text-blue-400 hover:text-blue-300"
+              className="text-xs text-brand-600 hover:text-brand-700"
             >
               Edit
             </button>

@@ -16,22 +16,22 @@ export default function LevelLessonList() {
 
   const sorted = [...lessons].sort((a, b) => a.order_index - b.order_index);
 
-  if (isLoading) return <p className="text-slate-400">Loading...</p>;
+  if (isLoading) return <p className="text-muted-foreground">Loading...</p>;
 
   return (
     <div>
       <div className="mb-2">
-        <Link to={`/admin/modules/${moduleId}/levels`} className="text-xs text-slate-400 hover:text-slate-200">
+        <Link to={`/admin/modules/${moduleId}/levels`} className="text-xs text-muted-foreground hover:text-ink">
           ← Back to levels
         </Link>
       </div>
 
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-50">Lessons</h2>
+        <h2 className="text-xl font-semibold text-ink">Lessons</h2>
         <button
           type="button"
           onClick={() => { setEditingLesson(null); setShowNewLesson(true); }}
-          className="text-sm text-blue-400 hover:text-blue-300"
+          className="text-sm text-brand-600 hover:text-brand-700"
         >
           + Add Lesson
         </button>
@@ -39,20 +39,20 @@ export default function LevelLessonList() {
 
       <div className="flex flex-col gap-2">
         {sorted.map((lesson) => (
-          <div key={lesson.id} className="flex items-center gap-2 rounded-md border border-slate-700 bg-slate-900 px-3 py-2">
+          <div key={lesson.id} className="flex items-center gap-2 rounded-md border border-line bg-card px-3 py-2">
             <span className={`rounded px-2 py-0.5 text-xs ${
-              lesson.type === 'card' ? 'bg-blue-500/20 text-blue-400'
+              lesson.type === 'card' ? 'bg-brand-100 text-brand-700'
               : lesson.type === 'quiz' ? 'bg-success-500/20 text-success-600'
               : 'bg-accent-500/20 text-accent-500'
             }`}>{lesson.type}</span>
-            <span className="flex-1 truncate text-sm text-slate-50">
+            <span className="flex-1 truncate text-sm text-ink">
               {lessonLabel(lesson)}
             </span>
-            <span className="text-xs text-slate-500">{lesson.xp_reward} XP</span>
+            <span className="text-xs text-muted-foreground">{lesson.xp_reward} XP</span>
             <button
               type="button"
               onClick={() => { setEditingLesson(lesson); setShowNewLesson(false); }}
-              className="text-xs text-blue-400"
+              className="text-xs text-brand-600"
             >
               Edit
             </button>

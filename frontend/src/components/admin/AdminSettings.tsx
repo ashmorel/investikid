@@ -58,7 +58,7 @@ export default function AdminSettings() {
   }
 
   if (isLoading) {
-    return <p className="p-6 text-slate-400">Loading settings…</p>;
+    return <p className="p-6 text-muted-foreground">Loading settings…</p>;
   }
 
   if (isLoadError) {
@@ -66,21 +66,21 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="p-6 text-slate-50">
-      <h1 className="mb-6 text-2xl font-bold text-slate-50">Settings</h1>
+    <div className="p-6 text-ink">
+      <h1 className="mb-6 text-2xl font-bold text-ink">Settings</h1>
 
       <section aria-labelledby="alert-emails-heading" className="max-w-xl">
-        <h2 id="alert-emails-heading" className="mb-1 text-lg font-semibold text-slate-200">
+        <h2 id="alert-emails-heading" className="mb-1 text-lg font-semibold text-ink">
           Alert emails
         </h2>
-        <p className="mb-4 text-sm text-slate-400">
+        <p className="mb-4 text-sm text-muted-foreground">
           Who gets notified when the AI helper is degraded or down.
         </p>
 
         {/* Add email row */}
         <div className="mb-4 flex gap-2">
           <div className="flex-1">
-            <label htmlFor="new-alert-email" className="mb-1 block text-sm text-slate-400">
+            <label htmlFor="new-alert-email" className="mb-1 block text-sm text-muted-foreground">
               Add email address
             </label>
             <input
@@ -90,7 +90,7 @@ export default function AdminSettings() {
               onChange={(e) => { setInputValue(e.target.value); setInputError(''); }}
               onKeyDown={handleKeyDown}
               placeholder="admin@example.com"
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-ink placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand-500"
               aria-describedby={inputError ? 'email-input-error' : undefined}
             />
             {inputError && (
@@ -103,7 +103,7 @@ export default function AdminSettings() {
             <button
               type="button"
               onClick={handleAdd}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               Add
             </button>
@@ -112,7 +112,7 @@ export default function AdminSettings() {
 
         {/* Email list */}
         {emails.length === 0 ? (
-          <p className="mb-4 rounded-md border border-slate-700 bg-slate-800/50 px-4 py-3 text-sm text-slate-500">
+          <p className="mb-4 rounded-md border border-line bg-card px-4 py-3 text-sm text-muted-foreground">
             No alert recipients — alerts are currently off.
           </p>
         ) : (
@@ -120,14 +120,14 @@ export default function AdminSettings() {
             {emails.map((email) => (
               <li
                 key={email}
-                className="flex items-center justify-between rounded-md border border-slate-700 bg-slate-800 px-3 py-2"
+                className="flex items-center justify-between rounded-md border border-line bg-card px-3 py-2"
               >
-                <span className="text-sm text-slate-200">{email}</span>
+                <span className="text-sm text-ink">{email}</span>
                 <button
                   type="button"
                   onClick={() => handleRemove(email)}
                   aria-label={`Remove ${email}`}
-                  className="ml-3 rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-700 hover:text-danger-500 focus:outline-none focus:ring-1 focus:ring-danger-500"
+                  className="ml-3 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-brand-50 hover:text-danger-500 focus:outline-none focus:ring-1 focus:ring-danger-500"
                 >
                   Remove
                 </button>
@@ -142,7 +142,7 @@ export default function AdminSettings() {
             type="button"
             onClick={handleSave}
             disabled={update.isPending}
-            className="rounded-md bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             {update.isPending ? 'Saving…' : 'Save'}
           </button>
