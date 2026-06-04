@@ -205,7 +205,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
                     isLast={i === sortedLessons.length - 1}
                   />
                   <span className={`rounded px-2 py-0.5 text-xs ${
-                    l.type === 'card' ? 'bg-brand-500/20 text-brand-600'
+                    l.type === 'card' ? 'bg-brand-500/20 text-brand-700'
                     : l.type === 'quiz' ? 'bg-success-500/20 text-success-600'
                     : 'bg-accent-500/20 text-accent-500'
                   }`}>{l.type}</span>
