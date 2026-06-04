@@ -13,7 +13,7 @@ export default function OrderArrows({ onMoveUp, onMoveDown, isFirst, isLast }: O
         onClick={onMoveUp}
         disabled={isFirst}
         aria-label="Move up"
-        className="rounded px-1 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
+        className="rounded px-1 text-muted-foreground hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed"
       >
         ↑
       </button>
@@ -22,7 +22,7 @@ export default function OrderArrows({ onMoveUp, onMoveDown, isFirst, isLast }: O
         onClick={onMoveDown}
         disabled={isLast}
         aria-label="Move down"
-        className="rounded px-1 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
+        className="rounded px-1 text-muted-foreground hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed"
       >
         ↓
       </button>

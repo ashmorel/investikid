@@ -19,15 +19,15 @@ export default function ConfirmDialog({ open, title, message, onConfirm, onCance
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" role="dialog" aria-label={title}>
-      <div className="w-full max-w-sm rounded-lg border border-slate-700 bg-slate-900 p-6">
-        <h3 className="mb-2 text-lg font-semibold text-slate-50">{title}</h3>
-        {message && <p className="mb-4 text-sm text-slate-400">{message}</p>}
+      <div className="w-full max-w-sm rounded-lg border border-line bg-card p-6">
+        <h3 className="mb-2 text-lg font-semibold text-ink">{title}</h3>
+        {message && <p className="mb-4 text-sm text-muted-foreground">{message}</p>}
         <div className="flex justify-end gap-3">
           <button
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="rounded-md border border-slate-600 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+            className="rounded-md border border-line px-4 py-2 text-sm text-muted-foreground hover:bg-brand-50"
           >
             Cancel
           </button>

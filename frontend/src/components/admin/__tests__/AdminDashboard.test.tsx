@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminDashboard from '../AdminDashboard';
 
@@ -27,5 +28,10 @@ describe('AdminDashboard', () => {
     render(<AdminDashboard />, { wrapper });
     expect(screen.getByText(/modules/i)).toBeInTheDocument();
     expect(screen.getByText(/badges/i)).toBeInTheDocument();
+  });
+
+  it('has no accessibility violations', async () => {
+    const { container } = render(<AdminDashboard />, { wrapper });
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
