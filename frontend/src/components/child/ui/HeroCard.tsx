@@ -7,7 +7,7 @@ export function HeroCard({ eyebrow, icon, title, subtitle, cta, to }: Props) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.35 }}
-      className="overflow-hidden rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 p-5 text-white shadow-lg shadow-orange-500/30"
+      className="overflow-hidden rounded-3xl bg-brand-gradient p-5 text-white shadow-lg shadow-brand-600/30"
     >
       <p className="text-xs font-extrabold uppercase tracking-wider opacity-95"><span aria-hidden="true">▶ </span>{eyebrow}</p>
       <div className="mt-2 flex items-center gap-3">
@@ -15,7 +15,7 @@ export function HeroCard({ eyebrow, icon, title, subtitle, cta, to }: Props) {
         <p className="text-lg font-extrabold leading-tight">{title}</p>
       </div>
       {subtitle && <p className="mt-1 text-sm font-medium opacity-90">{subtitle}</p>}
-      <GradientButton to={to} full className="mt-4 !bg-none bg-white text-amber-700 shadow-none hover:bg-amber-50">{cta}<span aria-hidden="true"> →</span></GradientButton>
+      <GradientButton to={to} full className="mt-4 !bg-none bg-white text-brand-700 shadow-none hover:bg-brand-50">{cta}<span aria-hidden="true"> →</span></GradientButton>
     </motion.div>
   );
 }

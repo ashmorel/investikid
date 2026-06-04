@@ -34,7 +34,7 @@ export function LessonChrome({ position, total, xpReward, onBack }: LessonChrome
           type="button"
           aria-label="Go back"
           onClick={onBack}
-          className="flex-shrink-0 rounded-full p-1 text-amber-700 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+          className="flex-shrink-0 rounded-full p-1 text-brand-700 hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fillRule="evenodd" clipRule="evenodd"
@@ -49,23 +49,23 @@ export function LessonChrome({ position, total, xpReward, onBack }: LessonChrome
           aria-valuemin={0}
           aria-valuemax={total || 1}
           aria-label={total > 0 ? `Quest ${position} of ${total}` : `Quest ${position}`}
-          className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-amber-100"
+          className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-brand-100"
         >
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-500"
+            className="absolute inset-y-0 left-0 rounded-full bg-brand-gradient transition-all duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
 
         {/* Count label */}
         {total > 0 && (
-          <span className="flex-shrink-0 text-xs font-semibold text-amber-700 tabular-nums">
+          <span className="flex-shrink-0 text-xs font-semibold text-brand-700 tabular-nums">
             {position}/{total}
           </span>
         )}
 
         {/* XP badge */}
-        <span className="flex-shrink-0 rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+        <span className="flex-shrink-0 rounded-lg bg-accent-100 px-2.5 py-1 text-xs font-semibold text-accent-700">
           🏆 {xpReward} XP
         </span>
       </div>
@@ -74,7 +74,7 @@ export function LessonChrome({ position, total, xpReward, onBack }: LessonChrome
       <div className="flex items-center gap-2">
         <RobotEddie size={40} />
         {/* Speech bubble */}
-        <div className="relative rounded-2xl rounded-tl-none bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-amber-200">
+        <div className="relative rounded-2xl rounded-tl-none bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-brand-200">
           {line}
           {/* Tail */}
           <span

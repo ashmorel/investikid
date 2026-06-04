@@ -38,8 +38,8 @@ export function Shell() {
 
   if (session.isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
-        <header className="h-14 border-b border-amber-200" aria-busy="true" />
+      <div className="min-h-screen bg-surface">
+        <header className="h-14 border-b border-brand-200" aria-busy="true" />
         <p className="mx-auto mt-6 max-w-2xl px-4 text-sm text-muted-foreground">Loading…</p>
       </div>
     );
@@ -50,7 +50,7 @@ export function Shell() {
   }
 
   return (
-    <div ref={swipeRef} className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
+    <div ref={swipeRef} className="min-h-screen bg-surface">
       <SkipLink />
       <TopNav username={session.data.username} />
       <div className="mx-auto flex max-w-5xl items-center px-4 pt-2">

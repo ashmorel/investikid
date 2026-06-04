@@ -11,17 +11,17 @@ import HomeHero from '@/components/child/HomeHero';
 import { ModuleTile } from '@/components/child/ui/ModuleTile';
 
 const TOPIC_STYLE: Record<string, { accent: string; tint: string }> = {
-  stocks: { accent: '#fbbf24', tint: '#fff4d6' },
-  savings: { accent: '#38bdf8', tint: '#e0f2fe' },
-  budgeting: { accent: '#34d399', tint: '#dcfce7' },
-  risk: { accent: '#a78bfa', tint: '#ede9fe' },
-  crypto: { accent: '#6366f1', tint: '#e6e9ff' },
-  taxes: { accent: '#f43f72', tint: '#ffe4ec' },
+  savings: { accent: '#0ea5e9', tint: '#e0f2fe' },
+  budgeting: { accent: '#10b981', tint: '#d1fae5' },
+  stocks: { accent: '#6366f1', tint: '#e0e7ff' },
+  risk: { accent: '#8b5cf6', tint: '#ede9fe' },
+  crypto: { accent: '#4f46e5', tint: '#e0e7ff' },
+  taxes: { accent: '#f43f5e', tint: '#ffe4e6' },
   debt: { accent: '#14b8a6', tint: '#d7f5f1' },
-  entrepreneurship: { accent: '#f97316', tint: '#ffedd5' },
+  entrepreneurship: { accent: '#f59e0b', tint: '#fef3c7' },
   real_estate: { accent: '#eab308', tint: '#fef9c3' },
 };
-const styleFor = (t: string) => TOPIC_STYLE[t] ?? { accent: '#fbbf24', tint: '#fff4d6' };
+const styleFor = (t: string) => TOPIC_STYLE[t] ?? { accent: '#0ea5e9', tint: '#e0f2fe' };
 
 export default function Home() {
   const { data: progress } = useProgress();
@@ -60,14 +60,14 @@ export default function Home() {
       </div>
 
       {/* XP Progress to next level */}
-      <div className="mt-4 rounded-2xl border-2 border-amber-200 bg-white p-4">
+      <div className="mt-4 rounded-2xl border-2 border-brand-200 bg-white p-4">
         <div className="flex justify-between text-xs text-gray-500 mb-1.5">
           <span>Level {level}</span>
           <span>{xpInLevel} / {xpForNext} XP</span>
         </div>
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-amber-100">
+        <div className="h-2.5 w-full overflow-hidden rounded-full bg-brand-100">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
+            className="h-full rounded-full bg-brand-gradient"
             initial={{ width: 0 }}
             animate={{ width: `${(xpInLevel / xpForNext) * 100}%` }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -108,7 +108,7 @@ export default function Home() {
       )}
 
       <div className="mt-5">
-        <Button asChild className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl">
+        <Button asChild className="bg-brand-gradient hover:brightness-110 text-white font-bold rounded-xl">
           <Link to="/lessons">Browse all modules →</Link>
         </Button>
       </div>
