@@ -16,7 +16,7 @@ export function MarketSearchBar({ value, onChange }: Props) {
         placeholder="Search by name or ticker…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border bg-background py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        className="w-full rounded-md border bg-background py-2 pl-9 pr-3 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
       />
     </div>
   );
