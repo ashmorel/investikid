@@ -48,8 +48,7 @@ async def update_preferences(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    if payload.country_code is not None:
-        current_user.country_code = payload.country_code
+    # country_code is fixed at registration (consent regime) and not updatable here.
     if payload.currency_code is not None:
         current_user.currency_code = payload.currency_code
     if payload.topic_path is not None:

@@ -36,12 +36,19 @@ async def test_get_profile_unauthenticated(client):
     assert response.status_code == 401
 
 
-async def test_update_country_and_currency(client):
+async def test_country_code_is_immutable_via_patch(client):
+    """country_code drives the COPPA / UK-GDPR parental-consent regime
+    (compliance.py / consent_service.py derive the consent age from it), so the
+    self-service preferences PATCH must NOT let a user change it. The user is
+    registered as GB; sending a different country_code is silently ignored while
+    other preferences still update."""
     await _register_and_login(client, "update@example.com", "updateuser")
     response = await client.patch("/users/me", json={"country_code": "US", "currency_code": "USD"})
     assert response.status_code == 200
-    assert response.json()["country_code"] == "US"
+    # currency still updates independently...
     assert response.json()["currency_code"] == "USD"
+    # ...but the legal consent country is unchanged.
+    assert response.json()["country_code"] == "GB"
 
 
 async def test_update_topic_path(client):

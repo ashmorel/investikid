@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.content import TOPIC_PATH_VALUES
 
-_COUNTRY_RE = re.compile(r"^[A-Z]{2}$")
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
 _SUPPORTED_REGIONS = {"US", "GB", "HK"}
 
@@ -30,26 +29,12 @@ class UserProfile(BaseModel):
 
 
 class UpdatePreferencesRequest(BaseModel):
-    country_code: str | None = None
+    # country_code is intentionally NOT updatable here: it drives the
+    # COPPA / UK-GDPR parental-consent regime (compliance.py / consent_service.py)
+    # and is fixed at registration. Any country_code sent in the body is ignored.
     currency_code: str | None = None
     topic_path: str | None = Field(default=None, max_length=20)
     content_region: str | None = None
-
-    @field_validator("country_code", mode="before")
-    @classmethod
-    def uppercase_country(cls, v):
-        if isinstance(v, str):
-            return v.upper().strip()
-        return v
-
-    @field_validator("country_code")
-    @classmethod
-    def validate_country(cls, v):
-        if v is None:
-            return v
-        if not _COUNTRY_RE.match(v):
-            raise ValueError("country_code must be an ISO 3166-1 alpha-2 code")
-        return v
 
     @field_validator("currency_code", mode="before")
     @classmethod
