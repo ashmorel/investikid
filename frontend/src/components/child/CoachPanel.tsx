@@ -1,24 +1,23 @@
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
 import { CoachChat } from '@/components/child/CoachChat';
 import { Penny } from '@/components/child/ui/Penny';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
-type CoachPanelProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
+type CoachPanelProps = { open: boolean; onOpenChange: (open: boolean) => void };
 
 export function CoachPanel({ open, onOpenChange }: CoachPanelProps) {
+  const isDesktop = useMediaQuery('(min-width: 640px)');
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        side="right"
-        className="flex h-full w-full max-w-md flex-col gap-0 border-brand-100 bg-white p-0 sm:max-w-md"
+        side={isDesktop ? 'right' : 'bottom'}
+        className={
+          isDesktop
+            ? 'flex h-full w-full max-w-md flex-col gap-0 border-brand-100 bg-white p-0 sm:max-w-md'
+            : 'flex h-[85svh] flex-col gap-0 rounded-t-2xl border-brand-100 bg-white p-0'
+        }
       >
         <SheetHeader className="flex-row items-center gap-2 border-b border-brand-100 px-4 py-3 text-left">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100" aria-hidden="true">
