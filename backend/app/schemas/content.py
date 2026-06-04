@@ -77,3 +77,13 @@ class LevelOut(BaseModel):
     passed: bool = False
     lessons_total: int = 0
     lessons_completed: int = 0
+
+
+class NextLessonOut(BaseModel):
+    module_id: uuid.UUID
+    module_title: str
+    module_icon: str | None
+    level_id: uuid.UUID
+    lesson_id: uuid.UUID
+    lesson_title: str
+    mode: Literal["start", "continue"]
