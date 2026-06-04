@@ -21,7 +21,7 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
         data-testid="module-locked"
         onClick={onLockedClick}
         aria-label={`${module.title} (locked)`}
-        className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-brand-200 bg-white p-4 text-center opacity-60 cursor-not-allowed"
+        className="flex w-full flex-col items-center gap-2 rounded-2xl border border-brand-100 bg-white p-4 text-center opacity-60 cursor-not-allowed shadow-sm"
       >
         <span className="text-3xl" aria-hidden="true">{module.icon}</span>
         <h2 className="font-bold text-sm text-gray-900">{module.title}</h2>
@@ -36,7 +36,7 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
   return (
     <Link
       to={`/lessons/${module.id}`}
-      className="flex flex-col items-center gap-2 rounded-2xl border-2 border-brand-200 bg-white p-4 text-center transition-all duration-200 hover:-translate-y-1 hover:border-brand-400 hover:shadow-md"
+      className="flex flex-col items-center gap-2 rounded-2xl border border-brand-100 bg-white p-4 text-center transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-brand-400 hover:shadow-md"
     >
       <span className="text-4xl" aria-hidden="true">{module.icon}</span>
       <h2 className="font-bold text-sm text-gray-900">{module.title}</h2>
