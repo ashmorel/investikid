@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,6 +15,7 @@ import { SkipLink } from '@/components/a11y/SkipLink';
 import { useRouteFocus } from '@/components/a11y/useRouteFocus';
 import { useRecommendations } from '@/api/ai';
 import { PennyFAB } from './PennyFAB';
+import { CoachPanel } from './CoachPanel';
 
 export function Shell() {
   const session = useChildSession();
@@ -23,6 +24,7 @@ export function Shell() {
   const prefersReducedMotion = useReducedMotion();
   useRouteFocus();
   const { data: recsData } = useRecommendations();
+  const [coachOpen, setCoachOpen] = useState(false);
 
   const mainRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<HTMLDivElement>(null);
@@ -77,7 +79,10 @@ export function Shell() {
       </div>
       <BottomTabBar />
       {location.pathname !== '/coach' && (
-        <PennyFAB dueCount={recsData?.review_summary?.due_count ?? 0} />
+        <>
+          <PennyFAB dueCount={recsData?.review_summary?.due_count ?? 0} onOpen={() => setCoachOpen(true)} />
+          <CoachPanel open={coachOpen} onOpenChange={setCoachOpen} />
+        </>
       )}
     </div>
   );

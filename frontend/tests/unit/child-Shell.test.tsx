@@ -5,6 +5,25 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Shell } from '@/components/child/Shell';
 
+vi.mock('@/hooks/useCoachGreeting', () => ({
+  useCoachGreeting: () => ({
+    greeting: 'Hey kid42! You have 2 concepts ready for review — want to go over them?',
+    isLoading: false,
+  }),
+}));
+
+vi.mock('@/api/ai', async () => {
+  const actual = await vi.importActual('@/api/ai');
+  return {
+    ...actual,
+    useRecommendations: () => ({
+      data: { review_summary: { due_count: 2, next_due_at: null } },
+      isLoading: false,
+    }),
+    useStrengths: () => ({ data: { topics: [], overall_mastery: 0 }, isLoading: false }),
+  };
+});
+
 const ME = {
   id: 'u1', email: 'k@x.com', username: 'kid', dob: '2012-01-01',
   country_code: 'US', currency_code: 'USD', topic_path: 'core', is_premium: false,
@@ -66,5 +85,16 @@ describe('Shell', () => {
     await userEvent.click(screen.getByRole('button', { name: /account menu/i }));
     await userEvent.click(screen.getByRole('menuitem', { name: /log out/i }));
     await waitFor(() => expect(screen.getByText('Login Page')).toBeInTheDocument());
+  });
+
+  it('opens Coach Penny from the floating button', async () => {
+    (globalThis.fetch as any).mockResolvedValue(
+      new Response(JSON.stringify(ME), { status: 200 }),
+    );
+    renderAt('/home');
+    await screen.findByText('Home Inside Shell');
+    await userEvent.click(screen.getByRole('button', { name: /open coach penny/i }));
+    expect(screen.getByRole('dialog', { name: /coach penny/i })).toBeInTheDocument();
+    expect(screen.getByText(/Hey kid42/)).toBeInTheDocument();
   });
 });

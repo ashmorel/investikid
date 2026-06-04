@@ -4,12 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { PennyFAB } from '../PennyFAB';
 
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return { ...actual, useNavigate: () => mockNavigate, useLocation: () => ({ pathname: '/home' }) };
-});
-
 describe('PennyFAB', () => {
   it('renders with accessible label', () => {
     render(<MemoryRouter><PennyFAB dueCount={0} /></MemoryRouter>);
@@ -26,9 +20,10 @@ describe('PennyFAB', () => {
     expect(screen.queryByTestId('penny-badge')).not.toBeInTheDocument();
   });
 
-  it('navigates to /coach on click', async () => {
-    render(<MemoryRouter><PennyFAB dueCount={0} /></MemoryRouter>);
+  it('calls onOpen on click', async () => {
+    const onOpen = vi.fn();
+    render(<MemoryRouter><PennyFAB dueCount={0} onOpen={onOpen} /></MemoryRouter>);
     await userEvent.click(screen.getByRole('button', { name: /open coach penny/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/coach');
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 });
