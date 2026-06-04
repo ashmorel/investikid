@@ -58,7 +58,7 @@ export default function Stock() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
         <p className="text-sm">Stock not found.</p>
-        <Link to="/simulator/market" className="text-sm text-primary hover:underline">← Back to market</Link>
+        <Link to="/simulator/market" className="text-sm text-brand-700 hover:underline">← Back to market</Link>
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function Stock() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
         <p className="text-sm">This stock isn't available in practice mode.</p>
-        <Link to="/simulator/market" className="text-sm text-primary hover:underline">← Back to market</Link>
+        <Link to="/simulator/market" className="text-sm text-brand-700 hover:underline">← Back to market</Link>
       </div>
     );
   }
@@ -82,7 +82,7 @@ export default function Stock() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-      <Link to="/simulator/market" className="mb-4 inline-block text-sm text-primary hover:underline">
+      <Link to="/simulator/market" className="mb-4 inline-block text-sm text-brand-700 hover:underline">
         ← Back to market
       </Link>
 
@@ -96,16 +96,13 @@ export default function Stock() {
         existingAvgPrice={existingHolding?.avg_buy_price ?? null}
       />
 
-      <div className="my-4">
+      <div className="my-4 rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
         <StockChart
           exchange={quote.exchange}
           ticker={quote.ticker}
           currency={quote.currency}
           onPeriodChange={setChartPeriod}
         />
-      </div>
-
-      <div className="mb-4">
         <ChartGuide exchange={quote.exchange} ticker={quote.ticker} period={chartPeriod} onAskPenny={() => setShowCoachPenny(true)} />
       </div>
 
@@ -123,17 +120,19 @@ export default function Stock() {
         />
       </div>
 
-      <TradeForm
-        ticker={quote.ticker}
-        exchange={quote.exchange}
-        price={quote.price}
-        currency={quote.currency}
-        availableCash={portfolio.virtual_cash}
-        ownedShares={existingHolding?.shares ?? '0'}
-        onSubmit={async (req) => { setSubmitError(null); await tradeMutation.mutateAsync(req); }}
-        isSubmitting={tradeMutation.isPending}
-        submitError={submitError}
-      />
+      <div className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
+        <TradeForm
+          ticker={quote.ticker}
+          exchange={quote.exchange}
+          price={quote.price}
+          currency={quote.currency}
+          availableCash={portfolio.virtual_cash}
+          ownedShares={existingHolding?.shares ?? '0'}
+          onSubmit={async (req) => { setSubmitError(null); await tradeMutation.mutateAsync(req); }}
+          isSubmitting={tradeMutation.isPending}
+          submitError={submitError}
+        />
+      </div>
 
       <div className="mt-6">
         <StockNewsSection exchange={quote.exchange} ticker={quote.ticker} />

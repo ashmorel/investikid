@@ -185,7 +185,7 @@ export function TradeForm({
             step={1}
             value={shares}
             onChange={(e) => setShares(e.target.value)}
-            className="w-32 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-32 rounded-md border bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-ring"
           />
           {side === 'buy' && maxAffordable > 0 && (
             <Button
