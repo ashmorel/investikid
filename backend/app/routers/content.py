@@ -17,6 +17,7 @@ from app.schemas.content import (
     LessonSummary,
     LevelOut,
     ModuleOut,
+    NextLessonEnvelope,
 )
 from app.services.content_service import (
     compute_level,
@@ -31,6 +32,7 @@ from app.services.gamification_service import (
     update_challenge_progress,
 )
 from app.services.level_service import LevelStateInput, derive_level_states
+from app.services.next_lesson_service import resolve_next_lesson
 from app.services.skill_profile_service import (
     record_weak_concept,
     reinforce_concept,
@@ -57,6 +59,14 @@ async def _get_accessible_module(
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Module requires premium")
     return module
+
+
+@router.get("/next-lesson", response_model=NextLessonEnvelope)
+async def get_next_lesson(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    return NextLessonEnvelope(next=await resolve_next_lesson(session, current_user))
 
 
 @router.get("/modules", response_model=list[ModuleOut])

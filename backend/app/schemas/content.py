@@ -87,3 +87,7 @@ class NextLessonOut(BaseModel):
     lesson_id: uuid.UUID
     lesson_title: str
     mode: Literal["start", "continue"]
+
+
+class NextLessonEnvelope(BaseModel):
+    next: NextLessonOut | None
