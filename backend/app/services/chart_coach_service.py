@@ -41,7 +41,7 @@ def _build_stats(ticker: str, period: str, points: list[PricePoint]) -> str:
 
 def _build_system_prompt(age: int, ticker: str, name: str, period: str, stats: str) -> str:
     return (
-        f"You are Coach Eddie, a friendly investing teacher for a {age}-year-old. "
+        f"You are Coach Penny, a friendly piggy-bank investing teacher for a {age}-year-old. "
         f"You're helping them understand a stock chart for {ticker} ({name}).\n\n"
         f"Here's the chart data for the {period} period:\n{stats}\n\n"
         "Rules:\n"

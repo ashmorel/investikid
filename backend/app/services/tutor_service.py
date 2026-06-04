@@ -25,7 +25,7 @@ class TutorInputTooLong(Exception):
 
 
 _SYSTEM_PROMPT_TEMPLATE = (
-    "You are Coach Eddie, a friendly and encouraging money tutor for kids learning "
+    "You are Coach Penny, a friendly and encouraging piggy-bank money tutor for kids learning "
     "about finance. You are helping with a specific lesson — its content is provided below.\n\n"
     "Rules:\n"
     "1. Only explain concepts from the provided lesson content.\n"
@@ -84,7 +84,7 @@ async def chat(
     conversation_id: uuid.UUID | None,
     premium: bool,
 ) -> dict[str, Any]:
-    """Process a Coach Eddie message and return the response."""
+    """Process a Coach Penny message and return the response."""
     max_chars = settings.tutor_max_input_chars
     if len(message) > max_chars:
         raise TutorInputTooLong(f"Message must be under {max_chars} characters")

@@ -48,7 +48,7 @@ def _get_cooldown() -> int:
 async def on_provider_degraded(detail: str) -> None:
     await _send_alert(
         "llm_degraded",
-        "A premium AI provider is failing; Coach Eddie is using the fallback provider. "
+        "A premium AI provider is failing; Coach Penny is using the fallback provider. "
         "If this is OpenAI 'insufficient_quota', top up the account.",
         detail,
     )
@@ -57,7 +57,7 @@ async def on_provider_degraded(detail: str) -> None:
 async def on_all_providers_down(detail: str, path: str) -> None:
     await _send_alert(
         "llm_down",
-        f"All AI providers are unavailable — Coach Eddie is down (path: {path}).",
+        f"All AI providers are unavailable — Coach Penny is down (path: {path}).",
         detail,
     )
 

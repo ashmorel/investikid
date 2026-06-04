@@ -1,4 +1,4 @@
-"""Coach Eddie standalone service — context building and action parsing."""
+"""Coach Penny standalone service — context building and action parsing."""
 from __future__ import annotations
 
 import re
@@ -120,7 +120,7 @@ def parse_actions(
 
 
 _COACH_SYSTEM_PROMPT = (
-    "You are Coach Eddie, a friendly money tutor for kids. You help them navigate "
+    "You are Coach Penny, a friendly piggy-bank money tutor for kids. You help them navigate "
     "their learning journey — what to learn next, what to review, and how they're doing.\n\n"
     "Rules:\n"
     "1. Reference the student's actual learning state (provided below).\n"
@@ -158,7 +158,7 @@ async def coach_chat(
     conversation_id: uuid.UUID | None,
     premium: bool,
 ) -> dict[str, Any]:
-    """Process a standalone Coach Eddie message."""
+    """Process a standalone Coach Penny message."""
     max_chars = settings.tutor_max_input_chars
     if len(message) > max_chars:
         raise TutorInputTooLong(f"Message must be under {max_chars} characters")

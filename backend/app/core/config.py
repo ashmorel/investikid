@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     llm_premium_provider: str = "openai"  # "openai" | "anthropic"
     llm_premium_api_key: str = ""
     llm_premium_model: str = "gpt-4o"
-    # Coach Eddie tutor
+    # Coach Penny tutor
     tutor_max_messages_free: int = 6
     tutor_max_messages_premium: int = 12
     tutor_rate_limit_per_hour: int = 10
