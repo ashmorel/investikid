@@ -14,6 +14,7 @@ export default tseslint.config(
       'public/sw.js',
       'scripts/',
       'ios/App/App/public/',
+      'tmp-shot.mjs',
     ],
   },
   js.configs.recommended,

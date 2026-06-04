@@ -4,48 +4,91 @@
 /* Preserve class-based dark mode (matches the prior darkMode: ['class']). */
 @custom-variant dark (&:is(.dark *));
 
-/* Semantic design tokens — SAME HSL values as the prior v3 config.
-   Mapped into Tailwind's colour/radius scales so utilities (bg-primary,
-   border-border, rounded-lg, …) resolve identically. v4 ships the default
-   palette (amber-*, sky-*, lime-*, …) automatically, so those keep working. */
 @theme {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
+  /* === Brand — sky→blue ramp (replaces amber/orange) === */
+  --color-brand-50: #f0f9ff;
+  --color-brand-100: #e0f2fe;
+  --color-brand-200: #bae6fd;
+  --color-brand-300: #7dd3fc;
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #0c4a6e;
+  --color-brand-grad-from: #0ea5e9;
+  --color-brand-grad-via: #3b82f6;
+  --color-brand-grad-to: #4f46e5;
+
+  /* === Accent — demoted amber (streaks, level, rewards, stars) === */
+  --color-accent-50: #fffbeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-200: #fde68a;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-700: #b45309;
+
+  /* === Success — gains / correct (emerald, AA on white) === */
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+
+  /* === Danger — loss / errors === */
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+
+  /* === Info — non-brand blue (charts/simulator chrome) === */
+  --color-info-100: #e0e7ff;
+  --color-info-500: #6366f1;
+  --color-info-600: #4f46e5;
+
+  /* === Neutrals / surfaces === */
+  --color-surface: #f0f9ff;
+  --color-card: #ffffff;
+  --color-ink: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #475569;
+  --color-line: #bae6fd;
+
+  /* === shadcn semantic tokens repointed to the new palette === */
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-ink);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-brand-500);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-brand-50);
+  --color-secondary-foreground: var(--color-brand-900);
+  --color-destructive: var(--color-danger-500);
+  --color-destructive-foreground: #ffffff;
+  --color-accent-foreground: var(--color-brand-900);
+  --color-border: var(--color-line);
+  --color-input: var(--color-line);
+  --color-ring: var(--color-brand-500);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
 }
 
+/* Brand gradient declared once (hero / primary CTA). */
+@utility bg-brand-gradient {
+  background-image: linear-gradient(
+    to bottom right,
+    var(--color-brand-grad-from),
+    var(--color-brand-grad-via),
+    var(--color-brand-grad-to)
+  );
+}
+
 @layer base {
   :root {
-    --background: 48 100% 96%;
-    --foreground: 220 9% 12%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 9% 12%;
-    --primary: 38 92% 50%;
-    --primary-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --muted: 48 100% 93%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 48 100% 93%;
-    --accent-foreground: 220 9% 12%;
-    --border: 48 97% 77%;
-    --input: 48 97% 77%;
-    --ring: 38 92% 35%;
     --radius: 0.75rem;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -53,19 +96,12 @@
     --safe-right: env(safe-area-inset-right, 0px);
   }
   * { @apply border-border; }
-  /* Prevent whole-page horizontal scroll/bleed on narrow mobile screens.
-     Inner overflow-x-auto carousels are unaffected. */
   html, body, #root {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
   }
   body { @apply bg-background text-foreground; font-family: ui-sans-serif, system-ui, sans-serif; }
-  /* iOS zooms into any form field whose font-size is < 16px when it gains focus,
-     and frequently does NOT zoom back out — which enlarges the layout viewport
-     and pushes content off the right edge (the post-login overflow). Keep form
-     controls at >=16px on touch devices to prevent the auto-zoom, without
-     disabling user pinch-zoom (we must not set maximum-scale — WCAG 1.4.4). */
   @media (pointer: coarse) {
     input:not([type='checkbox']):not([type='radio']):not([type='range']),
     select,
@@ -73,7 +109,5 @@
       font-size: 16px !important;
     }
   }
-  /* WCAG 2.2 SC 2.4.11 focus-not-obscured: keep keyboard focus clear of
-     sticky TopNav (~3.5rem) + BottomTabBar (~4rem). */
   :focus-visible { scroll-margin-top: 4.5rem; scroll-margin-bottom: 5rem; }
 }
