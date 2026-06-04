@@ -1,34 +1,4 @@
-import type { ModuleOut, LevelOut, LessonSummary } from '@/api/content';
-import type { CategorisedRecommendations } from '@/api/ai';
-
 export type HeroMode = 'start' | 'continue' | 'caught_up';
-
-export interface TargetModule {
-  moduleId: string;
-  mode: 'start' | 'continue';
-}
-
-export function pickTargetModule(
-  recs: CategorisedRecommendations | null | undefined,
-  modules: ModuleOut[],
-): TargetModule | null {
-  const cont = recs?.continue_learning?.[0];
-  if (cont) return { moduleId: cont.module_id, mode: 'continue' };
-  const fresh = recs?.something_new?.[0];
-  if (fresh) return { moduleId: fresh.module_id, mode: 'start' };
-  const unlocked = modules.filter((m) => !m.locked).sort((a, b) => a.order_index - b.order_index);
-  return unlocked.length > 0 ? { moduleId: unlocked[0].id, mode: 'start' } : null;
-}
-
-export function pickTargetLevel(levels: LevelOut[]): LevelOut | null {
-  return [...levels]
-    .sort((a, b) => a.order_index - b.order_index)
-    .find((l) => l.state !== 'locked' && l.lessons_completed < l.lessons_total) ?? null;
-}
-
-export function pickTargetLesson(lessons: LessonSummary[]): LessonSummary | null {
-  return [...lessons].sort((a, b) => a.order_index - b.order_index).find((l) => !l.completed) ?? null;
-}
 
 export interface HeroGreetingCtx {
   name: string;

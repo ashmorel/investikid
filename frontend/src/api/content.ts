@@ -79,8 +79,19 @@ export type Progress = {
   last_activity_date: string | null; // YYYY-MM-DD
 };
 
+export type NextLesson = {
+  module_id: string;
+  module_title: string;
+  module_icon: string | null;
+  level_id: string;
+  lesson_id: string;
+  lesson_title: string;
+  mode: 'start' | 'continue';
+};
+
 export const contentApi = {
   listModules: () => apiFetch<ModuleOut[]>('/modules'),
+  nextLesson: () => apiFetch<{ next: NextLesson | null }>('/next-lesson'),
   listLessons: (moduleId: string) =>
     apiFetch<LessonSummary[]>(`/modules/${moduleId}/lessons`),
   getLesson: (lessonId: string) => apiFetch<LessonOut>(`/lessons/${lessonId}`),
