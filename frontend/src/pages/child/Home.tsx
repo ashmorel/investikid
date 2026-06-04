@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { useProgress } from '@/hooks/useProgress';
 import { contentApi, type ModuleOut } from '@/api/content';
@@ -9,6 +8,10 @@ import { ReviewBanner } from '@/components/child/ReviewBanner';
 import { Button } from '@/components/ui/button';
 import HomeHero from '@/components/child/HomeHero';
 import { ModuleTile } from '@/components/child/ui/ModuleTile';
+import { LevelProgressCard } from '@/components/child/LevelProgressCard';
+import { AchievementsStrip } from '@/components/child/AchievementsStrip';
+import { useAllBadges } from '@/hooks/useAllBadges';
+import { useBadges } from '@/hooks/useBadges';
 
 const TOPIC_STYLE: Record<string, { accent: string; tint: string }> = {
   savings: { accent: '#0ea5e9', tint: '#e0f2fe' },
@@ -26,6 +29,8 @@ const styleFor = (t: string) => TOPIC_STYLE[t] ?? { accent: '#0ea5e9', tint: '#e
 export default function Home() {
   const { data: progress } = useProgress();
   const { data: recs } = useRecommendations();
+  const allBadges = useAllBadges();
+  const earnedBadges = useBadges();
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -37,8 +42,6 @@ export default function Home() {
   const modules = [...(modulesQ.data ?? [])].sort((a, b) => a.order_index - b.order_index);
   const level = progress?.level ?? 1;
   const xp = progress?.xp ?? 0;
-  const xpInLevel = xp % 100;
-  const xpForNext = 100;
 
   const recommendedModuleId =
     recs?.continue_learning?.[0]?.module_id ??
@@ -59,26 +62,20 @@ export default function Home() {
         />
       </div>
 
-      {/* XP Progress to next level */}
-      <div className="mt-4 rounded-2xl border-2 border-brand-200 bg-white p-4">
-        <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-          <span>Level {level}</span>
-          <span>{xpInLevel} / {xpForNext} XP</span>
-        </div>
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-brand-100">
-          <motion.div
-            className="h-full rounded-full bg-brand-gradient"
-            initial={{ width: 0 }}
-            animate={{ width: `${(xpInLevel / xpForNext) * 100}%` }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          />
-        </div>
+      <div className="mt-4">
+        <LevelProgressCard level={level} xp={xp} />
       </div>
 
       {/* Review nudge banner */}
       {recs && recs.review_summary.due_count > 0 && (
         <div className="mt-5">
           <ReviewBanner dueCount={recs.review_summary.due_count} />
+        </div>
+      )}
+
+      {allBadges.data && earnedBadges.data && (
+        <div className="mt-5">
+          <AchievementsStrip allBadges={allBadges.data} earnedBadges={earnedBadges.data} />
         </div>
       )}
 
