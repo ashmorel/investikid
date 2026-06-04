@@ -11,8 +11,8 @@ const NAV_ITEMS = [
 
 export default function AdminSidebar() {
   return (
-    <aside className="flex w-52 flex-col border-r border-slate-700 bg-slate-900 p-4">
-      <div className="mb-6 text-lg font-bold text-slate-50">📚 InvestiKid Admin</div>
+    <aside className="flex w-52 flex-col border-r border-line bg-card p-4">
+      <div className="mb-6 text-lg font-extrabold text-ink">📚 InvestiKid Admin</div>
       <nav className="flex flex-col gap-1" aria-label="Admin navigation">
         {NAV_ITEMS.map((item) => (
           <NavLink
@@ -20,8 +20,10 @@ export default function AdminSidebar() {
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              `rounded-md px-3 py-2 text-sm ${
-                isActive ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              `rounded-md px-3 py-2 text-sm font-medium ${
+                isActive
+                  ? 'bg-brand-gradient text-white'
+                  : 'text-muted-foreground hover:bg-brand-50 hover:text-ink'
               }`
             }
           >
@@ -29,8 +31,8 @@ export default function AdminSidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto border-t border-slate-700 pt-4">
-        <a href="/" className="text-sm text-slate-500 hover:text-slate-300">← Back to App</a>
+      <div className="mt-auto border-t border-line pt-4">
+        <a href="/" className="text-sm text-muted-foreground hover:text-ink">← Back to App</a>
       </div>
     </aside>
   );

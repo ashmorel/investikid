@@ -1,10 +1,10 @@
 import { useAdminStats } from '@/api/admin';
 
 const CARDS = [
-  { key: 'modules' as const, label: 'Modules', icon: '📖', color: 'text-success-500' },
-  { key: 'lessons' as const, label: 'Lessons', icon: '📝', color: 'text-blue-400' },
-  { key: 'badges' as const, label: 'Badges', icon: '🏆', color: 'text-accent-500' },
-  { key: 'challenges' as const, label: 'Challenges', icon: '⚡', color: 'text-accent-500' },
+  { key: 'modules' as const, label: 'Modules', icon: '📖', color: 'text-success-600' },
+  { key: 'lessons' as const, label: 'Lessons', icon: '📝', color: 'text-brand-600' },
+  { key: 'badges' as const, label: 'Badges', icon: '🏆', color: 'text-accent-600' },
+  { key: 'challenges' as const, label: 'Challenges', icon: '⚡', color: 'text-accent-600' },
 ];
 
 export default function AdminDashboard() {
@@ -12,13 +12,13 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <h2 className="mb-2 text-xl font-semibold text-slate-50">Dashboard</h2>
-      <p className="mb-6 text-sm text-slate-400">Content overview</p>
+      <h2 className="mb-2 text-xl font-semibold text-ink">Dashboard</h2>
+      <p className="mb-6 text-sm text-muted-foreground">Content overview</p>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {CARDS.map((card) => (
-          <div key={card.key} className="rounded-lg border border-slate-700 bg-slate-900 p-5">
-            <div className="text-sm text-slate-500">{card.icon} {card.label}</div>
-            <div className="mt-1 text-3xl font-bold text-slate-50">
+          <div key={card.key} className="rounded-2xl border border-line bg-card p-5 shadow-sm">
+            <div className="text-sm text-muted-foreground">{card.icon} {card.label}</div>
+            <div className="mt-1 text-3xl font-bold text-ink">
               {isLoading ? '—' : stats?.[card.key] ?? 0}
             </div>
           </div>

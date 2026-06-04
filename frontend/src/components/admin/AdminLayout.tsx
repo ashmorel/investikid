@@ -7,8 +7,8 @@ export default function AdminLayout() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
-        <span className="text-slate-400">Loading…</span>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <span className="text-muted-foreground">Loading…</span>
       </div>
     );
   }
@@ -18,7 +18,7 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
+    <div className="flex min-h-screen bg-background">
       <AdminSidebar />
       <main className="flex-1 p-6">
         <Outlet />
