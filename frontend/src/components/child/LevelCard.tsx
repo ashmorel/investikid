@@ -16,7 +16,7 @@ export function LevelCard({ level, onOpen, onLockedClick }: Props) {
       type="button"
       onClick={handle}
       aria-label={`${level.title}${locked ? (premium ? ' (premium)' : ' (locked)') : ''}`}
-      className="flex w-full flex-col items-start gap-1 rounded-2xl border-2 border-brand-200 bg-white p-4 text-left"
+      className="flex w-full flex-col items-start gap-1 rounded-2xl border border-brand-100 bg-white shadow-sm p-4 text-left"
     >
       <span className="text-2xl" aria-hidden="true">{level.icon}</span>
       <h2 className="text-sm font-bold text-gray-900">{level.title}</h2>
@@ -24,7 +24,19 @@ export function LevelCard({ level, onOpen, onLockedClick }: Props) {
         <span className="text-xs font-medium text-success-600">✓ Completed</span>
       )}
       {level.state === 'in_progress' && (
-        <span className="text-xs text-gray-500">{level.lessons_completed}/{level.lessons_total} lessons</span>
+        <div className="w-full">
+          <span className="text-xs text-gray-500">{level.lessons_completed}/{level.lessons_total} lessons</span>
+          <div
+            className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-brand-100"
+            role="progressbar"
+            aria-valuenow={level.lessons_completed}
+            aria-valuemin={0}
+            aria-valuemax={level.lessons_total}
+            aria-label={`${level.title} progress`}
+          >
+            <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${level.lessons_total ? Math.round((level.lessons_completed / level.lessons_total) * 100) : 0}%` }} />
+          </div>
+        </div>
       )}
       {locked && premium && (
         <span className="inline-flex items-center gap-1 text-xs font-medium text-accent-600">

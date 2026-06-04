@@ -45,7 +45,7 @@ describe('Module page', () => {
     });
     renderAt('/lessons/mod-1');
     expect(await screen.findByRole('heading', { name: /Stocks 101/i })).toBeInTheDocument();
-    expect(await screen.findByText(/2 levels/i)).toBeInTheDocument();
+    expect(await screen.findByText(/^2 levels$/i)).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Beginner/i })).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Intermediate/i })).toBeInTheDocument();
   });

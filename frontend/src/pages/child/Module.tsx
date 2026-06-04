@@ -46,6 +46,25 @@ export default function Module() {
         <p className="mt-1 text-sm text-gray-600">
           {levels.length} {levels.length === 1 ? 'level' : 'levels'}
         </p>
+        {levels.length > 0 && (() => {
+          const done = levels.filter((l) => l.state === 'completed').length;
+          const pct = Math.round((done / levels.length) * 100);
+          return (
+            <div className="mx-auto mt-3 max-w-xs">
+              <div
+                className="h-2 w-full overflow-hidden rounded-full bg-white/60"
+                role="progressbar"
+                aria-valuenow={done}
+                aria-valuemin={0}
+                aria-valuemax={levels.length}
+                aria-label="Module progress"
+              >
+                <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${pct}%` }} />
+              </div>
+              <p className="mt-1 text-xs font-semibold text-brand-700">{done} / {levels.length} levels complete</p>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Level list */}
