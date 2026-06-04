@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { VideoLesson } from '@/components/child/lesson/VideoLesson';
 
 vi.mock('@/lib/platform', () => ({
@@ -7,17 +7,11 @@ vi.mock('@/lib/platform', () => ({
 }));
 
 describe('VideoLesson on native', () => {
-  it('shows a YouTube thumbnail link instead of an iframe', () => {
+  it('shows an inline iframe player on native', () => {
     const { container } = render(<VideoLesson contentJson={{ youtube_id: 'abc123' }} onComplete={() => {}} />);
 
-    expect(container.querySelector('iframe')).not.toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /lesson video thumbnail/i })).toHaveAttribute(
-      'src',
-      'https://img.youtube.com/vi/abc123/hqdefault.jpg',
-    );
-    expect(screen.getByRole('link', { name: /open lesson video on youtube/i })).toHaveAttribute(
-      'href',
-      'https://www.youtube.com/watch?v=abc123',
-    );
+    const iframe = container.querySelector('iframe');
+    expect(iframe).toBeInTheDocument();
+    expect(iframe!.src).toContain('abc123');
   });
 });
