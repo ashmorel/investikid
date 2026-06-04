@@ -6,6 +6,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { CoachChat } from '@/components/child/CoachChat';
+import { Penny } from '@/components/child/ui/Penny';
 
 type CoachPanelProps = {
   open: boolean;
@@ -16,15 +17,20 @@ export function CoachPanel({ open, onOpenChange }: CoachPanelProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        side="bottom"
-        className="inset-x-0 bottom-0 flex h-[85svh] flex-col rounded-t-2xl border-brand-100 bg-white p-4 pb-[calc(1rem+var(--safe-bottom))] sm:bottom-4 sm:left-auto sm:right-4 sm:h-[min(720px,calc(100svh-2rem))] sm:w-[420px] sm:rounded-2xl sm:border"
+        side="right"
+        className="flex h-full w-full max-w-md flex-col gap-0 border-brand-100 bg-white p-0 sm:max-w-md"
       >
-        <SheetHeader className="sr-only">
-          <SheetTitle>Coach Penny</SheetTitle>
-          <SheetDescription>Ask Coach Penny for learning help.</SheetDescription>
+        <SheetHeader className="flex-row items-center gap-2 border-b border-brand-100 px-4 py-3 text-left">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100" aria-hidden="true">
+            <Penny size={28} mood="happy" />
+          </span>
+          <div>
+            <SheetTitle>Coach Penny</SheetTitle>
+            <SheetDescription>Ask Coach Penny for learning help.</SheetDescription>
+          </div>
         </SheetHeader>
-        <div className="min-h-0 flex-1 pt-7 sm:pt-5">
-          <CoachChat onNavigate={() => onOpenChange(false)} />
+        <div className="min-h-0 flex-1 overflow-hidden px-4 py-3 pb-[calc(0.75rem+var(--safe-bottom))]">
+          <CoachChat onNavigate={() => onOpenChange(false)} showHeader={false} />
         </div>
       </SheetContent>
     </Sheet>

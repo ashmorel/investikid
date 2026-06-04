@@ -14,6 +14,7 @@ type Message = {
 
 type CoachChatProps = {
   onNavigate?: () => void;
+  showHeader?: boolean;
 };
 
 const SUGGESTION_CHIPS = [
@@ -29,7 +30,7 @@ function actionToPath(action: CoachAction): string {
   return `/lessons/${action.module_id}`;
 }
 
-export function CoachChat({ onNavigate }: CoachChatProps) {
+export function CoachChat({ onNavigate, showHeader = true }: CoachChatProps) {
   const { greeting, isLoading: greetingLoading } = useCoachGreeting();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -68,17 +69,19 @@ export function CoachChat({ onNavigate }: CoachChatProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100" aria-hidden="true">
-            <Penny size={28} mood="happy" />
-          </span>
-          <span className="font-bold text-gray-900">Coach Penny</span>
+      {showHeader && (
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100" aria-hidden="true">
+              <Penny size={28} mood="happy" />
+            </span>
+            <span className="font-bold text-gray-900">Coach Penny</span>
+          </div>
+          {remaining !== null && (
+            <span className="ml-auto text-xs text-gray-400">{remaining} messages left</span>
+          )}
         </div>
-        {remaining !== null && (
-          <span className="ml-auto text-xs text-gray-400">{remaining} messages left</span>
-        )}
-      </div>
+      )}
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
         {!greetingLoading && greeting && (
@@ -160,7 +163,7 @@ export function CoachChat({ onNavigate }: CoachChatProps) {
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Ask Coach Penny…"
           maxLength={200}
-          className="flex-1 rounded-xl border border-brand-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+          className="flex-1 rounded-xl border border-brand-200 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-brand-300"
           disabled={remaining === 0}
         />
         <Button
