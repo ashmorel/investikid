@@ -10,6 +10,7 @@ import { ErrorBanner } from '@/components/ErrorBanner';
 import { useToast } from '@/hooks/use-toast';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 import { SignInMethods } from '@/components/parent/SignInMethods';
+import { Penny } from '@/components/child/ui/Penny';
 
 export default function ParentDashboard() {
   const navigate = useNavigate();
@@ -48,10 +49,11 @@ export default function ParentDashboard() {
     <main className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
       <header className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex items-center justify-between border-b border-brand-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:-mt-6 sm:px-6">
         <div className="flex items-center gap-2">
-          <Link to="/parent" className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gradient text-sm font-extrabold text-white">
-            IE
+          <Link to="/parent" className="flex items-center gap-2" aria-label="InvestiKid parent home">
+            <Penny size={32} mood="happy" />
+            <span className="text-lg font-extrabold tracking-tight text-ink sm:text-xl">InvestiKid</span>
           </Link>
-          <h1 className="text-lg font-semibold sm:text-2xl">Parent Dashboard</h1>
+          <h1 className="sr-only">Parent Dashboard</h1>
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={() => setFeedbackOpen(true)}>
@@ -75,7 +77,7 @@ export default function ParentDashboard() {
       )}
       {q.data && q.data.length === 0 && (
         <p className="mt-6 text-sm text-muted-foreground">
-          No children linked to this account.
+          No children linked to this account yet — once a child signs up with your email, they'll appear here.
         </p>
       )}
       {q.data && q.data.length > 0 && (
