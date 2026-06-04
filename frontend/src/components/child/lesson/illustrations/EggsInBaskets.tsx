@@ -13,7 +13,7 @@ export function EggsInBaskets() {
           <line x1="20" y1="10" x2="50" y2="30" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
           <line x1="50" y1="10" x2="20" y2="30" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
         </svg>
-        <p className="text-xs font-bold text-red-600 mt-1">All in one ✗</p>
+        <p className="text-xs font-bold text-danger-600 mt-1">All in one ✗</p>
       </div>
       <div className="text-center">
         <div className="flex gap-1.5">
@@ -33,7 +33,7 @@ export function EggsInBaskets() {
             <ellipse cx="25" cy="28" rx="7" ry="9" fill="#fef3c7" stroke="#fbbf24" strokeWidth="1.5" />
           </svg>
         </div>
-        <p className="text-xs font-bold text-green-600 mt-1">Spread out ✓</p>
+        <p className="text-xs font-bold text-success-600 mt-1">Spread out ✓</p>
       </div>
     </div>
   );

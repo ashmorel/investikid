@@ -28,7 +28,7 @@ export default function BadgeList() {
               <div className="text-xs text-slate-500">{b.condition_type} ≥ {b.condition_value}</div>
             </div>
             <Link to={`/admin/badges/${b.id}`} className="text-xs text-blue-400 hover:text-blue-300">Edit</Link>
-            <button type="button" onClick={() => setDeleteTarget(b)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+            <button type="button" onClick={() => setDeleteTarget(b)} className="text-xs text-danger-500 hover:text-danger-400">Delete</button>
           </div>
         ))}
       </div>

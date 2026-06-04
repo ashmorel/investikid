@@ -29,7 +29,7 @@ export default function Module() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
         <p>Module not found or locked.</p>
-        <Link to="/lessons" className="text-sm text-amber-600 hover:underline">← Back to modules</Link>
+        <Link to="/lessons" className="text-sm text-brand-700 hover:underline">← Back to modules</Link>
       </div>
     );
   }
@@ -40,7 +40,7 @@ export default function Module() {
   return (
     <div className="mx-auto max-w-3xl">
       {/* Banner */}
-      <div className="bg-gradient-to-br from-amber-100 to-amber-200 px-4 py-6 sm:px-6 sm:py-8 text-center">
+      <div className="bg-gradient-to-br from-brand-100 to-brand-200 px-4 py-6 sm:px-6 sm:py-8 text-center">
         <span className="text-5xl">{module?.icon ?? '📚'}</span>
         <h1 className="mt-3 text-2xl font-extrabold text-gray-900">{module?.title ?? 'Module'}</h1>
         <p className="mt-1 text-sm text-gray-600">
@@ -66,7 +66,7 @@ export default function Module() {
             />
           ))}
         </div>
-        <Link to="/lessons" className="mt-4 inline-block text-sm text-amber-600 hover:underline">← Back to modules</Link>
+        <Link to="/lessons" className="mt-4 inline-block text-sm text-brand-700 hover:underline">← Back to modules</Link>
       </div>
     </div>
   );

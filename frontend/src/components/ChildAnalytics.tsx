@@ -43,7 +43,7 @@ export function ChildAnalytics({ analytics }: { analytics: ChildAnalyticsType })
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
         aria-expanded={expanded}
-        className="mt-1 text-[13px] font-medium text-amber-600 hover:text-amber-700"
+        className="mt-1 text-[13px] font-medium text-brand-700 hover:text-brand-800"
       >
         {expanded ? 'Hide progress' : 'Show progress'}
       </button>
@@ -81,8 +81,8 @@ export function ChildAnalytics({ analytics }: { analytics: ChildAnalyticsType })
                         <span
                           className={
                             lesson.score !== null && lesson.score < 0.7
-                              ? 'font-medium text-amber-500'
-                              : 'font-medium text-emerald-600'
+                              ? 'font-medium text-accent-600'
+                              : 'font-medium text-success-600'
                           }
                         >
                           {formatScore(lesson.type, lesson.score)}

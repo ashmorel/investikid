@@ -27,7 +27,7 @@ export function PracticeQuiz({ lessonId, wrongAnswerIndex, onClose }: Props) {
     return (
       <div className="text-center py-8 space-y-2">
         <p className="text-sm text-muted-foreground">Could not generate a practice question.</p>
-        <button onClick={onClose} className="text-sm text-amber-600 underline">Go back</button>
+        <button onClick={onClose} className="text-sm text-brand-700 underline">Go back</button>
       </div>
     );
   }
@@ -35,7 +35,7 @@ export function PracticeQuiz({ lessonId, wrongAnswerIndex, onClose }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">
+        <span className="rounded-lg bg-info-100 px-2.5 py-1 text-xs font-semibold text-info-600">
           Practice — no XP
         </span>
         {practiceQ.data.variant_rung && practiceQ.data.variant_rung !== 'core' && (
@@ -43,7 +43,7 @@ export function PracticeQuiz({ lessonId, wrongAnswerIndex, onClose }: Props) {
             {practiceQ.data.variant_rung === 'harder' ? 'Challenge' : 'Warm-up'}
           </span>
         )}
-        <button onClick={onClose} className="text-sm text-amber-600 underline">
+        <button onClick={onClose} className="text-sm text-brand-700 underline">
           Skip
         </button>
       </div>

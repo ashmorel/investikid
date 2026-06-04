@@ -14,7 +14,7 @@ function MiniChart({ exchange, ticker }: { exchange: string; ticker: string }) {
   const points = data ?? [];
   if (points.length < 2) {
     return (
-      <div className="flex h-12 items-center justify-center rounded-md bg-amber-100 text-xs text-amber-600">
+      <div className="flex h-12 items-center justify-center rounded-md bg-brand-100 text-xs text-brand-700">
         Loading chart…
       </div>
     );
@@ -61,18 +61,18 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
 
   if (!tips) {
     return (
-      <div className="rounded-2xl border-2 border-amber-200 bg-white p-4">
+      <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
         <div className="mb-3 flex items-center gap-2">
-          <div className="h-5 w-5 animate-pulse rounded bg-amber-200" />
-          <div className="h-4 w-28 animate-pulse rounded bg-amber-100" />
+          <div className="h-5 w-5 animate-pulse rounded bg-brand-200" />
+          <div className="h-4 w-28 animate-pulse rounded bg-brand-100" />
         </div>
         <div className="flex gap-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="min-w-[220px] rounded-xl border border-amber-200 bg-amber-50 p-3">
-              <div className="mb-2 h-3 w-24 animate-pulse rounded bg-amber-200" />
-              <div className="mb-1 h-2 w-full animate-pulse rounded bg-amber-100" />
-              <div className="mb-2 h-2 w-3/4 animate-pulse rounded bg-amber-100" />
-              <div className="h-12 animate-pulse rounded-md bg-amber-100" />
+            <div key={i} className="min-w-[220px] rounded-xl border border-brand-200 bg-brand-50 p-3">
+              <div className="mb-2 h-3 w-24 animate-pulse rounded bg-brand-200" />
+              <div className="mb-1 h-2 w-full animate-pulse rounded bg-brand-100" />
+              <div className="mb-2 h-2 w-3/4 animate-pulse rounded bg-brand-100" />
+              <div className="h-12 animate-pulse rounded-md bg-brand-100" />
             </div>
           ))}
         </div>
@@ -90,9 +90,9 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
   };
 
   return (
-    <div className="rounded-2xl border-2 border-amber-200 bg-white p-4">
+    <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
       <div className="mb-3 flex items-center gap-2">
-        <Lightbulb className="h-5 w-5 text-amber-600" />
+        <Lightbulb className="h-5 w-5 text-brand-700" />
         <h3 className="text-base font-semibold text-gray-800">Investing Tips</h3>
       </div>
 
@@ -108,10 +108,10 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
           return (
             <div
               key={tip.id}
-              className="min-w-[220px] max-w-[260px] flex-shrink-0 rounded-xl border border-amber-200 bg-amber-50 p-3"
+              className="min-w-[220px] max-w-[260px] flex-shrink-0 rounded-xl border border-brand-200 bg-brand-50 p-3"
               style={{ scrollSnapAlign: 'start' }}
             >
-              <h4 className="mb-1.5 text-xs font-bold text-amber-800">{tip.title}</h4>
+              <h4 className="mb-1.5 text-xs font-bold text-brand-800">{tip.title}</h4>
               <p className="mb-2 text-xs leading-relaxed text-gray-700">{tip.description}</p>
               <div className="overflow-hidden rounded-md">
                 <MiniChart exchange={chartExchange} ticker={chartTicker} />
@@ -129,7 +129,7 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
           <span
             key={i}
             className={`inline-block h-1.5 w-1.5 rounded-full ${
-              i === activeIndex ? 'bg-amber-500' : 'bg-gray-200'
+              i === activeIndex ? 'bg-brand-500' : 'bg-gray-200'
             }`}
           />
         ))}

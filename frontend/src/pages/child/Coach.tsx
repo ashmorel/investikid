@@ -85,7 +85,7 @@ export default function Coach() {
         {/* Template greeting */}
         {!greetingLoading && greeting && (
           <div className="flex justify-start">
-            <div className="max-w-[85%] rounded-xl bg-amber-50 px-3 py-2 text-sm text-gray-800">
+            <div className="max-w-[85%] rounded-xl bg-brand-50 px-3 py-2 text-sm text-gray-800">
               {greeting}
             </div>
           </div>
@@ -98,7 +98,7 @@ export default function Coach() {
               <button
                 key={chip}
                 onClick={() => handleSend(chip)}
-                className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-50"
+                className="rounded-full border border-brand-300 bg-white px-3 py-1.5 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50"
               >
                 {chip}
               </button>
@@ -113,8 +113,8 @@ export default function Coach() {
               <div
                 className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
                   m.role === 'user'
-                    ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white'
-                    : 'bg-amber-50 text-gray-800'
+                    ? 'bg-brand-gradient text-white'
+                    : 'bg-brand-50 text-gray-800'
                 }`}
               >
                 {m.content}
@@ -126,7 +126,7 @@ export default function Coach() {
                   <Link
                     key={j}
                     to={actionToPath(a)}
-                    className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200"
+                    className="inline-flex items-center rounded-full bg-brand-100 px-3 py-1 text-xs font-medium text-brand-800 transition-colors hover:bg-brand-200"
                   >
                     {a.label} →
                   </Link>
@@ -138,7 +138,7 @@ export default function Coach() {
 
         {sendMessage.isPending && (
           <div className="flex justify-start">
-            <div className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-gray-400">
+            <div className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-gray-400">
               Thinking…
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function Coach() {
 
         {sendMessage.isError && (
           <div className="flex justify-start">
-            <div className="max-w-[85%] rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+            <div className="max-w-[85%] rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-600">
               Something went wrong. Try sending your message again.
             </div>
           </div>
@@ -155,7 +155,7 @@ export default function Coach() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="mt-4 flex gap-2 border-t border-amber-100 pt-3">
+      <div className="mt-4 flex gap-2 border-t border-brand-100 pt-3">
         <input
           type="text"
           value={input}
@@ -163,13 +163,13 @@ export default function Coach() {
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Ask Coach Penny…"
           maxLength={200}
-          className="flex-1 rounded-xl border border-amber-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+          className="flex-1 rounded-xl border border-brand-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
           disabled={remaining === 0}
         />
         <Button
           onClick={() => handleSend()}
           disabled={!input.trim() || sendMessage.isPending || remaining === 0}
-          className="rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-4 text-white"
+          className="rounded-xl bg-brand-gradient px-4 text-white"
         >
           Send
         </Button>

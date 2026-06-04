@@ -53,8 +53,8 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-2xl animate-in slide-in-from-bottom">
-      <div className="rounded-t-2xl border-2 border-amber-200 bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-amber-100 px-4 py-3">
+      <div className="rounded-t-2xl border-2 border-brand-200 bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-brand-100 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">💡</span>
             <span className="font-bold text-gray-900">Coach Penny</span>
@@ -79,8 +79,8 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
               <div
                 className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
                   m.role === 'user'
-                    ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white'
-                    : 'bg-amber-50 text-gray-800'
+                    ? 'bg-brand-gradient text-white'
+                    : 'bg-brand-50 text-gray-800'
                 }`}
               >
                 {m.content}
@@ -89,14 +89,14 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
           ))}
           {sendMessage.isPending && (
             <div className="flex justify-start">
-              <div className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-gray-400">
+              <div className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-gray-400">
                 Thinking…
               </div>
             </div>
           )}
           {sendMessage.isError && (
             <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+              <div className="max-w-[80%] rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-600">
                 Something went wrong. Try sending your message again.
               </div>
             </div>
@@ -104,7 +104,7 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="flex gap-2 border-t border-amber-100 p-3">
+        <div className="flex gap-2 border-t border-brand-100 p-3">
           <input
             type="text"
             value={input}
@@ -112,13 +112,13 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask about the chart…"
             maxLength={200}
-            className="flex-1 rounded-xl border border-amber-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+            className="flex-1 rounded-xl border border-brand-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
             disabled={remaining === 0}
           />
           <Button
             onClick={handleSend}
             disabled={!input.trim() || sendMessage.isPending || remaining === 0}
-            className="rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-4 text-white"
+            className="rounded-xl bg-brand-gradient px-4 text-white"
           >
             Send
           </Button>

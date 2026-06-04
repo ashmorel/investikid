@@ -26,9 +26,9 @@ export function CompletionPanel({ result, onContinue }: Props) {
   }, [result.already_completed]);
 
   return (
-    <div className="flex flex-col items-center gap-4 text-center rounded-2xl border-2 border-amber-200 bg-white p-8">
+    <div className="flex flex-col items-center gap-4 text-center rounded-2xl border-2 border-brand-200 bg-white p-8">
       <motion.div
-        className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-4xl shadow-lg shadow-orange-500/40"
+        className="flex h-24 w-24 items-center justify-center rounded-full bg-brand-gradient text-4xl shadow-lg shadow-brand-600/40"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
@@ -47,9 +47,9 @@ export function CompletionPanel({ result, onContinue }: Props) {
       </div>
 
       <div className="w-full max-w-[240px]">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-amber-100">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-brand-100">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
+            className="h-full rounded-full bg-brand-gradient"
             initial={{ width: 0 }}
             animate={{ width: `${xpInLevel}%` }}
             transition={{ duration: 0.8, delay: 0.3 }}

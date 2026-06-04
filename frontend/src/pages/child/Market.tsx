@@ -10,14 +10,14 @@ import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { formatCurrency } from '@/lib/currency';
 
 const EXCHANGE_BADGE_COLORS: Record<string, string> = {
-  NASDAQ: 'bg-blue-100 text-blue-800',
-  NYSE: 'bg-indigo-100 text-indigo-800',
+  NASDAQ: 'bg-info-100 text-info-600',
+  NYSE: 'bg-brand-100 text-brand-700',
   LSE: 'bg-purple-100 text-purple-800',
-  HKEX: 'bg-orange-100 text-orange-800',
+  HKEX: 'bg-brand-200 text-brand-800',
   TSE: 'bg-pink-100 text-pink-800',
   XETRA: 'bg-teal-100 text-teal-800',
-  TSX: 'bg-red-100 text-red-800',
-  ASX: 'bg-emerald-100 text-emerald-800',
+  TSX: 'bg-success-100 text-success-700',
+  ASX: 'bg-success-100 text-success-700',
 };
 
 const EXCHANGE_GROUP_LABELS: Record<string, string> = {
@@ -102,7 +102,7 @@ export default function Market() {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="ml-auto flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-200 disabled:opacity-50"
+          className="ml-auto flex items-center gap-1.5 rounded-lg bg-brand-100 px-3 py-1.5 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-200 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           {refreshing ? 'Updating…' : 'Refresh prices'}
@@ -125,11 +125,11 @@ export default function Market() {
           placeholder="Search any stock or company (e.g. Apple, Toyota, Samsung)…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full rounded-lg border bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-300"
+          className="w-full rounded-lg border bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-300"
         />
         {searchFetching && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <RefreshCw className="h-4 w-4 animate-spin text-amber-500" />
+            <RefreshCw className="h-4 w-4 animate-spin text-brand-600" />
           </div>
         )}
       </div>

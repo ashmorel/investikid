@@ -40,9 +40,9 @@ export function ChartGuide({ exchange, ticker, period, onAskPenny }: Props) {
   const staticTip = CHART_TIPS[tipIndex];
 
   return (
-    <div className="rounded-2xl border-2 border-blue-200 bg-white p-4">
+    <div className="rounded-2xl border-2 border-info-100 bg-white p-4">
       <div className="mb-3 flex items-center gap-2">
-        <GraduationCap className="h-5 w-5 text-blue-600" />
+        <GraduationCap className="h-5 w-5 text-info-600" />
         <h3 className="text-base font-semibold text-gray-800">Learn to Read Charts</h3>
       </div>
 
@@ -63,14 +63,14 @@ export function ChartGuide({ exchange, ticker, period, onAskPenny }: Props) {
         </div>
       ) : null}
 
-      <div className="rounded-lg bg-blue-50 p-3">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700">{staticTip.title}</p>
+      <div className="rounded-lg bg-info-100 p-3">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-info-600">{staticTip.title}</p>
         <p className="text-sm leading-relaxed text-gray-700">{staticTip.tip}</p>
       </div>
       {onAskPenny && (
         <button
           onClick={onAskPenny}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-600"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
         >
           <span>💡</span>
           Ask Coach Penny about this chart

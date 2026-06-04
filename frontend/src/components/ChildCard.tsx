@@ -15,10 +15,10 @@ import { cn } from '@/lib/utils';
 import { ChildAnalytics } from '@/components/ChildAnalytics';
 
 const CHIP: Record<ChildStatus, string> = {
-  active: 'bg-emerald-100 text-emerald-900',
-  pending: 'bg-amber-100 text-amber-900',
+  active: 'bg-success-100 text-success-700',
+  pending: 'bg-brand-100 text-brand-700',
   frozen: 'bg-slate-200 text-slate-700',
-  declined: 'bg-rose-100 text-rose-900',
+  declined: 'bg-danger-100 text-danger-700',
   deleted: 'bg-slate-300 text-slate-700 line-through',
 };
 

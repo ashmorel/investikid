@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useFeedback } from '@/api/admin';
 
 const TYPE_BADGE: Record<string, string> = {
-  bug: 'bg-red-100 text-red-800',
-  feature: 'bg-blue-100 text-blue-800',
+  bug: 'bg-danger-100 text-danger-700',
+  feature: 'bg-info-100 text-info-600',
   general: 'bg-slate-100 text-slate-800',
 };
 
@@ -41,7 +41,7 @@ export default function FeedbackList() {
       </div>
 
       {isLoading && <p className="text-slate-400">Loading…</p>}
-      {isError && <p className="text-red-400">Failed to load feedback.</p>}
+      {isError && <p className="text-danger-500">Failed to load feedback.</p>}
 
       {data && (
         <>

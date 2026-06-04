@@ -30,7 +30,7 @@ export function PortfolioChart({ history }: Props) {
 
   return (
     <div
-      className="mt-4 rounded-2xl border-2 border-amber-200 bg-white p-4"
+      className="mt-4 rounded-2xl border-2 border-brand-200 bg-white p-4"
       role="img"
       aria-label={summary}
     >
@@ -39,8 +39,8 @@ export function PortfolioChart({ history }: Props) {
         <AreaChart data={history}>
           <defs>
             <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
+              <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis dataKey="date" tick={{ fontSize: 11 }} interval={tickInterval ?? 'preserveStartEnd'} />
@@ -48,14 +48,14 @@ export function PortfolioChart({ history }: Props) {
           <Tooltip
             contentStyle={{
               borderRadius: '8px',
-              border: '1px solid #fde68a',
+              border: '1px solid #bae6fd',
               fontSize: '13px',
             }}
           />
           <Area
             type="monotone"
             dataKey="value"
-            stroke="#f59e0b"
+            stroke="#0ea5e9"
             strokeWidth={2}
             fill="url(#portfolioGrad)"
           />

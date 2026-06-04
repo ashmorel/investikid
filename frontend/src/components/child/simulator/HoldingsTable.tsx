@@ -16,13 +16,13 @@ export function HoldingsTable({ holdings }: Props) {
 
   if (holdings.length === 0) {
     return (
-      <div className="rounded-2xl border-2 border-amber-200 bg-white p-8 text-center space-y-3">
+      <div className="rounded-2xl border-2 border-brand-200 bg-white p-8 text-center space-y-3">
         <span className="text-5xl">📈</span>
         <p className="font-bold text-gray-900">No stocks yet!</p>
         <p className="text-sm text-gray-500">Start by browsing the market and making your first trade.</p>
         <Link
           to="/simulator/market"
-          className="inline-block rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-2 text-sm font-bold text-white hover:from-amber-500 hover:to-orange-600 transition-colors"
+          className="inline-block rounded-xl bg-brand-gradient px-5 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity"
         >
           Browse Market →
         </Link>
@@ -41,14 +41,14 @@ export function HoldingsTable({ holdings }: Props) {
             <Link
               key={`${h.exchange}-${h.ticker}`}
               to={`/simulator/stock/${h.exchange}/${h.ticker}`}
-              className="block rounded-xl border-2 border-amber-200 bg-white p-3 transition-shadow hover:shadow-md"
+              className="block rounded-xl border-2 border-brand-200 bg-white p-3 transition-shadow hover:shadow-md"
             >
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <span className="font-bold">{h.ticker}</span>
                   <span className="rounded bg-muted px-1.5 py-0.5 text-xs">{h.exchange}</span>
                 </span>
-                <span className={`flex items-center gap-1 text-sm ${plSign === 'positive' ? 'text-green-600' : plSign === 'negative' ? 'text-red-600' : ''}`}>
+                <span className={`flex items-center gap-1 text-sm ${plSign === 'positive' ? 'text-success-600' : plSign === 'negative' ? 'text-danger-600' : ''}`}>
                   {plSign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
                   {plSign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
                   {plSign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}
@@ -106,7 +106,7 @@ export function HoldingsTable({ holdings }: Props) {
                       <span>{formatCurrency(h.avg_buy_price, currency)}</span>
                       <span>{formatCurrency(h.current_price, currency)}</span>
                       <span>{formatCurrency(h.market_value, currency)}</span>
-                      <span className={`flex items-center gap-1 ${plSign === 'positive' ? 'text-green-600' : plSign === 'negative' ? 'text-red-600' : ''}`}>
+                      <span className={`flex items-center gap-1 ${plSign === 'positive' ? 'text-success-600' : plSign === 'negative' ? 'text-danger-600' : ''}`}>
                         {plSign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
                         {plSign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
                         {plSign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}

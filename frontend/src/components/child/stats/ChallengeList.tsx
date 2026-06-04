@@ -26,7 +26,7 @@ export function ChallengeList({ challenges }: Props) {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  {completed && <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />}
+                  {completed && <CheckCircle2 className="h-4 w-4 shrink-0 text-success-600" />}
                   <p className="font-medium">{c.title}</p>
                 </div>
                 <p className="text-sm text-muted-foreground">{c.description}</p>
@@ -46,7 +46,7 @@ export function ChallengeList({ challenges }: Props) {
                 <div
                   className={cn(
                     'h-full rounded-full transition-all',
-                    completed ? 'bg-green-600' : 'bg-blue-600',
+                    completed ? 'bg-success-600' : 'bg-brand-600',
                   )}
                   style={{ width: `${pct}%` }}
                 />

@@ -30,7 +30,7 @@ export default function Simulator() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
-      <div className="rounded-2xl border-2 border-amber-200 bg-gradient-to-b from-amber-100 to-amber-50 p-6 text-center">
+      <div className="rounded-2xl border-2 border-brand-200 bg-gradient-to-b from-brand-100 to-brand-50 p-6 text-center">
         <span className="text-4xl" aria-hidden="true">📊</span>
         <h1 className="mt-2 text-xl font-extrabold text-gray-900">Your Portfolio</h1>
         <p className="text-sm text-gray-500">Practice Mode — no real money</p>
@@ -49,14 +49,14 @@ export default function Simulator() {
       {history && <PortfolioChart history={history} />}
 
       <div className="mt-6">
-        <div role="tablist" className="mb-3 flex gap-1 rounded-lg bg-amber-50 p-1">
+        <div role="tablist" className="mb-3 flex gap-1 rounded-lg bg-brand-50 p-1">
           <button
             role="tab"
             aria-selected={activeTab === 'holdings'}
             onClick={() => setActiveTab('holdings')}
             className={cn(
               'flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-colors',
-              activeTab === 'holdings' ? 'bg-white text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+              activeTab === 'holdings' ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
             )}
           >
             Holdings
@@ -67,7 +67,7 @@ export default function Simulator() {
             onClick={() => setActiveTab('history')}
             className={cn(
               'flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-colors',
-              activeTab === 'history' ? 'bg-white text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+              activeTab === 'history' ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
             )}
           >
             Trade History

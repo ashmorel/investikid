@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/react';
 import { TierBadge } from '@/components/child/TierBadge';
 
 describe('TierBadge', () => {
-  it('renders Premium text and amber class when premium=true', () => {
+  it('renders Premium text and accent class when premium=true', () => {
     render(<TierBadge premium={true} />);
     const badge = screen.getByTestId('tier-badge');
     expect(badge.textContent).toContain('Premium');
-    expect(badge.className).toContain('bg-amber-100');
+    expect(badge.className).toContain('bg-accent-100');
   });
 
   it('renders Free text and slate class when premium=false', () => {

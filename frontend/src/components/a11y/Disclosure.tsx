@@ -12,7 +12,7 @@ export function Disclosure({ label, defaultOpen = false, children }: Props) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
-        className="text-sm font-semibold text-amber-700 underline"
+        className="text-sm font-semibold text-brand-700 underline"
       >
         {label}
       </button>

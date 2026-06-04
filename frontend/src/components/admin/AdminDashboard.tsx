@@ -1,10 +1,10 @@
 import { useAdminStats } from '@/api/admin';
 
 const CARDS = [
-  { key: 'modules' as const, label: 'Modules', icon: '📖', color: 'text-green-400' },
+  { key: 'modules' as const, label: 'Modules', icon: '📖', color: 'text-success-500' },
   { key: 'lessons' as const, label: 'Lessons', icon: '📝', color: 'text-blue-400' },
-  { key: 'badges' as const, label: 'Badges', icon: '🏆', color: 'text-yellow-400' },
-  { key: 'challenges' as const, label: 'Challenges', icon: '⚡', color: 'text-orange-400' },
+  { key: 'badges' as const, label: 'Badges', icon: '🏆', color: 'text-accent-500' },
+  { key: 'challenges' as const, label: 'Challenges', icon: '⚡', color: 'text-accent-500' },
 ];
 
 export default function AdminDashboard() {

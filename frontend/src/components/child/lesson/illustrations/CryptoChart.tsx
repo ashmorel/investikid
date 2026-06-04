@@ -1,6 +1,6 @@
 export function CryptoChart() {
   return (
-    <div className="flex items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 p-6">
+    <div className="flex items-center justify-center rounded-xl bg-gradient-to-br from-brand-100 to-brand-200 p-6">
       <svg width="280" height="120" viewBox="0 0 280 120" aria-hidden="true">
         <line x1="30" y1="20" x2="30" y2="100" stroke="#fde68a" strokeWidth="1" />
         <line x1="30" y1="100" x2="270" y2="100" stroke="#fde68a" strokeWidth="1" />

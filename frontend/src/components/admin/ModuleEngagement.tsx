@@ -58,7 +58,7 @@ export default function ModuleEngagement({ moduleId }: { moduleId: string }) {
         </thead>
         <tbody>
           {data.lessons.map((l) => (
-            <tr key={l.lesson_id} className={l.lesson_id === worst ? 'bg-amber-500/10' : ''}>
+            <tr key={l.lesson_id} className={l.lesson_id === worst ? 'bg-brand-500/10' : ''}>
               <td className="py-1 pr-2 text-slate-50">{l.label}</td>
               <td className="py-1 pr-2 text-slate-300">{l.views}</td>
               <td className="py-1 pr-2 text-slate-300">{l.completions}</td>

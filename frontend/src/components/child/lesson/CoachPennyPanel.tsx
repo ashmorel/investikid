@@ -39,9 +39,9 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-2xl animate-in slide-in-from-bottom">
-      <div className="rounded-t-2xl border-2 border-amber-200 bg-white shadow-xl">
+      <div className="rounded-t-2xl border-2 border-brand-200 bg-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-amber-100 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-brand-100 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">💡</span>
             <span className="font-bold text-gray-900">Coach Penny</span>
@@ -65,8 +65,8 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
                 m.role === 'user'
-                  ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white'
-                  : 'bg-amber-50 text-gray-800'
+                  ? 'bg-brand-gradient text-white'
+                  : 'bg-brand-50 text-gray-800'
               }`}>
                 {m.content}
               </div>
@@ -74,14 +74,14 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
           ))}
           {sendMessage.isPending && (
             <div className="flex justify-start">
-              <div className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-gray-400">
+              <div className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-gray-400">
                 Thinking...
               </div>
             </div>
           )}
           {sendMessage.isError && (
             <div className="flex justify-start" role="alert">
-              <div className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700">
                 Coach Penny couldn't answer just now. Please try again in a moment.
               </div>
             </div>
@@ -89,7 +89,7 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
         </div>
 
         {/* Input */}
-        <div className="border-t border-amber-100 p-3 flex gap-2">
+        <div className="border-t border-brand-100 p-3 flex gap-2">
           <input
             type="text"
             value={input}
@@ -97,13 +97,13 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask Coach Penny..."
             maxLength={200}
-            className="flex-1 rounded-xl border border-amber-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+            className="flex-1 rounded-xl border border-brand-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
             disabled={remaining === 0}
           />
           <Button
             onClick={handleSend}
             disabled={!input.trim() || sendMessage.isPending || remaining === 0}
-            className="bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl px-4"
+            className="bg-brand-gradient text-white rounded-xl px-4"
           >
             Send
           </Button>

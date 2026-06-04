@@ -24,14 +24,14 @@ export default function Level() {
         <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
           <p className="font-semibold text-gray-900">This level is premium.</p>
           <p className="mt-1 text-sm text-gray-500">Ask a grown-up to unlock premium content.</p>
-          <Link to={`/lessons/${moduleId ?? ''}`} className="mt-3 inline-block text-sm text-amber-600 hover:underline">← Back to levels</Link>
+          <Link to={`/lessons/${moduleId ?? ''}`} className="mt-3 inline-block text-sm text-brand-700 hover:underline">← Back to levels</Link>
         </div>
       );
     }
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
         <p>Level not found.</p>
-        <Link to={`/lessons/${moduleId ?? ''}`} className="text-sm text-amber-600 hover:underline">← Back to levels</Link>
+        <Link to={`/lessons/${moduleId ?? ''}`} className="text-sm text-brand-700 hover:underline">← Back to levels</Link>
       </div>
     );
   }
@@ -41,13 +41,13 @@ export default function Level() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-      <Link to={`/lessons/${moduleId ?? ''}`} className="text-sm text-amber-600 hover:underline">← Back to levels</Link>
+      <Link to={`/lessons/${moduleId ?? ''}`} className="text-sm text-brand-700 hover:underline">← Back to levels</Link>
 
       <p className="mt-3 text-sm text-gray-500">
         {completed} / {lessons.length} quests complete
       </p>
 
-      <div className="mt-4 rounded-2xl border-2 border-amber-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-2xl border-2 border-brand-200 bg-white overflow-hidden">
         {lessons.map((lesson, i) => {
           const nextIndex = lessons.findIndex((l) => !l.completed);
           return (

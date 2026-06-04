@@ -14,7 +14,7 @@ export function PullToRefreshIndicator({ visible, progress }: Props) {
       aria-label={isRefreshing ? 'Refreshing' : 'Pull to refresh'}
     >
       <div
-        className={`h-6 w-6 rounded-full border-2 border-amber-400 border-t-transparent ${
+        className={`h-6 w-6 rounded-full border-2 border-brand-500 border-t-transparent ${
           isRefreshing ? 'animate-spin' : ''
         }`}
         style={{

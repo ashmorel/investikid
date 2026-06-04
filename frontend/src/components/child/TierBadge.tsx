@@ -6,7 +6,7 @@ export function TierBadge({ premium }: Props) {
       data-testid="tier-badge"
       className={
         premium
-          ? 'rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900'
+          ? 'rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-700'
           : 'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600'
       }
     >

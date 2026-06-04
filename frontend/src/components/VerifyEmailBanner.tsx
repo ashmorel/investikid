@@ -38,7 +38,7 @@ export function VerifyEmailBanner({ profile }: Props) {
   return (
     <div
       role="alert"
-      className="flex items-center justify-between gap-4 border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900"
+      className="flex items-center justify-between gap-4 border-b border-brand-300 bg-brand-50 px-4 py-2 text-sm text-brand-900"
     >
       <span>
         Please confirm your email address.{' '}
@@ -48,7 +48,7 @@ export function VerifyEmailBanner({ profile }: Props) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-auto p-0 text-amber-900 underline hover:bg-transparent"
+            className="h-auto p-0 text-brand-900 underline hover:bg-transparent"
             onClick={() => { setResendError(null); resend.mutate(); }}
             disabled={resend.isPending}
           >
@@ -60,7 +60,7 @@ export function VerifyEmailBanner({ profile }: Props) {
       <button
         type="button"
         aria-label="Dismiss"
-        className="text-amber-700 hover:text-amber-900"
+        className="text-brand-700 hover:text-brand-900"
         onClick={() => setDismissed(true)}
       >
         ✕

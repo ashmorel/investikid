@@ -285,7 +285,7 @@ export default function Signup() {
             onChange={(e) => setPolicyAccepted(e.target.checked)} className="mt-1" />
           <span>I (or my grown-up) have read the{' '}
             <button type="button" onClick={() => setPrivacyOpen(true)}
-              className="underline text-amber-700">privacy notice</button>.</span>
+              className="underline text-brand-700">privacy notice</button>.</span>
         </label>
         <div className="flex gap-3">
           <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>

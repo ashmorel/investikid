@@ -22,7 +22,7 @@ export function ProgressBar({
       >
         <div
           data-testid="progress-fill"
-          className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+          className="h-full rounded-full bg-brand-gradient transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>

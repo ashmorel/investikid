@@ -21,7 +21,7 @@ export function TradeHistoryTab({ trades }: Props) {
               <div className="flex items-center gap-2">
                 <span className="font-medium">{t.ticker}</span>
                 <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${
-                  t.type === 'buy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  t.type === 'buy' ? 'bg-success-100 text-success-700' : 'bg-danger-100 text-danger-700'
                 }`}>
                   {t.type === 'buy' ? 'Buy' : 'Sell'}
                 </span>

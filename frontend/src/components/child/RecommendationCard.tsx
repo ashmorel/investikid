@@ -5,22 +5,22 @@ type Category = 'continue_learning' | 'practise_again' | 'something_new';
 
 const CATEGORY_COLORS: Record<Category, { border: string; text: string; chip: string; chipText: string }> = {
   continue_learning: {
-    border: 'border-l-green-400',
-    text: 'text-green-400',
-    chip: 'bg-green-900/30',
-    chipText: 'text-green-400',
+    border: 'border-l-success-500',
+    text: 'text-success-500',
+    chip: 'bg-success-900/30',
+    chipText: 'text-success-500',
   },
   practise_again: {
-    border: 'border-l-amber-400',
-    text: 'text-amber-400',
-    chip: 'bg-amber-900/30',
-    chipText: 'text-amber-400',
+    border: 'border-l-accent-400',
+    text: 'text-accent-500',
+    chip: 'bg-accent-900/30',
+    chipText: 'text-accent-500',
   },
   something_new: {
-    border: 'border-l-sky-400',
-    text: 'text-sky-400',
-    chip: 'bg-sky-900/30',
-    chipText: 'text-sky-400',
+    border: 'border-l-brand-400',
+    text: 'text-brand-400',
+    chip: 'bg-brand-900/30',
+    chipText: 'text-brand-400',
   },
 };
 
@@ -63,7 +63,7 @@ export function RecommendationCard({
             className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-600"
           >
             <div
-              className="h-full rounded-full bg-green-400"
+              className="h-full rounded-full bg-success-500"
               style={{ width: `${(completedCount / totalCount) * 100}%` }}
             />
           </div>

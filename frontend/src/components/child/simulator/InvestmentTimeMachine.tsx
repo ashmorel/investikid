@@ -77,7 +77,7 @@ export function InvestmentTimeMachine({ exchange, ticker }: Props) {
             <div className="text-xs font-semibold text-purple-700">
               {p.years_ago} years ago
             </div>
-            <div className="my-1 text-xl font-bold text-green-600">
+            <div className="my-1 text-xl font-bold text-success-600">
               {formatValue(p.current_value, p.currency)}
             </div>
             <div className="text-xs text-gray-500">
@@ -93,10 +93,10 @@ export function InvestmentTimeMachine({ exchange, ticker }: Props) {
       </div>
 
       {data.fun_fact && (
-        <div className="mt-3 rounded-lg bg-amber-50 p-3">
+        <div className="mt-3 rounded-lg bg-brand-50 p-3">
           <div className="flex items-start gap-2">
-            <BookOpen className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
-            <p className="text-sm text-amber-900">
+            <BookOpen className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand-700" />
+            <p className="text-sm text-brand-900">
               <span className="font-semibold">Did you know?</span> {data.fun_fact}
             </p>
           </div>

@@ -16,18 +16,18 @@ export function LevelCard({ level, onOpen, onLockedClick }: Props) {
       type="button"
       onClick={handle}
       aria-label={`${level.title}${locked ? (premium ? ' (premium)' : ' (locked)') : ''}`}
-      className="flex w-full flex-col items-start gap-1 rounded-2xl border-2 border-amber-200 bg-white p-4 text-left"
+      className="flex w-full flex-col items-start gap-1 rounded-2xl border-2 border-brand-200 bg-white p-4 text-left"
     >
       <span className="text-2xl" aria-hidden="true">{level.icon}</span>
       <h2 className="text-sm font-bold text-gray-900">{level.title}</h2>
       {level.state === 'completed' && (
-        <span className="text-xs font-medium text-emerald-600">✓ Completed</span>
+        <span className="text-xs font-medium text-success-600">✓ Completed</span>
       )}
       {level.state === 'in_progress' && (
         <span className="text-xs text-gray-500">{level.lessons_completed}/{level.lessons_total} lessons</span>
       )}
       {locked && premium && (
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-accent-600">
           <Lock className="h-3.5 w-3.5" aria-hidden="true" /> Premium
         </span>
       )}

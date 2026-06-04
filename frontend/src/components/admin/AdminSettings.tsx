@@ -62,7 +62,7 @@ export default function AdminSettings() {
   }
 
   if (isLoadError) {
-    return <p className="p-6 text-red-400">Failed to load settings. Refresh to try again.</p>;
+    return <p className="p-6 text-danger-500">Failed to load settings. Refresh to try again.</p>;
   }
 
   return (
@@ -94,7 +94,7 @@ export default function AdminSettings() {
               aria-describedby={inputError ? 'email-input-error' : undefined}
             />
             {inputError && (
-              <p id="email-input-error" className="mt-1 text-xs text-red-400" role="alert">
+              <p id="email-input-error" className="mt-1 text-xs text-danger-500" role="alert">
                 {inputError}
               </p>
             )}
@@ -127,7 +127,7 @@ export default function AdminSettings() {
                   type="button"
                   onClick={() => handleRemove(email)}
                   aria-label={`Remove ${email}`}
-                  className="ml-3 rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-700 hover:text-red-400 focus:outline-none focus:ring-1 focus:ring-red-500"
+                  className="ml-3 rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-700 hover:text-danger-500 focus:outline-none focus:ring-1 focus:ring-danger-500"
                 >
                   Remove
                 </button>
@@ -148,13 +148,13 @@ export default function AdminSettings() {
           </button>
 
           {update.isSuccess && (
-            <p className="text-sm text-green-400" role="status">
+            <p className="text-sm text-success-600" role="status">
               Settings saved.
             </p>
           )}
 
           {update.isError && (
-            <p className="text-sm text-red-400" role="alert">
+            <p className="text-sm text-danger-500" role="alert">
               {(update.error as { status?: number })?.status === 422
                 ? 'Invalid data — check emails and try again (max 10).'
                 : 'Save failed. Please try again.'}

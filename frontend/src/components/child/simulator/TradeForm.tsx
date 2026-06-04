@@ -85,7 +85,7 @@ export function TradeForm({
           </div>
         </div>
         {submitError && (
-          <p className="mt-2 text-sm text-red-600">{submitError}</p>
+          <p className="mt-2 text-sm text-danger-600">{submitError}</p>
         )}
         <div className="mt-4 flex gap-2">
           <Button onClick={handleConfirm} disabled={isSubmitting}>
@@ -152,7 +152,7 @@ export function TradeForm({
             </div>
             <div className="flex justify-between border-t pt-1">
               <span className="text-muted-foreground">You can afford</span>
-              <span className="font-semibold text-green-700">{maxAffordable} {maxAffordable === 1 ? 'share' : 'shares'}</span>
+              <span className="font-semibold text-success-700">{maxAffordable} {maxAffordable === 1 ? 'share' : 'shares'}</span>
             </div>
           </div>
         ) : (
@@ -167,7 +167,7 @@ export function TradeForm({
             </div>
             <div className="flex justify-between border-t pt-1">
               <span className="text-muted-foreground">Value if sold</span>
-              <span className="font-semibold text-green-700">{formatCurrency((ownedNum * priceNum).toFixed(2), currency)}</span>
+              <span className="font-semibold text-success-700">{formatCurrency((ownedNum * priceNum).toFixed(2), currency)}</span>
             </div>
           </div>
         )}
@@ -217,17 +217,17 @@ export function TradeForm({
           </p>
           {side === 'buy' && (
             <p className="text-muted-foreground">
-              Cash remaining: <span className={`font-medium ${cashNum - totalCost < 0 ? 'text-red-600' : 'text-foreground'}`}>{formatCurrency((cashNum - totalCost).toFixed(2), currency)}</span>
+              Cash remaining: <span className={`font-medium ${cashNum - totalCost < 0 ? 'text-danger-600' : 'text-foreground'}`}>{formatCurrency((cashNum - totalCost).toFixed(2), currency)}</span>
             </p>
           )}
         </div>
       )}
 
       {validationError && (
-        <p className="mb-2 text-sm text-red-600">{validationError}</p>
+        <p className="mb-2 text-sm text-danger-600">{validationError}</p>
       )}
       {submitError && (
-        <p className="mb-2 text-sm text-red-600">{submitError}</p>
+        <p className="mb-2 text-sm text-danger-600">{submitError}</p>
       )}
 
       <Button onClick={handleReview}>Review trade</Button>

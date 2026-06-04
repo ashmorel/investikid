@@ -1,8 +1,8 @@
 import { useStrengths, type TopicStrength } from '@/api/ai';
 
 const STATUS_STYLES: Record<string, { border: string; text: string; label: string; emoji: string }> = {
-  strong: { border: 'border-l-green-400', text: 'text-green-400', label: 'Strong — keep it up!', emoji: '⭐' },
-  needs_practice: { border: 'border-l-amber-400', text: 'text-amber-400', label: 'Needs practice', emoji: '🔄' },
+  strong: { border: 'border-l-success-500', text: 'text-success-500', label: 'Strong — keep it up!', emoji: '⭐' },
+  needs_practice: { border: 'border-l-accent-400', text: 'text-accent-500', label: 'Needs practice', emoji: '🔄' },
   new: { border: 'border-l-slate-500', text: 'text-slate-400', label: 'Not started yet', emoji: '🆕' },
 };
 
@@ -59,7 +59,7 @@ function TopicCard({ topic }: { topic: TopicStrength }) {
           className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-600"
         >
           <div
-            className={`h-full rounded-full ${topic.status === 'strong' ? 'bg-green-400' : 'bg-amber-400'}`}
+            className={`h-full rounded-full ${topic.status === 'strong' ? 'bg-success-500' : 'bg-accent-400'}`}
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -70,7 +70,7 @@ function TopicCard({ topic }: { topic: TopicStrength }) {
           <>
             <span>{topic.weak_count} weak concept{topic.weak_count !== 1 ? 's' : ''}</span>
             {topic.due_for_review > 0 && (
-              <span className="text-amber-400">{topic.due_for_review} due for review</span>
+              <span className="text-accent-500">{topic.due_for_review} due for review</span>
             )}
           </>
         )}

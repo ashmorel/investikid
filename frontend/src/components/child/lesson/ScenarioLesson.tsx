@@ -32,7 +32,7 @@ export function ScenarioLesson({ contentJson, onComplete, illustration, onShowPe
   }
 
   return (
-    <div className="space-y-5 rounded-3xl bg-white p-6 shadow-lg shadow-orange-500/10">
+    <div className="space-y-5 rounded-3xl bg-white p-6 shadow-lg shadow-brand-600/10">
       {illustration && <div>{illustration}</div>}
       <span className="inline-block rounded-full bg-violet-100 px-3 py-1.5 text-[11px] font-extrabold text-violet-700"><span aria-hidden="true">🧠 </span>Real-life scenario</span>
       <p className="text-lg font-extrabold leading-snug text-gray-900">{contentJson.prompt}</p>

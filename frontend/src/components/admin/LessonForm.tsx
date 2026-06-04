@@ -163,7 +163,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                         const nc = choices.filter((_, j) => j !== i);
                         setChoices(nc);
                         if (answerIndex >= nc.length) setAnswerIndex(nc.length - 1);
-                      }} className="text-red-400">✕</button>
+                      }} className="text-danger-500">✕</button>
                     )}
                   </div>
                 ))}
@@ -211,7 +211,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                           const nc = scenarioChoices.filter((_, j) => j !== i);
                           setScenarioChoices(nc);
                           if (correctIndex >= nc.length) setCorrectIndex(nc.length - 1);
-                        }} className="text-red-400">✕</button>
+                        }} className="text-danger-500">✕</button>
                       )}
                     </div>
                     <input

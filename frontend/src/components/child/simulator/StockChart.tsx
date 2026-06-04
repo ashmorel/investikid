@@ -63,14 +63,14 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
 
   return (
     <div
-      className="rounded-2xl border-2 border-amber-200 bg-white p-4"
+      className="rounded-2xl border-2 border-brand-200 bg-white p-4"
       role="img"
       aria-label={chartSummary}
     >
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700">Price History</h3>
         {hasData && (
-          <span className={`text-sm font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          <span className={`text-sm font-semibold ${isPositive ? 'text-success-600' : 'text-danger-600'}`}>
             {isPositive ? '+' : ''}{change.toFixed(2)} ({isPositive ? '+' : ''}{changePct.toFixed(1)}%)
           </span>
         )}
@@ -83,8 +83,8 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
             onClick={() => handlePeriodChange(p.key)}
             className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors min-h-[44px] min-w-[44px] ${
               period === p.key
-                ? 'bg-amber-500 text-white'
-                : 'bg-amber-50 text-gray-600 hover:bg-amber-100'
+                ? 'bg-brand-600 text-white'
+                : 'bg-brand-50 text-gray-600 hover:bg-brand-100'
             }`}
           >
             {p.label}
@@ -127,7 +127,7 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
             <Tooltip
               contentStyle={{
                 borderRadius: '8px',
-                border: '1px solid #fde68a',
+                border: '1px solid #bae6fd',
                 fontSize: '13px',
               }}
               formatter={(value) => [`${currency === 'GBP' ? '£' : currency === 'HKD' ? 'HK$' : '$'}${Number(value).toFixed(2)}`, 'Close']}

@@ -11,14 +11,14 @@ export function LessonRow({ moduleId, levelId, lesson, status }: { moduleId: str
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 border-b border-amber-100 px-4 py-3.5 last:border-b-0 hover:bg-amber-50 transition-colors"
+      className="flex items-center gap-3 border-b border-brand-100 px-4 py-3.5 last:border-b-0 hover:bg-brand-50 transition-colors"
     >
       <StatusIcon status={status} />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-gray-900 truncate">{lesson.order_index + 1}. {lesson.title}</p>
       </div>
       <div className="flex items-center gap-2 text-xs shrink-0">
-        <span className="rounded-lg bg-amber-100 px-2 py-0.5 font-semibold text-amber-800 capitalize">{lesson.type}</span>
+        <span className="rounded-lg bg-brand-100 px-2 py-0.5 font-semibold text-brand-800 capitalize">{lesson.type}</span>
         <span className="text-gray-500">{lesson.xp_reward} XP</span>
       </div>
     </Link>
@@ -26,9 +26,9 @@ export function LessonRow({ moduleId, levelId, lesson, status }: { moduleId: str
 }
 
 function StatusIcon({ status }: { status: Status }) {
-  if (status === 'done') return <Check aria-label="completed" className="h-5 w-5 text-green-500" />;
+  if (status === 'done') return <Check aria-label="completed" className="h-5 w-5 text-success-600" />;
   if (status === 'next') return (
-    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500">
+    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-gradient">
       <Play aria-label="next up" className="h-3.5 w-3.5 text-white" fill="white" />
     </span>
   );

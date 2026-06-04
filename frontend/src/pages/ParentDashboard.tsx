@@ -45,9 +45,9 @@ export default function ParentDashboard() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
-      <header className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex items-center justify-between border-b border-amber-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:-mt-6 sm:px-6">
+      <header className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex items-center justify-between border-b border-brand-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:-mt-6 sm:px-6">
         <div className="flex items-center gap-2">
-          <Link to="/parent" className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-extrabold text-white">
+          <Link to="/parent" className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gradient text-sm font-extrabold text-white">
             IE
           </Link>
           <h1 className="text-lg font-semibold sm:text-2xl">Parent Dashboard</h1>

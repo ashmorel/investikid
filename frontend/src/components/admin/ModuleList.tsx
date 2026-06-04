@@ -43,7 +43,7 @@ export default function ModuleList() {
           <div
             key={m.id}
             className={`flex items-center gap-3 rounded-lg border bg-slate-900 p-3 ${
-              m.is_premium ? 'border-yellow-500/30' : 'border-slate-700'
+              m.is_premium ? 'border-accent-500/30' : 'border-slate-700'
             }`}
           >
             <span className="text-xl">{m.icon}</span>
@@ -52,7 +52,7 @@ export default function ModuleList() {
               <div className="text-xs text-slate-500">
                 {m.topic} · {m.lesson_count} lessons
                 {m.country_codes.length > 0 && ` · ${m.country_codes.join(', ')}`}
-                {m.is_premium && <span className="ml-1 text-yellow-500">⭐ Premium</span>}
+                {m.is_premium && <span className="ml-1 text-accent-500">⭐ Premium</span>}
               </div>
             </div>
             <OrderArrows
@@ -70,7 +70,7 @@ export default function ModuleList() {
             <button
               type="button"
               onClick={() => setDeleteTarget(m)}
-              className="text-xs text-red-400 hover:text-red-300"
+              className="text-xs text-danger-500 hover:text-danger-400"
             >
               Delete
             </button>

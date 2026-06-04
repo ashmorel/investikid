@@ -47,14 +47,14 @@ export function SubscriptionCard() {
     if (native) return null;
     return (
       <section
-        className="rounded-lg border-2 border-amber-200 bg-amber-50 px-4 py-4 sm:px-6 sm:py-6"
+        className="rounded-lg border-2 border-brand-200 bg-brand-50 px-4 py-4 sm:px-6 sm:py-6"
         aria-label="Subscription status"
       >
-        <p className="text-sm font-medium text-amber-900">
+        <p className="text-sm font-medium text-brand-900">
           Free plan — upgrade for AI coach, advanced scenarios, and more
         </p>
         <Button
-          className="mt-3 bg-amber-500 text-white hover:bg-amber-600"
+          className="mt-3 bg-brand-600 text-white hover:bg-brand-700"
           onClick={() => checkout.mutate()}
           disabled={checkout.isPending}
         >
@@ -81,10 +81,10 @@ export function SubscriptionCard() {
 
   return (
     <section
-      className="rounded-lg border-2 border-amber-200 bg-amber-50 px-4 py-4 sm:px-6 sm:py-6"
+      className="rounded-lg border-2 border-brand-200 bg-brand-50 px-4 py-4 sm:px-6 sm:py-6"
       aria-label="Subscription status"
     >
-      <p className="text-sm font-medium text-amber-900">{statusText}</p>
+      <p className="text-sm font-medium text-brand-900">{statusText}</p>
       {!native && (
         <Button
           variant="outline"

@@ -42,8 +42,8 @@ export default function LevelLessonList() {
           <div key={lesson.id} className="flex items-center gap-2 rounded-md border border-slate-700 bg-slate-900 px-3 py-2">
             <span className={`rounded px-2 py-0.5 text-xs ${
               lesson.type === 'card' ? 'bg-blue-500/20 text-blue-400'
-              : lesson.type === 'quiz' ? 'bg-green-500/20 text-green-400'
-              : 'bg-yellow-500/20 text-yellow-400'
+              : lesson.type === 'quiz' ? 'bg-success-500/20 text-success-600'
+              : 'bg-accent-500/20 text-accent-500'
             }`}>{lesson.type}</span>
             <span className="flex-1 truncate text-sm text-slate-50">
               {lessonLabel(lesson)}
@@ -59,7 +59,7 @@ export default function LevelLessonList() {
             <button
               type="button"
               onClick={() => setDeleteTarget(lesson)}
-              className="text-xs text-red-400"
+              className="text-xs text-danger-500"
             >
               Delete
             </button>

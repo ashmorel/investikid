@@ -132,7 +132,7 @@ export default function Lesson() {
           <div className="mt-4 text-center">
             <button
               onClick={() => setShowPractice(true)}
-              className="text-sm text-amber-600 hover:text-amber-700 underline font-medium"
+              className="text-sm text-brand-700 hover:text-brand-800 underline font-medium"
             >
               🎯 Practice this topic
             </button>

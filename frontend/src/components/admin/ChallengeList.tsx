@@ -29,14 +29,14 @@ export default function ChallengeList() {
                 <div className="font-medium text-slate-50">{c.title}</div>
                 <div className="text-xs text-slate-500">
                   {c.type} · target: {c.target_value} · {c.xp_reward} XP
-                  {c.is_premium && <span className="ml-1 text-yellow-500">⭐</span>}
+                  {c.is_premium && <span className="ml-1 text-accent-500">⭐</span>}
                 </div>
               </div>
-              <span className={`rounded-full px-2 py-0.5 text-xs ${isActive ? 'bg-green-500/20 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
+              <span className={`rounded-full px-2 py-0.5 text-xs ${isActive ? 'bg-success-500/20 text-success-600' : 'bg-slate-700 text-slate-400'}`}>
                 {isActive ? 'Active' : 'Expired'}
               </span>
               <Link to={`/admin/challenges/${c.id}`} className="text-xs text-blue-400 hover:text-blue-300">Edit</Link>
-              <button type="button" onClick={() => setDeleteTarget(c)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+              <button type="button" onClick={() => setDeleteTarget(c)} className="text-xs text-danger-500 hover:text-danger-400">Delete</button>
             </div>
           );
         })}

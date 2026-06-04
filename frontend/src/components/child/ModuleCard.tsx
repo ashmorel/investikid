@@ -21,7 +21,7 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
         data-testid="module-locked"
         onClick={onLockedClick}
         aria-label={`${module.title} (locked)`}
-        className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-amber-200 bg-white p-4 text-center opacity-60 cursor-not-allowed"
+        className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-brand-200 bg-white p-4 text-center opacity-60 cursor-not-allowed"
       >
         <span className="text-3xl" aria-hidden="true">{module.icon}</span>
         <h2 className="font-bold text-sm text-gray-900">{module.title}</h2>
@@ -36,22 +36,22 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
   return (
     <Link
       to={`/lessons/${module.id}`}
-      className="flex flex-col items-center gap-2 rounded-2xl border-2 border-amber-200 bg-white p-4 text-center transition-all duration-200 hover:-translate-y-1 hover:border-amber-400 hover:shadow-md"
+      className="flex flex-col items-center gap-2 rounded-2xl border-2 border-brand-200 bg-white p-4 text-center transition-all duration-200 hover:-translate-y-1 hover:border-brand-400 hover:shadow-md"
     >
       <span className="text-4xl" aria-hidden="true">{module.icon}</span>
       <h2 className="font-bold text-sm text-gray-900">{module.title}</h2>
       <p className="text-xs text-gray-500">{completedCount} / {totalCount} quests</p>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-100">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-brand-100">
         <div
           className={cn(
             'h-full rounded-full transition-all',
-            isDone ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-amber-400 to-orange-500',
+            isDone ? 'bg-success-500' : 'bg-brand-gradient',
           )}
           style={{ width: `${pct}%` }}
         />
       </div>
       {isDone && (
-        <span className="text-xs font-semibold text-green-600">✓ Complete</span>
+        <span className="text-xs font-semibold text-success-600">✓ Complete</span>
       )}
     </Link>
   );

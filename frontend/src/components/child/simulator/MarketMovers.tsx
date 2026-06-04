@@ -9,7 +9,7 @@ function MoverRow({ mover, rank }: { mover: MarketMover; rank: number }) {
   return (
     <Link
       to={`/simulator/stock/${mover.exchange}/${mover.ticker}`}
-      className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-amber-50"
+      className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-brand-50"
     >
       <span className="w-5 text-center text-xs font-medium text-muted-foreground">{rank}</span>
       <div className="min-w-0 flex-1">
@@ -18,7 +18,7 @@ function MoverRow({ mover, rank }: { mover: MarketMover; rank: number }) {
       </div>
       <div className="text-right">
         <p className="text-sm font-medium">{formatCurrency(mover.price, mover.currency)}</p>
-        <p className={`text-xs font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+        <p className={`text-xs font-semibold ${isPositive ? 'text-success-600' : 'text-danger-600'}`}>
           {isPositive ? '+' : ''}{mover.change_percent.toFixed(2)}%
         </p>
       </div>
@@ -33,8 +33,8 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
       <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{exchange}</h3>
       <div className="grid gap-4 sm:grid-cols-2">
         {data.winners.length > 0 && (
-          <div className="rounded-xl border-2 border-green-200 bg-white p-3">
-            <div className="mb-2 flex items-center gap-1.5 text-green-700">
+          <div className="rounded-xl border-2 border-success-200 bg-white p-3">
+            <div className="mb-2 flex items-center gap-1.5 text-success-700">
               <TrendingUp className="h-4 w-4" />
               <span className="text-xs font-semibold uppercase tracking-wide">Top Gainers</span>
             </div>
@@ -44,8 +44,8 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
           </div>
         )}
         {data.losers.length > 0 && (
-          <div className="rounded-xl border-2 border-red-200 bg-white p-3">
-            <div className="mb-2 flex items-center gap-1.5 text-red-700">
+          <div className="rounded-xl border-2 border-danger-200 bg-white p-3">
+            <div className="mb-2 flex items-center gap-1.5 text-danger-700">
               <TrendingDown className="h-4 w-4" />
               <span className="text-xs font-semibold uppercase tracking-wide">Top Losers</span>
             </div>
@@ -69,7 +69,7 @@ export function MarketMovers() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border-2 border-amber-200 bg-white p-4">
+      <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
         <p className="text-sm text-muted-foreground">Loading market movers…</p>
       </div>
     );
@@ -80,7 +80,7 @@ export function MarketMovers() {
   const exchanges = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <div className="rounded-2xl border-2 border-amber-200 bg-white p-4">
+    <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
       <h2 className="mb-4 text-lg font-semibold text-gray-800">Today's Market Movers</h2>
       <div className="space-y-5">
         {exchanges.map(([exchange, movers]) => (
