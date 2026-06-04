@@ -25,22 +25,28 @@ Out of scope: Simulator suite (SP-C), auth/account (SP-D), parent/admin (SP-E). 
 - `contentApi.listModules()`, `listLevels(moduleId)`, `listLevelLessons(levelId)` — learning path
 - `useRecommendations()`, mastery/strengths hooks — already wired on Home/Progress
 
-## New components (presentational, in `src/components/child/`; each unit-tested + `vitest-axe`)
+## Components
 
-- **`LevelCard`** — `{ level, xp }`. Penny/level avatar + "Level N Investor", XP-to-next, gradient progress bar, "X XP to go" pill. Pure; computes `xpInLevel = xp % 100`, `xpForNext = 100` (same maths as today's Home bar).
-- **`AchievementsStrip`** — `{ badges, earnedIds }`. Horizontal, scrollable, accessible list of earned/locked badges (emoji or `badgeIcon()` fallback + label; locked shows a lock, `aria-hidden` on decorative glyphs, real text labels), with a "See all →" link to `/stats`. Overflow-x scroll must not trigger page bleed (respect the existing `overflow-x-hidden` body rule — scroll lives in an inner container).
-- **`PathLevelCard`** — `{ level: LevelOut, to }`. A level row for the Module screen: icon, title, `lessons_completed/lessons_total` progress, state (in_progress/completed/locked), `locked_reason` (premium/progression), passed ✓. Locked → non-link `div` (matches `ModuleTile` locked pattern).
-- **`LessonRow`** — `{ lesson: LessonSummary, to, locked }`. A lesson row for the Level screen: type icon (card/quiz/scenario/video), title, XP reward, completed ✓ or lock.
+**Reality check (verified in code):** `LevelCard` (the module's level cards, props `{level,onOpen,onLockedClick}`), `LessonRow` (the lesson list, props `{moduleId,levelId,lesson,status}`), and `ModuleCard` (the Quests grid, with a progress bar) **already exist** from the earlier leveled-progression work. SP-B **enhances** these toward the prototype — it does not recreate them. Only two components are genuinely new.
+
+**New (presentational, in `src/components/child/`; each unit-tested + `vitest-axe`):**
+- **`LevelProgressCard`** — `{ level, xp }`. The Home "Level N Investor" card: level badge + XP-to-next + gradient progress bar + "X XP to go" pill. Named `LevelProgressCard` to avoid colliding with the existing module-level `LevelCard`. Pure; `xpInLevel = xp % 100`, `xpForNext = 100` (same maths as today's Home bar). Progress bar uses `role="progressbar"` + aria-value*.
+- **`AchievementsStrip`** — `{ allBadges, earnedBadges }` (from `useAllBadges()` + `useBadges()`). Horizontal, scrollable, accessible list of earned/locked badges (`badgeIcon()` for the glyph + name label; locked shows a lock; `aria-hidden` on decorative glyphs, real text labels), with a "See all →" link to `/stats`. Overflow-x scroll lives in an inner container (respect the body `overflow-x-hidden`).
+
+**Enhanced (existing, restyled toward the prototype):**
+- **`LevelCard`** (module levels) — add a `lessons_completed/lessons_total` progress bar + richer prototype styling; keep its `{level,onOpen,onLockedClick}` API and states.
+- **`LessonRow`** (lessons) — richer row styling (clearer type icon, XP), keep `{moduleId,levelId,lesson,status}` API.
+- **`ModuleCard`** (Quests) — restyle toward the prototype's card; **keep** it (it already has a progress bar — richer than `ModuleTile`, so do NOT consolidate/retire).
 
 ## Per-screen layout direction
 
-**Home (`Home.tsx`)** — keep education-first order: Penny greeting + next-lesson `HeroCard` stay at top. Then: `LevelCard` (replaces the thin inline XP bar), existing stat chips, `ReviewBanner` (when due), `AchievementsStrip` (teaser → Stats), then the "Your quests" `ModuleTile` grid (light spacing polish). Keep the sr-only `<h1>` + heading order.
+**Home (`Home.tsx`)** — keep education-first order: Penny greeting + next-lesson `HeroCard` stay at top. Then: `LevelProgressCard` (replaces the thin inline XP bar), existing stat chips, `ReviewBanner` (when due), `AchievementsStrip` (teaser → Stats), then the "Your quests" `ModuleTile` grid (light spacing polish). Keep the sr-only `<h1>` + heading order.
 
-**Quests (`Lessons.tsx`)** — add a header band with overall progress ("N of M modules started" + brand progress bar derived from existing module/level-state data) above a richer module grid. Consolidate onto the SP-A `ModuleTile` (per-topic accent, progress, locked, recommended marker); retire `ModuleCard` if it has no other consumer (verify with a grep; if used elsewhere, leave it).
+**Quests (`Lessons.tsx`)** — add a header band with overall progress ("N of M modules started" + brand progress bar derived from existing module/level-state data) above the module grid, and restyle the existing `ModuleCard` toward the prototype's richer card. Keep `ModuleCard` (it has the per-module progress bar `ModuleTile` lacks).
 
-**Module (`Module.tsx`)** — present the module's levels as a vertical **learning path** of `PathLevelCard` rows with a module progress header. Keep the existing level data/links.
+**Module (`Module.tsx`)** — restyle the existing `LevelCard` rows toward the prototype's learning-path look (add the level progress bar) and add a module progress header above them. Keep the existing banner, level data, and links.
 
-**Level (`Level.tsx`)** — present the level's lessons as `LessonRow` items under a level progress header (lessons complete/total). Keep existing lesson links + locked logic.
+**Level (`Level.tsx`)** — restyle the existing `LessonRow` list toward the prototype and add a level progress header (lessons complete/total + bar). Keep existing lesson links, status logic, and locked handling.
 
 **Stats (`Stats.tsx`)** — wrap the existing sections (XP summary, badges, weekly challenges, leaderboard) in the prototype card aesthetic (`rounded-2xl border border-brand-100 bg-card shadow-sm`, sectioned headers). Present badges as an **achievements grid** (reuse `BadgeGrid`). Same data/child components.
 
