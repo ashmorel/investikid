@@ -27,6 +27,7 @@ describe('VideoLesson', () => {
     expect(urls.embed).toContain(`origin=${encodeURIComponent('https://www.youtube.com')}`);
     expect(urls.embed).toContain(`widget_referrer=${encodeURIComponent('https://www.youtube.com')}`);
     expect(urls.embed).toContain('playsinline=1');
+    expect(urls.thumbnail).toBe('https://img.youtube.com/vi/abc123/hqdefault.jpg');
     expect(urls.watch).toBe('https://www.youtube.com/watch?v=abc123');
   });
 

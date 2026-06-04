@@ -28,6 +28,7 @@ export function buildYouTubeUrls(youtubeId: string, pageOrigin = getPageOrigin()
 
   return {
     embed: `${embedOrigin}/embed/${encodedId}?${params.toString()}`,
+    thumbnail: `https://img.youtube.com/vi/${encodedId}/hqdefault.jpg`,
     watch: `${NATIVE_EMBED_ORIGIN}/watch?v=${encodedId}`,
   };
 }
