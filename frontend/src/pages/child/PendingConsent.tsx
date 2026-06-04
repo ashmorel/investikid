@@ -6,6 +6,7 @@ import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AuthPage } from '@/components/AuthPage';
 
 type State =
   | { kind: 'idle' }
@@ -44,22 +45,20 @@ export default function PendingConsent() {
 
   if (!email) {
     return (
-      <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
-        <h1 className="text-2xl font-semibold">Page expired</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+      <AuthPage title="Page expired" subtitle="Start again so we can recheck the right account.">
+        <p className="text-sm text-muted-foreground">
           We need your email to recheck your account.
         </p>
         <p className="mt-4">
           <Link to="/signup" className="underline">Start over</Link>
         </p>
-      </main>
+      </AuthPage>
     );
   }
 
   return (
-    <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
-      <h1 className="text-2xl font-semibold">Waiting for your parent to approve</h1>
-      <p className="mt-3 text-sm text-muted-foreground">
+    <AuthPage title="Almost there!" subtitle="We've emailed your grown-up to approve your account.">
+      <p className="text-sm text-muted-foreground">
         We've emailed your parent at the address you provided. Once they click the approval link,
         you'll be able to log in.
       </p>
@@ -108,6 +107,6 @@ export default function PendingConsent() {
       <p className="mt-6 text-sm text-muted-foreground">
         Wrong email? <Link to="/signup" className="underline">Use a different email</Link>.
       </p>
-    </main>
+    </AuthPage>
   );
 }

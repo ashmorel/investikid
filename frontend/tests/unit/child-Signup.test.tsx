@@ -32,6 +32,7 @@ beforeEach(() => { vi.restoreAllMocks(); vi.spyOn(globalThis, 'fetch'); });
 describe('Signup step 1', () => {
   it('shows under-threshold banner for UK 11', async () => {
     renderPage();
+    expect(screen.getByRole('heading', { name: /let's get you set up/i })).toBeInTheDocument();
     await fillDob('2015-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'GB');
     expect(screen.getByText(/parent's email will be required/i)).toBeInTheDocument();
@@ -71,6 +72,7 @@ describe('Signup step 2 — under-threshold flow', () => {
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'GB');
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
 
+    expect(screen.getByRole('heading', { name: /let's get you set up/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/parent email/i)).toBeInTheDocument();
 
     await userEvent.type(screen.getByLabelText(/^email$/i), 'kid@example.com');

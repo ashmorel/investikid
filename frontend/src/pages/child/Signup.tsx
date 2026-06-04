@@ -129,11 +129,9 @@ export default function Signup() {
 
   if (step === 1) {
     return (
-      <AuthPage>
-        <h1 className="text-2xl font-semibold">Create your account</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Step 1 of 2</p>
+      <AuthPage title="Let's get you set up" subtitle="Step 1 of 2: your age and country.">
         <form
-          className="mt-6 space-y-4"
+          className="space-y-4"
           onSubmit={(e) => { e.preventDefault(); if (step1Valid) setStep(2); }}
         >
           <div className="space-y-1.5">
@@ -203,11 +201,9 @@ export default function Signup() {
   }
 
   return (
-    <AuthPage>
-      <h1 className="text-2xl font-semibold">Create your account</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Step 2 of 2</p>
+    <AuthPage title="Let's get you set up" subtitle="Step 2 of 2: your sign-in details.">
       <form
-        className="mt-6 space-y-4"
+        className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
           if (!passwordsMatch) {

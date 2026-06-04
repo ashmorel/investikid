@@ -39,10 +39,9 @@ export default function Login() {
   });
 
   return (
-    <AuthPage>
-      <h1 className="text-2xl font-semibold">Sign in to InvestiKid</h1>
+    <AuthPage title="Welcome back!" subtitle="Let's keep learning.">
       <form
-        className="mt-6 space-y-3"
+        className="space-y-3"
         onSubmit={(e) => { e.preventDefault(); setError(null); submit.mutate(); }}
       >
         <div className="space-y-1.5">

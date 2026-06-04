@@ -25,6 +25,7 @@ beforeEach(() => { vi.spyOn(globalThis, 'fetch'); });
 describe('Login', () => {
   it('uses the safe centered auth layout on mobile', () => {
     const { container } = renderPage();
+    expect(screen.getByRole('heading', { name: /welcome back/i })).toBeInTheDocument();
     const main = container.querySelector('main');
     expect(main).toHaveClass('min-h-[100svh]');
     expect(main).toHaveClass('items-center');

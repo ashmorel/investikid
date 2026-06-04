@@ -26,11 +26,12 @@ beforeEach(() => { sessionStorage.clear(); vi.spyOn(globalThis, 'fetch'); });
 describe('PendingConsent', () => {
   it('shows expired message when email param missing', () => {
     renderAt('/pending-consent');
-    expect(screen.getByText(/page expired/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /page expired/i })).toBeInTheDocument();
   });
 
   it('Ive-been-approved button reveals password field', async () => {
     renderAt('/pending-consent', 'k@x.com');
+    expect(screen.getByRole('heading', { name: /almost there/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /i've been approved/i }));
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
