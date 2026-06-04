@@ -61,7 +61,7 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
 
   if (!tips) {
     return (
-      <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
+      <div className="rounded-2xl border border-brand-100 bg-card shadow-sm p-4">
         <div className="mb-3 flex items-center gap-2">
           <div className="h-5 w-5 animate-pulse rounded bg-brand-200" />
           <div className="h-4 w-28 animate-pulse rounded bg-brand-100" />

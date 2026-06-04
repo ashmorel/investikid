@@ -97,7 +97,7 @@ export function MarketNews() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
+      <div className="rounded-2xl border border-brand-100 bg-card shadow-sm p-4">
         <p className="text-sm text-muted-foreground">Loading news…</p>
       </div>
     );

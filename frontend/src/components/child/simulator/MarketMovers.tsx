@@ -33,7 +33,7 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
       <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{exchange}</h3>
       <div className="grid gap-4 sm:grid-cols-2">
         {data.winners.length > 0 && (
-          <div className="rounded-xl border-2 border-success-200 bg-white p-3">
+          <div className="rounded-2xl border border-brand-100 bg-card shadow-sm p-3">
             <div className="mb-2 flex items-center gap-1.5 text-success-700">
               <TrendingUp className="h-4 w-4" />
               <span className="text-xs font-semibold uppercase tracking-wide">Top Gainers</span>
@@ -44,7 +44,7 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
           </div>
         )}
         {data.losers.length > 0 && (
-          <div className="rounded-xl border-2 border-danger-200 bg-white p-3">
+          <div className="rounded-2xl border border-brand-100 bg-card shadow-sm p-3">
             <div className="mb-2 flex items-center gap-1.5 text-danger-700">
               <TrendingDown className="h-4 w-4" />
               <span className="text-xs font-semibold uppercase tracking-wide">Top Losers</span>
@@ -69,7 +69,7 @@ export function MarketMovers() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
+      <div className="rounded-2xl border border-brand-100 bg-card shadow-sm p-4">
         <p className="text-sm text-muted-foreground">Loading market movers…</p>
       </div>
     );

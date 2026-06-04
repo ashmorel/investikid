@@ -125,7 +125,7 @@ export default function Market() {
           placeholder="Search any stock or company (e.g. Apple, Toyota, Samsung)…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full rounded-lg border bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-300"
+          className="w-full rounded-lg border bg-white py-2.5 pl-10 pr-4 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-300"
         />
         {searchFetching && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -156,7 +156,7 @@ export default function Market() {
         <div className="mt-4 space-y-6">
           {groups.map(([exchange, groupStocks]) => (
             <section key={exchange}>
-              <h2 className="mb-2 text-sm font-medium text-muted-foreground">
+              <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wider text-gray-700">
                 {EXCHANGE_GROUP_LABELS[exchange] ?? exchange}
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -164,7 +164,7 @@ export default function Market() {
                   <Link
                     key={`${s.exchange}-${s.ticker}`}
                     to={`/simulator/stock/${s.exchange}/${s.ticker}`}
-                    className="rounded-lg border bg-card p-2 sm:p-3 min-h-[44px] transition-shadow hover:shadow-md"
+                    className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm hover:border-brand-400 hover:shadow-md transition-all min-h-[44px]"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold">{s.ticker}</span>
