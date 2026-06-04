@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
 import { VideoLesson } from '@/components/child/lesson/VideoLesson';
+import { buildYouTubeUrls } from '@/components/child/lesson/videoEmbed';
 
 describe('VideoLesson', () => {
   it('renders nocookie iframe with YouTube referrer identity config', () => {
@@ -17,6 +18,16 @@ describe('VideoLesson', () => {
       'href',
       'https://www.youtube.com/watch?v=abc123',
     );
+  });
+
+  it('uses a YouTube HTTPS identity for Capacitor webviews', () => {
+    const urls = buildYouTubeUrls('abc123', 'capacitor://localhost')!;
+
+    expect(urls.embed).toContain('https://www.youtube.com/embed/abc123');
+    expect(urls.embed).toContain(`origin=${encodeURIComponent('https://www.youtube.com')}`);
+    expect(urls.embed).toContain(`widget_referrer=${encodeURIComponent('https://www.youtube.com')}`);
+    expect(urls.embed).toContain('playsinline=1');
+    expect(urls.watch).toBe('https://www.youtube.com/watch?v=abc123');
   });
 
   it('Mark complete is disabled until checkbox checked, then onComplete(null)', () => {

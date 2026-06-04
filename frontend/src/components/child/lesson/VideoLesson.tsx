@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Disclosure } from '@/components/a11y/Disclosure';
-
-const YOUTUBE_ID_RE = /^[a-zA-Z0-9_-]+$/;
-const FALLBACK_ORIGIN = 'https://investikid.app';
+import { buildYouTubeUrls } from '@/components/child/lesson/videoEmbed';
 
 type Props = {
   contentJson: {
@@ -15,28 +13,6 @@ type Props = {
   onComplete: (score: number | null) => void;
   completing?: boolean;
 };
-
-function getEmbedOrigin() {
-  if (typeof window === 'undefined') return FALLBACK_ORIGIN;
-  const origin = window.location.origin;
-  return origin.startsWith('http://') || origin.startsWith('https://') ? origin : FALLBACK_ORIGIN;
-}
-
-function buildYouTubeUrls(youtubeId: string) {
-  const trimmed = youtubeId.trim();
-  if (!YOUTUBE_ID_RE.test(trimmed)) return null;
-
-  const params = new URLSearchParams({
-    origin: getEmbedOrigin(),
-    widget_referrer: getEmbedOrigin(),
-    playsinline: '1',
-  });
-
-  return {
-    embed: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(trimmed)}?${params.toString()}`,
-    watch: `https://www.youtube.com/watch?v=${encodeURIComponent(trimmed)}`,
-  };
-}
 
 export function VideoLesson({ contentJson, onComplete, completing = false }: Props) {
   const [watched, setWatched] = useState(false);
