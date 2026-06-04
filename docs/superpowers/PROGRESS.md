@@ -23,14 +23,18 @@ from GitHub `ashmorel/Investikidyasminschoice` if gone).
 | **SP-C** Simulator suite | ✅ shipped | Practice Portfolio hero, quick-stats, Stock/Market polish |
 | **SP-D1** Parent social login | ✅ shipped | Apple+Google (web+native) ID-token verification, `parent_identity` table; **needs user OAuth setup** |
 | **SP-D2** Auth polish + Coach panel | ✅ shipped (in Codex) | branded `AuthPage`, polished + friendlier auth screens, `CoachChat` extracted, Coach slide-over panel; CI green |
-| **SP-E** Parent/admin polish | 📝 **next** | layout-only restyle of parent dashboard + admin panel |
+| **SP-F** Coach panel float + inline iOS video | ✅ shipped | Coach panel = **bottom sheet on mobile** / right panel on desktop; `VideoLesson` plays **inline on iOS (B1)** instead of thumbnail hand-off; also un-tracked the Xcode-churned `Package.resolved` (gitignored) |
+| **Country switcher** | 📝 **next (feature)** | let kids switch content region (US/UK/HK exchanges) — own brainstorm→spec→plan |
+| **SP-E** Parent/admin polish | ⬜ after | layout-only restyle of parent dashboard + admin panel |
 
 > **Also added by Codex during SP-D2 (beyond the plan):** a new CI job **"iOS (Capacitor sync · simulator build)"** (macOS — `npx cap sync ios` → resolve packages → `xcodebuild` simulator build), and YouTube-embed fixes for the Capacitor WebView. CI is now **6 jobs**; all green on HEAD.
 >
 > **Note on local "no such module 'Capacitor'":** the iOS CI job proves the SPM build is sound. If a *local* Xcode build hits this, it's a stale package graph: quit Xcode → `npm run build && npx cap sync ios` from `invest-ed/frontend` → reopen `ios/App/App.xcodeproj` (Capacitor 8 = SPM project, no workspace/Podfile) → File ▸ Packages ▸ Reset Package Caches + Resolve → Clean Build Folder → Build. (Capacitor's `capacitor-swift-pm` is a remote SPM dep Xcode must fetch.)
 
-## ▶ Resume here: SP-E (parent/admin polish)
-Final layout sub-project. Brainstorm → spec → plan → execute as usual. Scope: sky-blue card/Penny polish of the **parent dashboard** (`src/pages/ParentDashboard.tsx` + `src/components/parent/*`) and the **admin panel** (`src/components/admin/*`, admin pages) — layout-only, no behaviour/route change. (Per the SP-B/C/D2 lesson: READ each screen first — some may already be fine post-SP-A, e.g. the parent `SignInMethods` card from SP-D1.)
+## ▶ Resume here: Country switcher (feature), then SP-E
+- **Country switcher (next):** let a child switch the region their content is geared to — US / UK / Hong Kong key exchanges — to learn about global investing. Plumbing exists: `country_code`/`currency_code` on the user, `country_codes` on modules, NASDAQ/LSE/HKEX in the simulator. Needs its own brainstorm→spec→plan (decide: where the switcher lives, persistent setting vs view toggle, whether it also changes the practice currency). NOT started.
+- **SP-E (after):** sky-blue card/Penny polish of the **parent dashboard** (`src/pages/ParentDashboard.tsx` + `src/components/parent/*`) and **admin panel** (`src/components/admin/*`) — layout-only. (Per the SP-B/C/D2 lesson: READ each screen first — some may already be fine post-SP-A.)
+- **Simulator verify (pending, manual):** confirm on the iOS simulator that the inline lesson video plays *inline* (not forced fullscreen). If it forces fullscreen, add the Capacitor iOS WebView media setting (confirm the exact key first) — that's the only remaining SP-F follow-up.
 
 ## Pending USER actions (not code)
 - **SP-D1 OAuth setup** before real social sign-in works: see `invest-ed/docs/parent-social-login-setup.md` (Google Cloud web+iOS client IDs; Apple Developer Sign-in-with-Apple + Services ID; Xcode capability + Google URL scheme; set the 4 backend env ids + `VITE_` frontend ids). Until set, the OAuth endpoints return `503 not_configured` — expected.
