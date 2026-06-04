@@ -1,7 +1,8 @@
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { contentApi, type LevelOut, type ModuleOut } from '@/api/content';
 import { LevelCard } from '@/components/child/LevelCard';
+import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Module() {
@@ -28,8 +29,8 @@ export default function Module() {
   if (modulesQ.isError || levelsQ.isError) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-        <p>Module not found or locked.</p>
-        <Link to="/lessons" className="text-sm text-brand-700 hover:underline">← Back to modules</Link>
+        <BackButton to="/lessons" label="Quests" />
+        <p className="mt-2">Module not found or locked.</p>
       </div>
     );
   }
@@ -39,6 +40,9 @@ export default function Module() {
 
   return (
     <div className="mx-auto max-w-3xl">
+      <div className="px-4 pt-4 sm:px-6">
+        <BackButton to="/lessons" label="Quests" />
+      </div>
       {/* Banner */}
       <div className="bg-gradient-to-br from-brand-100 to-brand-200 px-4 py-6 sm:px-6 sm:py-8 text-center">
         <span className="text-5xl">{module?.icon ?? '📚'}</span>
@@ -85,7 +89,6 @@ export default function Module() {
             />
           ))}
         </div>
-        <Link to="/lessons" className="mt-4 inline-block text-sm text-brand-700 hover:underline">← Back to modules</Link>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { EduTooltip } from '@/components/child/simulator/EduTooltip';
 import { MarketMovers } from '@/components/child/simulator/MarketMovers';
 import { MarketNews } from '@/components/child/simulator/MarketNews';
 import { InvestingTips } from '@/components/child/simulator/InvestingTips';
+import { BackButton } from '@/components/child/BackButton';
 import { formatCurrency } from '@/lib/currency';
 
 const EXCHANGE_BADGE_COLORS: Record<string, string> = {
@@ -98,7 +99,8 @@ export default function Market() {
   if (isLoading && stocks.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
-        <p className="text-sm text-muted-foreground">Loading stocks…</p>
+        <BackButton to="/simulator" label="Simulator" />
+        <p className="mt-2 text-sm text-muted-foreground">Loading stocks…</p>
       </div>
     );
   }
@@ -107,7 +109,8 @@ export default function Market() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
-      <div className="mb-1 flex items-center gap-2">
+      <BackButton to="/simulator" label="Simulator" />
+      <div className="mb-1 mt-2 flex items-center gap-2">
         <h1 className="text-2xl font-semibold">Browse Stocks</h1>
         <EduTooltip
           term="Exchange"

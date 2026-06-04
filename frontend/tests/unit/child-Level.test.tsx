@@ -58,7 +58,7 @@ describe('Level page', () => {
       '/levels/lv-1/lessons': [],
     });
     renderAt('/lessons/mod-1/lv-1');
-    const back = await screen.findByRole('link', { name: /← Back to levels/i });
+    const back = await screen.findByRole('link', { name: /back to levels/i });
     expect(back).toHaveAttribute('href', '/lessons/mod-1');
   });
 

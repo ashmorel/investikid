@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { simulatorApi, type TradeRequest, type QuoteOut, type PortfolioOut } from '@/api/simulator';
 import { ApiError } from '@/api/client';
@@ -11,6 +11,7 @@ import { TradeForm } from '@/components/child/simulator/TradeForm';
 import { InvestmentTimeMachine } from '@/components/child/simulator/InvestmentTimeMachine';
 import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { ChartCoachPanel } from '@/components/child/simulator/ChartCoachPanel';
+import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Stock() {
@@ -57,8 +58,8 @@ export default function Stock() {
   if (quoteQ.error?.status === 404) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-        <p className="text-sm">Stock not found.</p>
-        <Link to="/simulator/market" className="text-sm text-brand-700 hover:underline">← Back to market</Link>
+        <BackButton to="/simulator/market" label="Market" />
+        <p className="mt-2 text-sm">Stock not found.</p>
       </div>
     );
   }
@@ -66,8 +67,8 @@ export default function Stock() {
   if (quoteQ.error?.status === 403) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-        <p className="text-sm">This stock isn't available in practice mode.</p>
-        <Link to="/simulator/market" className="text-sm text-brand-700 hover:underline">← Back to market</Link>
+        <BackButton to="/simulator/market" label="Market" />
+        <p className="mt-2 text-sm">This stock isn't available in practice mode.</p>
       </div>
     );
   }
@@ -82,9 +83,7 @@ export default function Stock() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-      <Link to="/simulator/market" className="mb-4 inline-block text-sm text-brand-700 hover:underline">
-        ← Back to market
-      </Link>
+      <BackButton to="/simulator/market" label="Market" className="mb-4" />
 
       <StockHeader
         name={quote.name}

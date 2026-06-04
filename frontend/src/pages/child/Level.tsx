@@ -1,8 +1,9 @@
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { contentApi, type LessonSummary } from '@/api/content';
 import { ApiError } from '@/api/client';
 import { LessonRow } from '@/components/child/LessonRow';
+import { BackButton } from '@/components/child/BackButton';
 
 export default function Level() {
   const { moduleId, levelId } = useParams<{ moduleId: string; levelId: string }>();
@@ -22,16 +23,16 @@ export default function Level() {
     if (err instanceof ApiError && err.status === 403) {
       return (
         <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-          <p className="font-semibold text-gray-900">This level is premium.</p>
+          <BackButton to={`/lessons/${moduleId ?? ''}`} label="Levels" />
+          <p className="mt-2 font-semibold text-gray-900">This level is premium.</p>
           <p className="mt-1 text-sm text-gray-500">Ask a grown-up to unlock premium content.</p>
-          <Link to={`/lessons/${moduleId ?? ''}`} className="mt-3 inline-block text-sm text-brand-700 hover:underline">← Back to levels</Link>
         </div>
       );
     }
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-        <p>Level not found.</p>
-        <Link to={`/lessons/${moduleId ?? ''}`} className="text-sm text-brand-700 hover:underline">← Back to levels</Link>
+        <BackButton to={`/lessons/${moduleId ?? ''}`} label="Levels" />
+        <p className="mt-2">Level not found.</p>
       </div>
     );
   }
@@ -41,7 +42,7 @@ export default function Level() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-      <Link to={`/lessons/${moduleId ?? ''}`} className="text-sm text-brand-700 hover:underline">← Back to levels</Link>
+      <BackButton to={`/lessons/${moduleId ?? ''}`} label="Levels" />
 
       <div className="mt-3 rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { contentApi, type LessonOut, type LessonSummary, type LessonCompletionResult, type ModuleOut, type LevelOut } from '@/api/content';
 import { CardLesson } from '@/components/child/lesson/CardLesson';
 import { QuizLesson } from '@/components/child/lesson/QuizLesson';
@@ -11,6 +11,7 @@ import { LessonIllustration } from '@/components/child/lesson/LessonIllustration
 import { PracticeQuiz } from '@/components/child/lesson/PracticeQuiz';
 import { CoachPennyPanel } from '@/components/child/lesson/CoachPennyPanel';
 import { LessonChrome } from '@/components/child/lesson/LessonChrome';
+import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Lesson() {
@@ -103,8 +104,8 @@ export default function Lesson() {
   if (lessonQ.isError || !lessonQ.data) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
-        <p>Lesson not found.</p>
-        <Link to={`/lessons/${moduleId ?? ''}`} className="text-sm underline">← Back to module</Link>
+        <BackButton to={`/lessons/${moduleId ?? ''}/${levelId ?? ''}`} label="Lessons" />
+        <p className="mt-2">Lesson not found.</p>
       </div>
     );
   }
