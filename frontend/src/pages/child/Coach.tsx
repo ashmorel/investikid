@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { aiApi, type CoachChatResponse, type CoachAction } from '@/api/ai';
 import { useCoachGreeting } from '@/hooks/useCoachGreeting';
 import { Button } from '@/components/ui/button';
+import { Penny } from '@/components/child/ui/Penny';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -73,7 +74,9 @@ export default function Coach() {
           ←
         </button>
         <div className="flex items-center gap-2">
-          <span className="text-xl">💡</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100" aria-hidden="true">
+            <Penny size={28} mood="happy" />
+          </span>
           <span className="font-bold text-gray-900">Coach Penny</span>
         </div>
         {remaining !== null && (
@@ -93,7 +96,7 @@ export default function Coach() {
 
         {/* Suggestion chips */}
         {!chipsSent && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {SUGGESTION_CHIPS.map((chip) => (
               <button
                 key={chip}
