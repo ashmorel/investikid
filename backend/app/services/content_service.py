@@ -15,6 +15,19 @@ def compute_level(xp: int) -> int:
     return level
 
 
+def content_region_for(user) -> str:
+    """Effective *learning region* used for module-country gating.
+
+    Returns the child's chosen ``content_region`` (US/GB/HK), falling back to
+    their legal ``country_code`` when unset (NULL). Uses ``getattr`` so it works
+    on any object exposing ``country_code`` and avoids importing the User model.
+
+    NEVER mutate ``country_code`` from region features — it drives the
+    COPPA/UK-GDPR consent regime (compliance.py / consent_service.py).
+    """
+    return getattr(user, "content_region", None) or user.country_code
+
+
 def is_module_accessible(
     user_country: str,
     is_premium_user: bool,
