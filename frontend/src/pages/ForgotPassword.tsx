@@ -5,6 +5,7 @@ import { authApi } from '@/api/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AuthPage } from '@/components/AuthPage';
 
 export default function ForgotPassword() {
   const [identifier, setIdentifier] = useState('');
@@ -18,22 +19,20 @@ export default function ForgotPassword() {
 
   if (submitted) {
     return (
-      <main className="mx-auto max-w-md p-6">
-        <h1 className="text-2xl font-semibold">Check your email</h1>
-        <p className="mt-4 text-sm text-muted-foreground">
+      <AuthPage title="Check your email">
+        <p className="text-sm text-muted-foreground">
           If that account exists, we've sent a reset link. Check your email (or ask a grown-up).
         </p>
         <p className="mt-4 text-sm text-muted-foreground">
           <Link to="/login" className="underline">Back to sign in</Link>
         </p>
-      </main>
+      </AuthPage>
     );
   }
 
   return (
-    <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-semibold">Forgot your password?</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
+    <AuthPage title="Forgot your password?" subtitle="We'll email you a reset link.">
+      <p className="text-sm text-muted-foreground">
         Enter your email or username and we'll send you a reset link.
       </p>
       <form
@@ -58,6 +57,6 @@ export default function ForgotPassword() {
       <p className="mt-6 text-sm text-muted-foreground">
         <Link to="/login" className="underline">Back to sign in</Link>
       </p>
-    </main>
+    </AuthPage>
   );
 }

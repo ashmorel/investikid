@@ -6,6 +6,7 @@ import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AuthPage } from '@/components/AuthPage';
 
 function validatePassword(pw: string): string | null {
   if (pw.length < 12) return 'Password must be at least 12 characters.';
@@ -47,39 +48,37 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <main className="mx-auto max-w-md p-6">
+      <AuthPage title="That link didn't work" subtitle="Please use the reset link from your email.">
         <p role="alert" className="text-sm text-destructive">
           Invalid link. Please use the reset link from your email.
         </p>
-      </main>
+      </AuthPage>
     );
   }
 
   if (success) {
     return (
-      <main className="mx-auto max-w-md p-6">
-        <h1 className="text-2xl font-semibold">Password updated</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+      <AuthPage title="Password updated">
+        <p className="text-sm text-muted-foreground">
           Your password has been reset successfully.
         </p>
         <p className="mt-4 text-sm text-muted-foreground">
           <Link to="/login" className="underline">Sign in with your new password</Link>
         </p>
-      </main>
+      </AuthPage>
     );
   }
 
   if (expired) {
     return (
-      <main className="mx-auto max-w-md p-6">
-        <h1 className="text-2xl font-semibold">Link expired</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+      <AuthPage title="Link expired" subtitle="Request a fresh reset link when you're ready.">
+        <p className="text-sm text-muted-foreground">
           This link has expired or was already used. Request a new one.
         </p>
         <p className="mt-4 text-sm text-muted-foreground">
           <Link to="/forgot-password" className="underline">Request a new reset link</Link>
         </p>
-      </main>
+      </AuthPage>
     );
   }
 
@@ -94,9 +93,8 @@ export default function ResetPassword() {
   }
 
   return (
-    <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-semibold">Reset your password</h1>
-      <form className="mt-6 space-y-3" onSubmit={handleSubmit}>
+    <AuthPage title="Choose a new password">
+      <form className="space-y-3" onSubmit={handleSubmit}>
         <div className="space-y-1.5">
           <Label htmlFor="new-password">New password</Label>
           <Input
@@ -133,6 +131,6 @@ export default function ResetPassword() {
           {submit.isPending ? 'Updating…' : 'Update password'}
         </Button>
       </form>
-    </main>
+    </AuthPage>
   );
 }

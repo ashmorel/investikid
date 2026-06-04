@@ -46,6 +46,7 @@ beforeEach(() => {
 describe('ParentLogin', () => {
   it('rejects invalid email on submit', async () => {
     renderPage();
+    expect(screen.getByRole('heading', { name: /parents' sign-in/i })).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText(/email/i), 'not-an-email');
     await userEvent.click(screen.getByRole('button', { name: /send sign-in link/i }));
     expect(screen.getByText(/valid email/i)).toBeInTheDocument();

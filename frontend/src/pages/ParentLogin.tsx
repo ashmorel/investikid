@@ -7,6 +7,7 @@ import { socialIdToken } from '@/lib/socialLogin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AuthPage } from '@/components/AuthPage';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -41,20 +42,18 @@ export default function ParentLogin() {
 
   if (submit.isSuccess) {
     return (
-      <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
-        <h1 className="text-2xl font-semibold">Check your inbox</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
+      <AuthPage title="Check your inbox">
+        <p className="text-sm text-muted-foreground">
           If an InvestiKid account is linked to {email}, we've sent a sign-in link.
           The link will expire in 15 minutes.
         </p>
-      </main>
+      </AuthPage>
     );
   }
 
   return (
-    <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
-      <h1 className="text-2xl font-semibold">Parent sign-in</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
+    <AuthPage title="Parents' sign-in" subtitle="Manage your child's account.">
+      <p className="text-sm text-muted-foreground">
         Enter the email address you used when your child signed up.
       </p>
 
@@ -117,6 +116,6 @@ export default function ParentLogin() {
           {submit.isPending ? 'Sending…' : 'Send sign-in link'}
         </Button>
       </form>
-    </main>
+    </AuthPage>
   );
 }
