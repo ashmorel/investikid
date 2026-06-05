@@ -82,7 +82,7 @@ _MODULES = [
                 "body": "Compound interest means you earn interest not only on your original money, but also on the interest you've already earned.",
             }},
             {"type": "video", "xp_reward": 10, "content_json": {
-                "youtube_id": "MqZmwQoHmAA", "caption": "Compound interest explained simply",
+                "youtube_id": "Rm6UdfRs3gw", "caption": "Compound interest explained simply",
                 "captions_available": True,
                 "transcript": (
                     "Compound interest means you earn interest on your original money "
