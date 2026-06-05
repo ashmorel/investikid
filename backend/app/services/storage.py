@@ -1,6 +1,3 @@
-import boto3
-from botocore.config import Config
-
 from app.core.config import settings
 
 
@@ -12,6 +9,9 @@ def is_configured() -> bool:
 
 
 def _client():
+    import boto3
+    from botocore.config import Config
+
     return boto3.client(
         "s3",
         endpoint_url=f"https://{settings.r2_account_id}.r2.cloudflarestorage.com",
