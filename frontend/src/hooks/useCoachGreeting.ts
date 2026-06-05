@@ -23,7 +23,7 @@ export function useCoachGreeting(): { greeting: string; isLoading: boolean } {
     const plural = dueCount === 1 ? 'concept' : 'concepts';
     line = `You have ${dueCount} ${plural} ready for review — want to go over them?`;
   } else if (continueLearning.length > 0) {
-    line = `Want to keep going with your current quests?`;
+    line = `Want to keep going with your current lessons?`;
   } else if (somethingNew.length > 0) {
     line = `I found something new for you to explore!`;
   } else {

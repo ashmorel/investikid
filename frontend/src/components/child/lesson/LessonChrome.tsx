@@ -48,7 +48,7 @@ export function LessonChrome({ position, total, xpReward, onBack }: LessonChrome
           aria-valuenow={Math.max(0, position - 1)}
           aria-valuemin={0}
           aria-valuemax={total || 1}
-          aria-label={total > 0 ? `Quest ${position} of ${total}` : `Quest ${position}`}
+          aria-label={total > 0 ? `Lesson ${position} of ${total}` : `Lesson ${position}`}
           className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-brand-100"
         >
           <div

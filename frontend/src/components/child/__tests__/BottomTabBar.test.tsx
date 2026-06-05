@@ -15,7 +15,7 @@ describe('BottomTabBar', () => {
   it('renders all five tab labels', () => {
     renderBar();
     expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('Quests')).toBeInTheDocument();
+    expect(screen.getByText('Learn')).toBeInTheDocument();
     expect(screen.getByText('Progress')).toBeInTheDocument();
     expect(screen.getByText('Simulator')).toBeInTheDocument();
     expect(screen.getByText('Stats')).toBeInTheDocument();

@@ -15,11 +15,11 @@ export function buildHeroGreeting(ctx: HeroGreetingCtx): string {
     return `Welcome back, ${name}! You've got ${ctx.dueCount} ${plural} ready to review. 🧠`;
   }
   if (ctx.mode === 'caught_up') {
-    return `Amazing work, ${name}! You've finished everything for now. 🎉 New quests coming soon!`;
+    return `Amazing work, ${name}! You've finished everything for now. 🎉 New lessons coming soon!`;
   }
   if (ctx.mode === 'continue') {
     const streak = ctx.streakCount > 1 ? ` ${ctx.streakCount}-day streak — keep it going!` : '';
-    return `Welcome back, ${name}!${streak} Let's pick up ${ctx.lessonLabel ?? 'your next quest'}.`;
+    return `Welcome back, ${name}!${streak} Let's pick up ${ctx.lessonLabel ?? 'your next lesson'}.`;
   }
   return `Let's start your money journey, ${name}! First up: ${ctx.lessonLabel ?? 'your first lesson'} 📈`;
 }

@@ -47,7 +47,7 @@ export default function Level() {
       <div className="mt-3 rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
           <span>Level progress</span>
-          <span>{completed} / {lessons.length} quests</span>
+          <span>{completed} / {lessons.length} lessons</span>
         </div>
         <div
           className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-brand-100"

@@ -17,7 +17,7 @@ describe('BackButton', () => {
   });
 
   it('has no axe violations', async () => {
-    const { container } = wrap(<BackButton to="/lessons" label="Quests" />);
+    const { container } = wrap(<BackButton to="/lessons" label="Modules" />);
     expect(await axe(container)).toHaveNoViolations();
   });
 });

@@ -45,10 +45,10 @@ export default function Lessons() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-extrabold text-gray-900">Quests</h1>
+        <h1 className="text-2xl font-extrabold text-gray-900">Modules</h1>
         <RegionSwitcher currentRegion={currentRegion} />
       </div>
-      <p className="mt-1 text-sm text-gray-500">{modules.length} modules · {modules.reduce((acc, m) => acc + (lessonsByModuleId.get(m.id)?.length ?? 0), 0)} quests</p>
+      <p className="mt-1 text-sm text-gray-500">{modules.length} modules · {modules.reduce((acc, m) => acc + (lessonsByModuleId.get(m.id)?.length ?? 0), 0)} lessons</p>
       {modules.length > 0 && (() => {
         const started = modules.filter((m) => (lessonsByModuleId.get(m.id) ?? []).some((l) => l.completed)).length;
         const pct = Math.round((started / modules.length) * 100);

@@ -58,7 +58,7 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
         <div className="max-h-64 overflow-y-auto p-4 space-y-3">
           {messages.length === 0 && (
             <p className="text-sm text-gray-400 text-center">
-              Ask me anything about this quest! 🎯
+              Ask me anything about this lesson! 🎯
             </p>
           )}
           {messages.map((m, i) => (

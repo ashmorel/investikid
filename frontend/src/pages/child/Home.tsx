@@ -79,10 +79,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* Your quests module grid */}
+      {/* Your modules grid */}
       {modules.length > 0 && (
-        <section className="mt-5" aria-label="Your quests">
-          <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Your quests</h2>
+        <section className="mt-5" aria-label="Your modules">
+          <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Your modules</h2>
           <div className="grid grid-cols-2 gap-3">
             {modules.map((m) => {
               const { accent, tint } = styleFor(m.topic);

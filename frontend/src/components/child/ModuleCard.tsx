@@ -40,7 +40,7 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
     >
       <span className="text-4xl" aria-hidden="true">{module.icon}</span>
       <h2 className="font-bold text-sm text-gray-900">{module.title}</h2>
-      <p className="text-xs text-gray-500">{completedCount} / {totalCount} quests</p>
+      <p className="text-xs text-gray-500">{completedCount} / {totalCount} lessons</p>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-brand-100">
         <div
           className={cn(

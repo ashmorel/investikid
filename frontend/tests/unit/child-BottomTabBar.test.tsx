@@ -20,8 +20,8 @@ describe('BottomTabBar', () => {
         <BottomTabBar />
       </MemoryRouter>,
     );
-    const questsLink = screen.getByRole('link', { name: /quests/i });
-    expect(questsLink.className).toContain('text-brand-600');
+    const learnLink = screen.getByRole('link', { name: /learn/i });
+    expect(learnLink.className).toContain('text-brand-600');
   });
 
   it('shows correct labels for all tabs', () => {
@@ -31,7 +31,7 @@ describe('BottomTabBar', () => {
       </MemoryRouter>,
     );
     expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('Quests')).toBeInTheDocument();
+    expect(screen.getByText('Learn')).toBeInTheDocument();
     expect(screen.getByText('Progress')).toBeInTheDocument();
     expect(screen.getByText('Simulator')).toBeInTheDocument();
     expect(screen.getByText('Stats')).toBeInTheDocument();

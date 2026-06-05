@@ -76,7 +76,7 @@ export default function Lesson() {
   // Compute post-completion destination
   const curId = lessonQ.data?.id;
   const levelLessons = (lessonsQ.data ?? []) as LessonSummary[];
-  // Other quests in THIS level still incomplete (exclude the just-finished one so stale data can't mislead)
+  // Other lessons in THIS level still incomplete (exclude the just-finished one so stale data can't mislead)
   const moreInLevel = !!curId && levelLessons.some(l => l.id !== curId && !l.completed);
   const allLevels = (levelsQ.data ?? []) as LevelOut[];
   const moduleComplete = allLevels.length > 0 && allLevels.every(lv => lv.state === 'completed');

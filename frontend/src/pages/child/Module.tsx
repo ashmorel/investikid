@@ -29,7 +29,7 @@ export default function Module() {
   if (modulesQ.isError || levelsQ.isError) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-        <BackButton to="/lessons" label="Quests" />
+        <BackButton to="/lessons" label="Modules" />
         <p className="mt-2">Module not found or locked.</p>
       </div>
     );
@@ -41,7 +41,7 @@ export default function Module() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="px-4 pt-4 sm:px-6">
-        <BackButton to="/lessons" label="Quests" />
+        <BackButton to="/lessons" label="Modules" />
       </div>
       {/* Banner */}
       <div className="bg-gradient-to-br from-brand-100 to-brand-200 px-4 py-6 sm:px-6 sm:py-8 text-center">
