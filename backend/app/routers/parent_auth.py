@@ -67,9 +67,10 @@ async def magic_callback(
         record = await consume_one_time_token(session, token, PARENT_MAGIC_AUDIENCE)
     except (TokenInvalid, TokenExpired, TokenAlreadyUsed):
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="Link invalid or expired")
+
+    parent_session_token = await issue_parent_session(session, record.email)
     await session.commit()
 
-    parent_session_token = issue_parent_session(record.email)
     secure = settings.environment != "development"
     response.set_cookie(
         _PARENT_COOKIE, parent_session_token,
@@ -88,10 +89,14 @@ async def logout(response: Response):
 _OAUTH_PROVIDERS = {"google", "apple"}
 
 
-def _set_parent_cookies(response: Response, email: str) -> None:
+async def _set_parent_cookies(
+    session: AsyncSession, response: Response, email: str
+) -> None:
     secure = settings.environment != "development"
+    token = await issue_parent_session(session, email)
+    await session.commit()
     response.set_cookie(
-        _PARENT_COOKIE, issue_parent_session(email),
+        _PARENT_COOKIE, token,
         max_age=7 * 86400, httponly=True, samesite=_cookie_samesite(), secure=secure, path="/",
     )
     _set_csrf_cookie(response, secure)
@@ -136,7 +141,7 @@ async def oauth_sign_in(
     if parent_email is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No parent account for this sign-in")
 
-    _set_parent_cookies(response, parent_email)
+    await _set_parent_cookies(session, response, parent_email)
     return {"status": "signed_in", "email": parent_email}
 
 
@@ -149,9 +154,10 @@ async def get_current_parent(
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     try:
-        return decode_parent_session(token)
+        email, _jti = decode_parent_session(token)
     except TokenInvalid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+    return email
 
 
 @router.post("/oauth/{provider}/link", status_code=200)

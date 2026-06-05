@@ -66,9 +66,11 @@ async def test_garbage_token_rejected(db_session):
         await consume_one_time_token(db_session, "not-a-jwt", CONSENT_AUDIENCE)
 
 
-def test_parent_session_roundtrip():
-    token = issue_parent_session("p@example.com")
-    assert decode_parent_session(token) == "p@example.com"
+async def test_parent_session_roundtrip(db_session):
+    token = await issue_parent_session(db_session, "p@example.com")
+    email, jti = decode_parent_session(token)
+    assert email == "p@example.com"
+    assert jti is not None
 
 
 def test_parent_session_invalid_rejected():

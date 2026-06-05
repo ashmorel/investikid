@@ -52,7 +52,7 @@ async def test_password_reset_token_rejected_as_access_cookie(client, db_session
 
 async def test_parent_session_token_rejected_as_access_cookie(client, db_session):
     await _make_user(db_session)
-    parent_token = issue_parent_session("victim_parent@example.com")
+    parent_token = await issue_parent_session(db_session, "victim_parent@example.com")
     client.cookies.set("access_token", parent_token)
     resp = await client.get("/users/me")
     assert resp.status_code == 401, (

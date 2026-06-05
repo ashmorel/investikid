@@ -15,9 +15,10 @@ pytestmark = pytest.mark.asyncio(loop_scope="session")
 _TRUSTED_ORIGIN = {"Origin": "https://localhost"}
 
 
-def _auth_headers(parent_email: str) -> dict:
-    """Return headers that carry a valid parent session and bypass CSRF."""
-    token = issue_parent_session(parent_email)
+async def _auth_headers(db_session, parent_email: str) -> dict:
+    """Return headers that carry a valid (persisted) parent session and bypass CSRF."""
+    token = await issue_parent_session(db_session, parent_email)
+    await db_session.commit()
     return {
         "Origin": "https://localhost",
         "Cookie": f"parent_session={token}",
@@ -118,7 +119,7 @@ async def test_link_creates_identity(client, db_session, monkeypatch):
     r = await client.post(
         "/parent/auth/oauth/google/link",
         json={"id_token": "tok", "nonce": "n"},
-        headers=_auth_headers(parent),
+        headers=await _auth_headers(db_session, parent),
     )
     assert r.status_code == 200
     body = r.json()
@@ -145,7 +146,7 @@ async def test_link_idempotent(client, db_session, monkeypatch):
     await db_session.commit()
 
     _patch_verify(monkeypatch, sub="link-sub-2", email=parent)
-    headers = _auth_headers(parent)
+    headers = await _auth_headers(db_session, parent)
     payload = {"id_token": "tok", "nonce": "n"}
 
     r1 = await client.post("/parent/auth/oauth/google/link", json=payload, headers=headers)
@@ -183,7 +184,7 @@ async def test_link_conflict_different_parent(client, db_session, monkeypatch):
     r = await client.post(
         "/parent/auth/oauth/google/link",
         json={"id_token": "tok", "nonce": "n"},
-        headers=_auth_headers(intruder),
+        headers=await _auth_headers(db_session, intruder),
     )
     assert r.status_code == 409
 
@@ -212,7 +213,7 @@ async def test_list_identities(client, db_session, monkeypatch):
 
     r = await client.get(
         "/parent/auth/identities",
-        headers=_auth_headers(parent_a),
+        headers=await _auth_headers(db_session, parent_a),
     )
     assert r.status_code == 200
     providers = [item["provider"] for item in r.json()]
@@ -237,7 +238,7 @@ async def test_unlink_removes_identity(client, db_session, monkeypatch):
     )
     await db_session.commit()
 
-    headers = _auth_headers(parent)
+    headers = await _auth_headers(db_session, parent)
 
     r_del = await client.delete("/parent/auth/oauth/google/link", headers=headers)
     assert r_del.status_code == 200
