@@ -12,3 +12,4 @@ from app.models.skill_profile import TopicMastery, WeakConcept  # noqa: F401
 from app.models.subscription import Subscription  # noqa: F401
 from app.models.tutor import ChartCoachConversation, TutorConversation  # noqa: F401
 from app.models.user import RefreshToken, User, UserProgress  # noqa: F401
+from app.models.video_health import VideoHealth  # noqa: F401
