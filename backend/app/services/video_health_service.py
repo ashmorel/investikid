@@ -39,6 +39,24 @@ async def _probe(client: httpx.AsyncClient, youtube_id: str, sem: asyncio.Semaph
             return "unknown", None  # transient — never alerted
 
 
+async def _probe_hosted(
+    client: httpx.AsyncClient, url: str, sem: asyncio.Semaphore
+) -> tuple[str, int | None]:
+    if not url:
+        return "dead", None
+    async with sem:
+        try:
+            resp = await client.get(url, timeout=_TIMEOUT, headers={"Range": "bytes=0-0"})
+            sc = resp.status_code
+            if sc in (200, 206):
+                return "ok", sc
+            if sc in (401, 403, 404):
+                return "dead", sc
+            return "unknown", sc
+        except httpx.HTTPError:
+            return "unknown", None  # transient — never alerted
+
+
 async def check_all_videos(
     session: AsyncSession, *, client: httpx.AsyncClient | None = None
 ) -> dict[str, Any]:
@@ -48,15 +66,24 @@ async def check_all_videos(
         .where(Lesson.type == "video")
     )).all()
 
+    def _identifier(lesson: Lesson) -> str:
+        cj = lesson.content_json or {}
+        if cj.get("video_source") == "hosted":
+            return cj.get("video_url", "")
+        return cj.get("youtube_id", "")
+
+    def _probe_for(lesson: Lesson) -> Any:
+        cj = lesson.content_json or {}
+        if cj.get("video_source") == "hosted":
+            return _probe_hosted(client, cj.get("video_url", ""), sem)
+        return _probe(client, cj.get("youtube_id", ""), sem)
+
     owns_client = client is None
     if client is None:
         client = httpx.AsyncClient()
     sem = asyncio.Semaphore(_CONCURRENCY)
     try:
-        results = await asyncio.gather(*[
-            _probe(client, (lesson.content_json or {}).get("youtube_id", ""), sem)
-            for lesson, _ in rows
-        ])
+        results = await asyncio.gather(*[_probe_for(lesson) for lesson, _ in rows])
     finally:
         if owns_client:
             await client.aclose()
@@ -71,7 +98,7 @@ async def check_all_videos(
     now = datetime.now(UTC)
     summary: dict[str, Any] = {"ok": 0, "dead": 0, "unknown": 0, "dead_items": []}
     for (lesson, module_title), (status, http_status) in zip(rows, results):
-        yt = (lesson.content_json or {}).get("youtube_id", "")
+        yt = _identifier(lesson)
         existing = await session.scalar(
             select(VideoHealth).where(VideoHealth.lesson_id == lesson.id)
         )
