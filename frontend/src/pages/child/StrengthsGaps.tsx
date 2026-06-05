@@ -1,9 +1,9 @@
 import { useStrengths, type TopicStrength } from '@/api/ai';
 
 const STATUS_STYLES: Record<string, { border: string; text: string; label: string; emoji: string }> = {
-  strong: { border: 'border-l-success-500', text: 'text-success-500', label: 'Strong — keep it up!', emoji: '⭐' },
-  needs_practice: { border: 'border-l-accent-400', text: 'text-accent-500', label: 'Needs practice', emoji: '🔄' },
-  new: { border: 'border-l-slate-500', text: 'text-slate-400', label: 'Not started yet', emoji: '🆕' },
+  strong: { border: 'border-l-success-500', text: 'text-success-700', label: 'Strong — keep it up!', emoji: '⭐' },
+  needs_practice: { border: 'border-l-accent-400', text: 'text-accent-700', label: 'Needs practice', emoji: '🔄' },
+  new: { border: 'border-l-brand-200', text: 'text-muted-foreground', label: 'Not started yet', emoji: '🆕' },
 };
 
 function MasteryRing({ value }: { value: number }) {
@@ -15,13 +15,13 @@ function MasteryRing({ value }: { value: number }) {
     <div className="flex flex-col items-center" role="img" aria-label={`Overall mastery: ${pct}%`}>
       <div className="relative h-[120px] w-[120px]">
         <svg viewBox="0 0 120 120" className="-rotate-90">
-          <circle cx="60" cy="60" r="52" fill="none" stroke="#334155" strokeWidth="10" />
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#bae6fd" strokeWidth="10" />
           <circle
-            cx="60" cy="60" r="52" fill="none" stroke="#a78bfa" strokeWidth="10"
+            cx="60" cy="60" r="52" fill="none" stroke="#7c3aed" strokeWidth="10"
             strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-white">
+        <span className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-gray-900">
           {pct}%
         </span>
       </div>
@@ -36,16 +36,16 @@ function TopicCard({ topic }: { topic: TopicStrength }) {
   const pct = Math.round(topic.mastery_score * 100);
 
   return (
-    <div className={`rounded-xl border-l-4 ${style.border} bg-slate-800 p-4`}>
+    <div className={`rounded-xl border border-brand-100 ${style.border} border-l-4 bg-card p-4 shadow-sm`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-semibold text-white text-sm">{topic.topic.replace(/_/g, ' ')}</p>
+          <p className="font-semibold text-gray-900 text-sm">{topic.topic.replace(/_/g, ' ')}</p>
           <p className={`${style.text} text-xs mt-0.5`}>{style.emoji} {style.label}</p>
         </div>
         {topic.status !== 'new' ? (
           <span className={`${style.text} text-xl font-bold`}>{pct}%</span>
         ) : (
-          <span className="text-xl font-bold text-slate-500">—</span>
+          <span className="text-xl font-bold text-muted-foreground">—</span>
         )}
       </div>
 
@@ -56,7 +56,7 @@ function TopicCard({ topic }: { topic: TopicStrength }) {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label={`${topic.topic.replace(/_/g, ' ')} mastery: ${pct}%`}
-          className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-600"
+          className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-brand-100"
         >
           <div
             className={`h-full rounded-full ${topic.status === 'strong' ? 'bg-success-500' : 'bg-accent-400'}`}
@@ -65,12 +65,12 @@ function TopicCard({ topic }: { topic: TopicStrength }) {
         </div>
       )}
 
-      <div className="flex gap-4 mt-2 text-xs text-slate-400">
+      <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
         {topic.status !== 'new' && (
           <>
             <span>{topic.weak_count} weak concept{topic.weak_count !== 1 ? 's' : ''}</span>
             {topic.due_for_review > 0 && (
-              <span className="text-accent-500">{topic.due_for_review} due for review</span>
+              <span className="text-accent-700">{topic.due_for_review} due for review</span>
             )}
           </>
         )}
