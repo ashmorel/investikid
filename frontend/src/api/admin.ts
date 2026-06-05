@@ -392,3 +392,29 @@ export function useModuleEngagement(moduleId: string) {
     enabled: !!moduleId,
   });
 }
+
+// ── Video health ───────────────────────────────────────────────────
+export interface VideoHealthItem {
+  lesson_id: string;
+  module_id: string;
+  module_title: string;
+  lesson_title: string;
+  youtube_id: string;
+  status: 'ok' | 'dead' | 'unknown' | null;
+  http_status: number | null;
+  checked_at: string | null;
+}
+
+export function useVideoHealth() {
+  return useQuery({ queryKey: ['admin', 'video-health'], queryFn: () => adminFetch<VideoHealthItem[]>('/admin/video-health') });
+}
+
+export function useCheckVideoHealth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => adminFetch<{ summary: Record<string, number>; items: VideoHealthItem[] }>(
+      '/admin/video-health/check', { method: 'POST' },
+    ),
+    onSuccess: (data) => qc.setQueryData(['admin', 'video-health'], data.items),
+  });
+}

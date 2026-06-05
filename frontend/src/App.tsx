@@ -35,6 +35,7 @@ import BadgeForm from '@/components/admin/BadgeForm';
 import ChallengeList from '@/components/admin/ChallengeList';
 import ChallengeForm from '@/components/admin/ChallengeForm';
 import FeedbackList from '@/components/admin/FeedbackList';
+import VideoHealthList from '@/components/admin/VideoHealthList';
 import AdminSettings from '@/components/admin/AdminSettings';
 
 function RootRedirect() {
@@ -93,6 +94,7 @@ export default function App() {
           <Route path="challenges/new" element={<ChallengeForm />} />
           <Route path="challenges/:challengeId" element={<ChallengeForm />} />
           <Route path="feedback" element={<FeedbackList />} />
+          <Route path="video-health" element={<VideoHealthList />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
