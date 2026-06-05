@@ -42,10 +42,13 @@ If any of these are empty the backend raises `503 not_configured` for that provi
 1. **APIs & Services → Credentials → Create Credentials → OAuth client ID**.
 2. Application type: **Web application**.
 3. Name: `InvestiKid Web`.
-4. Authorised JavaScript origins:
+4. Authorised JavaScript origins (origin only, no path):
    - `https://<your-vercel-domain>.vercel.app` (your production Vercel URL)
    - `http://localhost:5173` (Vite dev server)
-5. Leave redirect URIs empty — token flow only.
+5. **Authorised redirect URIs** (REQUIRED — the `@capgo/capacitor-social-login` web flow sends a `redirect_uri`; leaving this empty causes `Error 400: redirect_uri_mismatch` / "Access blocked: This app's request is invalid"). Add the **parent login page URL**:
+   - `https://<your-vercel-domain>.vercel.app/parent/login`
+   - `http://localhost:5173/parent/login` (for local dev)
+   (This matches the deterministic redirect set in `src/lib/socialLogin.ts`.)
 6. Click **Create** and copy the **Client ID** (looks like `XXXXXXXXX.apps.googleusercontent.com`). This is `GOOGLE_WEB_CLIENT_ID`.
 
 ### 2c. iOS OAuth client ID
@@ -76,7 +79,7 @@ If any of these are empty the backend raises `503 not_configured` for that provi
 4. After registering, select the new Services ID → enable **Sign In with Apple → Configure**.
 5. Primary App ID: select `leeashmore.investikid.ai.app`.
 6. Web domain: your Vercel domain (e.g. `investikid.vercel.app`).
-7. Return URLs: `https://<vercel-domain>/parent/auth/apple/callback` (adjust to your actual callback path if different).
+7. Return URLs: `https://<vercel-domain>/parent/login` (this matches the deterministic Apple `redirectUrl` set in `src/lib/socialLogin.ts` — the parent login page, NOT a separate callback path).
 8. Save.
 
 No `.p8` key file is needed — the backend uses the JWKS/ID-token verification path, not the client-secret code-exchange path.
