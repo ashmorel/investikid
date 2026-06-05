@@ -42,11 +42,10 @@ Tone/visuals skew ~10–13; content (stocks, crypto, taxes, multi-currency sim) 
 **Verdict:** No personal data leaks through the API. No Critical issues. One real bug to fix before beta.
 
 ### Fix before beta (High)
-- [ ] **Parent logout doesn't clear the session in prod + parent sessions are non-revocable for 7 days.**
-  - `parent_auth.logout` `delete_cookie` omits `SameSite=None; Secure` that the cookie was set with → browsers drop the deletion cross-site.
-  - Parent session is a stateless bearer JWT (no `jti`, no DB backing, no kill switch), unlike child sessions which are DB-tracked + revocable.
-  - Parent session controls all child data (analytics, export, erasure, premium toggle) → highest-value session.
-  - Fix: pass matching `samesite`/`secure`/`httponly` to the parent `delete_cookie`; add `jti` + revocation table (or short TTL + refresh) to match the child model.
+- [x] **Parent logout doesn't clear the session in prod + parent sessions are non-revocable for 7 days.** ✅ DONE 2026-06-05 (commits `af0a454`→`eaf670b`, pushed to main).
+  - Added a DB-backed `ParentSession` (`jti` + `revoked_at`) mirroring child `RefreshToken`; `issue_parent_session` persists a row, `decode_parent_session` returns `(email, jti)`, new `revoke_parent_session`.
+  - `get_current_parent` now 401s on missing/revoked/expired `jti`; `logout` revokes the row AND clears the cookie with matching `samesite`/`secure`/`httponly`/`path`.
+  - Migration `f0a1b2c3d4e5`. Spec + plan in `docs/superpowers/{specs,plans}/2026-06-05-parent-session-revocation*`. One-time effect: parents signed in pre-deploy must log in once.
 
 ### Cheap hardening (schedule, not blockers)
 - [ ] Document that **hosted premium videos are public-by-URL** (gating stops handout, but the file streams to anyone with the link) — record as a deliberate decision in the R2 setup guide.
