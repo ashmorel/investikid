@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.core.rate_limit import limiter
 from app.models.parent_identity import ParentIdentity
+from app.models.parent_session import ParentSession
 from app.models.user import User
 from app.routers.auth import _cookie_samesite, _set_csrf_cookie
 from app.schemas.parent import IdentityOut, OAuthSignInRequest, ParentMagicLinkRequest
@@ -24,6 +25,7 @@ from app.services.tokens import (
     decode_parent_session,
     issue_one_time_token,
     issue_parent_session,
+    revoke_parent_session,
 )
 
 router = APIRouter(prefix="/parent/auth", tags=["parent_auth"])
@@ -81,8 +83,28 @@ async def magic_callback(
 
 
 @router.post("/logout")
-async def logout(response: Response):
-    response.delete_cookie(_PARENT_COOKIE, path="/")
+async def logout(
+    request: Request,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
+):
+    token = request.cookies.get(_PARENT_COOKIE)
+    if token:
+        try:
+            _email, jti = decode_parent_session(token)
+        except TokenInvalid:
+            jti = None
+        if jti is not None:
+            await revoke_parent_session(session, jti)
+            await session.commit()
+    secure = settings.environment != "development"
+    response.delete_cookie(
+        _PARENT_COOKIE,
+        samesite=_cookie_samesite(),
+        secure=secure,
+        httponly=True,
+        path="/",
+    )
     return {"status": "ok"}
 
 
@@ -149,13 +171,18 @@ async def get_current_parent(
     request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> str:
-    """Returns the parent email from a valid session cookie."""
+    """Returns the parent email from a valid, non-revoked, unexpired session cookie."""
     token = request.cookies.get(_PARENT_COOKIE)
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     try:
-        email, _jti = decode_parent_session(token)
+        email, jti = decode_parent_session(token)
     except TokenInvalid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+    row = await session.scalar(
+        select(ParentSession).where(ParentSession.jti == jti).limit(1)
+    )
+    if row is None or row.revoked_at is not None or row.expires_at <= datetime.now(UTC):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
     return email
 
