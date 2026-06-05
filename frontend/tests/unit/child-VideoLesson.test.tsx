@@ -6,12 +6,10 @@ import { VideoLesson } from '@/components/child/lesson/VideoLesson';
 import { buildYouTubeUrls } from '@/components/child/lesson/videoEmbed';
 
 describe('VideoLesson', () => {
-  it('renders nocookie iframe with YouTube referrer identity config', () => {
+  it('renders the nocookie iframe inline on the web build', () => {
     const { container } = render(<VideoLesson contentJson={{ youtube_id: 'abc123' }} onComplete={() => {}} />);
     const iframe = container.querySelector('iframe')!;
     expect(iframe.src).toContain('youtube-nocookie.com/embed/abc123');
-    expect(iframe.src).toContain('origin=');
-    expect(iframe.src).toContain('widget_referrer=');
     expect(iframe.src).toContain('playsinline=1');
     expect(iframe).toHaveAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
     expect(screen.getByRole('link', { name: /open video on youtube/i })).toHaveAttribute(
@@ -20,13 +18,10 @@ describe('VideoLesson', () => {
     );
   });
 
-  it('uses a YouTube HTTPS identity for Capacitor webviews', () => {
-    const urls = buildYouTubeUrls('abc123', 'capacitor://localhost')!;
+  it('routes native (Capacitor) embeds through the https proxy page (fixes iOS error 153)', () => {
+    const urls = buildYouTubeUrls('abc123', { isNative: true })!;
 
-    expect(urls.embed).toContain('https://www.youtube.com/embed/abc123');
-    expect(urls.embed).toContain(`origin=${encodeURIComponent('https://www.youtube.com')}`);
-    expect(urls.embed).toContain(`widget_referrer=${encodeURIComponent('https://www.youtube.com')}`);
-    expect(urls.embed).toContain('playsinline=1');
+    expect(urls.embed).toBe('https://lee-local-code-repo.vercel.app/yt.html?v=abc123');
     expect(urls.thumbnail).toBe('https://img.youtube.com/vi/abc123/hqdefault.jpg');
     expect(urls.watch).toBe('https://www.youtube.com/watch?v=abc123');
   });
