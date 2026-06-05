@@ -16,12 +16,13 @@
 - Back button on every deep screen; good post-lesson loop (confetti → XP/streak chips → auto-advance).
 - Next-lesson resolver gives a returning kid one obvious "Continue" CTA (strongest asset).
 
-### Flow snags to fix
-- [ ] **Two competing "what's next" surfaces on Home** — hero "Continue" vs separate "recommended" ring can disagree. Pick one source of truth.
-- [ ] **Vocabulary drift** — "Quests" used for module list, individual lessons, and "levels" elsewhere. Lock one word per tier (module/level/lesson) OR commit to the quest metaphor end-to-end.
-- [ ] **Theme break on Progress screen** — `StrengthsGaps.tsx` renders dark slate while app is light sky-blue. Re-skin to brand (missed rebrand sweep).
-- [ ] **Locked premium = soft dead-end** — "ask a grown-up" with no preview/upgrade path. Motivation leak at moment of intent (ties to pricing).
-- [ ] Minor: `TopNav` logo monogram still "IE" (pre-rebrand vestige).
+### Flow snags to fix — ✅ DONE 2026-06-05 (commits `49e10f4`→`f18c973`, pushed to main)
+- [x] **Two competing "what's next" surfaces on Home** — the grid's highlighted tile now derives from `useNextLesson().moduleId` (same resolver as the hero), so they can't disagree. `useRecommendations` retained only for the review banner.
+- [x] **Vocabulary drift** — locked literal **Module → Level → Lesson** everywhere a child reads (nav tab → "Learn", headings/counts/lesson-chrome/coach/hero-greeting copy all swept; `tests/unit` mirror updated). Grep-verified no user-facing "quest" strings remain.
+- [x] **Theme break on Progress screen** — `StrengthsGaps.tsx` re-skinned to the light semantic tokens; status text bumped to `success-700`/`accent-700` and ring fill darkened to `#7c3aed` to keep **WCAG 2.2 AA** on the white surface.
+- [ ] **Locked premium = soft dead-end** — deferred to item 4 (pricing/paywall), as planned.
+- [x] Minor: `TopNav` monogram "IE" → "IK".
+- Spec/plan: `docs/superpowers/{specs,plans}/2026-06-05-flow-cleanup*`. Full FE suite green (577), build OK, `cap sync ios` done (iOS device view needs a USER Xcode rebuild — copy/colour only, no native change).
 
 ### Engagement gaps + top 5 priorities
 Foundation present: XP, levels, streaks, badges, weekly challenges, leaderboard, Penny mascot, varied lesson formats, Simulator differentiator.
