@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     feedback_notify_email: str = ""
     admin_alert_email: str = ""
     admin_bootstrap_email: str = ""  # if set, that user is granted is_admin on each deploy (idempotent)
+    cron_secret: str = ""  # shared secret for POST /internal/video-health/run (machine trigger)
     llm_alert_cooldown_seconds: int = 21600  # 6h — min gap between repeat alerts of the same kind
     app_base_url: str = "http://localhost:5173"
     data_retention_days: int = 30
