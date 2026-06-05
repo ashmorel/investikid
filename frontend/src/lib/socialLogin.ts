@@ -14,6 +14,11 @@ async function ensureInit(): Promise<void> {
     },
     apple: {
       clientId: import.meta.env.VITE_APPLE_SERVICES_ID,
+      // Deterministic web redirect so it always equals the Apple Services ID
+      // "Return URL" exactly (the plugin otherwise defaults to window.location.href,
+      // which can pick up query strings and cause redirect_uri mismatches).
+      // Native iOS sign-in ignores this. Register this exact URL in Apple.
+      redirectUrl: `${window.location.origin}/parent/login`,
     },
   });
   initialized = true;
