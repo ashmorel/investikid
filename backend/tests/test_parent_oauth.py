@@ -89,6 +89,50 @@ async def test_signin_via_existing_link(client, db_session, monkeypatch):
     assert "parent_session" in r.cookies
 
 
+async def test_oauth_returning_user_persists_session_row(client, db_session, monkeypatch):
+    """Returning-user sign-in (existing link) must COMMIT a ParentSession row and authenticate."""
+    from sqlalchemy import select
+
+    from app.models.parent_identity import ParentIdentity
+    from app.models.parent_session import ParentSession
+
+    parent = "returning@example.com"
+    sub = "g-sub-returning"
+    db_session.add(_make_user(parent, "ret"))
+    db_session.add(
+        ParentIdentity(
+            id=_uuid.uuid4(),
+            provider="google",
+            provider_subject=sub,
+            parent_email=parent,
+            created_at=datetime.now(UTC),
+        )
+    )
+    await db_session.commit()
+
+    _patch_verify(monkeypatch, sub=sub, email=parent)
+    r = await client.post(
+        "/parent/auth/oauth/google",
+        json={"id_token": "tok", "nonce": "n1"},
+        headers=_TRUSTED_ORIGIN,
+    )
+    assert r.status_code == 200
+    assert "parent_session" in r.cookies
+
+    # Key assertion: the returning-user path must have COMMITTED the session row.
+    row = await db_session.scalar(
+        select(ParentSession).where(
+            ParentSession.parent_email == parent,
+            ParentSession.revoked_at.is_(None),
+        )
+    )
+    assert row is not None
+
+    # The issued cookie (persisted on the client) must authenticate.
+    r2 = await client.get("/parent/children", headers=_TRUSTED_ORIGIN)
+    assert r2.status_code == 200
+
+
 async def test_unknown_provider(client, monkeypatch):
     _patch_verify(monkeypatch, sub="x", email="x@example.com")
     # Send a trusted origin so CSRF middleware passes through to the router,
