@@ -12,7 +12,7 @@ describe('LessonChrome', () => {
     expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument();
 
     // Progress bar with accessible label
-    const bar = screen.getByRole('progressbar', { name: /quest 2 of 5/i });
+    const bar = screen.getByRole('progressbar', { name: /lesson 2 of 5/i });
     expect(bar).toHaveAttribute('aria-valuenow', '1');
     expect(bar).toHaveAttribute('aria-valuemax', '5');
 

@@ -47,7 +47,7 @@ describe('Lessons page', () => {
     renderLessons();
     expect(await screen.findByText('M1')).toBeInTheDocument();
     expect(await screen.findByText('M2')).toBeInTheDocument();
-    expect(await screen.findByText(/1\s*\/\s*2 quests/)).toBeInTheDocument();
+    expect(await screen.findByText(/1\s*\/\s*2 lessons/)).toBeInTheDocument();
   });
 
   it('locked module card shows Premium and does not navigate on click', async () => {

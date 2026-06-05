@@ -16,7 +16,7 @@ describe('ModuleCard', () => {
       </MemoryRouter>,
     );
     expect(screen.getByText(/What is a Stock\?/i)).toBeInTheDocument();
-    expect(screen.getByText(/2\s*\/\s*3 quests/i)).toBeInTheDocument();
+    expect(screen.getByText(/2\s*\/\s*3 lessons/i)).toBeInTheDocument();
   });
 
   it('renders locked state with lock icon and Premium copy', () => {

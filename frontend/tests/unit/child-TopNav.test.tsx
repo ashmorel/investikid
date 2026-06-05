@@ -15,7 +15,7 @@ describe('TopNav', () => {
       </QueryClientProvider>,
     );
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/home');
-    expect(screen.getByRole('link', { name: 'Quests' })).toHaveAttribute('href', '/lessons');
+    expect(screen.getByRole('link', { name: 'Learn' })).toHaveAttribute('href', '/lessons');
     expect(screen.getByRole('link', { name: 'Simulator' })).toHaveAttribute('href', '/simulator');
     expect(screen.getByRole('link', { name: 'Stats' })).toHaveAttribute('href', '/stats');
   });
