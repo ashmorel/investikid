@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     apple_services_id: str = ""
     apple_bundle_id: str = ""
 
+    # Cloudflare R2 — self-hosted curated video uploads (admin)
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket: str = ""
+    r2_public_base_url: str = ""  # e.g. https://videos.investkid.app  (public R2/CDN domain, no trailing slash)
+    r2_max_upload_bytes: int = 200 * 1024 * 1024  # 200 MB
+
     # Coach Penny tutor
     tutor_max_messages_free: int = 6
     tutor_max_messages_premium: int = 12
