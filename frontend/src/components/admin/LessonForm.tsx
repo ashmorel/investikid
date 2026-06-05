@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { useCreateLesson, useUpdateLesson, useCreateLevelLesson } from '@/api/admin';
+import { useCreateLesson, useUpdateLesson, useCreateLevelLesson, presignVideo, uploadToPresigned } from '@/api/admin';
 import type { AdminLesson } from '@/api/admin';
+
+const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB
 
 const TYPES = ['card', 'quiz', 'scenario', 'video'] as const;
 type LessonType = (typeof TYPES)[number];
@@ -58,6 +60,35 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
   // Video fields
   const [youtubeInput, setYoutubeInput] = useState(lesson?.type === 'video' ? ((cj?.youtube_id as string) ?? '') : '');
   const [videoCaption, setVideoCaption] = useState(lesson?.type === 'video' ? ((cj?.caption as string) ?? '') : '');
+  const [videoSource, setVideoSource] = useState<'youtube' | 'hosted'>(
+    lesson?.type === 'video' && (cj?.video_source as string) === 'hosted' ? 'hosted' : 'youtube',
+  );
+  const [videoUrl, setVideoUrl] = useState(lesson?.type === 'video' ? ((cj?.video_url as string) ?? '') : '');
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+
+  async function handleVideoFile(file: File) {
+    setUploadErr(null);
+    if (file.type !== 'video/mp4') {
+      setUploadErr('Please choose an MP4 file.');
+      return;
+    }
+    if (file.size > MAX_VIDEO_BYTES) {
+      setUploadErr('File too large (max 200 MB).');
+      return;
+    }
+    try {
+      setUploadPct(0);
+      const res = await presignVideo(file.name, file.type, file.size);
+      await uploadToPresigned(res.upload_url, file, setUploadPct);
+      setVideoUrl(res.public_url);
+      setUploadPct(100);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Upload failed';
+      setUploadErr(/not_configured/i.test(msg) ? 'Video upload not configured.' : msg);
+      setUploadPct(null);
+    }
+  }
 
   function handleTypeChange(newType: LessonType) {
     setType(newType);
@@ -67,12 +98,20 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
   function buildContentJson(): Record<string, unknown> {
     if (type === 'card') return { title: cardTitle, body: cardBody };
     if (type === 'quiz') return { question, choices, answer_index: answerIndex, explanation };
-    if (type === 'video') return { youtube_id: extractYoutubeId(youtubeInput), caption: videoCaption };
+    if (type === 'video') {
+      return videoSource === 'hosted'
+        ? { video_source: 'hosted', video_url: videoUrl, caption: videoCaption }
+        : { video_source: 'youtube', youtube_id: extractYoutubeId(youtubeInput), caption: videoCaption };
+    }
     return { prompt, choices: scenarioChoices, correct_index: correctIndex };
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (type === 'video' && videoSource === 'hosted' && !videoUrl) {
+      setUploadErr('Please upload a video file first.');
+      return;
+    }
     const content_json = buildContentJson();
     if (isEdit && lesson) {
       await updateLesson.mutateAsync({ id: lesson.id, type, content_json, xp_reward: xpReward });
@@ -232,12 +271,68 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
           {/* Video fields */}
           {type === 'video' && (
             <>
-              <div>
-                <label htmlFor="video-youtube" className="mb-1 block text-sm text-ink">YouTube URL or ID</label>
-                <input id="video-youtube" value={youtubeInput} onChange={(e) => setYoutubeInput(e.target.value)} required
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
-                  placeholder="Paste a YouTube link or 11-character ID." />
-              </div>
+              <fieldset>
+                <legend className="mb-1 block text-sm text-ink">Video source</legend>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-sm text-ink">
+                    <input
+                      type="radio"
+                      name="video-source"
+                      className="h-4 w-4"
+                      checked={videoSource === 'youtube'}
+                      onChange={() => setVideoSource('youtube')}
+                    />
+                    YouTube
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-ink">
+                    <input
+                      type="radio"
+                      name="video-source"
+                      className="h-4 w-4"
+                      checked={videoSource === 'hosted'}
+                      onChange={() => setVideoSource('hosted')}
+                    />
+                    Uploaded video
+                  </label>
+                </div>
+              </fieldset>
+
+              {videoSource === 'youtube' ? (
+                <div>
+                  <label htmlFor="video-youtube" className="mb-1 block text-sm text-ink">YouTube URL or ID</label>
+                  <input id="video-youtube" value={youtubeInput} onChange={(e) => setYoutubeInput(e.target.value)} required
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
+                    placeholder="Paste a YouTube link or 11-character ID." />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label htmlFor="video-file" className="mb-1 block text-sm text-ink">Video file (MP4, ≤200 MB)</label>
+                  <input
+                    id="video-file"
+                    type="file"
+                    accept="video/mp4"
+                    className="block w-full text-sm text-ink file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1 file:text-sm file:text-ink"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleVideoFile(f); }}
+                  />
+                  {uploadPct !== null && (
+                    <p className="text-sm text-muted-foreground">Uploading… {uploadPct}%</p>
+                  )}
+                  {videoUrl && (
+                    <video
+                      aria-label="Uploaded video preview"
+                      className="mt-2 w-full max-w-md rounded-md border border-input"
+                      src={videoUrl}
+                      controls
+                      playsInline
+                      preload="metadata"
+                    >
+                      <track kind="captions" />
+                    </video>
+                  )}
+                  {uploadErr && <p className="text-sm text-danger-600">{uploadErr}</p>}
+                </div>
+              )}
+
               <div>
                 <label htmlFor="video-caption" className="mb-1 block text-sm text-ink">Caption</label>
                 <input id="video-caption" value={videoCaption} onChange={(e) => setVideoCaption(e.target.value)}

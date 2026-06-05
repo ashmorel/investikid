@@ -99,6 +99,39 @@ function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return apiFetch<T>(path, init) as Promise<T>;
 }
 
+// ── Video assets (R2 direct upload) ────────────────────────────────
+export interface VideoPresignResponse {
+  asset_id: string;
+  key: string;
+  upload_url: string;
+  public_url: string;
+}
+
+/** Ask the backend for a presigned R2 PUT URL for a video upload.
+ *  Throws if the backend returns an error (e.g. 503 not_configured). */
+export async function presignVideo(filename: string, contentType: string, sizeBytes: number) {
+  return adminFetch<VideoPresignResponse>('/admin/video-assets/presign', {
+    method: 'POST',
+    body: JSON.stringify({ filename, content_type: contentType, size_bytes: sizeBytes }),
+  });
+}
+
+/** Upload a file directly to R2 via the presigned PUT URL (XHR for progress).
+ *  Sets Content-Type to file.type to match the signed PUT. Resolves on 2xx. */
+export function uploadToPresigned(url: string, file: File, onProgress?: (pct: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    xhr.setRequestHeader('Content-Type', file.type);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed (${xhr.status})`)));
+    xhr.onerror = () => reject(new Error('Upload failed'));
+    xhr.send(file);
+  });
+}
+
 // ── Stats ──────────────────────────────────────────────────────────
 export function useAdminStats() {
   return useQuery({ queryKey: ['admin', 'stats'], queryFn: () => adminFetch<AdminStats>('/admin/stats') });
