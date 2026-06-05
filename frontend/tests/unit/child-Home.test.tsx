@@ -72,7 +72,7 @@ describe('Home', () => {
     await waitFor(() =>
       expect(screen.getByText(/Stocks/i)).toBeInTheDocument(),
     );
-    expect(screen.getByText(/Your quests/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your modules/i)).toBeInTheDocument();
   });
 
   it('shows review banner when concepts are due', async () => {
@@ -95,7 +95,7 @@ describe('Home', () => {
     expect(screen.getByText(/2 concepts/i)).toBeInTheDocument();
   });
 
-  it('marks the recommended module tile', async () => {
+  it('marks the next-lesson module tile', async () => {
     mockJsonRoute({
       '/users/me/progress': { xp: 50, level: 1, streak_count: 0, last_activity_date: null },
       '/modules': [
@@ -103,17 +103,27 @@ describe('Home', () => {
         { id: 'mod-2', topic: 'savings', title: 'Savings', country_codes: [], is_premium: false, order_index: 1, locked: false, icon: '💰' },
       ],
       '/recommendations': {
-        continue_learning: [
-          { module_id: 'mod-1', lesson_id: 'L1', score: 0.9, reason: 'Continue', review_prompt: null, weak_concepts: [] },
-        ],
+        continue_learning: [],
         practise_again: [],
         something_new: [],
         review_summary: { due_count: 0, next_due_at: null },
       },
+      // The grid highlight now follows the next-lesson resolver, not recommendations.
+      '/next-lesson': {
+        next: {
+          mode: 'continue',
+          module_id: 'mod-1',
+          level_id: 'L1',
+          lesson_id: 'Q1',
+          module_title: 'Stocks',
+          module_icon: '📈',
+          lesson_title: 'Intro',
+        },
+      },
     });
     renderHome();
     await waitFor(() => expect(screen.getByText(/Stocks/i)).toBeInTheDocument());
-    // The recommended tile shows the "Next" badge
-    expect(screen.getByText(/Next/i)).toBeInTheDocument();
+    // The next-lesson tile shows the "Next" badge
+    expect(await screen.findByText(/Next/i)).toBeInTheDocument();
   });
 });

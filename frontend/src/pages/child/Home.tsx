@@ -12,6 +12,7 @@ import { LevelProgressCard } from '@/components/child/LevelProgressCard';
 import { AchievementsStrip } from '@/components/child/AchievementsStrip';
 import { useAllBadges } from '@/hooks/useAllBadges';
 import { useBadges } from '@/hooks/useBadges';
+import { useNextLesson } from '@/hooks/useNextLesson';
 
 const TOPIC_STYLE: Record<string, { accent: string; tint: string }> = {
   savings: { accent: '#0ea5e9', tint: '#e0f2fe' },
@@ -31,6 +32,7 @@ export default function Home() {
   const { data: recs } = useRecommendations();
   const allBadges = useAllBadges();
   const earnedBadges = useBadges();
+  const next = useNextLesson();
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -43,10 +45,7 @@ export default function Home() {
   const level = progress?.level ?? 1;
   const xp = progress?.xp ?? 0;
 
-  const recommendedModuleId =
-    recs?.continue_learning?.[0]?.module_id ??
-    recs?.something_new?.[0]?.module_id ??
-    null;
+  const recommendedModuleId = next.moduleId;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
