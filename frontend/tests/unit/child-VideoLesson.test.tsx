@@ -72,6 +72,26 @@ describe('VideoLesson', () => {
     expect(screen.queryByRole('button', { name: /show transcript/i })).not.toBeInTheDocument();
   });
 
+  it('renders an HTML5 <video> for a hosted source', () => {
+    const { container } = render(
+      <VideoLesson
+        contentJson={{ video_source: 'hosted', video_url: 'https://cdn/videos/x.mp4', caption: 'c' }}
+        onComplete={() => {}}
+      />,
+    );
+    const video = container.querySelector('video');
+    expect(video).not.toBeNull();
+    expect(video).toHaveAttribute('src', 'https://cdn/videos/x.mp4');
+    expect(video).toHaveAttribute('playsinline');
+    // no YouTube iframe in hosted mode
+    expect(container.querySelector('iframe')).toBeNull();
+  });
+
+  it('still renders the YouTube iframe when source is youtube (default)', () => {
+    const { container } = render(<VideoLesson contentJson={{ youtube_id: 'abc123' }} onComplete={() => {}} />);
+    expect(container.querySelector('iframe')).not.toBeNull();
+  });
+
   it('has no axe violations (fallback branch — no iframe)', async () => {
     // The YouTube iframe trips jsdom's window-postMessage in axe-core's frame
     // rules; layout-dependent frame checks are covered by the Playwright e2e

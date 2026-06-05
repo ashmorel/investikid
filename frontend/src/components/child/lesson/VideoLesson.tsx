@@ -5,6 +5,8 @@ import { buildYouTubeUrls } from '@/components/child/lesson/videoEmbed';
 
 type Props = {
   contentJson: {
+    video_source?: 'youtube' | 'hosted';
+    video_url?: string;
     youtube_id?: string;
     caption?: string;
     transcript?: string;
@@ -16,9 +18,10 @@ type Props = {
 
 export function VideoLesson({ contentJson, onComplete, completing = false }: Props) {
   const [watched, setWatched] = useState(false);
-  const youtubeUrls = contentJson.youtube_id ? buildYouTubeUrls(contentJson.youtube_id) : null;
+  const isHosted = contentJson.video_source === 'hosted' && !!contentJson.video_url;
+  const youtubeUrls = !isHosted && contentJson.youtube_id ? buildYouTubeUrls(contentJson.youtube_id) : null;
 
-  if (!youtubeUrls) {
+  if (!isHosted && !youtubeUrls) {
     return (
       <div className="space-y-4">
         <p>Video unavailable.</p>
@@ -34,24 +37,39 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
   return (
     <div className="space-y-4">
       <div className="aspect-video overflow-hidden rounded-md border">
-        <iframe
-          src={youtubeUrls.embed}
-          title="Lesson video"
-          referrerPolicy="strict-origin-when-cross-origin"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          className="h-full w-full"
-        />
+        {isHosted ? (
+          <video
+            src={contentJson.video_url}
+            title="Lesson video"
+            controls
+            playsInline
+            preload="metadata"
+            className="h-full w-full"
+          >
+            <track kind="captions" />
+          </video>
+        ) : (
+          <iframe
+            src={youtubeUrls!.embed}
+            title="Lesson video"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="h-full w-full"
+          />
+        )}
       </div>
-      <a
-        href={youtubeUrls.watch}
-        target="_blank"
-        rel="noopener"
-        referrerPolicy="strict-origin-when-cross-origin"
-        className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-      >
-        Open video on YouTube
-      </a>
+      {!isHosted && (
+        <a
+          href={youtubeUrls!.watch}
+          target="_blank"
+          rel="noopener"
+          referrerPolicy="strict-origin-when-cross-origin"
+          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Open video on YouTube
+        </a>
+      )}
       {contentJson.caption && <p className="text-sm text-muted-foreground">{contentJson.caption}</p>}
       <p className="text-xs text-muted-foreground">
         {contentJson.captions_available ? 'Captions available' : 'No captions'}
