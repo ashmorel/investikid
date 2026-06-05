@@ -9,6 +9,7 @@ from app.core.database import get_session
 from app.models.content import Lesson, Level, Module
 from app.models.gamification import Badge, Challenge, UserBadge
 from app.models.user import User
+from app.models.video_health import VideoHealth
 from app.routers.admin_auth import get_current_admin
 from app.schemas.admin import (
     AdminLevelCreate,
@@ -30,7 +31,10 @@ from app.schemas.admin import (
     ModuleOut,
     ModuleUpdate,
     ReorderRequest,
+    VideoHealthCheckResult,
+    VideoHealthItem,
 )
+from app.services import video_health_service
 from app.services.app_settings import get_alert_emails, set_alert_emails
 from app.services.engagement_service import get_module_engagement
 
@@ -445,3 +449,42 @@ async def update_settings(
     await set_alert_emails(session, body.alert_emails)
     await session.commit()
     return AdminSettingsOut(alert_emails=body.alert_emails)
+
+
+# ── Video health ────────────────────────────────────────────────────
+async def _video_health_items(session: AsyncSession) -> list[VideoHealthItem]:
+    rows = (await session.execute(
+        select(Lesson, Module.id, Module.title)
+        .join(Module, Lesson.module_id == Module.id)
+        .where(Lesson.type == "video")
+        .order_by(Module.order_index, Lesson.order_index)
+    )).all()
+    health = {
+        h.lesson_id: h
+        for h in (await session.scalars(select(VideoHealth))).all()
+    }
+    out: list[VideoHealthItem] = []
+    for lesson, module_id, module_title in rows:
+        h = health.get(lesson.id)
+        out.append(VideoHealthItem(
+            lesson_id=lesson.id, module_id=module_id, module_title=module_title,
+            lesson_title=(lesson.content_json or {}).get("caption") or "Video lesson",
+            youtube_id=(lesson.content_json or {}).get("youtube_id", ""),
+            status=h.status if h else None,
+            http_status=h.http_status if h else None,
+            checked_at=h.checked_at if h else None,
+        ))
+    return out
+
+
+@router.get("/video-health", response_model=list[VideoHealthItem])
+async def admin_video_health(session: AsyncSession = Depends(get_session)):
+    return await _video_health_items(session)
+
+
+@router.post("/video-health/check", response_model=VideoHealthCheckResult)
+async def admin_video_health_check(session: AsyncSession = Depends(get_session)):
+    summary = await video_health_service.check_all_videos(session)
+    await session.commit()
+    items = await _video_health_items(session)
+    return VideoHealthCheckResult(summary=summary, items=items)

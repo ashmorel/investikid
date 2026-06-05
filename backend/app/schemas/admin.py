@@ -265,3 +265,22 @@ class ModuleEngagementOut(BaseModel):
     lessons: list[LessonEngagementOut]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ── Video health ────────────────────────────────────────────────────
+class VideoHealthItem(BaseModel):
+    lesson_id: uuid.UUID
+    module_id: uuid.UUID
+    module_title: str
+    lesson_title: str
+    youtube_id: str
+    status: str | None  # ok | dead | unknown | None (never checked)
+    http_status: int | None
+    checked_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class VideoHealthCheckResult(BaseModel):
+    summary: dict
+    items: list[VideoHealthItem]
