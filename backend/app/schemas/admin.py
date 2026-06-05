@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 
 # ── Module ──────────────────────────────────────────────────────────
@@ -87,8 +87,13 @@ class LessonCreate(BaseModel):
             if not (0 <= v["correct_index"] < len(v["choices"])):
                 raise ValueError("Invalid correct_index — must be within choices range")
         elif lesson_type == "video":
-            if not isinstance(v.get("youtube_id"), str) or not v["youtube_id"]:
-                raise ValueError("video lessons require a non-empty youtube_id")
+            source = v.get("video_source", "youtube")
+            if source == "hosted":
+                if not isinstance(v.get("video_url"), str) or not v["video_url"]:
+                    raise ValueError("hosted video lessons require a non-empty video_url")
+            else:
+                if not isinstance(v.get("youtube_id"), str) or not v["youtube_id"]:
+                    raise ValueError("video lessons require a non-empty youtube_id")
         return v
 
 
@@ -107,6 +112,27 @@ class LessonOut(BaseModel):
     order_index: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ── Video presign ───────────────────────────────────────────────────
+class VideoPresignRequest(BaseModel):
+    filename: str = Field(max_length=255)
+    content_type: str
+    size_bytes: int
+
+    @field_validator("content_type")
+    @classmethod
+    def only_mp4(cls, v):
+        if v != "video/mp4":
+            raise ValueError("only video/mp4 is supported")
+        return v
+
+
+class VideoPresignResponse(BaseModel):
+    asset_id: uuid.UUID
+    key: str
+    upload_url: str
+    public_url: str
 
 
 # ── Badge ───────────────────────────────────────────────────────────

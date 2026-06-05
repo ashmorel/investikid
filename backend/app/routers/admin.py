@@ -1,14 +1,17 @@
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.core.database import get_session
 from app.models.content import Lesson, Level, Module
 from app.models.gamification import Badge, Challenge, UserBadge
 from app.models.user import User
+from app.models.video_asset import VideoAsset
 from app.models.video_health import VideoHealth
 from app.routers.admin_auth import get_current_admin
 from app.schemas.admin import (
@@ -33,8 +36,10 @@ from app.schemas.admin import (
     ReorderRequest,
     VideoHealthCheckResult,
     VideoHealthItem,
+    VideoPresignRequest,
+    VideoPresignResponse,
 )
-from app.services import video_health_service
+from app.services import storage, video_health_service
 from app.services.app_settings import get_alert_emails, set_alert_emails
 from app.services.engagement_service import get_module_engagement
 
@@ -488,3 +493,31 @@ async def admin_video_health_check(session: AsyncSession = Depends(get_session))
     await session.commit()
     items = await _video_health_items(session)
     return VideoHealthCheckResult(summary=summary, items=items)
+
+
+# ── Video assets (R2 presigned upload) ──────────────────────────────
+@router.post("/video-assets/presign", response_model=VideoPresignResponse)
+async def admin_presign_video(
+    payload: VideoPresignRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    if not storage.is_configured():
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if payload.size_bytes > settings.r2_max_upload_bytes:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "file too large")
+    key = f"videos/{uuid.uuid4()}.mp4"
+    asset = VideoAsset(
+        storage_key=key,
+        content_type=payload.content_type,
+        size_bytes=payload.size_bytes,
+        original_filename=payload.filename[:255],
+        created_at=datetime.now(UTC),
+    )
+    session.add(asset)
+    await session.commit()
+    return VideoPresignResponse(
+        asset_id=asset.id,
+        key=key,
+        upload_url=storage.create_presigned_put(key, payload.content_type),
+        public_url=storage.public_url(key),
+    )
