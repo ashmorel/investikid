@@ -1,0 +1,33 @@
+name: Video health cron
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # daily 06:00 UTC
+  workflow_dispatch: {}      # manual "Run workflow" button
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    # The backend URL is public (the API the app already calls), so it lives here,
+    # not in a secret. Only CRON_SECRET is a real secret. Override BACKEND_URL via a
+    # repo variable if the domain changes: ${{ vars.BACKEND_URL || '<default>' }}.
+    env:
+      BACKEND_URL: https://lee-local-code-repo-production.up.railway.app
+    steps:
+      - name: Trigger video-health check
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET is empty. Add it under the Actions Secrets tab, matching the value set on the Railway backend."
+            exit 1
+          fi
+          code=$(curl -sS -o /tmp/resp.txt -w "%{http_code}" -X POST \
+            -H "X-Cron-Secret: $CRON_SECRET" \
+            "$BACKEND_URL/internal/video-health/run")
+          echo "HTTP status: $code"
+          cat /tmp/resp.txt; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Expected 200 but got $code. 401=secret mismatch with Railway; 503=CRON_SECRET unset on the backend; 404=endpoint not deployed."
+            exit 1
+          fi

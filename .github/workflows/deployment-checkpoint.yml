@@ -1,0 +1,359 @@
+name: Deployment checkpoint
+
+run-name: Checkpoint - ${{ inputs.target_environment }} - ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: Environment to validate; testing is the default deployment path
+        required: true
+        default: testing
+        type: choice
+        options:
+          - testing
+          - production
+      run_web:
+        description: Run web build validation before the default test deployment
+        required: true
+        default: true
+        type: boolean
+      run_backend:
+        description: Run backend lint and tests
+        required: true
+        default: true
+        type: boolean
+      run_security:
+        description: Run security checks
+        required: true
+        default: true
+        type: boolean
+      run_a11y:
+        description: Run accessibility browser checks
+        required: true
+        default: false
+        type: boolean
+      run_responsive:
+        description: Run responsive browser checks
+        required: true
+        default: false
+        type: boolean
+      run_ios:
+        description: Run iOS Capacitor simulator build
+        required: true
+        default: false
+        type: boolean
+      run_android:
+        description: Run Android build if the Android project exists
+        required: true
+        default: false
+        type: boolean
+      notes:
+        description: Optional release, testing, or production approval notes
+        required: false
+        type: string
+
+concurrency:
+  group: deployment-checkpoint-${{ inputs.target_environment }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checkpoint:
+    name: Checkpoint summary
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target_environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Summarize selected checkpoint
+        run: |
+          {
+            echo "## Deployment checkpoint"
+            echo
+            echo "- Environment: ${{ inputs.target_environment }}"
+            echo "- Ref: ${{ github.ref_name }}"
+            echo "- Web: ${{ inputs.run_web }}"
+            echo "- Backend: ${{ inputs.run_backend }}"
+            echo "- Security: ${{ inputs.run_security }}"
+            echo "- A11y: ${{ inputs.run_a11y }}"
+            echo "- Responsive: ${{ inputs.run_responsive }}"
+            echo "- iOS: ${{ inputs.run_ios }}"
+            echo "- Android: ${{ inputs.run_android }}"
+            echo "- Notes: ${{ inputs.notes }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guard production checkpoints
+        if: inputs.target_environment == 'production' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Production checkpoints must run from main. Current ref is ${{ github.ref_name }}."
+          exit 1
+
+      - name: Require explicit production note
+        if: inputs.target_environment == 'production' && inputs.notes == ''
+        run: |
+          echo "::error::Production checkpoints require notes describing the release intent."
+          exit 1
+
+  web:
+    name: Web (lint - typecheck - test - build)
+    needs: checkpoint
+    if: inputs.run_web
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target_environment }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  backend:
+    name: Backend (lint - test)
+    needs: checkpoint
+    if: inputs.run_backend
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target_environment }}
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: investedb_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U test -d investedb_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/investedb_test
+      TEST_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/investedb_test
+      JWT_SECRET: ci-test-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Tests
+        run: python -m pytest -v
+
+  security:
+    name: Security (bandit - pip-audit - npm audit)
+    needs: checkpoint
+    if: inputs.run_security
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target_environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend deps and security tools
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Bandit
+        working-directory: backend
+        run: bandit -r app -lll -iii
+
+      - name: pip-audit
+        working-directory: backend
+        run: pip-audit -r requirements.txt --ignore-vuln PYSEC-2026-161
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm install
+        working-directory: frontend
+        run: npm ci
+
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
+  a11y:
+    name: A11y (lint - vitest-axe - playwright-axe)
+    needs: checkpoint
+    if: inputs.run_a11y
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target_environment }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit a11y tests
+        run: npm test
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: E2E axe scan
+        run: npm run test:e2e:a11y
+
+  responsive:
+    name: Responsive (viewport tests)
+    needs: checkpoint
+    if: inputs.run_responsive
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target_environment }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Responsive viewport tests
+        run: npm run test:e2e:responsive
+
+  ios:
+    name: iOS (Capacitor sync - simulator build)
+    needs: checkpoint
+    if: inputs.run_ios
+    runs-on: macos-latest
+    environment:
+      name: ${{ inputs.target_environment }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Build web bundle
+        run: npm run build
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project ios/App/App.xcodeproj -scheme App
+
+      - name: Build iOS simulator app
+        run: >
+          xcodebuild
+          -project ios/App/App.xcodeproj
+          -scheme App
+          -configuration Debug
+          -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO
+          build
+
+  android:
+    name: Android (Capacitor sync - Gradle build)
+    needs: checkpoint
+    if: inputs.run_android
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target_environment }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Android project exists
+        run: |
+          if [ ! -d android ]; then
+            echo "::error::No Capacitor Android project exists yet. Add @capacitor/android and run 'npx cap add android' before enabling Android checkpoint builds."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - run: npm ci
+
+      - name: Build web bundle
+        run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Build Android debug app
+        run: ./android/gradlew -p android assembleDebug
