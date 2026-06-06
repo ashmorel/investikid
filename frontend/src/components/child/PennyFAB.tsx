@@ -1,11 +1,13 @@
 import { Penny } from '@/components/child/ui/Penny';
+import { PremiumBadge } from '@/components/child/PremiumBadge';
 
 type Props = {
   dueCount: number;
   onOpen?: () => void;
+  locked?: boolean;
 };
 
-export function PennyFAB({ dueCount, onOpen }: Props) {
+export function PennyFAB({ dueCount, onOpen, locked = false }: Props) {
   return (
     <button
       onClick={onOpen}
@@ -18,6 +20,11 @@ export function PennyFAB({ dueCount, onOpen }: Props) {
           data-testid="penny-badge"
           className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-danger-500"
         />
+      )}
+      {locked && (
+        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap">
+          <PremiumBadge />
+        </span>
       )}
     </button>
   );

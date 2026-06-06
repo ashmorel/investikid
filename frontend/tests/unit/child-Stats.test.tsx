@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 
 // Mock all data hooks
 vi.mock('@/hooks/useProgress', () => ({
@@ -55,7 +56,7 @@ function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return (
     <QueryClientProvider client={qc}>
-      <MemoryRouter>{children}</MemoryRouter>
+      <MemoryRouter><PremiumPaywallProvider>{children}</PremiumPaywallProvider></MemoryRouter>
     </QueryClientProvider>
   );
 }

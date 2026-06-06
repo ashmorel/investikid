@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Stock from '@/pages/child/Stock';
+import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 
 const toastMock = vi.fn();
 vi.mock('@/hooks/use-toast', () => ({
@@ -34,12 +35,14 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={['/simulator/stock/NASDAQ/AAPL']}>
-        <Routes>
-          <Route path="/simulator/stock/:exchange/:ticker" element={<Stock />} />
-          <Route path="/simulator" element={<div>portfolio page</div>} />
-        </Routes>
-      </MemoryRouter>
+      <PremiumPaywallProvider>
+        <MemoryRouter initialEntries={['/simulator/stock/NASDAQ/AAPL']}>
+          <Routes>
+            <Route path="/simulator/stock/:exchange/:ticker" element={<Stock />} />
+            <Route path="/simulator" element={<div>portfolio page</div>} />
+          </Routes>
+        </MemoryRouter>
+      </PremiumPaywallProvider>
     </QueryClientProvider>,
   );
 }
@@ -102,6 +105,31 @@ describe('Stock page', () => {
         expect.objectContaining({ description: expect.stringContaining('+5 XP') }),
       );
     });
+  });
+
+  it('a premium-ticker 403 opens the paywall', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.startsWith('/portfolio/trades') && init?.method === 'POST') {
+        return new Response(
+          JSON.stringify({ detail: { message: 'Premium required', code: 'premium_required', context: { kind: 'ticker', label: 'NVDA' } } }),
+          { status: 403 },
+        );
+      }
+      if (url.startsWith('/market/quote/NASDAQ/AAPL')) {
+        return new Response(JSON.stringify({ ticker: 'AAPL', exchange: 'NASDAQ', name: 'Apple Inc.', price: '185.42', currency: 'USD' }), { status: 200 });
+      }
+      if (url.startsWith('/portfolio')) {
+        return new Response(JSON.stringify({ id: 'p1', virtual_cash: '10000.00', currency_code: 'USD', total_value: '10000.00', holdings: [] }), { status: 200 });
+      }
+      return new Response('not mocked', { status: 500 });
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('button', { name: /review trade/i })).toBeInTheDocument());
+    await userEvent.type(screen.getByLabelText(/number of shares/i), '1');
+    await userEvent.click(screen.getByRole('button', { name: /review trade/i }));
+    await userEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    expect(await screen.findByText(/premium unlocks/i)).toBeInTheDocument();
   });
 
   it('shows 404 state for unknown ticker', async () => {

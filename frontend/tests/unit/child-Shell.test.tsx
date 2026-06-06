@@ -87,9 +87,20 @@ describe('Shell', () => {
     await waitFor(() => expect(screen.getByText('Login Page')).toBeInTheDocument());
   });
 
-  it('opens Coach Penny from the floating button', async () => {
+  it('opens the paywall (not the panel) from the FAB for a non-premium kid', async () => {
     (globalThis.fetch as any).mockResolvedValue(
       new Response(JSON.stringify(ME), { status: 200 }),
+    );
+    renderAt('/home');
+    await screen.findByText('Home Inside Shell');
+    await userEvent.click(screen.getByRole('button', { name: /open coach penny/i }));
+    expect(await screen.findByText(/premium unlocks/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Hey kid42/)).not.toBeInTheDocument();
+  });
+
+  it('opens Coach Penny from the floating button for a premium kid', async () => {
+    (globalThis.fetch as any).mockResolvedValue(
+      new Response(JSON.stringify({ ...ME, is_premium: true }), { status: 200 }),
     );
     renderAt('/home');
     await screen.findByText('Home Inside Shell');

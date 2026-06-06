@@ -175,7 +175,9 @@ describe('a11y: child core surfaces', () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { container } = render(
       <QueryClientProvider client={qc}>
-        <MemoryRouter><Stats /></MemoryRouter>
+        <PremiumPaywallProvider>
+          <MemoryRouter><Stats /></MemoryRouter>
+        </PremiumPaywallProvider>
       </QueryClientProvider>,
     );
     expect(await axe(container)).toHaveNoViolations();

@@ -17,7 +17,26 @@ import { useRecommendations } from '@/api/ai';
 import { PennyFAB } from './PennyFAB';
 import { CoachPanel } from './CoachPanel';
 import { useStreakReminder } from '@/hooks/useStreakReminder';
-import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
+import { PremiumPaywallProvider, usePremiumPaywall } from '@/hooks/usePremiumPaywall';
+
+function CoachLauncher({ dueCount, isPremium }: { dueCount: number; isPremium: boolean }) {
+  const [coachOpen, setCoachOpen] = useState(false);
+  const { open: openPaywall } = usePremiumPaywall();
+  return (
+    <>
+      <PennyFAB
+        dueCount={dueCount}
+        locked={!isPremium}
+        onOpen={() =>
+          isPremium
+            ? setCoachOpen(true)
+            : openPaywall({ kind: 'coach', label: 'Coach Penny' })
+        }
+      />
+      <CoachPanel open={coachOpen} onOpenChange={setCoachOpen} />
+    </>
+  );
+}
 
 export function Shell() {
   const session = useChildSession();
@@ -26,7 +45,6 @@ export function Shell() {
   const prefersReducedMotion = useReducedMotion();
   useRouteFocus();
   const { data: recsData } = useRecommendations();
-  const [coachOpen, setCoachOpen] = useState(false);
 
   const mainRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<HTMLDivElement>(null);
@@ -84,10 +102,10 @@ export function Shell() {
         </div>
         <BottomTabBar />
         {location.pathname !== '/coach' && (
-          <>
-            <PennyFAB dueCount={recsData?.review_summary?.due_count ?? 0} onOpen={() => setCoachOpen(true)} />
-            <CoachPanel open={coachOpen} onOpenChange={setCoachOpen} />
-          </>
+          <CoachLauncher
+            dueCount={recsData?.review_summary?.due_count ?? 0}
+            isPremium={session.data.is_premium}
+          />
         )}
       </div>
     </PremiumPaywallProvider>
