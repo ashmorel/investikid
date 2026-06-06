@@ -1,6 +1,12 @@
 from collections.abc import Sequence
 from datetime import date
 
+from app.services.streak_config import (
+    STREAK_FREEZE_CAP,
+    STREAK_FREEZE_GAP,
+    STREAK_MILESTONE,
+)
+
 # XP thresholds per level (index = level-1 → threshold to reach NEXT level).
 # Exponential-ish curve from the spec: Piggy Bank (1) → ... → Investment Pro (7).
 _LEVEL_THRESHOLDS = [0, 100, 250, 500, 1000, 2500, 5000]
@@ -43,23 +49,41 @@ def is_module_accessible(
     return country_ok and premium_ok
 
 
-def streak_after_activity(
-    last: date | None, current: int, today: date
-) -> tuple[int, date]:
-    """Return (new_streak_count, new_last_activity_date) after an activity today.
+def _grant_milestone(streak: int, freezes: int) -> int:
+    """Grant one freeze (capped) when the streak hits a milestone."""
+    if streak % STREAK_MILESTONE == 0:
+        return min(STREAK_FREEZE_CAP, freezes + 1)
+    return freezes
 
-    - First ever activity → streak = 1
-    - Same day as last activity → no change
-    - Exactly the next day → increment
-    - Any other gap → reset to 1
+
+def streak_after_activity(
+    last: date | None, current: int, freezes: int, today: date
+) -> tuple[int, date, int]:
+    """Return (new_streak, new_last_activity_date, new_freezes) after an activity today.
+
+    - First ever activity -> streak = 1.
+    - Same day as last activity -> no change.
+    - Exactly the next day -> increment; milestone may grant a freeze.
+    - Exactly one missed day (gap == STREAK_FREEZE_GAP) with a freeze available ->
+      consume one freeze, continue the streak (milestone re-checked on the new value).
+    - Any larger gap, or a missed day with no freeze -> reset to 1 (freezes unchanged).
+    - A date earlier than the last activity (clock skew) -> no change.
     """
     if last is None:
-        return 1, today
+        return 1, today, freezes
     if last == today:
-        return current, today
-    if (today - last).days == 1:
-        return current + 1, today
-    return 1, today
+        return current, today, freezes
+    gap = (today - last).days
+    if gap < 0:
+        # Clock skew / backwards date — don't punish a real streak; keep the later date.
+        return current, last, freezes
+    if gap == 1:
+        new = current + 1
+        return new, today, _grant_milestone(new, freezes)
+    if gap == STREAK_FREEZE_GAP and freezes > 0:
+        new = current + 1
+        return new, today, _grant_milestone(new, freezes - 1)
+    return 1, today, freezes
 
 
 def derive_lesson_title(lesson_type: str, content_json: dict) -> str:
