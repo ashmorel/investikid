@@ -84,6 +84,12 @@ iOS/Android:
 
 ### Staging
 
+> ⚠️ **Superseded (2026-06-06):** the user decided staging gets its **own separate database**
+> (its own snapshot of prod), **not** read access to the live production DB. This lets new
+> migrations run on staging for beta-testers without touching production. The notes below about
+> "production data access" / "restricted prod DB role" are obsolete — see
+> `docs/deployment-environments.md` (three separate databases) for the authoritative model.
+
 Purpose:
 - Controlled validation after testing passes.
 - Uses production data access for controlled validation, but is restricted to a limited user group.

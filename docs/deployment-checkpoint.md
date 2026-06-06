@@ -22,12 +22,17 @@ Production checkpoints are guarded:
 
 ## Current Deployment Model
 
+> **Authoritative source:** see `docs/deployment-environments.md` for the full
+> `testing → staging → production` model (three separate databases, migration flow,
+> and the required pre-production DB-backup step). The summary below is for this workflow only.
+
 This workflow validates the selected environment and builds. It does not directly deploy Vercel or Railway by itself.
 
 Current branch model:
-- `testing` = default deployment/testing path
-- `main` = production code path, but automatic Vercel Git deployments from `main` are disabled in `frontend/vercel.json`
-- pull requests to `main` = pre-production validation
+- `testing` = default development/validation path (own DB = prod snapshot)
+- `staging` = beta channel; **own DB = its own prod snapshot** (so migrations are beta-testable without touching prod)
+- `main` = production; automatic Vercel Git deployments from `main` are disabled in `frontend/vercel.json` (manual promotion)
+- pull requests to `main`/`staging` = pre-promotion validation
 
 Default workflow:
 1. Merge or push routine work to `testing`.
