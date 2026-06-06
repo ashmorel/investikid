@@ -89,4 +89,5 @@ class UserProgressOut(BaseModel):
     xp: int
     level: int
     streak_count: int
+    streak_freezes: int = 0
     last_activity_date: date | None

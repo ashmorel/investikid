@@ -338,6 +338,7 @@ async def complete_lesson(
     return LessonCompletionResult(
         xp_awarded=xp_awarded, already_completed=already,
         total_xp=progress.xp, level=progress.level, streak_count=progress.streak_count,
+        streak_freezes=progress.streak_freezes,
         practice_available=practice_available,
     )
 
@@ -390,9 +391,10 @@ async def _award_completion(
 
     progress.xp += lesson.xp_reward
     progress.level = compute_level(progress.xp)
-    new_streak, new_last = streak_after_activity(
-        progress.last_activity_date, progress.streak_count, today_local
+    new_streak, new_last, new_freezes = streak_after_activity(
+        progress.last_activity_date, progress.streak_count, progress.streak_freezes, today_local
     )
     progress.streak_count = new_streak
     progress.last_activity_date = new_last
+    progress.streak_freezes = new_freezes
     return lesson.xp_reward, False

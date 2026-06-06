@@ -67,11 +67,12 @@ async def get_progress(
 ):
     progress = await session.get(UserProgress, current_user.id)
     if progress is None:
-        return UserProgressOut(xp=0, level=1, streak_count=0, last_activity_date=None)
+        return UserProgressOut(xp=0, level=1, streak_count=0, streak_freezes=0, last_activity_date=None)
     return UserProgressOut(
         xp=progress.xp,
         level=progress.level,
         streak_count=progress.streak_count,
+        streak_freezes=progress.streak_freezes,
         last_activity_date=progress.last_activity_date,
     )
 

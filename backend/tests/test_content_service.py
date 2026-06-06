@@ -42,21 +42,21 @@ def test_is_module_accessible_premium_gating():
 
 def test_streak_same_day_no_change():
     today = date(2026, 4, 24)
-    assert streak_after_activity(last=today, current=3, today=today) == (3, today)
+    assert streak_after_activity(last=today, current=3, freezes=0, today=today) == (3, today, 0)
 
 
 def test_streak_next_day_increments():
     yesterday = date(2026, 4, 23)
     today = date(2026, 4, 24)
-    assert streak_after_activity(last=yesterday, current=3, today=today) == (4, today)
+    assert streak_after_activity(last=yesterday, current=3, freezes=0, today=today) == (4, today, 0)
 
 
 def test_streak_gap_resets_to_one():
     two_days_ago = date(2026, 4, 22)
     today = date(2026, 4, 24)
-    assert streak_after_activity(last=two_days_ago, current=5, today=today) == (1, today)
+    assert streak_after_activity(last=two_days_ago, current=5, freezes=0, today=today) == (1, today, 0)
 
 
 def test_streak_first_ever_activity():
     today = date(2026, 4, 24)
-    assert streak_after_activity(last=None, current=0, today=today) == (1, today)
+    assert streak_after_activity(last=None, current=0, freezes=0, today=today) == (1, today, 0)

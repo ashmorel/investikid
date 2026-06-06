@@ -46,3 +46,14 @@ def test_streak_after_activity_freeze_matrix():
     assert f(d - timedelta(days=2), 5, 0, d) == (1, d, 0)   # missed day, no freeze -> reset
     assert f(d - timedelta(days=3), 5, 2, d) == (1, d, 2)   # 2+ days missed -> reset, freezes kept
     assert f(d, 5, 1, d - timedelta(days=1)) == (5, d, 1)   # backwards clock -> no-op, keep later date
+
+
+async def test_progress_endpoint_returns_streak_freezes(client, db_session):
+    await client.post("/auth/register", json={
+        "email": "fz@example.com", "username": "fzkid", "password": "SecurePass123!",
+        "dob": "2006-01-01", "country_code": "GB", "currency_code": "GBP",
+    })
+    await client.post("/auth/login", json={"email": "fz@example.com", "password": "SecurePass123!"})
+    r = await client.get("/users/me/progress")
+    assert r.status_code == 200
+    assert r.json()["streak_freezes"] == 0

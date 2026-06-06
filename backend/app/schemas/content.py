@@ -60,6 +60,7 @@ class LessonCompletionResult(BaseModel):
     total_xp: int
     level: int
     streak_count: int
+    streak_freezes: int = 0
     practice_available: bool = False
 
 
