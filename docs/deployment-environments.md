@@ -9,8 +9,12 @@ manual checkpoint workflow).
 | Env | Branch | Purpose | Database | Audience | iOS/Android |
 |-----|--------|---------|----------|----------|-------------|
 | **Testing** | `testing` | Build & validate every new feature | **Separate test DB — a snapshot of prod** | You | Built **on demand only** |
-| **Staging** | `staging` | Promote what passed testing; beta channel | Prod-like / restricted prod data | **Selected beta-testers only** | Built on demand |
+| **Staging** | `staging` | Promote what passed testing; beta channel | **Own DB — its own snapshot of prod** | **Selected beta-testers only** | Built on demand |
 | **Production** | `main` | The live app | Production | Everyone (after beta) | TestFlight / App Store |
+
+**Three separate databases.** testing, staging, and production each have their **own** database
+(testing + staging are snapshots of prod). This is what lets new migrations run on staging for
+beta-testers **without touching production**. Never point staging at the live production database.
 
 **Promotion flow:** build on `testing` → promote to `staging` for beta-testers → promote to
 `main` for everyone. Promote by fast-forwarding the branch (`git checkout staging && git merge
@@ -26,6 +30,32 @@ manual checkpoint workflow).
 - **iOS/Android** are built **only** by the manual **Deployment checkpoint** workflow
   (`Actions → Deployment checkpoint → Run workflow`), with explicit `run_ios` / `run_android`
   toggles (default off). Nothing native builds automatically.
+
+## Database migrations & data across environments
+
+The Railway start command runs on **every** backend deploy of **every** environment:
+`alembic upgrade head && python -m app.seed.run && uvicorn …`. Because each environment has its
+own `DATABASE_URL`, a new migration is applied to **that env's database** on deploy. So schema
+changes ride the code promotion automatically: `testing` DB → `staging` DB → `production` DB.
+
+- **Schema (Alembic migrations)** — in code, promote via git, applied per-env on deploy. ✅
+- **Baseline content** (`backend/app/seed/`) — in code, promotes via git, seeded idempotently. ✅
+- **Admin-authored content/data** — lives **only in that environment's database** and does **NOT**
+  promote via git. Premium content authored in staging's admin will not appear in prod. For
+  content that must exist everywhere, author it as **seed code** (promotes cleanly) rather than
+  via the admin panel.
+
+## Production promotion checklist (REQUIRED before every prod migration)
+
+Production is **manual promotion**. Before promoting code to `main` / triggering the production
+deploy (which runs `alembic upgrade head` against the live prod DB):
+
+1. **🛑 Take a production database backup / snapshot FIRST.** The assistant MUST ask the user
+   whether to take a backup before every production migration, and wait for an answer. Use
+   Railway's DB snapshot (or `pg_dump`) before the prod deploy runs the migration.
+2. Confirm the migration has already been applied + validated on testing **and** staging.
+3. Promote (`git checkout main && git merge --ff-only staging && git push`).
+4. Trigger the manual Railway production deploy (and Vercel "Promote to Production").
 
 ## Repo configuration that supports this (already in place)
 
