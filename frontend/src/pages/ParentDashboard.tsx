@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 import { SignInMethods } from '@/components/parent/SignInMethods';
 import { GroupsCard } from '@/components/parent/GroupsCard';
+import { PremiumRequestsCard } from '@/components/parent/PremiumRequestsCard';
 import { Penny } from '@/components/child/ui/Penny';
 
 export default function ParentDashboard() {
@@ -66,6 +67,7 @@ export default function ParentDashboard() {
         </div>
       </header>
 
+      <PremiumRequestsCard />
       <SubscriptionCard />
 
       {q.isLoading && <p className="mt-6 text-sm text-muted-foreground">Loading…</p>}
