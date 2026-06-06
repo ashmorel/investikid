@@ -81,21 +81,47 @@ These need dashboard access and are not in the repo.
      beta-testers can reach it).
    - `main` → Production, **auto-deploy disabled** (`vercel.json` `main: false`); you click
      **Promote to Production** after beta sign-off.
-3. Set per-environment env vars (`VITE_API_BASE_URL`, `VITE_WEB_ORIGIN`, `VITE_*` social IDs)
-   pointing each env at its matching Railway backend.
+3. Per-environment env vars (scope each to Production / Preview-or-branch). Point each env's
+   `VITE_API_BASE_URL` at the matching Railway backend, and ensure that Railway env's
+   `CORS_ORIGINS`/`APP_BASE_URL` point back at this Vercel URL.
+   - `VITE_API_BASE_URL` — that env's Railway backend URL
+   - `VITE_WEB_ORIGIN` — that env's Vercel URL
+   - `VITE_GOOGLE_WEB_CLIENT_ID`, `VITE_GOOGLE_IOS_CLIENT_ID`, `VITE_APPLE_SERVICES_ID`
+     — only if testing social login in that env
 
 ### Railway
 1. Create environments `testing`, `staging`, `production`.
 2. Map each to its branch; **enable auto-deploy on `testing`/`staging`, keep `production`
    manual / approval-gated** (matches manual promotion).
-3. **Testing DB = a snapshot of the current prod DB** (prod holds only test data today). Give
-   testing its own database + test-only secrets.
-4. Per-env vars: `ENVIRONMENT`, `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`, `APP_BASE_URL`,
-   `CRON_SECRET`, etc.
-5. **Staging migration safety:** if staging ever points at the live production database, do **not**
-   run schema migrations against it. Either disable deploy-time `alembic upgrade head` for the
-   staging service or point staging at a production-clone/rehearsal DB. (`railway.json`'s start
-   command migrates on every deploy — override it per-environment for staging.)
+3. **Three separate databases.** `testing` DB = a snapshot of prod; `staging` DB = its own
+   snapshot of prod; `production` = the real DB. (Prod holds only test data today, so snapshot
+   it twice: Railway database → restore-to-new, or `pg_dump` prod → `pg_restore` into each.)
+   The backend auto-runs `alembic upgrade head` on every deploy (`railway.json`), so migrations
+   land per-env as code promotes. Because staging has its **own** DB, that auto-migrate is safe —
+   beta-testers exercise new schema without touching prod. Keep **production** auto-deploy
+   off/approval-gated so a prod migration only runs on your explicit deploy.
+
+4. **Env vars per environment** (Railway → service → Variables):
+
+   *Required (core):*
+   - `DATABASE_URL` — that env's Postgres URL
+   - `TEST_DATABASE_URL` — same DB or a throwaway (only the test runner uses it; can equal `DATABASE_URL`)
+   - `JWT_SECRET` — unique random secret **per env**
+   - `ENVIRONMENT` — `testing` | `staging` | `production`
+   - `CORS_ORIGINS` — that env's Vercel URL(s), comma-separated
+   - `APP_BASE_URL` — that env's Vercel URL (email links incl. the premium-request email → `/parent`)
+   - `CRON_SECRET` — **rotate it** (was exposed before); unique per env
+   - `ADMIN_BOOTSTRAP_EMAIL` — admin account seeded on deploy
+
+   *Email (premium-request + consent/verify emails):*
+   - `EMAIL_BACKEND` — `logging` (testing/staging) or `resend` (production)
+   - `EMAIL_FROM`, `RESEND_API_KEY` (if backend=resend), `ADMIN_ALERT_EMAIL`, `FEEDBACK_NOTIFY_EMAIL`
+
+   *Feature-gated (set where the feature should be live):*
+   - **AI (Coach Penny / greeting):** `LLM_TOGETHER_API_KEY` (+ `LLM_GROQ_*` / `LLM_PREMIUM_*` if used)
+   - **Billing (4A):** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`, `STRIPE_PORTAL_CONFIG_ID`
+   - **Social login:** `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `APPLE_SERVICES_ID`, `APPLE_BUNDLE_ID`
+   - `REDIS_URL` (rate limiting, if you run Redis)
 
 ### GitHub
 1. `Settings → Environments`: create `testing`, `staging`, `production`.
