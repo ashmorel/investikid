@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { authApi, type Me } from '@/api/auth';
 import { useChildSession } from '@/hooks/useChildSession';
 import { TOPIC_OPTIONS } from '@/api/content';
+import type { Progress } from '@/api/content';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -18,6 +19,9 @@ import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 import { RegionSwitcher } from '@/components/child/RegionSwitcher';
 import { CurrencySelector } from '@/components/child/CurrencySelector';
 import type { RegionCode } from '@/lib/region';
+import { isNativeApp } from '@/lib/platform';
+import { REMINDER } from '@/lib/reminderConfig';
+import { requestReminderPermission, syncStreakReminder } from '@/lib/streakReminder';
 
 export function ProfileMenu({ username }: { username: string }) {
   const navigate = useNavigate();
@@ -27,6 +31,8 @@ export function ProfileMenu({ username }: { username: string }) {
   const [open, setOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [topic, setTopic] = useState('');
+  const [reminderOn, setReminderOn] = useState(() => localStorage.getItem(REMINDER.storageKey) === '1');
+  const [reminderDenied, setReminderDenied] = useState(false);
 
   const me = qc.getQueryData<Me>(['me']);
   const currentRegion = (me?.content_region ?? me?.country_code ?? 'US') as RegionCode;
@@ -45,6 +51,29 @@ export function ProfileMenu({ username }: { username: string }) {
       navigate('/login', { replace: true });
     },
   });
+
+  async function toggleReminder(next: boolean) {
+    if (next) {
+      let granted: boolean;
+      try {
+        granted = await requestReminderPermission();
+      } catch {
+        granted = false;
+      }
+      if (!granted) { setReminderDenied(true); setReminderOn(false); return; }
+      localStorage.setItem(REMINDER.storageKey, '1');
+      setReminderDenied(false);
+      setReminderOn(true);
+    } else {
+      localStorage.removeItem(REMINDER.storageKey);
+      setReminderOn(false);
+    }
+    const progress = qc.getQueryData<Progress>(['progress']);
+    void syncStreakReminder({
+      lastActivity: progress?.last_activity_date ?? null,
+      streakCount: progress?.streak_count ?? 0,
+    }).catch(() => {});
+  }
 
   const save = useMutation({
     mutationFn: (topic_path: string | null) => authApi.updatePreferences({ topic_path }),
@@ -80,6 +109,28 @@ export function ProfileMenu({ username }: { username: string }) {
           <RegionSwitcher currentRegion={currentRegion} />
         </div>
         <CurrencySelector currentCurrency={currentCurrency} />
+        {isNativeApp() && (
+          <div className="space-y-1.5 border-t border-line pt-3">
+            <label className="flex items-center justify-between gap-3 text-sm font-medium">
+              <span>Daily streak reminder</span>
+              <input
+                type="checkbox"
+                checked={reminderOn}
+                onChange={(e) => void toggleReminder(e.target.checked)}
+                className="h-5 w-5"
+                aria-describedby={reminderDenied ? 'reminder-help reminder-denied' : 'reminder-help'}
+              />
+            </label>
+            <p id="reminder-help" className="text-xs text-muted-foreground">
+              A friendly evening nudge if your streak is about to end. Off by default.
+            </p>
+            {reminderDenied && (
+              <p id="reminder-denied" className="text-xs text-accent-700">
+                Turn on notifications for InvestiKid in your device Settings to use reminders.
+              </p>
+            )}
+          </div>
+        )}
       </div>
       <Button
         type="button"

@@ -30,6 +30,24 @@ export function decideStreakReminder(args: {
   return { action: 'schedule', at };
 }
 
+/** Read the current preference, decide, and apply. Native only; web no-op. */
+export async function syncStreakReminder(args: {
+  lastActivity: string | null;
+  streakCount: number;
+}): Promise<void> {
+  if (!isNativeApp()) return;
+  const enabled = localStorage.getItem(REMINDER.storageKey) === '1';
+  const now = new Date();
+  const practicedToday = args.lastActivity === ymdLocal(now);
+  const decision = decideStreakReminder({
+    enabled,
+    practicedToday,
+    streakCount: args.streakCount,
+    now,
+  });
+  await applyStreakReminder(decision, args.streakCount);
+}
+
 /** Ask for notification permission. Returns true if granted. Native only. */
 export async function requestReminderPermission(): Promise<boolean> {
   if (!isNativeApp()) return false;

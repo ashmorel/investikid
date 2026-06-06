@@ -16,6 +16,7 @@ import { useRouteFocus } from '@/components/a11y/useRouteFocus';
 import { useRecommendations } from '@/api/ai';
 import { PennyFAB } from './PennyFAB';
 import { CoachPanel } from './CoachPanel';
+import { useStreakReminder } from '@/hooks/useStreakReminder';
 
 export function Shell() {
   const session = useChildSession();
@@ -37,6 +38,8 @@ export function Shell() {
   }, [queryClient]);
 
   const { indicatorProps } = usePullToRefresh({ ref: mainRef, onRefresh: handleRefresh });
+
+  useStreakReminder();
 
   if (session.isLoading) {
     return (
