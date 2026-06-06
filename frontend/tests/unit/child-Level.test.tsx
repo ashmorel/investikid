@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 import Level from '@/pages/child/Level';
 
 beforeEach(() => vi.restoreAllMocks());
@@ -23,11 +24,13 @@ function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/lessons/:moduleId/:levelId" element={<Level />} />
-        </Routes>
-      </MemoryRouter>
+      <PremiumPaywallProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/lessons/:moduleId/:levelId" element={<Level />} />
+          </Routes>
+        </MemoryRouter>
+      </PremiumPaywallProvider>
     </QueryClientProvider>,
   );
 }
@@ -62,13 +65,20 @@ describe('Level page', () => {
     expect(back).toHaveAttribute('href', '/lessons/mod-1');
   });
 
-  it('shows premium message on 403 error', async () => {
+  it('opens the paywall on a premium_required 403 error', async () => {
     mockJsonRoute(
-      { '/levels/lv-1/lessons': JSON.stringify({ detail: 'Premium required' }) },
+      {
+        '/levels/lv-1/lessons': JSON.stringify({
+          detail: { message: 'Premium required', code: 'premium_required', context: { label: 'Advanced' } },
+        }),
+      },
       { '/levels/lv-1/lessons': 403 },
     );
     renderAt('/lessons/mod-1/lv-1');
-    expect(await screen.findByText(/This level is premium\./i)).toBeInTheDocument();
-    expect(await screen.findByText(/Ask a grown-up to unlock/i)).toBeInTheDocument();
+    // The paywall sheet auto-opens; the placeholder (behind the modal, hidden
+    // from the a11y tree) offers to re-open it.
+    expect(await screen.findByText(/premium unlocks/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /See what's included/i, hidden: true })).toBeInTheDocument();
+    expect(screen.queryByText(/This level is premium\./i)).not.toBeInTheDocument();
   });
 });

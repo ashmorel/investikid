@@ -4,12 +4,12 @@ import { ModuleCard } from '@/components/child/ModuleCard';
 import { RegionSwitcher } from '@/components/child/RegionSwitcher';
 import { authApi, type Me } from '@/api/auth';
 import type { RegionCode } from '@/lib/region';
-import { useToast } from '@/hooks/use-toast';
 import { orderModulesForTier } from '@/lib/tierModuleOrder';
 import { DEFAULT_TIER } from '@/lib/ageTier';
+import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 export default function Lessons() {
-  const { toast } = useToast();
+  const { open: openPaywall } = usePremiumPaywall();
 
   const { data: me } = useQuery<Me | null>({ queryKey: ['me'], queryFn: () => authApi.me(), staleTime: 60_000 });
   const currentRegion = (me?.content_region ?? me?.country_code ?? 'US') as RegionCode;
@@ -84,9 +84,7 @@ export default function Lessons() {
               module={m}
               completedCount={completedCount}
               totalCount={lessons.length}
-              onLockedClick={() => {
-                toast({ title: 'Premium required', description: 'This module is part of the premium tier.' });
-              }}
+              onLockedClick={() => openPaywall({ kind: 'module', label: m.title })}
             />
           );
         })}

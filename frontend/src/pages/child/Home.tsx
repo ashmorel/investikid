@@ -17,6 +17,7 @@ import { useBadges } from '@/hooks/useBadges';
 import { useNextLesson } from '@/hooks/useNextLesson';
 import { orderModulesForTier } from '@/lib/tierModuleOrder';
 import { useAgeTier } from '@/lib/ageTier';
+import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 const TOPIC_STYLE: Record<string, { accent: string; tint: string }> = {
   savings: { accent: '#0ea5e9', tint: '#e0f2fe' },
@@ -38,6 +39,7 @@ export default function Home() {
   const earnedBadges = useBadges();
   const next = useNextLesson();
   const { data: portfolio } = usePortfolio();
+  const { open: openPaywall } = usePremiumPaywall();
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -113,6 +115,7 @@ export default function Home() {
                   to={`/lessons/${m.id}`}
                   locked={m.locked}
                   recommended={m.id === recommendedModuleId}
+                  onLockedClick={() => openPaywall({ kind: 'module', label: m.title })}
                 />
               );
             })}

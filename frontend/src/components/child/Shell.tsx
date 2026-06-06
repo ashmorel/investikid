@@ -17,6 +17,7 @@ import { useRecommendations } from '@/api/ai';
 import { PennyFAB } from './PennyFAB';
 import { CoachPanel } from './CoachPanel';
 import { useStreakReminder } from '@/hooks/useStreakReminder';
+import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 
 export function Shell() {
   const session = useChildSession();
@@ -55,38 +56,40 @@ export function Shell() {
   }
 
   return (
-    <div ref={swipeRef} className="min-h-screen bg-surface">
-      <SkipLink />
-      <TopNav username={session.data.username} />
-      <div className="mx-auto flex max-w-5xl items-center px-4 pt-2">
-        <TierBadge premium={session.data.is_premium} />
+    <PremiumPaywallProvider>
+      <div ref={swipeRef} className="min-h-screen bg-surface">
+        <SkipLink />
+        <TopNav username={session.data.username} />
+        <div className="mx-auto flex max-w-5xl items-center px-4 pt-2">
+          <TierBadge premium={session.data.is_premium} />
+        </div>
+        <VerifyEmailBanner profile={session.data} />
+        <div ref={mainRef}>
+          <PullToRefreshIndicator {...indicatorProps} />
+          <AnimatePresence mode="wait">
+            <motion.main
+              key={location.pathname}
+              id="main"
+              tabIndex={-1}
+              className="pb-20 md:pb-0 outline-none"
+              style={{ paddingLeft: 'var(--safe-left)', paddingRight: 'var(--safe-right)' }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+            >
+              <Outlet />
+            </motion.main>
+          </AnimatePresence>
+        </div>
+        <BottomTabBar />
+        {location.pathname !== '/coach' && (
+          <>
+            <PennyFAB dueCount={recsData?.review_summary?.due_count ?? 0} onOpen={() => setCoachOpen(true)} />
+            <CoachPanel open={coachOpen} onOpenChange={setCoachOpen} />
+          </>
+        )}
       </div>
-      <VerifyEmailBanner profile={session.data} />
-      <div ref={mainRef}>
-        <PullToRefreshIndicator {...indicatorProps} />
-        <AnimatePresence mode="wait">
-          <motion.main
-            key={location.pathname}
-            id="main"
-            tabIndex={-1}
-            className="pb-20 md:pb-0 outline-none"
-            style={{ paddingLeft: 'var(--safe-left)', paddingRight: 'var(--safe-right)' }}
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-            exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
-            transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-          >
-            <Outlet />
-          </motion.main>
-        </AnimatePresence>
-      </div>
-      <BottomTabBar />
-      {location.pathname !== '/coach' && (
-        <>
-          <PennyFAB dueCount={recsData?.review_summary?.due_count ?? 0} onOpen={() => setCoachOpen(true)} />
-          <CoachPanel open={coachOpen} onOpenChange={setCoachOpen} />
-        </>
-      )}
-    </div>
+    </PremiumPaywallProvider>
   );
 }

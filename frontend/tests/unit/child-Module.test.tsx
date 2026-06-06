@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
+import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 import Module from '@/pages/child/Module';
 
 beforeEach(() => vi.restoreAllMocks());
@@ -22,12 +23,14 @@ function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/lessons/:moduleId" element={<Module />} />
-        </Routes>
-        <Toaster />
-      </MemoryRouter>
+      <PremiumPaywallProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/lessons/:moduleId" element={<Module />} />
+          </Routes>
+          <Toaster />
+        </MemoryRouter>
+      </PremiumPaywallProvider>
     </QueryClientProvider>,
   );
 }
@@ -65,18 +68,20 @@ describe('Module page', () => {
     expect(await screen.findByText(/Finish the previous level first\./i)).toBeInTheDocument();
   });
 
-  it('toasts "Ask a grown-up to unlock." when premium-locked level clicked', async () => {
+  it('tapping a premium-locked level opens the paywall', async () => {
     mockJsonRoute({
       '/modules': [
         { id: 'mod-1', topic: 'stocks', title: 'Stocks 101', country_codes: [], is_premium: false, order_index: 0, icon: '📈', locked: false },
       ],
       '/modules/mod-1/levels': [
-        { id: 'lv-1', module_id: 'mod-1', title: 'Premium Level', order_index: 0, is_premium: true, icon: '⭐', state: 'locked', locked_reason: 'premium', passed: false, lessons_total: 3, lessons_completed: 0 },
+        { id: 'lv-1', module_id: 'mod-1', title: 'Advanced', order_index: 1, is_premium: true, icon: '⭐', state: 'locked', locked_reason: 'premium', passed: false, lessons_total: 3, lessons_completed: 0 },
       ],
     });
     renderAt('/lessons/mod-1');
-    const btn = await screen.findByRole('button', { name: /Premium Level/i });
+    const btn = await screen.findByRole('button', { name: /Advanced/i });
     await userEvent.click(btn);
-    expect(await screen.findByText(/Ask a grown-up to unlock\./i)).toBeInTheDocument();
+    // The paywall sheet replaces the old toast.
+    expect(await screen.findByText(/premium unlocks/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Ask a grown-up to unlock\./i)).not.toBeInTheDocument();
   });
 });
