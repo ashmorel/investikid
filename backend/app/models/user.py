@@ -91,6 +91,7 @@ class UserProgress(Base):
     streak_count: Mapped[int] = mapped_column(default=0, nullable=False)
     last_activity_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     virtual_coins: Mapped[int] = mapped_column(default=0, nullable=False)
+    streak_freezes: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="progress")
 
