@@ -36,6 +36,10 @@ export default function Stats() {
         />
       ) : null}
 
+      {!progress.isLoading && progress.data ? (
+        <p className="text-xs text-muted-foreground">🛡️ A streak freeze saves your streak if you miss a day. Earn one every 7-day streak (up to 2).</p>
+      ) : null}
+
       {/* Badges */}
       <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
         <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Badges</h2>

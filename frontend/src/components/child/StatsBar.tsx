@@ -5,11 +5,12 @@ type Props = {
   xp: number;
   level: number;
   streakCount: number;
+  streakFreezes: number;
   lastActivityDate: string | null;
   today?: Date;
 };
 
-export function StatsBar({ xp, level, streakCount, lastActivityDate, today }: Props) {
+export function StatsBar({ xp, level, streakCount, streakFreezes, lastActivityDate, today }: Props) {
   const now = today ?? new Date();
   const active = isStreakActive(lastActivityDate, now);
   return (
@@ -30,6 +31,15 @@ export function StatsBar({ xp, level, streakCount, lastActivityDate, today }: Pr
       >
         🔥 {streakCount}-day streak
       </span>
+      {streakFreezes > 0 && (
+        <span
+          role="img"
+          className="rounded-full bg-brand-100 px-4 py-1.5 text-sm font-bold text-brand-800"
+          aria-label={`${streakFreezes} streak freeze${streakFreezes === 1 ? '' : 's'} — saves your streak if you miss a day`}
+        >
+          <span aria-hidden="true">🛡️ ×{streakFreezes}</span>
+        </span>
+      )}
     </div>
   );
 }

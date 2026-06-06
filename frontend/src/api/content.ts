@@ -69,6 +69,7 @@ export type LessonCompletionResult = {
   total_xp: number;
   level: number;
   streak_count: number;
+  streak_freezes: number;
   practice_available: boolean;
 };
 
@@ -76,6 +77,7 @@ export type Progress = {
   xp: number;
   level: number;
   streak_count: number;
+  streak_freezes: number;
   last_activity_date: string | null; // YYYY-MM-DD
 };
 

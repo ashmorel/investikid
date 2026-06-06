@@ -12,6 +12,7 @@ const BASE_RESULT = {
   total_xp: 125,
   level: 2,
   streak_count: 3,
+  streak_freezes: 0,
   practice_available: false,
 };
 

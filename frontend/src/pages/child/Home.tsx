@@ -57,6 +57,7 @@ export default function Home() {
           xp={xp}
           level={level}
           streakCount={progress?.streak_count ?? 0}
+          streakFreezes={progress?.streak_freezes ?? 0}
           lastActivityDate={progress?.last_activity_date ?? null}
         />
       </div>
