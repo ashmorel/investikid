@@ -4,14 +4,27 @@ import logging
 from datetime import UTC, datetime
 
 import stripe
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.premium_request import PremiumRequest
 from app.models.subscription import Subscription
 from app.models.user import User
 from app.services.entitlements import set_premium
 
 logger = logging.getLogger(__name__)
+
+
+async def resolve_premium_requests(session: AsyncSession, parent_email: str) -> None:
+    """Mark this parent's open premium requests resolved (called when premium is granted)."""
+    await session.execute(
+        update(PremiumRequest)
+        .where(
+            PremiumRequest.parent_email == parent_email,
+            PremiumRequest.resolved_at.is_(None),
+        )
+        .values(resolved_at=datetime.now(UTC))
+    )
 
 
 async def handle_checkout_completed(
@@ -57,6 +70,8 @@ async def handle_checkout_completed(
     ).all()
     for child in children:
         await set_premium(session, child, value=True, actor="stripe")
+
+    await resolve_premium_requests(session, parent_email)
 
     await session.commit()
     logger.info("checkout.session.completed: parent=%s children=%d", parent_email, len(children))
