@@ -149,11 +149,12 @@ These need dashboard access and are not in the repo.
 - ⚠️ testing + staging carry **forked production secrets** (live OpenAI/Together/Resend keys, `JWT_SECRET`, `CRON_SECRET`, DB password, `ADMIN_TOKEN`, `SECRET_KEY`). **Rotate / set test-only keys** — Coach Penny in non-prod currently bills your prod LLM accounts.
 - `CORS_ORIGINS` + `APP_BASE_URL` in testing/staging still hold prod values — update to the Vercel branch URLs below.
 
-**Vercel (project `investikid.ai`, team `lee-ashmore-s-projects`) — repoint PENDING / unverified.**
-- As of this check, **all deployments (incl. live `app.investikid.ai`) are still from the old repo** `Lee-Local-Code-Repo@main` (`de1eae1`). No `investikid` deploy has occurred yet.
-- To finish: Settings → Git → connect **`ashmorel/investikid`**; Build & Deployment → **Root Directory = `frontend`**; set env vars (below); protect the staging Preview.
-- Verify the repoint by pushing to `testing` → a Preview should build from `investikid`.
-- Predicted Vercel branch URLs (use for `VITE_WEB_ORIGIN` + the Railway `CORS_ORIGINS`/`APP_BASE_URL` above):
+**Vercel (project `investikid.ai`, team `lee-ashmore-s-projects`) — repoint CONFIRMED; production cutover pending.**
+- **Git connection now points at `ashmorel/investikid`** ✅ — verified: a push to `testing`/`staging` produced Preview builds sourced from `investikid` (repo id `1260927337`) at the branch URLs below.
+- **testing** + **staging** branches → auto-deploy Previews from `investikid` ✅ (`vercel.json` `testing:true`/`staging:true`).
+- **production** → still serving the **old-repo** build (`Lee-Local-Code-Repo@main` `de1eae1`); `vercel.json` `main:false` means it won't auto-build from `investikid`. **Cutover is a deliberate step:** promote/redeploy a build from `investikid main` when ready (gated; frontend-only, no DB migration).
+- Still to confirm in the dashboard (MCP can't read these): **Root Directory = `frontend`**, per-env **env vars** (below), and **staging Preview protection** (password/SSO so only beta-testers reach it).
+- Vercel branch URLs (use for `VITE_WEB_ORIGIN` + the Railway `CORS_ORIGINS`/`APP_BASE_URL` above):
   - testing: `https://investikidai-git-testing-lee-ashmore-s-projects.vercel.app`
   - staging: `https://investikidai-git-staging-lee-ashmore-s-projects.vercel.app`
   - production: `https://app.investikid.ai`
