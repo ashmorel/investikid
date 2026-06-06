@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - testing
+          - staging
           - production
       run_web:
         description: Run web build validation before the default test deployment

@@ -2,14 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [main, testing]
+    branches: [main, staging, testing]
     paths:
       - ".github/workflows/**"
       - "backend/**"
       - "frontend/**"
       - "!docs/**"
   pull_request:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - ".github/workflows/**"
       - "backend/**"
@@ -73,7 +73,7 @@ jobs:
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'testing' }}
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'testing' }}
     defaults:
       run:
         working-directory: frontend
@@ -107,7 +107,7 @@ jobs:
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'testing' }}
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'testing' }}
     defaults:
       run:
         working-directory: backend
@@ -155,7 +155,7 @@ jobs:
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'testing' }}
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'testing' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -205,7 +205,7 @@ jobs:
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'testing' }}
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'testing' }}
     defaults:
       run:
         working-directory: frontend
@@ -239,7 +239,7 @@ jobs:
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'testing' }}
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'testing' }}
     defaults:
       run:
         working-directory: frontend
