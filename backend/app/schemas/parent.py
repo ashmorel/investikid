@@ -53,6 +53,14 @@ class PremiumToggleRequest(BaseModel):
     premium: bool
 
 
+class PremiumRequestOut(BaseModel):
+    id: uuid.UUID
+    child_username: str
+    context_kind: str
+    context_label: str
+    created_at: datetime
+
+
 class OAuthSignInRequest(BaseModel):
     id_token: str
     nonce: str

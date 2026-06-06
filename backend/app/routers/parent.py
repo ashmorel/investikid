@@ -8,10 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.models.group import GroupMembership, LeaderboardGroup
+from app.models.premium_request import PremiumRequest
 from app.models.user import User
 from app.routers.parent_auth import get_current_parent
 from app.schemas.group import GroupCreateRequest, GroupJoinRequest, GroupMemberOut, GroupOut
-from app.schemas.parent import ChildOut, FreezeRequest, PremiumToggleRequest
+from app.schemas.parent import ChildOut, FreezeRequest, PremiumRequestOut, PremiumToggleRequest
 from app.services import group_service
 from app.services.analytics_service import build_child_analytics
 from app.services.content_service import content_region_for
@@ -63,6 +64,25 @@ async def list_children(
             )
         )
     return children
+
+
+@router.get("/premium-requests", response_model=list[PremiumRequestOut])
+async def list_premium_requests(
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    rows = (await session.execute(
+        select(PremiumRequest, User.username)
+        .join(User, User.id == PremiumRequest.child_user_id)
+        .where(PremiumRequest.parent_email == parent_email,
+               PremiumRequest.resolved_at.is_(None))
+        .order_by(PremiumRequest.created_at.desc())
+    )).all()
+    return [
+        PremiumRequestOut(id=r.id, child_username=username, context_kind=r.context_kind,
+                          context_label=r.context_label, created_at=r.created_at)
+        for r, username in rows
+    ]
 
 
 @router.post("/children/{user_id}/freeze")
