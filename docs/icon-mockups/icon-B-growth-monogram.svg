@@ -1,0 +1,29 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgB" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8"/><stop offset="0.55" stop-color="#2563eb"/><stop offset="1" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="goldB" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+    <radialGradient id="sheenB" cx="0.3" cy="0.2" r="0.9">
+      <stop stop-color="#ffffff" stop-opacity="0.18"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="230" fill="url(#bgB)"/>
+  <rect width="1024" height="1024" rx="230" fill="url(#sheenB)"/>
+
+  <!-- rising chart line -->
+  <polyline points="232,732 430,548 596,628 792,372"
+    fill="none" stroke="#ffffff" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- arrowhead at the top-right end (792,372) -->
+  <polyline points="660,372 792,372 792,504"
+    fill="none" stroke="#ffffff" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- gold coin anchoring the start -->
+  <circle cx="232" cy="732" r="96" fill="url(#goldB)" stroke="#b45309" stroke-width="12"/>
+  <circle cx="232" cy="732" r="72" fill="none" stroke="#b45309" stroke-width="7" stroke-opacity="0.45"/>
+  <circle cx="206" cy="706" r="20" fill="#ffffff" fill-opacity="0.45"/>
+  <text x="232" y="792" text-anchor="middle" font-family="Nunito, Arial, sans-serif" font-size="108" font-weight="800" fill="#b45309">£</text>
+</svg>

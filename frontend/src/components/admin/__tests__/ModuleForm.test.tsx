@@ -61,4 +61,9 @@ describe('ModuleForm', () => {
     expect(screen.getByLabelText(/min age/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/max age/i)).toBeInTheDocument();
   });
+
+  it('renders a completion cash reward input', () => {
+    render(<ModuleForm />, { wrapper });
+    expect(screen.getByLabelText(/completion cash reward/i)).toBeInTheDocument();
+  });
 });

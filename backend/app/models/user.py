@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.services.age_tier import age_tier as _age_tier
 
 
 class User(Base):
@@ -70,6 +71,11 @@ class User(Base):
         DateTime(timezone=True), nullable=True
     )
 
+    @property
+    def age_tier(self) -> str:
+        """Live age tier derived from dob (never stored)."""
+        return _age_tier(self.dob, date.today())
+
     progress: Mapped["UserProgress"] = relationship(
         "UserProgress", back_populates="user", uselist=False
     )
@@ -92,6 +98,8 @@ class UserProgress(Base):
     last_activity_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     virtual_coins: Mapped[int] = mapped_column(default=0, nullable=False)
     streak_freezes: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
+    sim_xp_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    sim_xp_today: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="progress")
 

@@ -4,6 +4,7 @@ import { useChildSession } from '@/hooks/useChildSession';
 import { useProgress } from '@/hooks/useProgress';
 import { useRecommendations, useHomeGreeting } from '@/api/ai';
 import { buildHeroGreeting } from '@/lib/homeHero';
+import { tierConfig, DEFAULT_TIER, type AgeTier } from '@/lib/ageTier';
 import { HeroCard } from '@/components/child/ui/HeroCard';
 import { Penny } from '@/components/child/ui/Penny';
 import { GradientButton } from '@/components/child/ui/GradientButton';
@@ -18,8 +19,9 @@ export default function HomeHero() {
   const streakCount = progress?.streak_count ?? 0;
   const dueCount = recs?.review_summary?.due_count ?? 0;
   const isPremium = me?.is_premium ?? false;
+  const tier: AgeTier = me?.age_tier ?? DEFAULT_TIER;
 
-  const templated = buildHeroGreeting({ name, mode: next.mode, lessonLabel: next.lessonLabel, streakCount, dueCount });
+  const templated = buildHeroGreeting({ name, mode: next.mode, lessonLabel: next.lessonLabel, streakCount, dueCount, tier });
 
   const aiQ = useHomeGreeting(
     { name, mode: next.mode, lesson_label: next.lessonLabel, streak_count: streakCount, due_count: dueCount },
@@ -31,7 +33,7 @@ export default function HomeHero() {
     <section aria-labelledby="home-hero-greeting" className="mb-2">
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-100 shadow" aria-hidden="true">
-          <Penny size={44} mood="happy" />
+          <Penny size={tierConfig[tier].pennyHeroSize} mood="happy" />
         </div>
         <motion.p
           id="home-hero-greeting"

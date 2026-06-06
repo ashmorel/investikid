@@ -44,6 +44,16 @@ export type TradeOut = {
   executed_at: string;
 };
 
+export type TradeReward = {
+  xp_awarded: number;
+  streak_extended: boolean;
+  cash_granted: string;
+  missions_completed: { id: string; title: string }[];
+  badges_unlocked: string[];
+};
+
+export type TradeResult = TradeOut & { rewards: TradeReward };
+
 export type PortfolioSnapshot = {
   date: string;
   value: number;
@@ -137,7 +147,7 @@ export const simulatorApi = {
   listTrades: () => apiFetch<TradeOut[]>('/portfolio/trades'),
 
   placeTrade: (req: TradeRequest) =>
-    apiFetch<TradeOut>('/portfolio/trades', {
+    apiFetch<TradeResult>('/portfolio/trades', {
       method: 'POST',
       body: JSON.stringify(req),
     }),

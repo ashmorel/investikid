@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { useCreateLesson, useUpdateLesson, useCreateLevelLesson, presignVideo, uploadToPresigned } from '@/api/admin';
-import type { AdminLesson } from '@/api/admin';
+import type { AdminLesson, ApplyMission, MissionType } from '@/api/admin';
+
+const MISSION_TYPES: { value: MissionType; label: string }[] = [
+  { value: 'first_buy', label: 'Buy a share' },
+  { value: 'first_sell', label: 'Sell a share' },
+  { value: 'diversify', label: 'Diversify (hold N stocks)' },
+  { value: 'invest_amount', label: 'Invest an amount' },
+];
 
 const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB
 
@@ -67,6 +74,16 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
 
+  // Apply-mission fields
+  const [missionEnabled, setMissionEnabled] = useState(!!lesson?.apply_mission);
+  const [missionType, setMissionType] = useState<MissionType>(lesson?.apply_mission?.mission_type ?? 'first_buy');
+  const [missionTitle, setMissionTitle] = useState(lesson?.apply_mission?.title ?? '');
+  const [missionPrompt, setMissionPrompt] = useState(lesson?.apply_mission?.prompt ?? '');
+  const [missionXp, setMissionXp] = useState<string>(String(lesson?.apply_mission?.xp_reward ?? 20));
+  const [missionCash, setMissionCash] = useState<string>(lesson?.apply_mission?.cash_reward ?? '');
+  const [missionN, setMissionN] = useState<string>(String(lesson?.apply_mission?.params_json?.n ?? 2));
+  const [missionAmount, setMissionAmount] = useState<string>(String(lesson?.apply_mission?.params_json?.amount ?? '500'));
+
   async function handleVideoFile(file: File) {
     setUploadErr(null);
     if (file.type !== 'video/mp4') {
@@ -106,6 +123,22 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
     return { prompt, choices: scenarioChoices, correct_index: correctIndex };
   }
 
+  function buildApplyMission(): ApplyMission | null {
+    if (!missionEnabled) return null;
+    const params =
+      missionType === 'diversify' ? { n: Number(missionN) }
+      : missionType === 'invest_amount' ? { amount: missionAmount }
+      : {};
+    return {
+      mission_type: missionType,
+      params_json: params,
+      title: missionTitle,
+      prompt: missionPrompt,
+      xp_reward: Number(missionXp),
+      cash_reward: missionCash ? missionCash : null,
+    };
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (type === 'video' && videoSource === 'hosted' && !videoUrl) {
@@ -113,12 +146,13 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
       return;
     }
     const content_json = buildContentJson();
+    const apply_mission = buildApplyMission();
     if (isEdit && lesson) {
-      await updateLesson.mutateAsync({ id: lesson.id, type, content_json, xp_reward: xpReward });
+      await updateLesson.mutateAsync({ id: lesson.id, type, content_json, xp_reward: xpReward, apply_mission });
     } else if (levelId) {
-      await createLevelLesson.mutateAsync({ type, content_json, xp_reward: xpReward, order_index: nextOrderIndex });
+      await createLevelLesson.mutateAsync({ type, content_json, xp_reward: xpReward, order_index: nextOrderIndex, apply_mission });
     } else {
-      await createLesson.mutateAsync({ moduleId, type, content_json, xp_reward: xpReward, order_index: nextOrderIndex });
+      await createLesson.mutateAsync({ moduleId, type, content_json, xp_reward: xpReward, order_index: nextOrderIndex, apply_mission });
     }
     onClose();
   }
@@ -340,6 +374,78 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
               </div>
             </>
           )}
+
+          {/* Apply-mission block */}
+          <div className="mt-2 border-t border-line pt-4">
+            <div className="flex items-center gap-2">
+              <input id="mission-enabled" type="checkbox" checked={missionEnabled}
+                onChange={(e) => setMissionEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-input bg-background" />
+              <label htmlFor="mission-enabled" className="text-sm text-ink">Apply mission (simulator)</label>
+            </div>
+
+            {missionEnabled && (
+              <div className="mt-3 flex flex-col gap-3">
+                <div>
+                  <label htmlFor="mission-type" className="mb-1 block text-sm text-ink">Mission type</label>
+                  <select id="mission-type" value={missionType}
+                    onChange={(e) => setMissionType(e.target.value as MissionType)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink focus:ring-2 focus:ring-brand-300">
+                    {MISSION_TYPES.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {missionType === 'diversify' && (
+                  <div>
+                    <label htmlFor="mission-n" className="mb-1 block text-sm text-ink">Number of stocks (N)</label>
+                    <input id="mission-n" type="number" min="1" step="1" value={missionN}
+                      onChange={(e) => setMissionN(e.target.value)}
+                      className="w-24 rounded-md border border-input bg-background px-3 py-2 text-base text-ink focus:ring-2 focus:ring-brand-300" />
+                  </div>
+                )}
+
+                {missionType === 'invest_amount' && (
+                  <div>
+                    <label htmlFor="mission-amount" className="mb-1 block text-sm text-ink">Amount to invest</label>
+                    <input id="mission-amount" type="number" min="0" step="0.01" value={missionAmount}
+                      onChange={(e) => setMissionAmount(e.target.value)}
+                      className="w-40 rounded-md border border-input bg-background px-3 py-2 text-base text-ink focus:ring-2 focus:ring-brand-300" />
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="mission-title" className="mb-1 block text-sm text-ink">Mission title</label>
+                  <input id="mission-title" value={missionTitle}
+                    onChange={(e) => setMissionTitle(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
+                </div>
+
+                <div>
+                  <label htmlFor="mission-prompt" className="mb-1 block text-sm text-ink">Mission prompt</label>
+                  <textarea id="mission-prompt" value={missionPrompt} rows={2}
+                    onChange={(e) => setMissionPrompt(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
+                </div>
+
+                <div className="flex gap-4">
+                  <div>
+                    <label htmlFor="mission-xp" className="mb-1 block text-sm text-ink">Mission XP</label>
+                    <input id="mission-xp" type="number" min="0" step="1" value={missionXp}
+                      onChange={(e) => setMissionXp(e.target.value)}
+                      className="w-24 rounded-md border border-input bg-background px-3 py-2 text-base text-ink focus:ring-2 focus:ring-brand-300" />
+                  </div>
+                  <div>
+                    <label htmlFor="mission-cash" className="mb-1 block text-sm text-ink">Mission cash reward (optional)</label>
+                    <input id="mission-cash" type="number" min="0" step="0.01" value={missionCash}
+                      onChange={(e) => setMissionCash(e.target.value)} placeholder="None"
+                      className="w-40 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="mt-2 flex gap-3">
             <button type="submit" className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700">

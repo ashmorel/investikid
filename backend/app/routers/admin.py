@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, func, select, update
@@ -8,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core.database import get_session
+from app.models.apply_mission import ApplyMission
 from app.models.content import Lesson, Level, Module
 from app.models.gamification import Badge, Challenge, UserBadge
 from app.models.user import User
@@ -20,6 +22,7 @@ from app.schemas.admin import (
     AdminLevelUpdate,
     AdminSettingsOut,
     AdminSettingsUpdate,
+    ApplyMissionOut,
     BadgeCreate,
     BadgeOut,
     BadgeUpdate,
@@ -40,10 +43,52 @@ from app.schemas.admin import (
     VideoPresignResponse,
 )
 from app.services import storage, video_health_service
-from app.services.app_settings import get_alert_emails, set_alert_emails
+from app.services.app_settings import (
+    get_alert_emails,
+    get_starting_cash,
+    set_alert_emails,
+    set_starting_cash,
+)
 from app.services.engagement_service import get_module_engagement
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
+
+
+async def _upsert_apply_mission(session: AsyncSession, lesson: Lesson, payload: LessonCreate | LessonUpdate) -> None:
+    """Create or update the (single) ApplyMission for a lesson from the payload."""
+    am = payload.apply_mission
+    if am is None:
+        return
+    existing = await session.scalar(
+        select(ApplyMission).where(ApplyMission.lesson_id == lesson.id)
+    )
+    if existing is None:
+        session.add(ApplyMission(
+            lesson_id=lesson.id, mission_type=am.mission_type, params_json=am.params_json,
+            title=am.title, prompt=am.prompt, xp_reward=am.xp_reward,
+            cash_reward=am.cash_reward, badge_id=am.badge_id,
+        ))
+    else:
+        existing.mission_type = am.mission_type
+        existing.params_json = am.params_json
+        existing.title = am.title
+        existing.prompt = am.prompt
+        existing.xp_reward = am.xp_reward
+        existing.cash_reward = am.cash_reward
+        existing.badge_id = am.badge_id
+
+
+async def _lesson_out(session: AsyncSession, lesson: Lesson) -> LessonOut:
+    """Serialize a lesson to LessonOut, including its ApplyMission if present."""
+    mission = await session.scalar(
+        select(ApplyMission).where(ApplyMission.lesson_id == lesson.id)
+    )
+    return LessonOut(
+        id=lesson.id, module_id=lesson.module_id, type=lesson.type,
+        content_json=lesson.content_json, xp_reward=lesson.xp_reward,
+        order_index=lesson.order_index,
+        apply_mission=ApplyMissionOut.model_validate(mission) if mission else None,
+    )
 
 
 # ── Stats ───────────────────────────────────────────────────────────
@@ -94,6 +139,7 @@ async def create_module(payload: ModuleCreate, session: AsyncSession = Depends(g
         is_premium=payload.is_premium, country_codes=payload.country_codes,
         order_index=payload.order_index, prerequisite_ids=payload.prerequisite_ids,
         min_age=payload.min_age, max_age=payload.max_age,
+        completion_cash_reward=payload.completion_cash_reward,
     )
     session.add(module)
     await session.commit()
@@ -103,6 +149,7 @@ async def create_module(payload: ModuleCreate, session: AsyncSession = Depends(g
         is_premium=module.is_premium, country_codes=module.country_codes,
         order_index=module.order_index, lesson_count=0,
         prerequisite_ids=module.prerequisite_ids, min_age=module.min_age, max_age=module.max_age,
+        completion_cash_reward=module.completion_cash_reward,
     )
 
 
@@ -138,6 +185,7 @@ async def update_module(
         is_premium=module.is_premium, country_codes=module.country_codes,
         order_index=module.order_index, lesson_count=len(module.lessons),
         prerequisite_ids=module.prerequisite_ids, min_age=module.min_age, max_age=module.max_age,
+        completion_cash_reward=module.completion_cash_reward,
     )
 
 
@@ -195,9 +243,11 @@ async def create_lesson(
         xp_reward=payload.xp_reward, order_index=payload.order_index,
     )
     session.add(lesson)
+    await session.flush()
+    await _upsert_apply_mission(session, lesson, payload)
     await session.commit()
     await session.refresh(lesson)
-    return lesson
+    return await _lesson_out(session, lesson)
 
 
 @router.put("/lessons/{lesson_id}", response_model=LessonOut)
@@ -208,6 +258,7 @@ async def update_lesson(
     if lesson is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found")
     update_data = payload.model_dump(exclude_unset=True)
+    update_data.pop("apply_mission", None)
     # If both type and content_json are being updated, validate together
     if "content_json" in update_data:
         effective_type = update_data.get("type", lesson.type)
@@ -218,9 +269,10 @@ async def update_lesson(
         )
     for field, value in update_data.items():
         setattr(lesson, field, value)
+    await _upsert_apply_mission(session, lesson, payload)
     await session.commit()
     await session.refresh(lesson)
-    return lesson
+    return await _lesson_out(session, lesson)
 
 
 @router.delete("/lessons/{lesson_id}")
@@ -337,9 +389,11 @@ async def admin_create_level_lesson(
         order_index=payload.order_index,
     )
     session.add(lesson)
+    await session.flush()
+    await _upsert_apply_mission(session, lesson, payload)
     await session.commit()
     await session.refresh(lesson)
-    return LessonOut.model_validate(lesson)
+    return await _lesson_out(session, lesson)
 
 
 # ── Badges ──────────────────────────────────────────────────────────
@@ -444,7 +498,10 @@ async def list_countries(session: AsyncSession = Depends(get_session)):
 @router.get("/settings", response_model=AdminSettingsOut)
 async def get_settings(session: AsyncSession = Depends(get_session)):
     emails = await get_alert_emails(session)
-    return AdminSettingsOut(alert_emails=emails)
+    cash = await get_starting_cash(session)
+    return AdminSettingsOut(
+        alert_emails=emails, starting_cash={k: str(v) for k, v in cash.items()}
+    )
 
 
 @router.put("/settings", response_model=AdminSettingsOut)
@@ -452,8 +509,13 @@ async def update_settings(
     body: AdminSettingsUpdate, session: AsyncSession = Depends(get_session),
 ):
     await set_alert_emails(session, body.alert_emails)
+    if body.starting_cash is not None:
+        await set_starting_cash(session, {k: Decimal(v) for k, v in body.starting_cash.items()})
     await session.commit()
-    return AdminSettingsOut(alert_emails=body.alert_emails)
+    cash = await get_starting_cash(session)
+    return AdminSettingsOut(
+        alert_emails=body.alert_emails, starting_cash={k: str(v) for k, v in cash.items()}
+    )
 
 
 # ── Video health ────────────────────────────────────────────────────

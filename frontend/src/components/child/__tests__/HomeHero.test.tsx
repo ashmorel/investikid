@@ -11,7 +11,7 @@ const next = {
 };
 
 vi.mock('@/hooks/useNextLesson', () => ({ useNextLesson: () => next }));
-vi.mock('@/hooks/useChildSession', () => ({ useChildSession: () => ({ data: { username: 'Sam', is_premium: false } }) }));
+vi.mock('@/hooks/useChildSession', () => ({ useChildSession: () => ({ data: { username: 'Sam', is_premium: false, age_tier: 'explorer' } }) }));
 vi.mock('@/api/ai', () => ({
   useRecommendations: () => ({ data: { review_summary: { due_count: 0 } } }),
   useHomeGreeting: () => ({ data: undefined }),
@@ -27,6 +27,16 @@ describe('HomeHero', () => {
     expect(screen.getByText('What is a Stock?')).toBeInTheDocument();
     const cta = screen.getByRole('link', { name: /start/i });
     expect(cta).toHaveAttribute('href', '/lessons/m1/l1/q1');
+  });
+
+  it('renders the explorer-size Penny and a warm, emoji greeting', () => {
+    const { container } = render(wrap(<HomeHero />));
+    // Explorer hero Penny size is 44 (tierConfig.explorer.pennyHeroSize)
+    const penny = container.querySelector('svg');
+    expect(penny).toHaveAttribute('width', '44');
+    // Explorer start greeting ends with the 📈 emoji
+    const greeting = screen.getByText(/start your money journey/i);
+    expect(/\p{Extended_Pictographic}/u.test(greeting.textContent ?? '')).toBe(true);
   });
 
   it('has no accessibility violations', async () => {

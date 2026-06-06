@@ -2,9 +2,42 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+
+from app.services.simulator_rewards_config import MISSION_TYPES
+
+
+# ── Apply mission ───────────────────────────────────────────────────
+class ApplyMissionIn(BaseModel):
+    mission_type: str
+    params_json: dict = {}
+    title: str
+    prompt: str
+    xp_reward: int = 0
+    cash_reward: Decimal | None = None
+    badge_id: uuid.UUID | None = None
+
+    @field_validator("mission_type")
+    @classmethod
+    def _known_type(cls, v: str) -> str:
+        if v not in MISSION_TYPES:
+            raise ValueError(f"unknown mission_type: {v}")
+        return v
+
+
+class ApplyMissionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    mission_type: str
+    params_json: dict
+    title: str
+    prompt: str
+    xp_reward: int
+    cash_reward: Decimal | None
+    badge_id: uuid.UUID | None
 
 
 # ── Module ──────────────────────────────────────────────────────────
@@ -18,6 +51,7 @@ class ModuleCreate(BaseModel):
     prerequisite_ids: list[uuid.UUID] = []
     min_age: int | None = None
     max_age: int | None = None
+    completion_cash_reward: Decimal | None = None
 
     @model_validator(mode="after")
     def validate_age_range(self):
@@ -35,6 +69,7 @@ class ModuleUpdate(BaseModel):
     prerequisite_ids: list[uuid.UUID] | None = None
     min_age: int | None = None
     max_age: int | None = None
+    completion_cash_reward: Decimal | None = None
 
 
 class ModuleOut(BaseModel):
@@ -49,6 +84,7 @@ class ModuleOut(BaseModel):
     prerequisite_ids: list[uuid.UUID] = []
     min_age: int | None = None
     max_age: int | None = None
+    completion_cash_reward: Decimal | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -59,6 +95,7 @@ class LessonCreate(BaseModel):
     content_json: dict
     xp_reward: int
     order_index: int
+    apply_mission: ApplyMissionIn | None = None
 
     @field_validator("content_json")
     @classmethod
@@ -101,6 +138,7 @@ class LessonUpdate(BaseModel):
     type: Literal["card", "quiz", "scenario", "video"] | None = None
     content_json: dict | None = None
     xp_reward: int | None = None
+    apply_mission: ApplyMissionIn | None = None
 
 
 class LessonOut(BaseModel):
@@ -110,6 +148,7 @@ class LessonOut(BaseModel):
     content_json: dict
     xp_reward: int
     order_index: int
+    apply_mission: ApplyMissionOut | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -247,10 +286,12 @@ class AdminLevelOut(BaseModel):
 # ── Settings ────────────────────────────────────────────────────────
 class AdminSettingsOut(BaseModel):
     alert_emails: list[str]
+    starting_cash: dict[str, str] = {}
 
 
 class AdminSettingsUpdate(BaseModel):
     alert_emails: list[EmailStr]
+    starting_cash: dict[str, str] | None = None
 
     @field_validator("alert_emails")
     @classmethod

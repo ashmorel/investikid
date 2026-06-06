@@ -8,6 +8,8 @@ import { XpSummary } from '@/components/child/stats/XpSummary';
 import { BadgeGrid } from '@/components/child/stats/BadgeGrid';
 import { ChallengeList } from '@/components/child/stats/ChallengeList';
 import { LeaderboardTable } from '@/components/child/stats/LeaderboardTable';
+import { useGroupLeaderboard } from '@/hooks/useGroupLeaderboard';
+import { GroupLeaderboard } from '@/components/child/stats/GroupLeaderboard';
 
 function SectionSkeleton() {
   return <div className="h-32 animate-pulse rounded-2xl bg-muted" />;
@@ -20,6 +22,7 @@ export default function Stats() {
   const challenges = useChallenges();
   const leaderboard = useLeaderboard();
   const session = useChildSession();
+  const groupBoards = useGroupLeaderboard();
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-4 sm:space-y-8 sm:py-6">
@@ -58,6 +61,11 @@ export default function Stats() {
         ) : challenges.data ? (
           <ChallengeList challenges={challenges.data} />
         ) : null}
+      </section>
+
+      <section className="mt-5" aria-label="Your groups">
+        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Your groups</h2>
+        <GroupLeaderboard boards={groupBoards.data ?? []} />
       </section>
 
       {/* Weekly Leaderboard */}

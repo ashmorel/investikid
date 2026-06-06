@@ -5,6 +5,7 @@ from datetime import date, datetime
 from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.content import TOPIC_PATH_VALUES
+from app.services.age_tier import AgeTier
 
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
 _SUPPORTED_REGIONS = {"US", "GB", "HK"}
@@ -24,6 +25,7 @@ class UserProfile(BaseModel):
     parent_email: str | None
     created_at: datetime
     email_verified_at: datetime | None = None
+    age_tier: AgeTier = "explorer"
 
     model_config = {"from_attributes": True}
 

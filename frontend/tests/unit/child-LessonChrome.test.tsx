@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { LessonChrome } from '@/components/child/lesson/LessonChrome';
 
+vi.mock('@/hooks/useChildSession', () => ({ useChildSession: () => ({ data: { username: 'Sam', is_premium: false, age_tier: 'explorer' } }) }));
+
 describe('LessonChrome', () => {
   it('renders back button, progress bar, count, XP badge, and Penny speech bubble', () => {
     render(
@@ -22,7 +24,7 @@ describe('LessonChrome', () => {
     // XP badge
     expect(screen.getByText(/20 XP/i)).toBeInTheDocument();
 
-    // Penny speech bubble (static text)
+    // Penny speech bubble (explorer encouragement; position 2 → index 1)
     expect(screen.getByText(/you're doing great/i)).toBeInTheDocument();
   });
 

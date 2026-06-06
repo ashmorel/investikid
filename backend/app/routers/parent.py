@@ -7,9 +7,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.models.group import GroupMembership, LeaderboardGroup
 from app.models.user import User
 from app.routers.parent_auth import get_current_parent
+from app.schemas.group import GroupCreateRequest, GroupJoinRequest, GroupMemberOut, GroupOut
 from app.schemas.parent import ChildOut, FreezeRequest, PremiumToggleRequest
+from app.services import group_service
 from app.services.analytics_service import build_child_analytics
 from app.services.content_service import content_region_for
 from app.services.entitlements import set_premium
@@ -123,3 +126,103 @@ async def export_child_data(
         content=data,
         headers={"Content-Disposition": 'attachment; filename="invest-ed-child-export.json"'},
     )
+
+
+async def _group_out(session: AsyncSession, group: LeaderboardGroup, parent_email: str) -> GroupOut:
+    rows = (await session.execute(
+        select(GroupMembership.user_id, User.username)
+        .join(User, User.id == GroupMembership.user_id)
+        .where(GroupMembership.group_id == group.id)
+        .order_by(User.username)
+    )).all()
+    is_owner = group.owner_parent_email == parent_email
+    return GroupOut(
+        id=group.id, name=group.name,
+        code=group.code if is_owner else None,
+        is_owner=is_owner,
+        members=[GroupMemberOut(child_user_id=uid, username=uname) for uid, uname in rows],
+    )
+
+
+@router.post("/groups", response_model=GroupOut, status_code=201)
+async def create_group(
+    payload: GroupCreateRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        group = await group_service.create_group(session, parent_email, payload.name)
+    except group_service.GroupLimitError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Group limit reached")
+    await session.commit()
+    return GroupOut(id=group.id, name=group.name, code=group.code, is_owner=True, members=[])
+
+
+@router.post("/groups/join", response_model=GroupOut)
+async def join_group(
+    payload: GroupJoinRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    child = await _get_owned_child(session, parent_email, payload.child_user_id)
+    try:
+        group = await group_service.join_child(session, payload.code, child, parent_email)
+    except group_service.GroupNotFound:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+    except group_service.GroupLimitError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Group is full")
+    await session.commit()
+    return await _group_out(session, group, parent_email)
+
+
+@router.get("/groups", response_model=list[GroupOut])
+async def list_groups(
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    owned = (await session.scalars(
+        select(LeaderboardGroup).where(LeaderboardGroup.owner_parent_email == parent_email)
+    )).all()
+    child_group_ids = (await session.scalars(
+        select(GroupMembership.group_id)
+        .join(User, User.id == GroupMembership.user_id)
+        .where(User.parent_email == parent_email)
+    )).all()
+    member_groups = (await session.scalars(
+        select(LeaderboardGroup).where(LeaderboardGroup.id.in_(child_group_ids))
+    )).all() if child_group_ids else []
+    seen: dict = {}
+    for g in [*owned, *member_groups]:
+        seen[g.id] = g
+    return [await _group_out(session, g, parent_email) for g in seen.values()]
+
+
+@router.delete("/groups/{group_id}/members/{child_user_id}", status_code=200)
+async def remove_group_member(
+    group_id: uuid.UUID,
+    child_user_id: uuid.UUID,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    await _get_owned_child(session, parent_email, child_user_id)
+    await group_service.remove_member(session, group_id, child_user_id)
+    await session.commit()
+    return {"status": "ok"}
+
+
+@router.delete("/groups/{group_id}", status_code=200)
+async def delete_group(
+    group_id: uuid.UUID,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    group = await session.scalar(
+        select(LeaderboardGroup).where(
+            LeaderboardGroup.id == group_id, LeaderboardGroup.owner_parent_email == parent_email
+        )
+    )
+    if group is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+    await group_service.delete_group(session, group)
+    await session.commit()
+    return {"status": "ok"}

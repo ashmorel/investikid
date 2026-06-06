@@ -5,6 +5,8 @@ import { RegionSwitcher } from '@/components/child/RegionSwitcher';
 import { authApi, type Me } from '@/api/auth';
 import type { RegionCode } from '@/lib/region';
 import { useToast } from '@/hooks/use-toast';
+import { orderModulesForTier } from '@/lib/tierModuleOrder';
+import { DEFAULT_TIER } from '@/lib/ageTier';
 
 export default function Lessons() {
   const { toast } = useToast();
@@ -19,7 +21,8 @@ export default function Lessons() {
     staleTime: 60_000,
   });
 
-  const modules = modulesQ.data ?? [];
+  const tier = me?.age_tier ?? DEFAULT_TIER;
+  const modules = orderModulesForTier(modulesQ.data ?? [], tier);
 
   const lessonQueries = useQueries({
     queries: modules.filter((m) => !m.locked).map((m) => ({

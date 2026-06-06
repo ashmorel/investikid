@@ -11,8 +11,10 @@ import { LessonIllustration } from '@/components/child/lesson/LessonIllustration
 import { PracticeQuiz } from '@/components/child/lesson/PracticeQuiz';
 import { CoachPennyPanel } from '@/components/child/lesson/CoachPennyPanel';
 import { LessonChrome } from '@/components/child/lesson/LessonChrome';
+import { ApplyMissionCTA } from '@/components/child/lesson/ApplyMissionCTA';
 import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
+import { useActiveMissions } from '@/hooks/useActiveMissions';
 
 export default function Lesson() {
   const { moduleId, levelId, lessonId } = useParams<{ moduleId: string; levelId: string; lessonId: string }>();
@@ -22,6 +24,8 @@ export default function Lesson() {
   const [showPractice, setShowPractice] = useState(false);
   const [showPenny, setShowPenny] = useState(false);
   const completionInFlight = useRef(false);
+  const { data: missions } = useActiveMissions();
+  const lessonMission = missions?.find((m) => m.lesson_id === lessonId);
 
   const lessonQ = useQuery<LessonOut | null>({
     queryKey: ['lesson', lessonId],
@@ -129,6 +133,7 @@ export default function Lesson() {
           result={complete.data}
           onContinue={() => navigate(postCompleteDest, { replace: true })}
         />
+        {lessonMission && <ApplyMissionCTA mission={lessonMission} />}
         {complete.data.practice_available && !complete.data.already_completed && (
           <div className="mt-4 text-center">
             <button

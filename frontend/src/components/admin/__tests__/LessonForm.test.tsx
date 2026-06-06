@@ -89,6 +89,32 @@ describe('LessonForm', () => {
     });
   });
 
+  it('shows apply-mission fields when the mission toggle is enabled', () => {
+    render(<LessonForm moduleId="m1" nextOrderIndex={0} onClose={vi.fn()} />, { wrapper });
+    fireEvent.click(screen.getByLabelText(/apply mission/i));
+    expect(screen.getByLabelText(/mission type/i)).toBeInTheDocument();
+  });
+
+  it('includes apply_mission in the create payload when enabled', async () => {
+    const onClose = vi.fn();
+    render(<LessonForm moduleId="m1" nextOrderIndex={0} onClose={onClose} />, { wrapper });
+
+    fireEvent.change(screen.getByLabelText(/^title/i), { target: { value: 'T' } });
+    fireEvent.change(screen.getByLabelText(/body/i), { target: { value: 'B' } });
+    fireEvent.click(screen.getByLabelText(/apply mission/i));
+
+    const form = screen.getByLabelText(/mission type/i).closest('form')!;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          apply_mission: expect.objectContaining({ mission_type: 'first_buy' }),
+        })
+      );
+    });
+  });
+
   it('calls level endpoint when levelId is provided', async () => {
     const onClose = vi.fn();
     render(<LessonForm moduleId="m1" levelId="lv1" nextOrderIndex={0} onClose={onClose} />, { wrapper });

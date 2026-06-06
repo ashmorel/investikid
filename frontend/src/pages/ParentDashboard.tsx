@@ -10,6 +10,7 @@ import { ErrorBanner } from '@/components/ErrorBanner';
 import { useToast } from '@/hooks/use-toast';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 import { SignInMethods } from '@/components/parent/SignInMethods';
+import { GroupsCard } from '@/components/parent/GroupsCard';
 import { Penny } from '@/components/child/ui/Penny';
 
 export default function ParentDashboard() {
@@ -87,6 +88,9 @@ export default function ParentDashboard() {
           ))}
         </ul>
       )}
+      <GroupsCard
+        childrenList={(q.data ?? []).map((c: Child) => ({ user_id: c.user_id, username: c.username }))}
+      />
       <SignInMethods />
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} audience="parent" />
     </main>

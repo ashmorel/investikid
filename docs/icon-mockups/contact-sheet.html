@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1400px; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+         background: #f0f9ff; color: #0f172a; padding: 48px; }
+  h1 { font-size: 34px; font-weight: 800; color: #0c4a6e; }
+  .sub { color: #475569; margin: 6px 0 36px; font-size: 16px; }
+  .row { display: flex; gap: 40px; }
+  .card { flex: 1; background: #fff; border: 1px solid #bae6fd; border-radius: 20px; padding: 24px; text-align: center; }
+  .card.rec { border: 3px solid #f59e0b; box-shadow: 0 12px 28px rgba(37,99,235,0.14); }
+  .big { width: 240px; height: 240px; border-radius: 54px; }
+  .name { font-weight: 800; font-size: 18px; margin-top: 16px; }
+  .desc { color: #475569; font-size: 13px; margin-top: 6px; line-height: 1.4; }
+  .badge { display:inline-block; background:#f59e0b; color:#fff; font-size:12px; font-weight:800;
+           padding:3px 10px; border-radius:999px; margin-bottom:12px; letter-spacing:.04em; }
+  .small-row { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:18px; }
+  .small-row img { border-radius: 14px; }
+  .small-label { color:#94a3b8; font-size:11px; }
+  /* iOS home screen mock */
+  .home { margin-top: 44px; }
+  .phone { width: 360px; border-radius: 52px; padding: 18px; margin: 0 auto;
+           background: linear-gradient(160deg,#fbcfe8,#bae6fd 45%,#c7d2fe);
+           box-shadow: 0 24px 60px rgba(2,6,23,0.28); border: 10px solid #0f172a; }
+  .grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: 22px 18px; padding: 28px 14px 10px; }
+  .app { text-align:center; }
+  .app .ic { width: 60px; height: 60px; border-radius: 15px; background: rgba(255,255,255,.55); }
+  .app img { width:60px; height:60px; border-radius:15px; box-shadow: 0 4px 10px rgba(2,6,23,.18); }
+  .app .lbl { color:#0f172a; font-size:11px; margin-top:6px; font-weight:600; }
+  .app .lbl.real { font-weight:800; }
+  .caption { text-align:center; color:#475569; font-size:13px; margin-top:14px; }
+</style>
+</head>
+<body>
+  <h1>InvestiKid — app icon concepts</h1>
+  <p class="sub">Brand: sky-blue → indigo gradient · gold coin · Penny the piggy. Shown at 240px and at home-screen size (60px) to test legibility.</p>
+
+  <div class="row">
+    <div class="card rec">
+      <div class="badge">RECOMMENDED</div>
+      <img class="big" src="icon-A-penny-coin.svg" alt="Concept A"/>
+      <div class="name">A · Penny + sprouting coin</div>
+      <div class="desc">Friendly piggy + a gold £ coin sprouting a green leaf = "money that grows." Most ownable &amp; kid-warm; reads clearly small.</div>
+      <div class="small-row"><img src="icon-A-penny-coin.svg" width="120" height="120"/><img src="icon-A-penny-coin.svg" width="60" height="60"/><img src="icon-A-penny-coin.svg" width="40" height="40"/><span class="small-label">120 · 60 · 40px</span></div>
+    </div>
+    <div class="card">
+      <img class="big" src="icon-B-growth-monogram.svg" alt="Concept B"/>
+      <div class="name">B · Growth monogram</div>
+      <div class="desc">Minimal rising chart-arrow + a £ coin. Cooler / more grown-up — better for the 14–18 "Investor" feel; less kid-warm.</div>
+      <div class="small-row"><img src="icon-B-growth-monogram.svg" width="120" height="120"/><img src="icon-B-growth-monogram.svg" width="60" height="60"/><img src="icon-B-growth-monogram.svg" width="40" height="40"/><span class="small-label">120 · 60 · 40px</span></div>
+    </div>
+    <div class="card">
+      <img class="big" src="icon-C-coin-stack-penny.svg" alt="Concept C"/>
+      <div class="name">C · Coin-stack + Penny</div>
+      <div class="desc">Penny on an ascending coin stack = "stacking savings." Charming but slightly busier at tiny sizes.</div>
+      <div class="small-row"><img src="icon-C-coin-stack-penny.svg" width="120" height="120"/><img src="icon-C-coin-stack-penny.svg" width="60" height="60"/><img src="icon-C-coin-stack-penny.svg" width="40" height="40"/><span class="small-label">120 · 60 · 40px</span></div>
+    </div>
+  </div>
+
+  <div class="home">
+    <div class="phone">
+      <div class="grid">
+        <div class="app"><div class="ic"></div><div class="lbl">Notes</div></div>
+        <div class="app"><div class="ic"></div><div class="lbl">Photos</div></div>
+        <div class="app"><img src="icon-A-penny-coin.svg"/><div class="lbl real">InvestiKid</div></div>
+        <div class="app"><div class="ic"></div><div class="lbl">Clock</div></div>
+        <div class="app"><div class="ic"></div><div class="lbl">Maps</div></div>
+        <div class="app"><div class="ic"></div><div class="lbl">Music</div></div>
+        <div class="app"><div class="ic"></div><div class="lbl">Mail</div></div>
+        <div class="app"><div class="ic"></div><div class="lbl">Files</div></div>
+      </div>
+    </div>
+    <p class="caption">Concept A on a mock iOS home screen — recognisable next to other apps at real size.</p>
+  </div>
+</body>
+</html>

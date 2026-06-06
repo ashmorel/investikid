@@ -23,8 +23,9 @@ from app.services.content_service import (
     compute_level,
     content_region_for,
     derive_lesson_title,
+    grant_module_completion_cash,
     is_module_accessible,
-    streak_after_activity,
+    record_daily_activity,
 )
 from app.services.entitlements import is_premium
 from app.services.gamification_service import (
@@ -325,6 +326,8 @@ async def complete_lesson(
             concept = derive_lesson_title(lesson_type, lesson_content)
             await reinforce_concept(session, current_user.id, topic, concept)
 
+    await grant_module_completion_cash(session, current_user.id, lesson.module_id)
+
     await session.commit()
     await session.refresh(progress)
 
@@ -391,10 +394,5 @@ async def _award_completion(
 
     progress.xp += lesson.xp_reward
     progress.level = compute_level(progress.xp)
-    new_streak, new_last, new_freezes = streak_after_activity(
-        progress.last_activity_date, progress.streak_count, progress.streak_freezes, today_local
-    )
-    progress.streak_count = new_streak
-    progress.last_activity_date = new_last
-    progress.streak_freezes = new_freezes
+    record_daily_activity(progress, today_local)
     return lesson.xp_reward, False

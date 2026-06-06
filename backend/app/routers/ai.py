@@ -180,6 +180,7 @@ async def home_greeting(
             lesson_label=payload.lesson_label,
             streak_count=payload.streak_count,
             due_count=payload.due_count,
+            tier=current_user.age_tier,
         )
     except Exception as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Greeting unavailable") from exc

@@ -48,8 +48,9 @@ beforeEach(() => vi.restoreAllMocks());
 
 describe('a11y: parent surfaces', () => {
   it('ParentDashboard empty state has no axe violations', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify([]), { status: 200 }) as never,
+    // Fresh Response per call: body is single-use, and several queries fetch.
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () => new Response(JSON.stringify([]), { status: 200 }) as never,
     );
     const { container } = wrap(<ParentDashboard />);
     await waitFor(() => expect(screen.getByText(/No children linked/i)).toBeInTheDocument());
@@ -57,9 +58,7 @@ describe('a11y: parent surfaces', () => {
   });
 
   it('ParentDashboard with children has no axe violations', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify([
+    const children = [
           {
             user_id: 'u1', username: 'kid1', country_code: 'GB', is_active: true,
             parent_consent_given_at: '2026-01-01T00:00:00Z', consent_declined_at: null,
@@ -88,12 +87,14 @@ describe('a11y: parent surfaces', () => {
               badges: [{ name: 'First Lesson', icon: 'trophy', earned_at: '2026-05-15T10:00:00Z' }],
             },
           },
-        ]),
-        { status: 200 },
-      ) as never,
-    );
+    ];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      const body = url.includes('/parent/groups') ? [] : children;
+      return new Response(JSON.stringify(body), { status: 200 }) as never;
+    });
     const { container } = wrap(<ParentDashboard />);
-    await waitFor(() => expect(screen.getByText('kid1')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'kid1' })).toBeInTheDocument());
     expect(await axe(container)).toHaveNoViolations();
   });
 });

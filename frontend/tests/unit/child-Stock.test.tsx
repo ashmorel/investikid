@@ -1,10 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Stock from '@/pages/child/Stock';
 
-beforeEach(() => vi.restoreAllMocks());
+const toastMock = vi.fn();
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({ toast: toastMock, dismiss: vi.fn(), toasts: [] }),
+}));
+
+beforeEach(() => {
+  vi.restoreAllMocks();
+  toastMock.mockClear();
+});
 
 function mockFetchRoutes(routeMap: Record<string, unknown>) {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -71,6 +80,27 @@ describe('Stock page', () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/You own 5 shares/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows a reward toast with XP after a successful trade', async () => {
+    mockFetchRoutes({
+      '/market/quote/NASDAQ/AAPL': { ticker: 'AAPL', exchange: 'NASDAQ', name: 'Apple Inc.', price: '185.42', currency: 'USD' },
+      '/portfolio': { id: 'p1', virtual_cash: '10000.00', currency_code: 'USD', total_value: '10000.00', holdings: [] },
+      '/portfolio/trades': {
+        id: 't1', ticker: 'AAPL', type: 'buy', shares: '1', price: '185.42', executed_at: '2026-06-06T00:00:00Z',
+        rewards: { xp_awarded: 5, streak_extended: true, cash_granted: '0', missions_completed: [], badges_unlocked: [] },
+      },
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('button', { name: /review trade/i })).toBeInTheDocument());
+    await userEvent.type(screen.getByLabelText(/number of shares/i), '1');
+    await userEvent.click(screen.getByRole('button', { name: /review trade/i }));
+    await userEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    await waitFor(() => {
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({ description: expect.stringContaining('+5 XP') }),
+      );
     });
   });
 

@@ -52,6 +52,23 @@ class TradeOut(BaseModel):
     executed_at: datetime
 
 
+class MissionRewardOut(BaseModel):
+    id: uuid.UUID
+    title: str
+
+
+class RewardsOut(BaseModel):
+    xp_awarded: int = 0
+    streak_extended: bool = False
+    cash_granted: Decimal = Decimal("0")
+    missions_completed: list[MissionRewardOut] = []
+    badges_unlocked: list[str] = []  # badge names
+
+
+class TradeResultOut(TradeOut):
+    rewards: RewardsOut
+
+
 class PortfolioSnapshot(BaseModel):
     date: str
     value: float

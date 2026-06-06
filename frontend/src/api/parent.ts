@@ -37,6 +37,9 @@ export type Child = {
   analytics: ChildAnalytics | null;
 };
 
+export type GroupMember = { child_user_id: string; username: string };
+export type ParentGroup = { id: string; name: string; code: string | null; is_owner: boolean; members: GroupMember[] };
+
 export const parentApi = {
   requestMagicLink: (email: string) =>
     apiFetch<{ status: string }>('/parent/auth/request', {
@@ -63,4 +66,15 @@ export const parentApi = {
       `/parent/children/${userId}/premium`,
       { method: 'POST', body: JSON.stringify({ premium }) },
     ),
+  listGroups: () => apiFetch<ParentGroup[]>('/parent/groups'),
+  createGroup: (name: string) =>
+    apiFetch<ParentGroup>('/parent/groups', { method: 'POST', body: JSON.stringify({ name }) }),
+  joinGroup: (code: string, childUserId: string) =>
+    apiFetch<ParentGroup>('/parent/groups/join', {
+      method: 'POST', body: JSON.stringify({ code, child_user_id: childUserId }),
+    }),
+  removeGroupMember: (groupId: string, childUserId: string) =>
+    apiFetch<{ status: string }>(`/parent/groups/${groupId}/members/${childUserId}`, { method: 'DELETE' }),
+  deleteGroup: (groupId: string) =>
+    apiFetch<{ status: string }>(`/parent/groups/${groupId}`, { method: 'DELETE' }),
 };

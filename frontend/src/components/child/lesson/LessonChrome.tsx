@@ -1,4 +1,6 @@
 import { Penny } from '@/components/child/ui/Penny';
+import { useAgeTier } from '@/lib/ageTier';
+import { ENCOURAGEMENT } from '@/lib/tierCopy';
 
 interface LessonChromeProps {
   /** 1-based current lesson position within the level */
@@ -11,19 +13,14 @@ interface LessonChromeProps {
   onBack: () => void;
 }
 
-const PENNY_LINES = [
-  "Let's learn something new!",
-  "You're doing great!",
-  "Let's go, investor!",
-];
-
 /**
  * Lesson progress header: back control + progress bar + XP badge + Penny speech bubble.
  * Rendered above the active lesson renderer; never shown on the CompletionPanel screen.
  */
 export function LessonChrome({ position, total, xpReward, onBack }: LessonChromeProps) {
   // Pick a stable line based on position so it doesn't change on re-render
-  const line = PENNY_LINES[(position - 1) % PENNY_LINES.length];
+  const lines = ENCOURAGEMENT[useAgeTier()];
+  const line = lines[(position - 1) % lines.length];
   const pct = total > 0 ? Math.min(100, Math.round(((position - 1) / total) * 100)) : 0;
 
   return (

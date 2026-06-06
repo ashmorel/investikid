@@ -86,6 +86,23 @@ def streak_after_activity(
     return 1, today, freezes
 
 
+def record_daily_activity(progress, today_local: date) -> bool:
+    """Advance the streak for the first qualifying activity of the day (lesson or trade).
+
+    Idempotent: a no-op if the user already had activity today. Returns True if the streak
+    was advanced this call, False if it was already counted today.
+    """
+    if progress.last_activity_date == today_local:
+        return False
+    new_streak, new_last, new_freezes = streak_after_activity(
+        progress.last_activity_date, progress.streak_count, progress.streak_freezes, today_local
+    )
+    progress.streak_count = new_streak
+    progress.last_activity_date = new_last
+    progress.streak_freezes = new_freezes
+    return True
+
+
 def derive_lesson_title(lesson_type: str, content_json: dict) -> str:
     """Derive a human-readable lesson title from content_json by type."""
     if lesson_type == "card":
@@ -97,3 +114,40 @@ def derive_lesson_title(lesson_type: str, content_json: dict) -> str:
     if lesson_type == "video":
         return content_json.get("caption") or "Video lesson"
     return "Lesson"
+
+
+async def grant_module_completion_cash(session, user_id, module_id) -> bool:
+    """Grant a module's completion_cash_reward once, iff every lesson in the module is done.
+
+    Returns True if cash was granted this call, else False. Idempotent via the CashGrant ledger.
+    """
+    from sqlalchemy import func, select
+
+    from app.models.content import Lesson, LessonCompletion, Module
+    from app.models.simulator import Portfolio
+    from app.services.simulator_rewards import grant_cash
+
+    module = await session.get(Module, module_id)
+    if module is None or module.completion_cash_reward is None:
+        return False
+
+    total = await session.scalar(
+        select(func.count(Lesson.id)).where(Lesson.module_id == module_id)
+    )
+    if not total:
+        return False
+    done = await session.scalar(
+        select(func.count(func.distinct(LessonCompletion.lesson_id)))
+        .select_from(LessonCompletion)
+        .join(Lesson, Lesson.id == LessonCompletion.lesson_id)
+        .where(Lesson.module_id == module_id, LessonCompletion.user_id == user_id)
+    )
+    if (done or 0) < total:
+        return False
+
+    portfolio = await session.scalar(select(Portfolio).where(Portfolio.user_id == user_id))
+    if portfolio is None:
+        return False
+    return await grant_cash(
+        session, user_id, portfolio, "module", module_id, module.completion_cash_reward
+    )

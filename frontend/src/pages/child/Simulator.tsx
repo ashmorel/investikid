@@ -1,11 +1,14 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useTrades } from '@/hooks/useTrades';
 import { usePortfolioHistory } from '@/hooks/usePortfolioHistory';
+import { useActiveMissions } from '@/hooks/useActiveMissions';
 import { CashCard } from '@/components/child/simulator/CashCard';
 import { HoldingsTable } from '@/components/child/simulator/HoldingsTable';
 import { TradeHistoryTab } from '@/components/child/simulator/TradeHistoryTab';
 import { PortfolioHero } from '@/components/child/simulator/PortfolioHero';
+import { MissionBanner } from '@/components/child/simulator/MissionBanner';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 
@@ -15,7 +18,12 @@ export default function Simulator() {
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio();
   const { data: trades } = useTrades();
   const { data: history } = usePortfolioHistory();
+  const { data: missions } = useActiveMissions();
+  const [params] = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('holdings');
+
+  const missionId = params.get('mission');
+  const activeMission = missions?.find((m) => m.id === missionId) ?? missions?.[0] ?? undefined;
 
   if (portfolioLoading || !portfolio) {
     return <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6"><p className="text-sm text-muted-foreground">Loading portfolio…</p></div>;
@@ -38,6 +46,7 @@ export default function Simulator() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
+      <MissionBanner mission={activeMission} />
       {history && history.length >= 2 ? (
         <PortfolioHero totalValue={portfolio.total_value} currencyCode={portfolio.currency_code} history={history} />
       ) : (

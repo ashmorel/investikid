@@ -16,6 +16,7 @@ const UNVERIFIED_ME: Me = {
   content_region: null,
   is_premium: false,
   is_admin: false,
+  age_tier: 'explorer',
   parent_email: null,
   created_at: '2026-01-01T00:00:00Z',
   email_verified_at: null,

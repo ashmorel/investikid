@@ -50,6 +50,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
   const [prerequisiteIds, setPrerequisiteIds] = useState<string[]>(existing?.prerequisite_ids ?? []);
   const [minAge, setMinAge] = useState<string>(existing?.min_age?.toString() ?? '');
   const [maxAge, setMaxAge] = useState<string>(existing?.max_age?.toString() ?? '');
+  const [completionCashReward, setCompletionCashReward] = useState<string>(existing?.completion_cash_reward ?? '');
   const [editingLesson, setEditingLesson] = useState<AdminLesson | null>(null);
   const [showNewLesson, setShowNewLesson] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdminLesson | null>(null);
@@ -63,6 +64,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
       prerequisite_ids: prerequisiteIds,
       min_age: minAge ? Number(minAge) : null,
       max_age: maxAge ? Number(maxAge) : null,
+      completion_cash_reward: completionCashReward ? completionCashReward : null,
     };
     if (isEdit && moduleId) {
       await updateMod.mutateAsync({ id: moduleId, ...moduleData });
@@ -185,6 +187,14 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
           <p className="self-end pb-2 text-xs text-muted-foreground">Leave empty for all ages</p>
+        </div>
+
+        {/* Completion cash reward */}
+        <div>
+          <label htmlFor="mod-cash" className="mb-1 block text-sm text-ink">Completion cash reward (optional)</label>
+          <input id="mod-cash" type="number" min="0" step="0.01" value={completionCashReward}
+            onChange={(e) => setCompletionCashReward(e.target.value)} placeholder="None"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
         </div>
 
         {/* Lessons section — only in edit mode */}

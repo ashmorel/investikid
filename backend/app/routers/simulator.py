@@ -1,7 +1,7 @@
 import json
 import time
 from collections import defaultdict
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -21,22 +21,26 @@ from app.schemas.simulator import (
     HoldingOut,
     InvestingTipOut,
     MarketMoverOut,
+    MissionRewardOut,
     NewsSummaryOut,
     PortfolioOut,
     PortfolioSnapshot,
     PricePointOut,
     QuoteOut,
+    RewardsOut,
     StockNewsOut,
     TimeMachineOut,
     TimeMachinePeriod,
     TradeOut,
     TradeRequest,
+    TradeResultOut,
 )
 from app.services.chart_coach_service import (
     ChartCoachInputTooLong,
     ChartCoachLimitReached,
     chart_coach_chat,
 )
+from app.services.content_service import record_daily_activity
 from app.services.entitlements import is_premium
 from app.services.gamification_service import (
     evaluate_and_award_badges,
@@ -47,6 +51,10 @@ from app.services.moderation import moderate_output
 from app.services.price_provider import (
     LivePriceProvider,
     TickerNotAvailableError,
+)
+from app.services.simulator_rewards import (
+    award_trade_xp,
+    evaluate_apply_missions,
 )
 from app.services.simulator_service import (
     InsufficientFundsError,
@@ -654,7 +662,7 @@ async def get_portfolio(
     )
 
 
-@router.post("/portfolio/trades", response_model=TradeOut, status_code=201)
+@router.post("/portfolio/trades", response_model=TradeResultOut, status_code=201)
 async def place_trade(
     payload: TradeRequest,
     current_user: User = Depends(get_current_user),
@@ -684,11 +692,34 @@ async def place_trade(
         progress = UserProgress(user_id=current_user.id)
         session.add(progress)
         await session.flush()
-    await evaluate_and_award_badges(session, current_user.id, progress)
+
+    today_local = datetime.now(UTC).date()
+    xp_awarded = award_trade_xp(progress, today_local)
+    streak_extended = record_daily_activity(progress, today_local)
+    completed_missions = await evaluate_apply_missions(
+        session, current_user.id, progress, portfolio
+    )
+    cash_granted = sum(
+        (m.cash_reward or Decimal("0") for m in completed_missions), Decimal("0")
+    )
+    # Award badges AFTER XP/missions so XP/trade-count-based badges see updated state.
+    new_badges = await evaluate_and_award_badges(session, current_user.id, progress)
 
     await session.commit()
     await session.refresh(trade)
-    return trade
+    return TradeResultOut(
+        id=trade.id, ticker=trade.ticker, type=trade.type, shares=trade.shares,
+        price=trade.price, executed_at=trade.executed_at,
+        rewards=RewardsOut(
+            xp_awarded=xp_awarded,
+            streak_extended=streak_extended,
+            cash_granted=cash_granted,
+            missions_completed=[
+                MissionRewardOut(id=m.id, title=m.title) for m in completed_missions
+            ],
+            badges_unlocked=[b.name for b in new_badges],
+        ),
+    )
 
 
 @router.get("/portfolio/trades", response_model=list[TradeOut])

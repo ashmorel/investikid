@@ -21,6 +21,19 @@ export interface AdminModule {
   prerequisite_ids: string[];
   min_age: number | null;
   max_age: number | null;
+  completion_cash_reward?: string | null;
+}
+
+export type MissionType = 'first_buy' | 'first_sell' | 'diversify' | 'invest_amount';
+
+export interface ApplyMission {
+  id?: string;
+  mission_type: MissionType;
+  params_json: Record<string, unknown>;
+  title: string;
+  prompt: string;
+  xp_reward: number;
+  cash_reward?: string | null;
 }
 
 export interface AdminLesson {
@@ -30,6 +43,7 @@ export interface AdminLesson {
   content_json: Record<string, unknown>;
   xp_reward: number;
   order_index: number;
+  apply_mission?: ApplyMission | null;
 }
 
 /** Human-readable label for a lesson row in the admin UI. Each lesson type

@@ -1,3 +1,4 @@
+from app.services.age_tier import AGE_REGISTER_DIRECTIVE, AgeTier
 from app.services.llm_client import get_llm_client
 from app.services.moderation import moderate_output
 
@@ -11,12 +12,14 @@ def _build_messages(
     lesson_label: str | None,
     streak_count: int,
     due_count: int,
+    tier: AgeTier,
 ) -> tuple[str, list[dict]]:
     system_prompt = (
         "You are Coach Penny, a warm, encouraging piggy-bank money-skills buddy for a child. "
         "Write ONE short, upbeat greeting (max 20 words) for the home screen that nudges "
         "them toward their next lesson. Friendly, age-appropriate, at most one emoji. "
-        "Do not give financial advice. Output only the greeting text."
+        "Do not give financial advice. Output only the greeting text. "
+        + AGE_REGISTER_DIRECTIVE[tier]
     )
     context = (
         f"Child's name: {name or 'there'}. Mode: {mode}. "
@@ -34,6 +37,7 @@ async def generate_home_greeting(
     lesson_label: str | None,
     streak_count: int,
     due_count: int,
+    tier: AgeTier,
 ) -> str:
     """Premium AI greeting. Raises on provider/moderation failure so the caller
     can fall back to the client-side templated line."""
@@ -44,6 +48,7 @@ async def generate_home_greeting(
         lesson_label=lesson_label,
         streak_count=streak_count,
         due_count=due_count,
+        tier=tier,
     )
 
     # Exact completion call pattern from coach_service.coach_chat:

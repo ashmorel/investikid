@@ -9,10 +9,14 @@ import { Button } from '@/components/ui/button';
 import HomeHero from '@/components/child/HomeHero';
 import { ModuleTile } from '@/components/child/ui/ModuleTile';
 import { LevelProgressCard } from '@/components/child/LevelProgressCard';
+import { PortfolioSnapshotCard } from '@/components/child/home/PortfolioSnapshotCard';
 import { AchievementsStrip } from '@/components/child/AchievementsStrip';
+import { usePortfolio } from '@/hooks/usePortfolio';
 import { useAllBadges } from '@/hooks/useAllBadges';
 import { useBadges } from '@/hooks/useBadges';
 import { useNextLesson } from '@/hooks/useNextLesson';
+import { orderModulesForTier } from '@/lib/tierModuleOrder';
+import { useAgeTier } from '@/lib/ageTier';
 
 const TOPIC_STYLE: Record<string, { accent: string; tint: string }> = {
   savings: { accent: '#0ea5e9', tint: '#e0f2fe' },
@@ -33,6 +37,7 @@ export default function Home() {
   const allBadges = useAllBadges();
   const earnedBadges = useBadges();
   const next = useNextLesson();
+  const { data: portfolio } = usePortfolio();
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -41,7 +46,8 @@ export default function Home() {
     staleTime: 60_000,
   });
 
-  const modules = [...(modulesQ.data ?? [])].sort((a, b) => a.order_index - b.order_index);
+  const tier = useAgeTier();
+  const modules = orderModulesForTier(modulesQ.data ?? [], tier);
   const level = progress?.level ?? 1;
   const xp = progress?.xp ?? 0;
 
@@ -65,6 +71,16 @@ export default function Home() {
       <div className="mt-4">
         <LevelProgressCard level={level} xp={xp} />
       </div>
+
+      {portfolio?.total_value && (
+        <div className="mt-4">
+          <PortfolioSnapshotCard
+            totalValue={portfolio.total_value}
+            currencyCode={portfolio.currency_code}
+            changePct={null}
+          />
+        </div>
+      )}
 
       {/* Review nudge banner */}
       {recs && recs.review_summary.due_count > 0 && (

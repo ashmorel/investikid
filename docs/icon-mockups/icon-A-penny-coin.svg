@@ -1,0 +1,57 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgA" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8"/><stop offset="0.55" stop-color="#2563eb"/><stop offset="1" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="goldA" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="greenA" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#86efac"/><stop offset="1" stop-color="#16a34a"/>
+    </linearGradient>
+    <radialGradient id="sheenA" cx="0.3" cy="0.2" r="0.95">
+      <stop stop-color="#ffffff" stop-opacity="0.18"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="230" fill="url(#bgA)"/>
+  <rect width="1024" height="1024" rx="230" fill="url(#sheenA)"/>
+
+  <!-- Penny (white piggy face) -->
+  <g transform="translate(512 360)">
+    <path d="M-170 -132 q -34 -64 16 -84 q 50 -8 56 64 z" fill="#ffffff"/>
+    <path d="M170 -132 q 34 -64 -16 -84 q -50 -8 -56 64 z" fill="#ffffff"/>
+    <path d="M-160 -130 q -20 -42 8 -54 q 30 -4 34 40 z" fill="#fbcfe8"/>
+    <path d="M160 -130 q 20 -42 -8 -54 q -30 -4 -34 40 z" fill="#fbcfe8"/>
+    <circle r="186" fill="#ffffff"/>
+    <circle cx="-72" cy="-30" r="24" fill="#0c4a6e"/>
+    <circle cx="72" cy="-30" r="24" fill="#0c4a6e"/>
+    <circle cx="-63" cy="-39" r="8" fill="#ffffff"/>
+    <circle cx="81" cy="-39" r="8" fill="#ffffff"/>
+    <circle cx="-138" cy="44" r="24" fill="#fbcfe8" fill-opacity="0.85"/>
+    <circle cx="138" cy="44" r="24" fill="#fbcfe8" fill-opacity="0.85"/>
+    <ellipse cx="0" cy="72" rx="88" ry="58" fill="#fbcfe8"/>
+    <ellipse cx="0" cy="72" rx="88" ry="58" fill="none" stroke="#f9a8d4" stroke-width="4"/>
+    <ellipse cx="-30" cy="72" rx="13" ry="20" fill="#be185d" fill-opacity="0.55"/>
+    <ellipse cx="30" cy="72" rx="13" ry="20" fill="#be185d" fill-opacity="0.55"/>
+    <path d="M-66 150 Q0 200 66 150" stroke="#0ea5e9" stroke-width="15" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Coin -->
+  <g transform="translate(512 818)">
+    <ellipse cx="0" cy="118" rx="176" ry="42" fill="#0c4a6e" fill-opacity="0.18"/>
+    <circle r="152" fill="url(#goldA)" stroke="#b45309" stroke-width="12"/>
+    <circle r="120" fill="none" stroke="#b45309" stroke-width="8" stroke-opacity="0.4"/>
+    <circle cx="-56" cy="-56" r="30" fill="#ffffff" fill-opacity="0.45"/>
+    <text x="0" y="58" text-anchor="middle" font-family="Nunito, Arial, sans-serif" font-size="176" font-weight="800" fill="#b45309">£</text>
+  </g>
+
+  <!-- Sprout rising from the coin into the gap below Penny -->
+  <g transform="translate(512 668)">
+    <path d="M0 12 C 2 -34 0 -62 0 -104" stroke="url(#greenA)" stroke-width="24" fill="none" stroke-linecap="round"/>
+    <path d="M-3 -50 C -64 -80 -126 -64 -150 -4 C -82 4 -22 -16 -3 -64 Z" fill="url(#greenA)"/>
+    <path d="M3 -80 C 64 -110 126 -94 150 -34 C 82 -26 22 -46 3 -94 Z" fill="url(#greenA)"/>
+    <path d="M-3 -54 C -54 -56 -98 -44 -128 -14" stroke="#ffffff" stroke-width="5" fill="none" stroke-opacity="0.45" stroke-linecap="round"/>
+    <path d="M3 -84 C 54 -86 98 -74 128 -44" stroke="#ffffff" stroke-width="5" fill="none" stroke-opacity="0.45" stroke-linecap="round"/>
+  </g>
+</svg>

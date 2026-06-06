@@ -15,6 +15,7 @@ export type Me = {
   content_region: string | null;
   is_premium: boolean;
   is_admin: boolean;
+  age_tier: 'explorer' | 'investor';
   parent_email: string | null;
   created_at: string;
   email_verified_at: string | null;

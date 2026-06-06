@@ -7,13 +7,6 @@ from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import User
 from app.services.price_provider import PriceQuote
 
-_STARTING_CASH: dict[str, Decimal] = {
-    "GBP": Decimal("1000.00"),
-    "USD": Decimal("1000.00"),
-    "HKD": Decimal("10000.00"),
-    "EUR": Decimal("1000.00"),
-}
-
 
 class InsufficientFundsError(Exception):
     pass
@@ -24,10 +17,13 @@ class InsufficientSharesError(Exception):
 
 
 async def get_or_create_portfolio(session: AsyncSession, user: User) -> Portfolio:
+    from app.services.app_settings import get_starting_cash
+
     portfolio = await session.scalar(select(Portfolio).where(Portfolio.user_id == user.id))
     if portfolio:
         return portfolio
-    starting = _STARTING_CASH.get(user.currency_code, Decimal("1000.00"))
+    cash_map = await get_starting_cash(session)
+    starting = cash_map.get(user.currency_code, Decimal("1000.00"))
     portfolio = Portfolio(user_id=user.id, virtual_cash=starting, currency_code=user.currency_code)
     session.add(portfolio)
     await session.flush()

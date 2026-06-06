@@ -39,10 +39,25 @@ export default function Stock() {
 
   const tradeMutation = useMutation({
     mutationFn: (req: TradeRequest) => simulatorApi.placeTrade(req),
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
       queryClient.invalidateQueries({ queryKey: ['trades'] });
-      toast({ title: 'Trade executed!', description: `Your ${ticker} trade was successful.` });
+      queryClient.invalidateQueries({ queryKey: ['active-missions'] });
+      queryClient.invalidateQueries({ queryKey: ['progress'] });
+
+      const r = result?.rewards;
+      const bits: string[] = [];
+      if (r) {
+        if (r.xp_awarded > 0) bits.push(`+${r.xp_awarded} XP`);
+        if (r.streak_extended) bits.push('🔥 streak kept');
+        if (Number(r.cash_granted) > 0) bits.push(`+${r.cash_granted} to invest`);
+        if (r.missions_completed.length) bits.push(`Mission complete: ${r.missions_completed[0].title}`);
+      }
+      if (bits.length) {
+        toast({ title: 'Nice trade!', description: bits.join(' · ') });
+      } else {
+        toast({ title: 'Trade executed!', description: `Your ${ticker} trade was successful.` });
+      }
       navigate('/simulator');
     },
     onError: (err: unknown) => {
