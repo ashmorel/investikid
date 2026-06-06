@@ -140,6 +140,29 @@ These need dashboard access and are not in the repo.
 - Confirm no `.env*` is tracked here (only `backend/.env.example` should be) and run `gitleaks`.
 - Enable GitHub secret scanning.
 
+## Provisioning status (2026-06-06)
+
+**Railway (project `Invest-Ed`) — testing + staging DONE, production untouched.**
+- **testing** → backend `https://lee-local-code-repo-testing.up.railway.app`; source `investikid@testing`, root `/backend`; own Postgres (`DATABASE_URL` = `${{ Postgres.DATABASE_URL }}` reference); migrated + seeded; `ENVIRONMENT=testing`, `EMAIL_BACKEND=logging`. Auto-deploys on push to `testing`.
+- **staging** → backend `https://lee-local-code-repo-staging.up.railway.app`; source `investikid@staging`, root `/backend`; own Postgres (reference); full migration chain + seeded; `ENVIRONMENT=staging`, `EMAIL_BACKEND=logging`. Auto-deploys on push to `staging`.
+- **production** → still on the old repo (`Lee-Local-Code-Repo`, `/invest-ed/backend`), own DB, **not migrated by the cutover**. Repoint later (gated, backup-first).
+- ⚠️ testing + staging carry **forked production secrets** (live OpenAI/Together/Resend keys, `JWT_SECRET`, `CRON_SECRET`, DB password, `ADMIN_TOKEN`, `SECRET_KEY`). **Rotate / set test-only keys** — Coach Penny in non-prod currently bills your prod LLM accounts.
+- `CORS_ORIGINS` + `APP_BASE_URL` in testing/staging still hold prod values — update to the Vercel branch URLs below.
+
+**Vercel (project `investikid.ai`, team `lee-ashmore-s-projects`) — repoint PENDING / unverified.**
+- As of this check, **all deployments (incl. live `app.investikid.ai`) are still from the old repo** `Lee-Local-Code-Repo@main` (`de1eae1`). No `investikid` deploy has occurred yet.
+- To finish: Settings → Git → connect **`ashmorel/investikid`**; Build & Deployment → **Root Directory = `frontend`**; set env vars (below); protect the staging Preview.
+- Verify the repoint by pushing to `testing` → a Preview should build from `investikid`.
+- Predicted Vercel branch URLs (use for `VITE_WEB_ORIGIN` + the Railway `CORS_ORIGINS`/`APP_BASE_URL` above):
+  - testing: `https://investikidai-git-testing-lee-ashmore-s-projects.vercel.app`
+  - staging: `https://investikidai-git-staging-lee-ashmore-s-projects.vercel.app`
+  - production: `https://app.investikid.ai`
+
+**Frontend env vars per env** (`VITE_API_BASE_URL` → the matching Railway backend):
+- testing → `https://lee-local-code-repo-testing.up.railway.app`
+- staging → `https://lee-local-code-repo-staging.up.railway.app`
+- production → the existing prod backend URL (unchanged)
+
 ## Related docs
 - `docs/deployment-checkpoint.md` — how to run the manual checkpoint workflow.
 - `docs/superpowers/specs/2026-06-06-invested-repo-environment-migration-design.md` — the original
