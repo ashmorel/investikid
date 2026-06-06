@@ -27,7 +27,7 @@
 ### Engagement gaps + top 5 priorities
 Foundation present: XP, levels, streaks, badges, weekly challenges, leaderboard, Penny mascot, varied lesson formats, Simulator differentiator.
 
-1. [ ] **Re-engagement layer** — push/local notifications (streak-at-risk, new challenges) + streak freeze. There are currently **no notifications anywhere**; highest retention leverage.
+1. [x] **Re-engagement layer (3A)** — ✅ DONE 2026-06-05 (commits `4e04975`→`cd4c6e4`, pushed). Streak-freeze (earn 1 per 7-day milestone, cap 2, absorbs a single missed day; `streak_config.py` tunables + `streak_freezes` on `UserProgress`, migration `a1b2c3d4e5f7`) + 🛡️ indicator in `StatsBar`. Opt-in on-device **local** notification (Capacitor `LocalNotifications`): "Daily streak reminder" toggle in `ProfileMenu` (off by default, native-only, no auto-prompt), evening streak-at-risk nudge, cancelled once you practice. Server **push** + "new challenges" nudge deferred. Spec/plan `docs/superpowers/{specs,plans}/2026-06-05-reengagement-streak-defense*`. BE 624 / FE 590 green; iOS plugin synced (`Package.swift`) — needs a USER Xcode rebuild to verify on device.
 2. [ ] **Social done right** — friends/class leaderboards + challenges via invite/class-code, replacing the demotivating global anonymous board.
 3. [ ] **Age-tier mode (10–13 "Explorer" vs 14–18 "Investor")** — derived from DOB already collected; flips copy tone, mascot prominence, default module order, Simulator emphasis. Resolves the core 10-vs-18 tension without building two apps.
 4. [ ] **Unify flow** — one vocabulary, one Home "next action", re-skin Progress.
