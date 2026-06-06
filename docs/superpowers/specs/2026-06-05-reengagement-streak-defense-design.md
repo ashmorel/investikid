@@ -44,7 +44,9 @@ Change signature to take and return the freeze count:
 - gap == 2 (exactly one day missed) **and** `freezes > 0`: consume one freeze, absorb the missed day → `new = current + 1`, `freezes -= 1`; re-check milestone on `new` (grant if `new % STREAK_MILESTONE == 0`, still capped); return `(new, today, freezes)`.
 - otherwise (gap >= 2 with no freeze, or gap >= 3): reset → `(1, today, freezes)` (freezes unchanged).
 
-Constants in `content_service.py`: `STREAK_MILESTONE = 7`, `STREAK_FREEZE_CAP = 2`.
+Constants live in the new `app/services/streak_config.py` (`STREAK_MILESTONE = 7`,
+`STREAK_FREEZE_CAP = 2`, `STREAK_FREEZE_GAP = 2`) and are imported here — see
+**Configurability** below. No numeric literals inline.
 
 > **Milestone-on-freeze edge case (made explicit):** when a freeze is consumed to reach a multiple of 7, the milestone grant still applies (net zero that day: −1 consumed, +1 earned). This is intentional and tested.
 
@@ -128,6 +130,43 @@ All native calls are guarded by `isNativeApp()`; on web the toggle is hidden and
 - DB change = hand-written chained Alembic migration (check `alembic heads`). Async tests use `loop_scope="session")` + fixtures. Backend verify: `ruff` + `pytest`.
 - Frontend: `npx tsc -b`, `npm run lint`, `npm test` (vitest + vitest-axe), `npm run build`. WCAG 2.2 AA; iOS inputs ≥16px, no `maximum-scale`.
 - Commit to `main`; end messages with `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`. Railway (backend) + Vercel (frontend) deploy on green CI (6 jobs). No `.env` access.
+
+## Configurability (single source of truth for every tunable)
+
+A hard requirement: no magic numbers or hard-coded copy scattered through the code. Every
+tunable lives in one named place so it can be changed later with a single edit.
+
+**Backend — `app/services/streak_config.py` (new, tiny module):**
+```python
+STREAK_MILESTONE = 7        # earn a freeze each time the streak hits a multiple of this
+STREAK_FREEZE_CAP = 2       # max freezes a user can hold
+STREAK_FREEZE_GAP = 2       # a gap of exactly this many days (= 1 missed day) is freezable
+```
+`content_service.streak_after_activity` imports these — no literals inline. Changing the
+milestone interval or cap is a backend-only edit and ships with the next backend deploy
+(no app release). Keep them here (not in `core/config.py`) since they're product rules, not
+secrets; promoting to env-driven `Settings` later is trivial if we ever want per-env tuning.
+
+**Frontend — `lib/reminderConfig.ts` (new):**
+```ts
+export const REMINDER = {
+  notificationId: 1001,
+  primaryHour: 18,          // first choice fire time (local)
+  fallbackHour: 20,         // used if it's already past primaryHour
+  storageKey: 'notif_streak_reminder',
+  title: (streak: number) => `🔥 Keep your ${streak}-day streak alive!`,
+  body: 'A quick lesson before bed keeps your streak going.',
+} as const;
+```
+`streakReminder.ts`, `decideStreakReminder`, the `ProfileMenu` toggle, and the wrapper all
+read from `REMINDER` — no inline times, ids, copy, or storage keys. Because these drive a
+native bundle, changing them needs an app release; the config object is structured so a
+future enhancement could hydrate it from a server-config endpoint without touching callers.
+
+The `StatsBar` freeze-indicator copy/threshold and the Stats-page explainer string also
+reference these (or a small local constant) rather than inlining. Tests assert behaviour via
+the constants (e.g. import `STREAK_MILESTONE`) so retuning a value doesn't silently break a
+hard-coded expectation.
 
 ## Alternatives considered
 
