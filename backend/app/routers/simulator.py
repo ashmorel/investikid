@@ -48,6 +48,7 @@ from app.services.gamification_service import (
 )
 from app.services.llm_client import LLMError, get_llm_client
 from app.services.moderation import moderate_output
+from app.services.premium_config import premium_required_error
 from app.services.price_provider import (
     LivePriceProvider,
     TickerNotAvailableError,
@@ -670,7 +671,7 @@ async def place_trade(
     provider=Depends(get_price_provider),
 ):
     if not is_premium(current_user) and not provider.is_free_tier(payload.ticker, payload.exchange):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Ticker not available on free tier")
+        raise premium_required_error("ticker", payload.ticker)
     try:
         quote = provider.get_quote(payload.ticker, payload.exchange)
     except TickerNotAvailableError:

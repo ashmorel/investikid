@@ -34,6 +34,7 @@ from app.services.gamification_service import (
 )
 from app.services.level_service import LevelStateInput, derive_level_states
 from app.services.next_lesson_service import resolve_next_lesson
+from app.services.premium_config import premium_required_error
 from app.services.skill_profile_service import (
     record_weak_concept,
     reinforce_concept,
@@ -58,7 +59,7 @@ async def _get_accessible_module(
         content_region_for(current_user), is_premium(current_user),
         module.country_codes, module.is_premium,
     ):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Module requires premium")
+        raise premium_required_error("module", module.title)
     return module
 
 
@@ -141,7 +142,7 @@ async def _get_accessible_level(level_id, current_user, session) -> Level:
     # Reuse module access (country/age/premium-module gate)
     await _get_accessible_module(level.module_id, current_user, session)
     if level.is_premium and not is_premium(current_user):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Level requires premium")
+        raise premium_required_error("level", level.title)
     return level
 
 

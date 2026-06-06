@@ -176,7 +176,8 @@ class StaticPriceProvider:
         return out
 
     def is_free_tier(self, ticker: str, exchange: str) -> bool:
-        return True
+        # HKEX tickers are treated as premium-only so tests can exercise the gate.
+        return exchange.upper() != "HKEX"
 
     def get_history(self, ticker: str, exchange: str, period: str = "1mo") -> list[PricePoint]:
         return []
