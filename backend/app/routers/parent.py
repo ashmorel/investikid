@@ -75,7 +75,8 @@ async def list_premium_requests(
         select(PremiumRequest, User.username)
         .join(User, User.id == PremiumRequest.child_user_id)
         .where(PremiumRequest.parent_email == parent_email,
-               PremiumRequest.resolved_at.is_(None))
+               PremiumRequest.resolved_at.is_(None),
+               PremiumRequest.declined_at.is_(None))
         .order_by(PremiumRequest.created_at.desc())
     )).all()
     return [
@@ -83,6 +84,23 @@ async def list_premium_requests(
                           context_label=r.context_label, created_at=r.created_at)
         for r, username in rows
     ]
+
+
+@router.post("/premium-requests/{request_id}/decline")
+async def decline_premium_request(
+    request_id: uuid.UUID,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    row = await session.scalar(select(PremiumRequest).where(
+        PremiumRequest.id == request_id,
+        PremiumRequest.parent_email == parent_email))
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
+    if row.declined_at is None and row.resolved_at is None:
+        row.declined_at = datetime.now(UTC)
+        await session.commit()
+    return {"status": "ok"}
 
 
 @router.post("/children/{user_id}/freeze")

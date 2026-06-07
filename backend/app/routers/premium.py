@@ -26,12 +26,26 @@ async def request_premium(
     if not parent_email:
         return PremiumRequestResult(status="no_parent")
 
+    cutoff = datetime.now(UTC) - timedelta(hours=PREMIUM_REQUEST_COOLDOWN_HOURS)
+
+    # If the parent recently declined this child's request, show a gentle
+    # declined state instead of re-nagging the parent.
+    declined = await session.scalar(
+        select(PremiumRequest.id).where(
+            PremiumRequest.child_user_id == current_user.id,
+            PremiumRequest.declined_at.isnot(None),
+            PremiumRequest.resolved_at.is_(None),
+            PremiumRequest.created_at > cutoff,
+        ).limit(1)
+    )
+    if declined is not None:
+        return PremiumRequestResult(status="declined")
+
     session.add(PremiumRequest(
         child_user_id=current_user.id, parent_email=parent_email,
         context_kind=payload.kind, context_label=payload.label,
     ))
 
-    cutoff = datetime.now(UTC) - timedelta(hours=PREMIUM_REQUEST_COOLDOWN_HOURS)
     recent = await session.scalar(
         select(SentEmail.id).where(
             SentEmail.to_email == parent_email,

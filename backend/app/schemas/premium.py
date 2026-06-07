@@ -7,4 +7,4 @@ class PremiumRequestIn(BaseModel):
 
 
 class PremiumRequestResult(BaseModel):
-    status: str  # "sent" | "already_sent" | "no_parent"
+    status: str  # "sent" | "already_sent" | "no_parent" | "declined"
