@@ -140,29 +140,27 @@ These need dashboard access and are not in the repo.
 - Confirm no `.env*` is tracked here (only `backend/.env.example` should be) and run `gitleaks`.
 - Enable GitHub secret scanning.
 
-## Provisioning status (2026-06-06)
+## Provisioning status (2026-06-07)
 
-**Railway (project `Invest-Ed`) — testing + staging DONE, production untouched.**
-- **testing** → backend `https://lee-local-code-repo-testing.up.railway.app`; source `investikid@testing`, root `/backend`; own Postgres (`DATABASE_URL` = `${{ Postgres.DATABASE_URL }}` reference); migrated + seeded; `ENVIRONMENT=testing`, `EMAIL_BACKEND=logging`. Auto-deploys on push to `testing`.
-- **staging** → backend `https://lee-local-code-repo-staging.up.railway.app`; source `investikid@staging`, root `/backend`; own Postgres (reference); full migration chain + seeded; `ENVIRONMENT=staging`, `EMAIL_BACKEND=logging`. Auto-deploys on push to `staging`.
-- **production** → still on the old repo (`Lee-Local-Code-Repo`, `/invest-ed/backend`), own DB, **not migrated by the cutover**. Repoint later (gated, backup-first).
-- ⚠️ testing + staging carry **forked production secrets** (live OpenAI/Together/Resend keys, `JWT_SECRET`, `CRON_SECRET`, DB password, `ADMIN_TOKEN`, `SECRET_KEY`). **Rotate / set test-only keys** — Coach Penny in non-prod currently bills your prod LLM accounts.
-- `CORS_ORIGINS` + `APP_BASE_URL` in testing/staging still hold prod values — update to the Vercel branch URLs below.
+**Railway (project `Invest-Ed`, service renamed `InvestiKid`) — testing + staging DONE, production untouched.**
+- **testing** → backend `https://investikid-testing.up.railway.app`; source `investikid@testing`, root `/backend`; own Postgres (`DATABASE_URL` = `${{ Postgres.DATABASE_URL }}` reference); migrated + seeded; `ENVIRONMENT=testing`, `EMAIL_BACKEND=logging`. Auto-deploys on push to `testing`.
+- **staging** → backend `https://investikid-staging.up.railway.app`; source `investikid@staging`, root `/backend`; own Postgres (reference); full migration chain + seeded; `ENVIRONMENT=staging`, `EMAIL_BACKEND=logging`; `CORS_ORIGINS` set to the staging Vercel origin. Auto-deploys on push to `staging`.
+- **production** → still on the old repo (`Lee-Local-Code-Repo`, `/invest-ed/backend`), domain still `lee-local-code-repo-production.up.railway.app`, own DB, **not migrated by the cutover**. Repoint later (gated, backup-first).
+- ⚠️ testing + staging carry **forked production secrets** (live OpenAI/Together/Resend keys, `JWT_SECRET`, `CRON_SECRET`, DB password, `ADMIN_TOKEN`, `SECRET_KEY`), and they're **identical across both envs**. **Rotate / set unique test-only keys** — Coach Penny in non-prod currently bills your prod LLM accounts.
+- `APP_BASE_URL` in testing/staging still = `app.investikid.ai` (prod). Only affects email links, and email is `logging` in these envs, so low impact — repoint to the branch URLs if you want fully correct links.
 
-**Vercel (project `investikid.ai`, team `lee-ashmore-s-projects`) — repoint CONFIRMED; production cutover pending.**
-- **Git connection now points at `ashmorel/investikid`** ✅ — verified: a push to `testing`/`staging` produced Preview builds sourced from `investikid` (repo id `1260927337`) at the branch URLs below.
-- **testing** + **staging** branches → auto-deploy Previews from `investikid` ✅ (`vercel.json` `testing:true`/`staging:true`).
-- **production** → still serving the **old-repo** build (`Lee-Local-Code-Repo@main` `de1eae1`); `vercel.json` `main:false` means it won't auto-build from `investikid`. **Cutover is a deliberate step:** promote/redeploy a build from `investikid main` when ready (gated; frontend-only, no DB migration).
-- Still to confirm in the dashboard (MCP can't read these): **Root Directory = `frontend`**, per-env **env vars** (below), and **staging Preview protection** (password/SSO so only beta-testers reach it).
-- Vercel branch URLs (use for `VITE_WEB_ORIGIN` + the Railway `CORS_ORIGINS`/`APP_BASE_URL` above):
+**Vercel (project `investikid.ai`, team `investikid`) — repoint CONFIRMED + env wired; production cutover pending.**
+- **Git connection points at `ashmorel/investikid`** ✅ (Preview builds for `testing`/`staging` come from repo id `1260927337`). Root Directory = `frontend` ✅ (Vite builds succeed).
+- **Branch-scoped env vars set via Vercel CLI** ✅ (`vercel env ls`):
+  - `VITE_API_BASE_URL` — Preview/`testing` → `https://investikid-testing.up.railway.app`; Preview/`staging` → `https://investikid-staging.up.railway.app`
+  - `VITE_WEB_ORIGIN` — Preview/`testing` + Preview/`staging` → the branch URLs below
+  - the old all-branches Preview `VITE_API_BASE_URL` was removed. testing + staging redeployed to bake in the new values.
+- **Preview deployments are auth-protected** (Vercel Authentication, default on Hobby) → reachable only by the Vercel team account, not anonymous/beta users. No password protection on Hobby — for beta access to staging, plan an **app-level allowlist** rather than Vercel protection.
+- **production** → still serving the **old-repo** build (`Lee-Local-Code-Repo@main` `de1eae1`); `vercel.json` `main:false` = no auto-build. **Cutover is a deliberate step** (frontend-only, no DB migration). Prod `VITE_*` values read back empty via CLI (likely Sensitive-flagged) — verify/set them at cutover.
+- Vercel branch URLs:
   - testing: `https://investikidai-git-testing-lee-ashmore-s-projects.vercel.app`
   - staging: `https://investikidai-git-staging-lee-ashmore-s-projects.vercel.app`
   - production: `https://app.investikid.ai`
-
-**Frontend env vars per env** (`VITE_API_BASE_URL` → the matching Railway backend):
-- testing → `https://lee-local-code-repo-testing.up.railway.app`
-- staging → `https://lee-local-code-repo-staging.up.railway.app`
-- production → the existing prod backend URL (unchanged)
 
 ## Related docs
 - `docs/deployment-checkpoint.md` — how to run the manual checkpoint workflow.
