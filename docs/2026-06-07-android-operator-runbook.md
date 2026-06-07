@@ -6,7 +6,7 @@
 
 This runbook covers the **device- and account-bound steps that cannot be performed in the headless build environment** (no JDK, Android SDK, Gradle, Android Studio, or emulator). Everything here requires a real machine with the Android toolchain, plus access to the Google Cloud Console, the Google Play Console, and the production web origin.
 
-> **Payments are out of scope.** Google Play Billing is **Sub-project A3** and is documented separately. A1 stands up the Android platform at parity with iOS/web only — no in-app purchases.
+> **Payments.** A1 stands up the Android platform at parity with iOS/web only — no in-app purchases. Google Play Billing is **Sub-project A3**; its operator steps now live in [Section 9 — A3 — Google Play Billing](#9-a3--google-play-billing) below.
 
 ## Reference values for this project
 
@@ -222,3 +222,50 @@ The headless environment cannot run the app, so this on-device pass (a notch + g
 - [ ] **Coach Penny** replies (moderated LLM response renders).
 - [ ] **Premium paywall** "ask my grown-up" flow works.
 - [ ] **Deep link** to `https://app.investikid.ai/...` opens the app (once `assetlinks.json` is hosted and verified — Section 5).
+- [ ] **Premium subscribe** via Google Play Billing completes (license-test account), the **7-day free trial** shows, and the child's premium entitlement flips on after server-side acknowledge (Section 9).
+
+---
+
+## 9. A3 — Google Play Billing
+
+> **What the code already does.** The Android subscribe/restore path is in-repo: `SubscriptionCard` has an **Android branch** (gated by `isAndroid()`) that drives a custom Kotlin `@CapacitorPlugin` (Play Billing client) → sends the purchase token to the backend `POST /billing/google/verify`, which validates it against the **Play Developer API** and **acknowledges** the purchase server-side. Live status is kept current by **Real-time developer notifications (RTDN)** delivered to `POST /billing/google/notifications` (CSRF-exempt). A **7-day free trial** is configured as a Play offer (mirrors Stripe/Apple). The steps below are the **operator-side** setup that no code or `cap sync` performs.
+
+### 9.1 Play Console — subscription product + free trial
+1. Play Console → your app → **Monetize → Products → Subscriptions** → **Create subscription**.
+2. **Product ID:** `premium_monthly` (must match the backend `GOOGLE_PLAY_PRODUCT_ID`).
+3. Add a **base plan** (auto-renewing, monthly), set price, and activate it.
+4. On the base plan, add a **7-day free-trial offer** (offer type *Free trial*, eligibility *new customers*, phase = 7 days free). Activate the offer.
+
+### 9.2 Google Cloud — service account for the Play Developer API
+1. Google Cloud Console → the project linked to Play → **IAM & Admin → Service Accounts** → **Create service account** (e.g. `play-billing-validator`).
+2. Create a **JSON key** for it (Keys → Add key → JSON) and download it — this is the `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` value. Store it in a secret manager; never commit it.
+3. Play Console → **Users & permissions** (or **Setup → API access**) → **Invite / grant access** to the service-account email. Grant at least **View financial data** and **Manage orders and subscriptions** so it can read and acknowledge purchases.
+
+### 9.3 Backend env (per environment)
+Set on the backend host (Railway), once per environment (`testing` / `production`):
+```bash
+GOOGLE_PLAY_PACKAGE_NAME=leeashmore.investikid.ai.app
+GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=<full JSON key file contents>
+GOOGLE_PLAY_PRODUCT_ID=premium_monthly
+```
+(These map to `backend/.env.example` lines 40–42. The service-account JSON is multi-line — paste it as a single env value exactly as downloaded.)
+
+### 9.4 Real-time developer notifications (RTDN) via Pub/Sub
+1. Google Cloud → **Pub/Sub** → enable the API, then **create a topic** (e.g. `play-rtdn`).
+2. On that topic, **create a push subscription** whose **endpoint URL** is your backend RTDN route:
+   ```
+   {backend}/billing/google/notifications
+   ```
+   (e.g. `https://<railway-backend-host>/billing/google/notifications`). Push delivery, JSON.
+3. Grant **Google Play's service account** permission to publish to the topic: add `google-play-developer-notifications@system.gserviceaccount.com` as **Pub/Sub Publisher** on the topic.
+4. Play Console → **Monetize → Monetization setup → Real-time developer notifications** → set the **Topic name** to the full resource name `projects/<gcp-project>/topics/play-rtdn` → **Send test notification** to confirm delivery.
+
+### 9.5 Sandbox / license testing
+1. Play Console → **Setup → License testing** → add the **license-test account** email addresses (testers buy without being charged; renewals are accelerated).
+2. Those same accounts must also be on the **internal testing** track (Section 6) and have **opted in** via the track link.
+
+### 9.6 Device test
+1. Install the build from the **internal testing** track on a device signed in with a **license-test account**.
+2. Open the premium paywall → **Subscribe** → confirm the **7-day free trial** is shown, complete the purchase, and verify the child's premium entitlement flips on (the backend acknowledges + RTDN keeps it live). Test **restore** and a **cancel** (cancel in Play → confirm RTDN downgrades status).
+
+> **Build note.** The Play Billing plugin is a custom Kotlin `@CapacitorPlugin`, so it is **not** listed in `capacitor.plugins.json` and does **not** appear in `npx cap ls` — it is registered in native code. Its **first compile** happens via the checkpoint `run_android` build / Android Studio (Section 7), not in default CI.
