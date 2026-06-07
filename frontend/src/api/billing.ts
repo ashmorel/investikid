@@ -24,4 +24,10 @@ export const billingApi = {
 
   appleAccountToken: () =>
     apiFetch<{ token: string }>('/billing/apple/account-token'),
+
+  googleVerify: (body: { purchaseToken: string; productId: string }) =>
+    apiFetch<{ status: string }>('/billing/google/verify',
+      { method: 'POST', body: JSON.stringify(body) }),
+
+  accountToken: () => apiFetch<{ token: string }>('/billing/account-token'),
 };

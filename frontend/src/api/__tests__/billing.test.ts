@@ -21,6 +21,19 @@ describe('billingApi', () => {
     billingApi.appleAccountToken();
     expect(apiFetch).toHaveBeenCalledWith('/billing/apple/account-token');
   });
+
+  it('googleVerify POSTs purchaseToken + productId to /billing/google/verify', () => {
+    billingApi.googleVerify({ purchaseToken: 'TOK', productId: 'premium_monthly' });
+    expect(apiFetch).toHaveBeenCalledWith('/billing/google/verify', {
+      method: 'POST',
+      body: JSON.stringify({ purchaseToken: 'TOK', productId: 'premium_monthly' }),
+    });
+  });
+
+  it('accountToken GETs /billing/account-token', () => {
+    billingApi.accountToken();
+    expect(apiFetch).toHaveBeenCalledWith('/billing/account-token');
+  });
 });
 
 describe('premiumApi', () => {
