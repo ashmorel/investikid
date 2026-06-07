@@ -9,8 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.premium_request import PremiumRequest
 from app.models.subscription import Subscription
-from app.models.user import User
-from app.services.entitlements import set_premium
+from app.services.entitlements import recompute_household_premium
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +54,8 @@ async def handle_checkout_completed(
         session.add(sub)
 
     sub.stripe_subscription_id = subscription_id
+    sub.provider = "stripe"
+    sub.external_id = subscription_id
     sub.status = stripe_sub.status
     sub.current_period_end = datetime.fromtimestamp(
         stripe_sub.current_period_end, tz=UTC
@@ -62,19 +63,11 @@ async def handle_checkout_completed(
     sub.cancel_at_period_end = stripe_sub.cancel_at_period_end
     sub.updated_at = now
 
-    # Grant premium to all children under this parent
-    children = (
-        await session.scalars(
-            select(User).where(User.parent_email == parent_email)
-        )
-    ).all()
-    for child in children:
-        await set_premium(session, child, value=True, actor="stripe")
-
+    await recompute_household_premium(session, parent_email)
     await resolve_premium_requests(session, parent_email)
 
     await session.commit()
-    logger.info("checkout.session.completed: parent=%s children=%d", parent_email, len(children))
+    logger.info("checkout.session.completed: parent=%s", parent_email)
 
 
 async def handle_subscription_updated(
@@ -93,6 +86,7 @@ async def handle_subscription_updated(
         logger.warning("subscription.updated: unknown subscription %s", subscription_id)
         return
 
+    sub.external_id = sub.external_id or subscription_id
     sub.status = data["status"]
     sub.current_period_end = datetime.fromtimestamp(
         data["current_period_end"], tz=UTC
@@ -100,6 +94,7 @@ async def handle_subscription_updated(
     sub.cancel_at_period_end = data.get("cancel_at_period_end", False)
     sub.updated_at = datetime.now(UTC)
 
+    await recompute_household_premium(session, sub.parent_email)
     await session.commit()
     logger.info("subscription.updated: sub=%s status=%s", subscription_id, sub.status)
 
@@ -124,17 +119,10 @@ async def handle_subscription_deleted(
     sub.cancel_at_period_end = False
     sub.updated_at = datetime.now(UTC)
 
-    # Revoke premium from all children
-    children = (
-        await session.scalars(
-            select(User).where(User.parent_email == sub.parent_email)
-        )
-    ).all()
-    for child in children:
-        await set_premium(session, child, value=False, actor="stripe")
+    await recompute_household_premium(session, sub.parent_email)
 
     await session.commit()
-    logger.info("subscription.deleted: parent=%s children=%d downgraded", sub.parent_email, len(children))
+    logger.info("subscription.deleted: parent=%s downgraded", sub.parent_email)
 
 
 async def handle_payment_failed(
@@ -157,6 +145,7 @@ async def handle_payment_failed(
 
     sub.status = "past_due"
     sub.updated_at = datetime.now(UTC)
+    await recompute_household_premium(session, sub.parent_email)
     await session.commit()
     logger.info("payment_failed: sub=%s → past_due", subscription_id)
 
