@@ -143,7 +143,7 @@ export function SubscriptionCard() {
           <Button
             variant="outline"
             className="mt-3"
-            onClick={() => window.open(APPLE_MANAGE_URL, '_blank')}
+            onClick={() => window.open(APPLE_MANAGE_URL, '_blank', 'noopener,noreferrer')}
           >
             Manage subscription
           </Button>
