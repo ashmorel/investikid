@@ -61,6 +61,7 @@ deploy (which runs `alembic upgrade head` against the live prod DB):
 - **Repoint prod backend domain** (optional): currently `lee-local-code-repo-production.up.railway.app`. If renamed to `investikid-production`, also update the cron workflow `BACKEND_URL` (`.github/workflows/video-health-cron.yml`) and any client referencing it.
 - **Rotate prod secrets** (were exposed in old git history): `JWT_SECRET`, `SECRET_KEY`, `ADMIN_TOKEN`, `CRON_SECRET`, `RESEND_API_KEY` — give prod its own values, distinct from testing/staging.
 - **`CRON_SECRET` is coupled** — change it in **two places at once**: Railway **production** env var **and** the GitHub **repo Actions secret** `CRON_SECRET` (same value). Confirm that secret exists in the **`ashmorel/investikid`** repo (originally set on the old monorepo). Test via Actions → "Video health cron" → Run workflow (expect HTTP 200).
+- **Re-enable the cron** — the `Video health cron` workflow is currently **disabled** (`gh workflow disable`, 2026-06-07) because the `CRON_SECRET` repo secret is missing in `ashmorel/investikid`, so it was failing daily. After adding the secret, run `gh workflow enable "Video health cron"`.
 - **Vercel production env vars** (`VITE_API_BASE_URL`, `VITE_WEB_ORIGIN`) read back empty via CLI — verify/set them before/at cutover.
 
 ## Repo configuration that supports this (already in place)
@@ -163,9 +164,10 @@ These need dashboard access and are not in the repo.
   - the old all-branches Preview `VITE_API_BASE_URL` was removed. testing + staging redeployed to bake in the new values.
 - **Preview deployments are auth-protected** (Vercel Authentication, default on Hobby) → reachable only by the Vercel team account, not anonymous/beta users. No password protection on Hobby — for beta access to staging, plan an **app-level allowlist** rather than Vercel protection.
 - **production** → still serving the **old-repo** build (`Lee-Local-Code-Repo@main` `de1eae1`); `vercel.json` `main:false` = no auto-build. **Cutover is a deliberate step** (frontend-only, no DB migration). Prod `VITE_*` values read back empty via CLI (likely Sensitive-flagged) — verify/set them at cutover.
-- Vercel branch URLs:
-  - testing: `https://investikidai-git-testing-lee-ashmore-s-projects.vercel.app`
-  - staging: `https://investikidai-git-staging-lee-ashmore-s-projects.vercel.app`
+- **⚠️ Vercel team slug is `investikid`** (was `lee-ashmore-s-projects`). Use the **`-investikid`** branch aliases below — the old `-lee-ashmore-s-projects` aliases still resolve but serve a **stale pre-migration build** (baked the old prod backend). `CORS_ORIGINS` (Railway) + `VITE_WEB_ORIGIN` (Vercel) are set to the `-investikid` origins.
+- Vercel branch URLs (current/canonical):
+  - testing: `https://investikidai-git-testing-investikid.vercel.app`
+  - staging: `https://investikidai-git-staging-investikid.vercel.app`
   - production: `https://app.investikid.ai`
 
 ## Related docs
