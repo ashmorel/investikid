@@ -78,6 +78,43 @@ async def test_verify_rejects_token_parent_mismatch(db_session, monkeypatch):
         await abs_.verify_transaction(db_session, parent_email="a@example.com", jws="x")
 
 
+async def test_verify_rejects_non_configured_product(db_session, monkeypatch):
+    monkeypatch.setattr(abs_, "_require_apple", lambda: None)
+    monkeypatch.setattr(abs_.settings, "apple_iap_product_id", "premium_monthly")
+    monkeypatch.setattr(
+        abs_, "_build_verifier",
+        lambda: _FakeVerifier(_payload(productId="something_else")),
+    )
+    monkeypatch.setattr(abs_, "_fetch_status", lambda tx_id: "active")
+    with pytest.raises(abs_.AppleBillingError):
+        await abs_.verify_transaction(db_session, parent_email="a@example.com", jws="x")
+
+
+async def test_verify_accepts_matching_product(db_session, monkeypatch):
+    email = "match@example.com"
+    child = await _child(db_session, email)
+    monkeypatch.setattr(abs_, "_require_apple", lambda: None)
+    monkeypatch.setattr(abs_.settings, "apple_iap_product_id", "premium_monthly")
+    monkeypatch.setattr(
+        abs_, "_build_verifier",
+        lambda: _FakeVerifier(
+            _payload(
+                productId="premium_monthly",
+                appAccountToken=abs_.household_token(email),
+            )
+        ),
+    )
+    monkeypatch.setattr(abs_, "_fetch_status", lambda tx_id: "active")
+    await abs_.verify_transaction(db_session, parent_email=email, jws="signed-jws")
+    row = await db_session.scalar(
+        select(Subscription).where(
+            Subscription.provider == "apple", Subscription.external_id == "OT-1"
+        )
+    )
+    assert row is not None and row.status == "active"
+    assert is_premium(child) is True
+
+
 class _FakeNotificationVerifier:
     """Fake SignedDataVerifier for App Store Server Notifications V2."""
 

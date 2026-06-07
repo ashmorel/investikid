@@ -128,6 +128,10 @@ async def verify_transaction(session: AsyncSession, *, parent_email: str, jws: s
     token = (getattr(payload, "appAccountToken", "") or "").lower()
     if token and token != household_token(parent_email):
         raise AppleBillingError("appAccountToken does not match the authenticated parent")
+    expected_product = settings.apple_iap_product_id
+    product = getattr(payload, "productId", None)
+    if expected_product and product and product != expected_product:
+        raise AppleBillingError("Transaction product does not match the configured subscription product")
     otid = payload.originalTransactionId
     try:
         status = _fetch_status(otid)
