@@ -57,6 +57,12 @@ deploy (which runs `alembic upgrade head` against the live prod DB):
 3. Promote (`git checkout main && git merge --ff-only staging && git push`).
 4. Trigger the manual Railway production deploy (and Vercel "Promote to Production").
 
+**Production cutover one-offs (do once, when moving prod onto `ashmorel/investikid`):**
+- **Repoint prod backend domain** (optional): currently `lee-local-code-repo-production.up.railway.app`. If renamed to `investikid-production`, also update the cron workflow `BACKEND_URL` (`.github/workflows/video-health-cron.yml`) and any client referencing it.
+- **Rotate prod secrets** (were exposed in old git history): `JWT_SECRET`, `SECRET_KEY`, `ADMIN_TOKEN`, `CRON_SECRET`, `RESEND_API_KEY` — give prod its own values, distinct from testing/staging.
+- **`CRON_SECRET` is coupled** — change it in **two places at once**: Railway **production** env var **and** the GitHub **repo Actions secret** `CRON_SECRET` (same value). Confirm that secret exists in the **`ashmorel/investikid`** repo (originally set on the old monorepo). Test via Actions → "Video health cron" → Run workflow (expect HTTP 200).
+- **Vercel production env vars** (`VITE_API_BASE_URL`, `VITE_WEB_ORIGIN`) read back empty via CLI — verify/set them before/at cutover.
+
 ## Repo configuration that supports this (already in place)
 
 - `frontend/vercel.json` → `git.deploymentEnabled`: `main: false` (production = **manual
