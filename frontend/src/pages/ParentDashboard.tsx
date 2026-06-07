@@ -67,8 +67,14 @@ export default function ParentDashboard() {
         </div>
       </header>
 
-      <PremiumRequestsCard />
-      <SubscriptionCard />
+      <PremiumRequestsCard
+        onApprove={() =>
+          document.getElementById('subscription-card')?.scrollIntoView({ behavior: 'smooth' })
+        }
+      />
+      <div id="subscription-card">
+        <SubscriptionCard />
+      </div>
 
       {q.isLoading && <p className="mt-6 text-sm text-muted-foreground">Loading…</p>}
       {q.isError && (
