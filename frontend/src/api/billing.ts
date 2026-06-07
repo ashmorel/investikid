@@ -17,4 +17,11 @@ export const billingApi = {
 
   getStatus: () =>
     apiFetch<SubscriptionStatus>('/billing/status'),
+
+  appleVerify: (jws: string) =>
+    apiFetch<{ status: string }>('/billing/apple/verify',
+      { method: 'POST', body: JSON.stringify({ jws }) }),
+
+  appleAccountToken: () =>
+    apiFetch<{ token: string }>('/billing/apple/account-token'),
 };

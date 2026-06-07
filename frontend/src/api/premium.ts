@@ -11,4 +11,6 @@ export const premiumApi = {
   requestUnlock: (body: { kind: PremiumRequestKind; label: string }) =>
     apiFetch<PremiumRequestResult>('/premium/request', { method: 'POST', body: JSON.stringify(body) }),
   parentRequests: () => apiFetch<ParentPremiumRequest[]>('/parent/premium-requests'),
+  declineRequest: (id: string) =>
+    apiFetch<{ status: string }>(`/parent/premium-requests/${id}/decline`, { method: 'POST' }),
 };
