@@ -23,6 +23,14 @@ describe('buildYouTubeUrls', () => {
     expect(urls!.embed).toBe(`${DEFAULT_WEB_ORIGIN}/yt.html?v=${ID}`);
   });
 
+  it('android native build embeds the nocookie player directly (no proxy)', () => {
+    const urls = buildYouTubeUrls(ID, { isNative: true, isAndroid: true });
+    expect(urls).not.toBeNull();
+    expect(urls!.embed).toContain('https://www.youtube-nocookie.com/embed/' + ID);
+    expect(urls!.embed).toContain('playsinline=1');
+    expect(urls!.embed).not.toContain('/yt.html');
+  });
+
   it('native proxy origin is overridable via VITE_WEB_ORIGIN', () => {
     const urls = buildYouTubeUrls(ID, { isNative: true, webOrigin: 'https://app.example.com' });
     expect(urls!.embed).toBe(`https://app.example.com/yt.html?v=${ID}`);
