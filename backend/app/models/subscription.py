@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -11,6 +11,10 @@ from app.core.database import Base
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
+
+    __table_args__ = (
+        UniqueConstraint("provider", "external_id", name="uq_subscriptions_provider_external_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True, default=uuid.uuid4
