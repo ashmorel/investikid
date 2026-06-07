@@ -65,6 +65,14 @@ def _render(template: str, context: dict) -> str:
             f"(\"{label}\").\n\nPremium includes:\n{benefits}\n\n"
             "Open InvestiKid and go to your parent dashboard to manage your family's plan.\n"
         )
+    if template == "trial_ending":
+        child = context["child_label"]
+        benefits = "\n".join(f"- {b}" for b in context.get("benefits", []))
+        return (
+            f"Hi!\n\n{child}'s InvestiKid free trial ends on {context['trial_end']}. "
+            f"After that, Premium keeps unlocking:\n\n{benefits}\n\n"
+            f"{context['manage_hint']}\n"
+        )
     raise ValueError(f"Unknown template: {template}")
 
 
@@ -75,6 +83,7 @@ _SUBJECT = {
     "password_reset": "Reset your InvestiKid password",
     "admin_llm_alert": "⚠️ InvestiKid system alert",
     "premium_request": "Your child would love InvestiKid Premium",
+    "trial_ending": "Your InvestiKid trial ends soon",
 }
 
 
@@ -154,6 +163,23 @@ def _render_html(template: str, context: dict) -> str:
         cta_label = "Open parent dashboard"
         cta_url = f"{settings.app_base_url}/parent"
         footer = "Manage your family's plan from your parent dashboard in InvestiKid."
+    elif template == "trial_ending":
+        from app.core.config import settings
+
+        child = context["child_label"]
+        benefit_items = "".join(
+            f"<li style=\"margin:0 0 6px;\">{b}</li>"
+            for b in context.get("benefits", [])
+        )
+        heading = "Your InvestiKid trial ends soon"
+        body_text = (
+            f"{child}'s free trial ends on {context['trial_end']}. "
+            f"After that, Premium keeps unlocking:"
+            f"<ul style=\"margin:12px 0 0;padding-left:20px;\">{benefit_items}</ul>"
+        )
+        cta_label = "Open parent dashboard"
+        cta_url = f"{settings.app_base_url}/parent"
+        footer = context["manage_hint"]
     else:
         raise ValueError(f"Unknown template: {template}")
 
