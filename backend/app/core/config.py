@@ -68,6 +68,9 @@ class Settings(BaseSettings):
     apple_iap_app_apple_id: int | None = None
     apple_iap_environment: str = "Sandbox"
     apple_iap_product_id: str = ""
+    google_play_package_name: str = ""
+    google_play_service_account_json: str = ""  # service-account JSON key contents
+    google_play_product_id: str = ""
 
     # Cloudflare R2 — self-hosted curated video uploads (admin)
     r2_account_id: str = ""
