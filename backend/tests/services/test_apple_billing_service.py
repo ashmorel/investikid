@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
@@ -24,7 +25,7 @@ def _payload(**kw):
     base = dict(
         originalTransactionId="OT-1",
         productId="premium_monthly",
-        appAccountToken="a@example.com",
+        appAccountToken=abs_.household_token("a@example.com"),
         expiresDate=int((datetime.now(UTC).timestamp() + 86400) * 1000),
         revocationDate=None,
     )
@@ -68,8 +69,17 @@ async def test_verify_rejects_token_parent_mismatch(db_session, monkeypatch):
     monkeypatch.setattr(abs_, "_require_apple", lambda: None)
     monkeypatch.setattr(
         abs_, "_build_verifier",
-        lambda: _FakeVerifier(_payload(appAccountToken="someone@else.com")),
+        lambda: _FakeVerifier(
+            _payload(appAccountToken="00000000-0000-0000-0000-000000000000")
+        ),
     )
     monkeypatch.setattr(abs_, "_fetch_status", lambda tx_id: "active")
     with pytest.raises(abs_.AppleBillingError):
         await abs_.verify_transaction(db_session, parent_email="a@example.com", jws="x")
+
+
+def test_household_token_is_stable_uuid5():
+    t = abs_.household_token("a@example.com")
+    assert t == abs_.household_token("A@Example.com ")
+    uuid.UUID(t)  # parses as a valid UUID
+    assert t != abs_.household_token("b@example.com")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -8,6 +9,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.subscription import Subscription
 from app.services.entitlements import recompute_household_premium
+
+# Fixed namespace for deriving an opaque, deterministic household token from a
+# parent email. This token is sent to Apple as the StoreKit appAccountToken
+# (a UUID, no PII). Do NOT change this value once in production.
+_HOUSEHOLD_TOKEN_NAMESPACE = uuid.UUID("6f9619ff-8b86-d011-b42d-00c04fc964ff")
+
+
+def household_token(parent_email: str) -> str:
+    """Opaque, stable UUIDv5 for a household (keyed on the lowercased parent email).
+    Used as the StoreKit appAccountToken so no PII is sent to Apple."""
+    return str(uuid.uuid5(_HOUSEHOLD_TOKEN_NAMESPACE, parent_email.strip().lower()))
 
 
 class AppleBillingError(Exception):
@@ -88,7 +100,7 @@ async def verify_transaction(session: AsyncSession, *, parent_email: str, jws: s
     _require_apple()
     payload = _build_verifier().verify_and_decode_signed_transaction(jws)
     token = (getattr(payload, "appAccountToken", "") or "").lower()
-    if token and token != parent_email.lower():
+    if token and token != household_token(parent_email):
         raise AppleBillingError("appAccountToken does not match the authenticated parent")
     otid = payload.originalTransactionId
     try:
