@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { billingApi, type SubscriptionStatus } from '@/api/billing';
 import { Button } from '@/components/ui/button';
-import { isNativeApp } from '@/lib/platform';
+import { isAndroid, isNativeApp } from '@/lib/platform';
 import { StoreKit } from '@/lib/storekit';
+import { PlayBilling } from '@/lib/playBilling';
 
 const PREMIUM_PRODUCT_ID = 'premium_monthly';
+const PLAY_PRODUCT_ID = 'premium_monthly';
 const APPLE_MANAGE_URL = 'https://apps.apple.com/account/subscriptions';
+const PLAY_MANAGE_URL = 'https://play.google.com/store/account/subscriptions';
 const STATUS_QUERY_KEY = ['subscription-status'] as const;
 
 function daysUntil(dateStr: string): number {
@@ -106,6 +109,63 @@ export function SubscriptionCard() {
     },
   });
 
+  // --- Native (Play Billing / Android) ---
+  const subscribeAndroid = useMutation({
+    mutationFn: async () => {
+      const account = await billingApi.accountToken();
+      if (!account) throw new Error('Could not start purchase.');
+      const result = await PlayBilling.purchase({
+        productId: PLAY_PRODUCT_ID,
+        obfuscatedAccountId: account.token,
+      });
+      if (result.purchaseToken) {
+        await billingApi.googleVerify({
+          purchaseToken: result.purchaseToken,
+          productId: PLAY_PRODUCT_ID,
+        });
+        return { verified: true as const };
+      }
+      return { pending: Boolean(result.pending) };
+    },
+    onMutate: () => setNote(null),
+    onSuccess: async (res) => {
+      if ('verified' in res && res.verified) {
+        await refreshStatus();
+      } else if ('pending' in res && res.pending) {
+        setNote('Your purchase is pending — it can take a moment to confirm.');
+      }
+    },
+    onError: (err) => {
+      if (isUserCancelled(err)) return;
+      setNote('Something went wrong. Please try again.');
+    },
+  });
+
+  const restoreAndroid = useMutation({
+    mutationFn: async () => {
+      const { purchaseTokens } = await PlayBilling.restore();
+      for (const token of purchaseTokens) {
+        await billingApi.googleVerify({
+          purchaseToken: token,
+          productId: PLAY_PRODUCT_ID,
+        });
+      }
+      return { count: purchaseTokens.length };
+    },
+    onMutate: () => setNote(null),
+    onSuccess: async (res) => {
+      if (res.count > 0) {
+        await refreshStatus();
+      } else {
+        setNote('Nothing to restore on this Google account.');
+      }
+    },
+    onError: (err) => {
+      if (isUserCancelled(err)) return;
+      setNote('Something went wrong. Please try again.');
+    },
+  });
+
   if (isLoading || !sub) return null;
 
   const native = isNativeApp();
@@ -126,8 +186,13 @@ export function SubscriptionCard() {
     statusText = 'Premium — active';
   }
 
-  // Native (iOS): StoreKit Subscribe / Restore / Manage — no Stripe UI.
+  // Native: in-app purchase Subscribe / Restore / Manage — no Stripe UI.
+  // Android uses Play Billing; iOS uses StoreKit.
   if (native) {
+    const android = isAndroid();
+    const subscribeMutation = android ? subscribeAndroid : subscribe;
+    const restoreMutation = android ? restoreAndroid : restore;
+    const manageUrl = android ? PLAY_MANAGE_URL : APPLE_MANAGE_URL;
     return (
       <section
         className="rounded-lg border-2 border-brand-200 bg-brand-50 px-4 py-4 sm:px-6 sm:py-6"
@@ -143,7 +208,7 @@ export function SubscriptionCard() {
           <Button
             variant="outline"
             className="mt-3"
-            onClick={() => window.open(APPLE_MANAGE_URL, '_blank', 'noopener,noreferrer')}
+            onClick={() => window.open(manageUrl, '_blank', 'noopener,noreferrer')}
           >
             Manage subscription
           </Button>
@@ -151,17 +216,17 @@ export function SubscriptionCard() {
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
               className="bg-brand-600 text-white hover:bg-brand-700"
-              onClick={() => subscribe.mutate()}
-              disabled={subscribe.isPending}
+              onClick={() => subscribeMutation.mutate()}
+              disabled={subscribeMutation.isPending}
             >
-              {subscribe.isPending ? 'Subscribing…' : 'Subscribe'}
+              {subscribeMutation.isPending ? 'Subscribing…' : 'Subscribe'}
             </Button>
             <Button
               variant="outline"
-              onClick={() => restore.mutate()}
-              disabled={restore.isPending}
+              onClick={() => restoreMutation.mutate()}
+              disabled={restoreMutation.isPending}
             >
-              {restore.isPending ? 'Restoring…' : 'Restore Purchases'}
+              {restoreMutation.isPending ? 'Restoring…' : 'Restore Purchases'}
             </Button>
           </div>
         )}

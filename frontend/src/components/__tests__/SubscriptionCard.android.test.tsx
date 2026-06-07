@@ -5,14 +5,16 @@ import { axe } from 'vitest-axe';
 
 vi.mock('@/lib/platform', () => ({
   isNativeApp: () => true,
-  isAndroid: () => false,
+  isAndroid: () => true,
 }));
 
-vi.mock('@/lib/storekit', () => ({
-  StoreKit: {
+vi.mock('@/lib/playBilling', () => ({
+  PlayBilling: {
     getProducts: vi.fn().mockResolvedValue({ products: [] }),
-    purchase: vi.fn().mockResolvedValue({ jws: 'signed-jws' }),
-    restore: vi.fn().mockResolvedValue({ jws: [] }),
+    purchase: vi
+      .fn()
+      .mockResolvedValue({ purchaseToken: 'TOK', productId: 'premium_monthly' }),
+    restore: vi.fn().mockResolvedValue({ purchaseTokens: [] }),
   },
 }));
 
@@ -25,10 +27,10 @@ vi.mock('@/api/billing', () => ({
       current_period_end: null,
       cancel_at_period_end: false,
     }),
-    appleAccountToken: vi
+    accountToken: vi
       .fn()
       .mockResolvedValue({ token: '11111111-1111-1111-1111-111111111111' }),
-    appleVerify: vi.fn().mockResolvedValue({ status: 'ok' }),
+    googleVerify: vi.fn().mockResolvedValue({ status: 'ok' }),
     createCheckout: vi.fn(),
     createPortal: vi.fn(),
   },
@@ -36,7 +38,7 @@ vi.mock('@/api/billing', () => ({
 
 import { SubscriptionCard } from '../SubscriptionCard';
 import { billingApi } from '@/api/billing';
-import { StoreKit } from '@/lib/storekit';
+import { PlayBilling } from '@/lib/playBilling';
 
 function renderCard() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -47,7 +49,7 @@ function renderCard() {
   );
 }
 
-describe('SubscriptionCard (native StoreKit)', () => {
+describe('SubscriptionCard (native Play Billing)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -61,18 +63,23 @@ describe('SubscriptionCard (native StoreKit)', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('runs the StoreKit purchase + verify flow on Subscribe', async () => {
+  it('runs the Play Billing purchase + verify flow on Subscribe', async () => {
     renderCard();
     fireEvent.click(await screen.findByRole('button', { name: /^subscribe$/i }));
 
-    await waitFor(() => expect(billingApi.appleAccountToken).toHaveBeenCalled());
+    await waitFor(() => expect(billingApi.accountToken).toHaveBeenCalled());
     await waitFor(() =>
-      expect(StoreKit.purchase).toHaveBeenCalledWith({
+      expect(PlayBilling.purchase).toHaveBeenCalledWith({
         productId: 'premium_monthly',
-        appAccountToken: '11111111-1111-1111-1111-111111111111',
+        obfuscatedAccountId: '11111111-1111-1111-1111-111111111111',
       }),
     );
-    await waitFor(() => expect(billingApi.appleVerify).toHaveBeenCalledWith('signed-jws'));
+    await waitFor(() =>
+      expect(billingApi.googleVerify).toHaveBeenCalledWith({
+        purchaseToken: 'TOK',
+        productId: 'premium_monthly',
+      }),
+    );
   });
 
   it('has no accessibility violations', async () => {
