@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     google_ios_client_id: str = ""
     apple_services_id: str = ""
     apple_bundle_id: str = ""
+    # Apple In-App Purchase (item 4A·A2) — leave blank to disable Apple IAP
+    apple_iap_issuer_id: str = ""
+    apple_iap_key_id: str = ""
+    apple_iap_private_key: str = ""
+    apple_iap_bundle_id: str = ""
+    apple_iap_app_apple_id: int | None = None
+    apple_iap_environment: str = "Sandbox"
+    apple_iap_product_id: str = ""
 
     # Cloudflare R2 — self-hosted curated video uploads (admin)
     r2_account_id: str = ""
