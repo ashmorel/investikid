@@ -16,6 +16,9 @@ PREMIUM_BENEFITS: tuple[str, ...] = (
 # Don't email the same parent more than once per this window.
 PREMIUM_REQUEST_COOLDOWN_HOURS: int = 24
 
+# Send the trial-ending reminder this many days before the trial converts to paid.
+TRIAL_ENDING_REMINDER_DAYS: int = 2
+
 
 def premium_required_error(kind: str, label: str) -> HTTPException:
     """403 with a structured body the frontend uses to open the paywall.
