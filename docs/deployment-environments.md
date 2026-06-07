@@ -65,6 +65,7 @@ deploy (which runs `alembic upgrade head` against the live prod DB):
   - **`vars.BACKEND_URL` = `https://investikid.up.railway.app`** (the prod backend). If the prod host ever changes (custom domain / rename): `gh variable set BACKEND_URL --body <prod-url>`.
   - History: pipeline first validated against `testing` (2026-06-07, HTTP 200), then pointed at prod and re-validated (2026-06-08). One transient 401 occurred before prod had redeployed with the new secret — re-running after the prod deploy completed returned 200.
   - If it ever fails again: **401**=GitHub vs Railway secret mismatch; **503**=`CRON_SECRET` unset on backend; **404**=backend not serving / wrong `BACKEND_URL`.
+- ⏳ **4C trial-reminders cron step — pending prod promotion.** Feature 4C adds a second daily cron step hitting `/internal/trial-reminders/run`. It is on the **`testing`** branch's `video-health-cron.yml` only (commit `1672c648`). **Do NOT add it to `main` until 4C is deployed to production** — the scheduled cron runs from `main` against prod, and the prod backend won't serve `/internal/trial-reminders/run` until 4C is promoted; adding it early would 404 and fail the daily cron. At 4C prod promotion: add the identical `Trigger trial-ending reminders` step to `main`'s `.github/workflows/video-health-cron.yml`.
 - **Vercel production env vars** (`VITE_API_BASE_URL`, `VITE_WEB_ORIGIN`) read back empty via CLI — verify/set them before/at cutover.
 
 ## Repo configuration that supports this (already in place)
