@@ -5,7 +5,7 @@ import {
 import { Penny } from '@/components/child/ui/Penny';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { premiumApi } from '@/api/premium';
-import { PAYWALL_CTA, PAYWALL_TITLE, PREMIUM_BENEFITS } from '@/lib/premiumConfig';
+import { PAYWALL_CTA, PAYWALL_REQUEST_DECLINED, PAYWALL_TITLE, PREMIUM_BENEFITS } from '@/lib/premiumConfig';
 import type { PaywallContext } from '@/hooks/usePremiumPaywall';
 
 export function PremiumPaywall({ context, onClose }: { context: PaywallContext | null; onClose: () => void }) {
@@ -51,9 +51,11 @@ export function PremiumPaywall({ context, onClose }: { context: PaywallContext |
             <p className="py-6 text-center text-base font-semibold text-ink">
               {sentStatus === 'no_parent'
                 ? 'Ask a grown-up to set up Premium for you. 💛'
-                : sentStatus === 'already_sent'
-                  ? 'We already told your grown-up today 👍'
-                  : "We've let your grown-up know! 🎉"}
+                : sentStatus === 'declined'
+                  ? PAYWALL_REQUEST_DECLINED
+                  : sentStatus === 'already_sent'
+                    ? 'We already told your grown-up today 👍'
+                    : "We've let your grown-up know! 🎉"}
             </p>
           ) : (
             <>

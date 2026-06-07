@@ -7,3 +7,4 @@ export const PREMIUM_BENEFITS: string[] = [
 ];
 export const PAYWALL_TITLE = 'Premium unlocks more!';
 export const PAYWALL_CTA = 'Ask my grown-up to unlock';
+export const PAYWALL_REQUEST_DECLINED = 'Your grown-up will sort it out later 💛';

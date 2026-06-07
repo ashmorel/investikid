@@ -1,7 +1,7 @@
 import { apiFetch } from './client';
 
 export type PremiumRequestKind = 'module' | 'level' | 'challenge' | 'ticker' | 'coach';
-export type PremiumRequestResult = { status: 'sent' | 'already_sent' | 'no_parent' };
+export type PremiumRequestResult = { status: 'sent' | 'already_sent' | 'no_parent' | 'declined' };
 export type ParentPremiumRequest = {
   id: string; child_username: string; context_kind: string;
   context_label: string; created_at: string;
