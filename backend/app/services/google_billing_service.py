@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 from datetime import UTC, datetime
 
@@ -114,6 +115,33 @@ async def verify_purchase(session: AsyncSession, *, parent_email: str,
 
     await _upsert_and_recompute(session, parent_email=parent_email,
                                 purchase_token=purchase_token,
+                                status=_map_status(resp.get("subscriptionState")),
+                                expiry=_expiry_dt(resp))
+    await session.commit()
+
+
+def _decode_rtdn(message: dict) -> str | None:
+    """Extract the purchaseToken from a Pub/Sub RTDN push body. Returns None if absent."""
+    data_b64 = (message.get("message") or {}).get("data")
+    if not data_b64:
+        return None
+    payload = json.loads(base64.b64decode(data_b64).decode())
+    return (payload.get("subscriptionNotification") or {}).get("purchaseToken")
+
+
+async def handle_notification(session: AsyncSession, message: dict) -> None:
+    """Process a Google RTDN (Pub/Sub push). Re-fetches authoritative state; no-op on unknown token."""
+    _require_google()
+    token = _decode_rtdn(message)
+    if not token:
+        return
+    sub = await session.scalar(select(Subscription).where(
+        Subscription.provider == "google", Subscription.external_id == token))
+    if sub is None:
+        return
+    resp = _fetch_subscription(token)
+    await _upsert_and_recompute(session, parent_email=sub.parent_email,
+                                purchase_token=token,
                                 status=_map_status(resp.get("subscriptionState")),
                                 expiry=_expiry_dt(resp))
     await session.commit()

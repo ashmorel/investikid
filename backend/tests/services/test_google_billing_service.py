@@ -1,3 +1,5 @@
+import base64
+import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -81,3 +83,33 @@ async def test_verify_rejects_wrong_product(db_session, monkeypatch):
     with pytest.raises(gbs.GoogleBillingError):
         await gbs.verify_purchase(db_session, parent_email="a@example.com",
                                   purchase_token="x", product_id="something_else")
+
+
+def _rtdn(purchase_token: str) -> str:
+    payload = {"subscriptionNotification": {"notificationType": 4, "purchaseToken": purchase_token}}
+    return base64.b64encode(json.dumps(payload).encode()).decode()
+
+
+async def test_notification_updates_known_token(db_session, monkeypatch):
+    email = "n@example.com"
+    child = await _child(db_session, email)
+    child.is_premium = True
+    db_session.add(Subscription(parent_email=email, provider="google",
+                   external_id="TOK-N", status="active"))
+    await db_session.flush()
+    monkeypatch.setattr(gbs, "_require_google", lambda: None)
+    monkeypatch.setattr(gbs, "_fetch_subscription",
+                        lambda token: _sub_response(email, state="SUBSCRIPTION_STATE_EXPIRED"))
+    await gbs.handle_notification(db_session, {"message": {"data": _rtdn("TOK-N")}})
+    assert is_premium(child) is False
+
+
+async def test_notification_unknown_token_noop(db_session, monkeypatch):
+    monkeypatch.setattr(gbs, "_require_google", lambda: None)
+    called = {"n": 0}
+    def _fetch(token):
+        called["n"] += 1
+        return _sub_response("z@example.com")
+    monkeypatch.setattr(gbs, "_fetch_subscription", _fetch)
+    await gbs.handle_notification(db_session, {"message": {"data": _rtdn("UNKNOWN")}})
+    assert called["n"] == 0
