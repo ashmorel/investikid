@@ -10,3 +10,13 @@ import { Capacitor } from '@capacitor/core';
 export function isNativeApp(): boolean {
   return Capacitor.isNativePlatform();
 }
+
+/** The runtime platform: 'web' | 'ios' | 'android'. */
+export function getPlatform(): string {
+  return Capacitor.getPlatform();
+}
+
+/** True when running in the native Android shell. */
+export function isAndroid(): boolean {
+  return Capacitor.getPlatform() === 'android';
+}
