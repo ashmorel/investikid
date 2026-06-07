@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import { registerBackButton } from './lib/backButton';
 import { initNativeChrome } from './lib/nativeChrome';
+import { ensureAndroidChannel } from './lib/notifications';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -35,3 +36,4 @@ if ('serviceWorker' in navigator) {
 
 registerBackButton();
 void initNativeChrome();
+void ensureAndroidChannel();
