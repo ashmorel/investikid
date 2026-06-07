@@ -12,7 +12,7 @@ jobs:
     # not in a secret. Only CRON_SECRET is a real secret. Override BACKEND_URL via a
     # repo variable if the domain changes: ${{ vars.BACKEND_URL || '<default>' }}.
     env:
-      BACKEND_URL: https://lee-local-code-repo-production.up.railway.app
+      BACKEND_URL: ${{ vars.BACKEND_URL || 'https://lee-local-code-repo-production.up.railway.app' }}
     steps:
       - name: Trigger video-health check
         env:
