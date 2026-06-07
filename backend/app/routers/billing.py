@@ -8,11 +8,17 @@ from stripe import SignatureVerificationError
 from app.core.config import settings
 from app.core.database import get_session
 from app.routers.parent_auth import get_current_parent
+from app.schemas.apple_billing import (
+    AppleAccountTokenResponse,
+    AppleVerifyRequest,
+    AppleVerifyResponse,
+)
 from app.schemas.billing import (
     CheckoutResponse,
     PortalResponse,
     SubscriptionStatusResponse,
 )
+from app.services import apple_billing_service
 from app.services.billing_service import (
     create_checkout_session,
     create_portal_session,
@@ -48,6 +54,28 @@ async def subscription_status(
 ):
     result = await get_subscription_status(session, parent_email)
     return SubscriptionStatusResponse(**result)
+
+
+@router.get("/apple/account-token", response_model=AppleAccountTokenResponse)
+async def apple_account_token(parent_email: str = Depends(get_current_parent)):
+    return AppleAccountTokenResponse(
+        token=apple_billing_service.household_token(parent_email)
+    )
+
+
+@router.post("/apple/verify", response_model=AppleVerifyResponse)
+async def apple_verify(
+    payload: AppleVerifyRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        await apple_billing_service.verify_transaction(
+            session, parent_email=parent_email, jws=payload.jws
+        )
+    except apple_billing_service.AppleBillingError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return AppleVerifyResponse()
 
 
 @router.post("/webhook")
