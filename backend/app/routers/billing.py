@@ -18,7 +18,12 @@ from app.schemas.billing import (
     PortalResponse,
     SubscriptionStatusResponse,
 )
-from app.services import apple_billing_service
+from app.schemas.google_billing import (
+    AccountTokenResponse,
+    GoogleVerifyRequest,
+    GoogleVerifyResponse,
+)
+from app.services import apple_billing_service, google_billing_service
 from app.services.billing_service import (
     create_checkout_session,
     create_portal_session,
@@ -92,6 +97,44 @@ async def apple_notifications(
     try:
         await apple_billing_service.handle_notification(session, signed)
     except apple_billing_service.AppleBillingError:
+        return {"status": "ignored"}
+    return {"status": "ok"}
+
+
+@router.get("/account-token", response_model=AccountTokenResponse)
+async def account_token(parent_email: str = Depends(get_current_parent)):
+    return AccountTokenResponse(
+        token=apple_billing_service.household_token(parent_email)
+    )
+
+
+@router.post("/google/verify", response_model=GoogleVerifyResponse)
+async def google_verify(
+    payload: GoogleVerifyRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        await google_billing_service.verify_purchase(
+            session,
+            parent_email=parent_email,
+            purchase_token=payload.purchaseToken,
+            product_id=payload.productId,
+        )
+    except google_billing_service.GoogleBillingError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return GoogleVerifyResponse()
+
+
+@router.post("/google/notifications")
+async def google_notifications(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    body = await request.json()
+    try:
+        await google_billing_service.handle_notification(session, body)
+    except google_billing_service.GoogleBillingError:
         return {"status": "ignored"}
     return {"status": "ok"}
 
