@@ -10,7 +10,7 @@ const WATCH_ORIGIN = 'https://www.youtube.com';
 // embed with "error 153". We work around it by loading the player through a tiny
 // static proxy page (`/yt.html`) served from this real https origin, so the
 // YouTube request carries a valid https Referer. Overridable via VITE_WEB_ORIGIN.
-const DEFAULT_WEB_ORIGIN = 'https://lee-local-code-repo.vercel.app';
+const DEFAULT_WEB_ORIGIN = 'https://app.investikid.ai';
 
 function defaultWebOrigin(): string {
   return import.meta.env.VITE_WEB_ORIGIN || DEFAULT_WEB_ORIGIN;

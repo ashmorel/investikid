@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildYouTubeUrls } from '../videoEmbed';
 
 const ID = 'dQw4w9WgXcQ';
-const DEFAULT_WEB_ORIGIN = 'https://lee-local-code-repo.vercel.app';
+const DEFAULT_WEB_ORIGIN = 'https://app.investikid.ai';
 
 describe('buildYouTubeUrls', () => {
   it('returns null for an invalid id', () => {
