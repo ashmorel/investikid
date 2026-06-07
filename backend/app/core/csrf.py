@@ -29,6 +29,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/consent/decide",
     "/parent/auth/request",
     "/billing/webhook",
+    "/billing/apple/notifications",
     "/internal/video-health/run",
     "/parent/auth/oauth/google",
     "/parent/auth/oauth/apple",

@@ -94,6 +94,32 @@ async def _upsert_and_recompute(session: AsyncSession, *, parent_email: str,
     await recompute_household_premium(session, sub.parent_email)
 
 
+async def handle_notification(session: AsyncSession, signed_payload: str) -> None:
+    """Verify and process an App Store Server Notification V2 payload."""
+    _require_apple()
+    verifier = _build_verifier()
+    notification = verifier.verify_and_decode_notification(signed_payload)
+    data = getattr(notification, "data", None)
+    signed_tx = getattr(data, "signedTransactionInfo", None) if data is not None else None
+    if not signed_tx:
+        return
+    tx = verifier.verify_and_decode_signed_transaction(signed_tx)
+    otid = tx.originalTransactionId
+    # Only act on transactions we already know (associated to a household at verify time)
+    sub = await session.scalar(select(Subscription).where(
+        Subscription.provider == "apple", Subscription.external_id == otid))
+    if sub is None:
+        return
+    try:
+        status_ = _fetch_status(otid)
+    except Exception:
+        status_ = _status_from_payload(tx)
+    await _upsert_and_recompute(session, parent_email=sub.parent_email,
+                               original_transaction_id=otid, status=status_,
+                               expires_ms=getattr(tx, "expiresDate", None))
+    await session.commit()
+
+
 async def verify_transaction(session: AsyncSession, *, parent_email: str, jws: str) -> None:
     """Verify a StoreKit signed transaction (JWS), associate it to the parent via
     appAccountToken, record the subscription, and recompute entitlement."""

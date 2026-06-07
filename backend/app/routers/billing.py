@@ -78,6 +78,24 @@ async def apple_verify(
     return AppleVerifyResponse()
 
 
+@router.post("/apple/notifications")
+async def apple_notifications(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    body = await request.json()
+    signed = body.get("signedPayload")
+    if not signed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing signedPayload"
+        )
+    try:
+        await apple_billing_service.handle_notification(session, signed)
+    except apple_billing_service.AppleBillingError:
+        return {"status": "ignored"}
+    return {"status": "ok"}
+
+
 @router.post("/webhook")
 async def webhook(
     request: Request,
