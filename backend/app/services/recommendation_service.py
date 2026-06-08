@@ -5,11 +5,12 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.content import Lesson, LessonCompletion, Module
+from app.models.content import Lesson, LessonCompletion, Level, Module
 from app.models.skill_profile import TopicMastery
 from app.models.user import User
 from app.services.content_service import content_region_for
 from app.services.entitlements import is_premium
+from app.services.level_service import LevelStateInput, first_actionable_lesson
 
 # Scoring weights
 _WEIGHT_TOPIC_MATCH = 0.30
@@ -160,6 +161,8 @@ def _categorise_scored_modules(
         item: dict[str, Any] = {
             "module_id": entry["module_id"],
             "lesson_id": entry.get("_lesson_id"),
+            "level_id": entry.get("_level_id"),
+            "level_title": entry.get("_level_title"),
             "score": entry["score"],
             "reason": entry["reason"],
             "review_prompt": None,
@@ -217,6 +220,8 @@ async def get_recommendations(
                 "something_new": [{
                     "module_id": seed["module_id"],
                     "lesson_id": seed["lesson_id"],
+                    "level_id": seed.get("level_id"),
+                    "level_title": seed.get("level_title"),
                     "score": 0.0,
                     "reason": seed["reason"],
                     "review_prompt": None,
@@ -317,8 +322,10 @@ async def get_recommendations(
             readiness_score=score_result["readiness"],
         )
 
-        # Find first incomplete lesson
+        # Find the next actionable lesson (level-aware when the module has levels)
         lesson_id = None
+        level_id = None
+        level_title = None
         if not is_fully_completed:
             lessons = (
                 await session.scalars(
@@ -327,17 +334,50 @@ async def get_recommendations(
                     .order_by(Lesson.order_index)
                 )
             ).all()
-            completed_ids_result = await session.scalars(
-                select(LessonCompletion.lesson_id).where(
-                    LessonCompletion.user_id == user.id,
-                    LessonCompletion.lesson_id.in_([lsn.id for lsn in lessons]),
+            lesson_ids = [lsn.id for lsn in lessons]
+            comp_rows = (
+                await session.execute(
+                    select(LessonCompletion.lesson_id, LessonCompletion.score).where(
+                        LessonCompletion.user_id == user.id,
+                        LessonCompletion.lesson_id.in_(lesson_ids),
+                    )
                 )
-            )
-            completed_ids = set(completed_ids_result.all())
-            for lesson in lessons:
-                if lesson.id not in completed_ids:
-                    lesson_id = lesson.id
-                    break
+            ).all()
+            completed_ids = {lid for lid, _ in comp_rows}
+            scores = {lid: score for lid, score in comp_rows}
+
+            levels = (
+                await session.scalars(
+                    select(Level)
+                    .where(Level.module_id == m.id)
+                    .order_by(Level.order_index)
+                )
+            ).all()
+
+            if levels:
+                lessons_by_level_ordered: dict[uuid.UUID, list[uuid.UUID]] = {}
+                for lsn in lessons:  # already ordered by order_index
+                    if lsn.level_id is not None:
+                        lessons_by_level_ordered.setdefault(lsn.level_id, []).append(lsn.id)
+                pointer = first_actionable_lesson(
+                    [
+                        LevelStateInput(lv.id, lv.order_index, lv.is_premium, lv.pass_threshold)
+                        for lv in levels
+                    ],
+                    lessons_by_level_ordered=lessons_by_level_ordered,
+                    completed_ids=completed_ids,
+                    scores=scores,
+                    user_is_premium=is_premium(user),
+                )
+                if pointer is not None:
+                    level_id, lesson_id = pointer
+                    level_title = {lv.id: lv.title for lv in levels}.get(level_id)
+            else:
+                # Unlevelled module — first incomplete lesson (legacy behaviour)
+                for lesson in lessons:
+                    if lesson.id not in completed_ids:
+                        lesson_id = lesson.id
+                        break
 
         scored.append({
             "module_id": m.id,
@@ -348,6 +388,8 @@ async def get_recommendations(
             "_total_count": total,
             "_order_index": m.order_index,
             "_lesson_id": lesson_id,
+            "_level_id": level_id,
+            "_level_title": level_title,
             "_has_due_sr": has_due_sr,
             "_weak_concepts": due_concepts_by_topic.get(m.topic, []),
         })
@@ -409,10 +451,39 @@ async def _topic_path_seed(session: AsyncSession, user: User):
                 select(Lesson).where(Lesson.module_id == m.id).order_by(Lesson.order_index)
             )
         ).all()
-        if lessons:
-            return {
-                "module_id": m.id,
-                "lesson_id": lessons[0].id,
-                "reason": f"Start your {pref.replace('_', ' ')} journey",
-            }
+        if not lessons:
+            continue
+        levels = (
+            await session.scalars(
+                select(Level).where(Level.module_id == m.id).order_by(Level.order_index)
+            )
+        ).all()
+        lesson_id = lessons[0].id
+        level_id = None
+        level_title = None
+        if levels:
+            lessons_by_level_ordered: dict = {}
+            for lsn in lessons:
+                if lsn.level_id is not None:
+                    lessons_by_level_ordered.setdefault(lsn.level_id, []).append(lsn.id)
+            pointer = first_actionable_lesson(
+                [
+                    LevelStateInput(lv.id, lv.order_index, lv.is_premium, lv.pass_threshold)
+                    for lv in levels
+                ],
+                lessons_by_level_ordered=lessons_by_level_ordered,
+                completed_ids=set(),
+                scores={},
+                user_is_premium=is_premium(user),
+            )
+            if pointer is not None:
+                level_id, lesson_id = pointer
+                level_title = {lv.id: lv.title for lv in levels}.get(level_id)
+        return {
+            "module_id": m.id,
+            "lesson_id": lesson_id,
+            "level_id": level_id,
+            "level_title": level_title,
+            "reason": f"Start your {pref.replace('_', ' ')} journey",
+        }
     return None

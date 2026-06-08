@@ -1,12 +1,15 @@
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { contentApi, type LessonSummary } from '@/api/content';
 import { ApiError } from '@/api/client';
 import { LessonRow } from '@/components/child/LessonRow';
 import { BackButton } from '@/components/child/BackButton';
+import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 export default function Level() {
   const { moduleId, levelId } = useParams<{ moduleId: string; levelId: string }>();
+  const { open: openPaywall } = usePremiumPaywall();
 
   const lessonsQ = useQuery<LessonSummary[] | null>({
     queryKey: ['level-lessons', levelId],
@@ -14,18 +17,33 @@ export default function Level() {
     enabled: !!levelId, retry: false, staleTime: 60_000,
   });
 
+  const premiumErr = lessonsQ.isError && lessonsQ.error instanceof ApiError
+    && lessonsQ.error.code === 'premium_required' ? lessonsQ.error : null;
+  const premiumLabel = ((premiumErr?.context as { label?: string }) ?? {}).label ?? 'this level';
+  useEffect(() => {
+    if (premiumErr) {
+      openPaywall({ kind: 'level', label: premiumLabel });
+    }
+  }, [premiumErr, premiumLabel, openPaywall]);
+
   if (lessonsQ.isLoading) {
     return <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6 text-sm text-gray-500">Loading…</div>;
   }
 
   if (lessonsQ.isError) {
     const err = lessonsQ.error;
-    if (err instanceof ApiError && err.status === 403) {
+    if (premiumErr || (err instanceof ApiError && err.status === 403)) {
       return (
         <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
           <BackButton to={`/lessons/${moduleId ?? ''}`} label="Levels" />
-          <p className="mt-2 font-semibold text-gray-900">This level is premium.</p>
-          <p className="mt-1 text-sm text-gray-500">Ask a grown-up to unlock premium content.</p>
+          <p className="mt-2 font-semibold text-gray-900">Premium</p>
+          <button
+            type="button"
+            onClick={() => openPaywall({ kind: 'level', label: premiumLabel })}
+            className="mt-2 rounded-full bg-brand-gradient px-5 py-2 text-sm font-bold text-white shadow"
+          >
+            See what's included
+          </button>
         </div>
       );
     }

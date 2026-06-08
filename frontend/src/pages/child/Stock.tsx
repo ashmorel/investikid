@@ -13,12 +13,14 @@ import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { ChartCoachPanel } from '@/components/child/simulator/ChartCoachPanel';
 import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
+import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 export default function Stock() {
   const { exchange, ticker } = useParams<{ exchange: string; ticker: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { open: openPaywall } = usePremiumPaywall();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [chartPeriod, setChartPeriod] = useState('1mo');
   const [showCoachPenny, setShowCoachPenny] = useState(false);
@@ -61,6 +63,11 @@ export default function Stock() {
       navigate('/simulator');
     },
     onError: (err: unknown) => {
+      if (err instanceof ApiError && err.code === 'premium_required') {
+        const ctx = (err.context as { label?: string }) ?? {};
+        openPaywall({ kind: 'ticker', label: ctx.label ?? 'this stock' });
+        return;
+      }
       const msg = err instanceof ApiError ? err.detail : 'Trade failed. Try again.';
       setSubmitError(msg);
     },
@@ -142,7 +149,12 @@ export default function Stock() {
           currency={quote.currency}
           availableCash={portfolio.virtual_cash}
           ownedShares={existingHolding?.shares ?? '0'}
-          onSubmit={async (req) => { setSubmitError(null); await tradeMutation.mutateAsync(req); }}
+          onSubmit={async (req) => {
+            setSubmitError(null);
+            // Errors are surfaced via the mutation's onError (toast or paywall);
+            // swallow the rejection here so it isn't an unhandled promise.
+            await tradeMutation.mutateAsync(req).catch(() => {});
+          }}
           isSubmitting={tradeMutation.isPending}
           submitError={submitError}
         />

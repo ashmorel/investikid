@@ -4,7 +4,12 @@ import { isNativeApp } from '@/lib/platform';
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export class ApiError extends Error {
-  constructor(public status: number, public detail: string) {
+  constructor(
+    public status: number,
+    public detail: string,
+    public code?: string,
+    public context?: unknown,
+  ) {
     super(detail);
     this.name = 'ApiError';
   }
@@ -31,11 +36,20 @@ export async function apiFetch<T = unknown>(
   const res = await fetch(`${API_BASE}${path}`, { credentials: 'include', ...init, method, headers });
   if (!res.ok) {
     let detail = res.statusText;
+    let code: string | undefined;
+    let context: unknown;
     try {
       const body = await res.json();
-      if (body && typeof body.detail === 'string') detail = body.detail;
+      const d = body?.detail;
+      if (typeof d === 'string') {
+        detail = d;
+      } else if (d && typeof d === 'object') {
+        if (typeof d.message === 'string') detail = d.message;
+        if (typeof d.code === 'string') code = d.code;
+        context = d.context;
+      }
     } catch { /* ignore */ }
-    throw new ApiError(res.status, detail);
+    throw new ApiError(res.status, detail, code, context);
   }
   if (res.status === 204) return null;
   return (await res.json()) as T;

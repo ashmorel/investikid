@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ProgressBar } from './ProgressBar';
-import type { ChildAnalytics as ChildAnalyticsType } from '@/api/parent';
+import { Disclosure } from './a11y/Disclosure';
+import type { ChildAnalytics as ChildAnalyticsType, ModuleProgress, LevelProgress } from '@/api/parent';
 
 function formatScore(type: string, score: number | null): string {
   if (type === 'card' || type === 'video') return '✓';
@@ -15,6 +16,48 @@ function TypeBadge({ type }: { type: string }) {
     <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
       {label}
     </span>
+  );
+}
+
+function LevelStateBadge({ level }: { level: LevelProgress }) {
+  if (level.state === 'completed') {
+    return (
+      <span className="rounded-full bg-success-100 px-2 py-0.5 text-[11px] font-medium text-success-700">
+        Completed{level.passed ? ' ✓' : ''}
+      </span>
+    );
+  }
+  if (level.state === 'locked') {
+    return (
+      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+        🔒 Locked
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-medium text-brand-700">
+      In progress
+    </span>
+  );
+}
+
+function ModuleProgressBlock({ module }: { module: ModuleProgress }) {
+  return (
+    <Disclosure label={`${module.icon} ${module.title} — ${module.lessons_completed}/${module.lessons_total}`}>
+      <ul className="space-y-1.5">
+        {module.levels.map((level) => (
+          <li key={level.level_id} className="flex items-center justify-between gap-2 text-xs">
+            <span className="text-gray-700">{level.title}</span>
+            <span className="flex items-center gap-2">
+              <LevelStateBadge level={level} />
+              <span className="text-muted-foreground">
+                {level.lessons_completed}/{level.lessons_total}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Disclosure>
   );
 }
 
@@ -103,6 +146,17 @@ export function ChildAnalytics({ analytics }: { analytics: ChildAnalyticsType })
                     </span>
                   ))}
                 </p>
+              )}
+
+              {analytics.modules_progress.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Progress by module</p>
+                  <div className="mt-1 space-y-2">
+                    {analytics.modules_progress.map((m) => (
+                      <ModuleProgressBlock key={m.module_id} module={m} />
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           </motion.div>

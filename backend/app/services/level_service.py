@@ -69,3 +69,32 @@ def derive_level_states(
         )
         prev_passed = passed
     return out
+
+
+def first_actionable_lesson(
+    levels: list[LevelStateInput],
+    *,
+    lessons_by_level_ordered: dict[uuid.UUID, list[uuid.UUID]],
+    completed_ids: set[uuid.UUID],
+    scores: dict[uuid.UUID, float | None],
+    user_is_premium: bool,
+) -> tuple[uuid.UUID, uuid.UUID] | None:
+    """(level_id, lesson_id) of the first incomplete lesson in the first
+    ``in_progress`` level, walking levels by order_index. None when no level is
+    actionable (all complete, or the next is locked). ``lessons_by_level_ordered``
+    must list lesson ids per level in display order. Pure — reuses derive_level_states
+    so locking matches the level screens exactly."""
+    states = derive_level_states(
+        levels,
+        lessons_by_level=lessons_by_level_ordered,
+        completed_ids=completed_ids,
+        scores=scores,
+        user_is_premium=user_is_premium,
+    )
+    for lv in sorted(levels, key=lambda x: x.order_index):
+        if states[lv.level_id].state != "in_progress":
+            continue
+        for lid in lessons_by_level_ordered.get(lv.level_id, []):
+            if lid not in completed_ids:
+                return (lv.level_id, lid)
+    return None

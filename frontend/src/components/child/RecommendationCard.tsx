@@ -49,6 +49,11 @@ export function RecommendationCard({
       to={href}
       className={`block rounded-xl border-l-4 ${colors.border} bg-slate-800 p-4 transition-colors hover:bg-slate-700`}
     >
+      {item.level_title && (
+        <p className={`${colors.text} text-[11px] font-semibold uppercase tracking-wide`}>
+          {item.level_title}
+        </p>
+      )}
       <p className="font-semibold text-white text-sm">{moduleTitle}</p>
 
       {category === 'continue_learning' && totalCount > 0 && (

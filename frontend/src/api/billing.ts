@@ -17,4 +17,17 @@ export const billingApi = {
 
   getStatus: () =>
     apiFetch<SubscriptionStatus>('/billing/status'),
+
+  appleVerify: (jws: string) =>
+    apiFetch<{ status: string }>('/billing/apple/verify',
+      { method: 'POST', body: JSON.stringify({ jws }) }),
+
+  appleAccountToken: () =>
+    apiFetch<{ token: string }>('/billing/apple/account-token'),
+
+  googleVerify: (body: { purchaseToken: string; productId: string }) =>
+    apiFetch<{ status: string }>('/billing/google/verify',
+      { method: 'POST', body: JSON.stringify(body) }),
+
+  accountToken: () => apiFetch<{ token: string }>('/billing/account-token'),
 };

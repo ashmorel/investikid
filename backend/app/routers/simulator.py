@@ -25,9 +25,11 @@ from app.schemas.simulator import (
     NewsSummaryOut,
     PortfolioOut,
     PortfolioSnapshot,
+    PortfolioSummaryOut,
     PricePointOut,
     QuoteOut,
     RewardsOut,
+    SetCurrencyRequest,
     StockNewsOut,
     TimeMachineOut,
     TimeMachinePeriod,
@@ -42,12 +44,14 @@ from app.services.chart_coach_service import (
 )
 from app.services.content_service import record_daily_activity
 from app.services.entitlements import is_premium
+from app.services.fx import APPROX_USD_RATES
 from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
 )
 from app.services.llm_client import LLMError, get_llm_client
 from app.services.moderation import moderate_output
+from app.services.premium_config import premium_required_error
 from app.services.price_provider import (
     LivePriceProvider,
     TickerNotAvailableError,
@@ -61,6 +65,8 @@ from app.services.simulator_service import (
     InsufficientSharesError,
     execute_trade,
     get_or_create_portfolio,
+    reset_portfolio,
+    set_portfolio_currency,
 )
 
 router = APIRouter(tags=["simulator"])
@@ -414,17 +420,6 @@ async def chart_coach(
     return result
 
 
-_APPROX_USD_RATES: dict[str, float] = {
-    "USD": 1.0,
-    "GBP": 1.27,
-    "HKD": 0.128,
-    "EUR": 1.08,
-    "JPY": 0.0067,
-    "CAD": 0.73,
-    "AUD": 0.65,
-}
-
-
 @router.get("/market/time-machine/{exchange}/{ticker}", response_model=TimeMachineOut)
 @limiter.limit("20/hour")
 async def get_time_machine(
@@ -448,7 +443,7 @@ async def get_time_machine(
 
     current_price = float(quote.price)
     currency = quote.currency
-    usd_rate = _APPROX_USD_RATES.get(currency, 1.0)
+    usd_rate = APPROX_USD_RATES.get(currency, 1.0)
     invest_amount = 5000.0
 
     today = date.today()
@@ -670,7 +665,7 @@ async def place_trade(
     provider=Depends(get_price_provider),
 ):
     if not is_premium(current_user) and not provider.is_free_tier(payload.ticker, payload.exchange):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Ticker not available on free tier")
+        raise premium_required_error("ticker", payload.ticker)
     try:
         quote = provider.get_quote(payload.ticker, payload.exchange)
     except TickerNotAvailableError:
@@ -719,6 +714,33 @@ async def place_trade(
             ],
             badges_unlocked=[b.name for b in new_badges],
         ),
+    )
+
+
+@router.post("/portfolio/currency", response_model=PortfolioSummaryOut)
+async def set_currency(
+    payload: SetCurrencyRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    portfolio = await set_portfolio_currency(session, current_user, payload.currency_code)
+    if portfolio is None:
+        portfolio = await get_or_create_portfolio(session, current_user)
+    await session.commit()
+    return PortfolioSummaryOut(
+        id=portfolio.id, virtual_cash=portfolio.virtual_cash, currency_code=portfolio.currency_code,
+    )
+
+
+@router.post("/portfolio/reset", response_model=PortfolioSummaryOut)
+async def reset_portfolio_endpoint(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    portfolio = await reset_portfolio(session, current_user)
+    await session.commit()
+    return PortfolioSummaryOut(
+        id=portfolio.id, virtual_cash=portfolio.virtual_cash, currency_code=portfolio.currency_code,
     )
 
 

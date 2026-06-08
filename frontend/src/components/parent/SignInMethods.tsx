@@ -58,7 +58,7 @@ export function SignInMethods() {
       <h2 className="mb-3 text-sm font-semibold text-brand-900">Sign-in methods</h2>
 
       {error && (
-        <p role="alert" className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="mb-3 rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700">
           {error}
         </p>
       )}

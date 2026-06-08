@@ -8,11 +8,22 @@ from stripe import SignatureVerificationError
 from app.core.config import settings
 from app.core.database import get_session
 from app.routers.parent_auth import get_current_parent
+from app.schemas.apple_billing import (
+    AppleAccountTokenResponse,
+    AppleVerifyRequest,
+    AppleVerifyResponse,
+)
 from app.schemas.billing import (
     CheckoutResponse,
     PortalResponse,
     SubscriptionStatusResponse,
 )
+from app.schemas.google_billing import (
+    AccountTokenResponse,
+    GoogleVerifyRequest,
+    GoogleVerifyResponse,
+)
+from app.services import apple_billing_service, google_billing_service
 from app.services.billing_service import (
     create_checkout_session,
     create_portal_session,
@@ -48,6 +59,84 @@ async def subscription_status(
 ):
     result = await get_subscription_status(session, parent_email)
     return SubscriptionStatusResponse(**result)
+
+
+@router.get("/apple/account-token", response_model=AppleAccountTokenResponse)
+async def apple_account_token(parent_email: str = Depends(get_current_parent)):
+    return AppleAccountTokenResponse(
+        token=apple_billing_service.household_token(parent_email)
+    )
+
+
+@router.post("/apple/verify", response_model=AppleVerifyResponse)
+async def apple_verify(
+    payload: AppleVerifyRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        await apple_billing_service.verify_transaction(
+            session, parent_email=parent_email, jws=payload.jws
+        )
+    except apple_billing_service.AppleBillingError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return AppleVerifyResponse()
+
+
+@router.post("/apple/notifications")
+async def apple_notifications(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    body = await request.json()
+    signed = body.get("signedPayload")
+    if not signed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing signedPayload"
+        )
+    try:
+        await apple_billing_service.handle_notification(session, signed)
+    except apple_billing_service.AppleBillingError:
+        return {"status": "ignored"}
+    return {"status": "ok"}
+
+
+@router.get("/account-token", response_model=AccountTokenResponse)
+async def account_token(parent_email: str = Depends(get_current_parent)):
+    return AccountTokenResponse(
+        token=apple_billing_service.household_token(parent_email)
+    )
+
+
+@router.post("/google/verify", response_model=GoogleVerifyResponse)
+async def google_verify(
+    payload: GoogleVerifyRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        await google_billing_service.verify_purchase(
+            session,
+            parent_email=parent_email,
+            purchase_token=payload.purchaseToken,
+            product_id=payload.productId,
+        )
+    except google_billing_service.GoogleBillingError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return GoogleVerifyResponse()
+
+
+@router.post("/google/notifications")
+async def google_notifications(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    body = await request.json()
+    try:
+        await google_billing_service.handle_notification(session, body)
+    except google_billing_service.GoogleBillingError:
+        return {"status": "ignored"}
+    return {"status": "ok"}
 
 
 @router.post("/webhook")

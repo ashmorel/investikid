@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -12,15 +12,25 @@ from app.core.database import Base
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
+    __table_args__ = (
+        UniqueConstraint("provider", "external_id", name="uq_subscriptions_provider_external_id"),
+    )
+
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True, default=uuid.uuid4
     )
     parent_email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    stripe_customer_id: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False
+    provider: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="stripe", index=True
+    )
+    external_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )
+    stripe_customer_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
     )
     stripe_subscription_id: Mapped[str | None] = mapped_column(
-        String(255), unique=True, nullable=True
+        String(255), nullable=True
     )
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="incomplete")
     current_period_end: Mapped[datetime | None] = mapped_column(

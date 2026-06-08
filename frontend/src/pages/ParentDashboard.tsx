@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 import { SignInMethods } from '@/components/parent/SignInMethods';
 import { GroupsCard } from '@/components/parent/GroupsCard';
+import { NotificationPreferencesCard } from '@/components/parent/NotificationPreferencesCard';
+import { PremiumRequestsCard } from '@/components/parent/PremiumRequestsCard';
 import { Penny } from '@/components/child/ui/Penny';
 
 export default function ParentDashboard() {
@@ -66,7 +68,15 @@ export default function ParentDashboard() {
         </div>
       </header>
 
-      <SubscriptionCard />
+      <PremiumRequestsCard
+        onApprove={() =>
+          document.getElementById('subscription-card')?.scrollIntoView({ behavior: 'smooth' })
+        }
+      />
+      <div id="subscription-card">
+        <SubscriptionCard />
+      </div>
+      <NotificationPreferencesCard />
 
       {q.isLoading && <p className="mt-6 text-sm text-muted-foreground">Loading…</p>}
       {q.isError && (

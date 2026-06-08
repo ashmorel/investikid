@@ -57,6 +57,17 @@ deploy (which runs `alembic upgrade head` against the live prod DB):
 3. Promote (`git checkout main && git merge --ff-only staging && git push`).
 4. Trigger the manual Railway production deploy (and Vercel "Promote to Production").
 
+**Production cutover one-offs (do once, when moving prod onto `ashmorel/investikid`):**
+- **Repoint prod backend domain** (optional): currently `lee-local-code-repo-production.up.railway.app`. If renamed to `investikid-production`, also update the cron workflow `BACKEND_URL` (`.github/workflows/video-health-cron.yml`) and any client referencing it.
+- **Rotate prod secrets** (were exposed in old git history): `JWT_SECRET`, `SECRET_KEY`, `ADMIN_TOKEN`, `CRON_SECRET`, `RESEND_API_KEY` — give prod its own values, distinct from testing/staging.
+- ✅ **`CRON_SECRET` — RESOLVED 2026-06-08.** `CRON_SECRET` is set and **matched** on production Railway (`Invest-Ed` → production → InvestiKid) **and** the GitHub Actions secret. The `Video health cron` workflow is **enabled** and a manual run against production (`https://investikid.up.railway.app`) returned **HTTP 200** `{"ok":2,"dead":0,"unknown":0}`. The daily 06:00 UTC schedule now runs cleanly.
+  - The cron workflow on **both `main` and `testing`** reads `BACKEND_URL` from the **repo Actions variable** (`${{ vars.BACKEND_URL || '<hardcoded fallback>' }}`; main `d8bef57`, testing `8622920`). The scheduled run executes from `main`.
+  - **`vars.BACKEND_URL` = `https://investikid.up.railway.app`** (the prod backend). If the prod host ever changes (custom domain / rename): `gh variable set BACKEND_URL --body <prod-url>`.
+  - History: pipeline first validated against `testing` (2026-06-07, HTTP 200), then pointed at prod and re-validated (2026-06-08). One transient 401 occurred before prod had redeployed with the new secret — re-running after the prod deploy completed returned 200.
+  - If it ever fails again: **401**=GitHub vs Railway secret mismatch; **503**=`CRON_SECRET` unset on backend; **404**=backend not serving / wrong `BACKEND_URL`.
+- ⏳ **4C trial-reminders cron step — pending prod promotion.** Feature 4C adds a second daily cron step hitting `/internal/trial-reminders/run`. It is on the **`testing`** branch's `video-health-cron.yml` only (commit `1672c648`). **Do NOT add it to `main` until 4C is deployed to production** — the scheduled cron runs from `main` against prod, and the prod backend won't serve `/internal/trial-reminders/run` until 4C is promoted; adding it early would 404 and fail the daily cron. At 4C prod promotion: add the identical `Trigger trial-ending reminders` step to `main`'s `.github/workflows/video-health-cron.yml`.
+- **Vercel production env vars** (`VITE_API_BASE_URL`, `VITE_WEB_ORIGIN`) read back empty via CLI — verify/set them before/at cutover.
+
 ## Repo configuration that supports this (already in place)
 
 - `frontend/vercel.json` → `git.deploymentEnabled`: `main: false` (production = **manual
@@ -81,21 +92,48 @@ These need dashboard access and are not in the repo.
      beta-testers can reach it).
    - `main` → Production, **auto-deploy disabled** (`vercel.json` `main: false`); you click
      **Promote to Production** after beta sign-off.
-3. Set per-environment env vars (`VITE_API_BASE_URL`, `VITE_WEB_ORIGIN`, `VITE_*` social IDs)
-   pointing each env at its matching Railway backend.
+3. Per-environment env vars (scope each to Production / Preview-or-branch). Point each env's
+   `VITE_API_BASE_URL` at the matching Railway backend, and ensure that Railway env's
+   `CORS_ORIGINS`/`APP_BASE_URL` point back at this Vercel URL.
+   - `VITE_API_BASE_URL` — that env's Railway backend URL
+   - `VITE_WEB_ORIGIN` — that env's Vercel URL
+   - `VITE_GOOGLE_WEB_CLIENT_ID`, `VITE_GOOGLE_IOS_CLIENT_ID`, `VITE_APPLE_SERVICES_ID`
+     — only if testing social login in that env
 
 ### Railway
 1. Create environments `testing`, `staging`, `production`.
 2. Map each to its branch; **enable auto-deploy on `testing`/`staging`, keep `production`
    manual / approval-gated** (matches manual promotion).
-3. **Testing DB = a snapshot of the current prod DB** (prod holds only test data today). Give
-   testing its own database + test-only secrets.
-4. Per-env vars: `ENVIRONMENT`, `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`, `APP_BASE_URL`,
-   `CRON_SECRET`, etc.
-5. **Staging migration safety:** if staging ever points at the live production database, do **not**
-   run schema migrations against it. Either disable deploy-time `alembic upgrade head` for the
-   staging service or point staging at a production-clone/rehearsal DB. (`railway.json`'s start
-   command migrates on every deploy — override it per-environment for staging.)
+3. **Three separate databases.** `testing` DB = a snapshot of prod; `staging` DB = its own
+   snapshot of prod; `production` = the real DB. (Prod holds only test data today, so snapshot
+   it twice: Railway database → restore-to-new, or `pg_dump` prod → `pg_restore` into each.)
+   The backend auto-runs `alembic upgrade head` on every deploy (`railway.json`), so migrations
+   land per-env as code promotes. Because staging has its **own** DB, that auto-migrate is safe —
+   beta-testers exercise new schema without touching prod. Keep **production** auto-deploy
+   off/approval-gated so a prod migration only runs on your explicit deploy.
+
+4. **Env vars per environment** (Railway → service → Variables):
+
+   *Required (core):*
+   - `DATABASE_URL` — that env's Postgres URL
+   - `TEST_DATABASE_URL` — same DB or a throwaway (only the test runner uses it; can equal `DATABASE_URL`)
+   - `JWT_SECRET` — unique random secret **per env**
+   - `ENVIRONMENT` — `testing` | `staging` | `production`
+   - `CORS_ORIGINS` — that env's Vercel URL(s), comma-separated
+   - `APP_BASE_URL` — that env's Vercel URL (email links incl. the premium-request email → `/parent`)
+   - `CRON_SECRET` — **rotate it** (was exposed before); unique per env
+   - `ADMIN_BOOTSTRAP_EMAIL` — admin account seeded on deploy
+
+   *Email (premium-request + consent/verify emails):*
+   - `EMAIL_BACKEND` — `logging` (testing/staging) or `resend` (production)
+   - `EMAIL_FROM`, `RESEND_API_KEY` (if backend=resend), `ADMIN_ALERT_EMAIL`, `FEEDBACK_NOTIFY_EMAIL`
+
+   *Feature-gated (set where the feature should be live):*
+   - **AI (Coach Penny / greeting):** `LLM_TOGETHER_API_KEY` (+ `LLM_GROQ_*` / `LLM_PREMIUM_*` if used)
+   - **Billing (4A):** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`, `STRIPE_PORTAL_CONFIG_ID`
+   - **Social login:** `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `APPLE_SERVICES_ID`, `APPLE_BUNDLE_ID`
+   - `REDIS_URL` (rate limiting, if you run Redis)
+   - **Redis (optional, for market-data caching)** — to gain cross-restart / multi-replica caching of simulator quotes + search results, provision a **Redis** service per environment and set `REDIS_URL` on the backend. Without it the app runs exactly as today (in-memory cache only); the Redis layer (`app/services/price_cache.py`) is a safe no-op when Redis is unreachable.
 
 ### GitHub
 1. `Settings → Environments`: create `testing`, `staging`, `production`.
@@ -113,6 +151,29 @@ These need dashboard access and are not in the repo.
   and rotate `CRON_SECRET`.
 - Confirm no `.env*` is tracked here (only `backend/.env.example` should be) and run `gitleaks`.
 - Enable GitHub secret scanning.
+
+## Provisioning status (2026-06-07)
+
+**Railway (project `Invest-Ed`, service renamed `InvestiKid`) — testing + staging DONE, production untouched.**
+- **testing** → backend `https://investikid-testing.up.railway.app`; source `investikid@testing`, root `/backend`; own Postgres (`DATABASE_URL` = `${{ Postgres.DATABASE_URL }}` reference); migrated + seeded; `ENVIRONMENT=testing`, `EMAIL_BACKEND=logging`. Auto-deploys on push to `testing`.
+- **staging** → backend `https://investikid-staging.up.railway.app`; source `investikid@staging`, root `/backend`; own Postgres (reference); full migration chain + seeded; `ENVIRONMENT=staging`, `EMAIL_BACKEND=logging`; `CORS_ORIGINS` set to the staging Vercel origin. Auto-deploys on push to `staging`.
+- **production** → still on the old repo (`Lee-Local-Code-Repo`, `/invest-ed/backend`), domain still `lee-local-code-repo-production.up.railway.app`, own DB, **not migrated by the cutover**. Repoint later (gated, backup-first).
+- ⚠️ testing + staging carry **forked production secrets** (live OpenAI/Together/Resend keys, `JWT_SECRET`, `CRON_SECRET`, DB password, `ADMIN_TOKEN`, `SECRET_KEY`), and they're **identical across both envs**. **Rotate / set unique test-only keys** — Coach Penny in non-prod currently bills your prod LLM accounts.
+- `APP_BASE_URL` in testing/staging still = `app.investikid.ai` (prod). Only affects email links, and email is `logging` in these envs, so low impact — repoint to the branch URLs if you want fully correct links.
+
+**Vercel (project `investikid.ai`, team `investikid`) — repoint CONFIRMED + env wired; production cutover pending.**
+- **Git connection points at `ashmorel/investikid`** ✅ (Preview builds for `testing`/`staging` come from repo id `1260927337`). Root Directory = `frontend` ✅ (Vite builds succeed).
+- **Branch-scoped env vars set via Vercel CLI** ✅ (`vercel env ls`):
+  - `VITE_API_BASE_URL` — Preview/`testing` → `https://investikid-testing.up.railway.app`; Preview/`staging` → `https://investikid-staging.up.railway.app`
+  - `VITE_WEB_ORIGIN` — Preview/`testing` + Preview/`staging` → the branch URLs below
+  - the old all-branches Preview `VITE_API_BASE_URL` was removed. testing + staging redeployed to bake in the new values.
+- **Preview deployments are auth-protected** (Vercel Authentication, default on Hobby) → reachable only by the Vercel team account, not anonymous/beta users. No password protection on Hobby — for beta access to staging, plan an **app-level allowlist** rather than Vercel protection.
+- **production** → still serving the **old-repo** build (`Lee-Local-Code-Repo@main` `de1eae1`); `vercel.json` `main:false` = no auto-build. **Cutover is a deliberate step** (frontend-only, no DB migration). Prod `VITE_*` values read back empty via CLI (likely Sensitive-flagged) — verify/set them at cutover.
+- **⚠️ Vercel team slug is `investikid`** (was `lee-ashmore-s-projects`). Use the **`-investikid`** branch aliases below — the old `-lee-ashmore-s-projects` aliases still resolve but serve a **stale pre-migration build** (baked the old prod backend). `CORS_ORIGINS` (Railway) + `VITE_WEB_ORIGIN` (Vercel) are set to the `-investikid` origins.
+- Vercel branch URLs (current/canonical):
+  - testing: `https://investikidai-git-testing-investikid.vercel.app`
+  - staging: `https://investikidai-git-staging-investikid.vercel.app`
+  - production: `https://app.investikid.ai`
 
 ## Related docs
 - `docs/deployment-checkpoint.md` — how to run the manual checkpoint workflow.

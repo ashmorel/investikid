@@ -3,6 +3,7 @@ import { render, waitFor, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { axe } from 'vitest-axe';
+import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 
 const ME = {
   id: 'u1', email: 'k@x.com', username: 'kid42', dob: '2012-01-01',
@@ -28,11 +29,13 @@ function renderAt(path: string, ui: React.ReactNode, routePattern: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path={routePattern} element={<>{ui}</>} />
-        </Routes>
-      </MemoryRouter>
+      <PremiumPaywallProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path={routePattern} element={<>{ui}</>} />
+          </Routes>
+        </MemoryRouter>
+      </PremiumPaywallProvider>
     </QueryClientProvider>,
   );
 }
@@ -172,7 +175,9 @@ describe('a11y: child core surfaces', () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { container } = render(
       <QueryClientProvider client={qc}>
-        <MemoryRouter><Stats /></MemoryRouter>
+        <PremiumPaywallProvider>
+          <MemoryRouter><Stats /></MemoryRouter>
+        </PremiumPaywallProvider>
       </QueryClientProvider>,
     );
     expect(await axe(container)).toHaveNoViolations();

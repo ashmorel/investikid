@@ -2,16 +2,18 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core.database import get_session
+from app.core.rate_limit import limiter
 from app.models.apply_mission import ApplyMission
 from app.models.content import Lesson, Level, Module
 from app.models.gamification import Badge, Challenge, UserBadge
+from app.models.lesson_draft import LessonDraft
 from app.models.user import User
 from app.models.video_asset import VideoAsset
 from app.models.video_health import VideoHealth
@@ -29,7 +31,11 @@ from app.schemas.admin import (
     ChallengeCreate,
     ChallengeOut,
     ChallengeUpdate,
+    GenerateLessonsRequest,
+    GenerateLessonsResponse,
     LessonCreate,
+    LessonDraftOut,
+    LessonDraftUpdate,
     LessonOut,
     LessonUpdate,
     ModuleCreate,
@@ -41,8 +47,14 @@ from app.schemas.admin import (
     VideoHealthItem,
     VideoPresignRequest,
     VideoPresignResponse,
+    validate_lesson_content_json,
 )
 from app.services import storage, video_health_service
+from app.services.admin_content_generation_service import (
+    _concat_text,
+    generate_level_lessons,
+    regenerate_draft,
+)
 from app.services.app_settings import (
     get_alert_emails,
     get_starting_cash,
@@ -50,6 +62,7 @@ from app.services.app_settings import (
     set_starting_cash,
 )
 from app.services.engagement_service import get_module_engagement
+from app.services.moderation import moderate_output
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
 
@@ -394,6 +407,111 @@ async def admin_create_level_lesson(
     await session.commit()
     await session.refresh(lesson)
     return await _lesson_out(session, lesson)
+
+
+@router.post("/levels/{level_id}/generate", response_model=GenerateLessonsResponse)
+@limiter.limit("5/minute")
+async def generate_level_lessons_endpoint(
+    request: Request,
+    level_id: uuid.UUID,
+    payload: GenerateLessonsRequest,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    level = await session.get(Level, level_id)
+    if level is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
+    result = await generate_level_lessons(
+        session, level, concept=payload.concept, count=payload.count, types=payload.types,
+    )
+    return GenerateLessonsResponse(
+        created=[LessonDraftOut.model_validate(d) for d in result.created],
+        skipped=result.skipped,
+    )
+
+
+@router.get("/levels/{level_id}/drafts", response_model=list[LessonDraftOut])
+async def list_lesson_drafts(
+    level_id: uuid.UUID, session: AsyncSession = Depends(get_session),
+):
+    rows = (await session.scalars(
+        select(LessonDraft).where(LessonDraft.level_id == level_id).order_by(LessonDraft.created_at)
+    )).all()
+    return [LessonDraftOut.model_validate(d) for d in rows]
+
+
+@router.put("/lesson-drafts/{draft_id}", response_model=LessonDraftOut)
+async def update_lesson_draft(
+    draft_id: uuid.UUID,
+    payload: LessonDraftUpdate,
+    session: AsyncSession = Depends(get_session),
+):
+    draft = await session.get(LessonDraft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
+    try:
+        validate_lesson_content_json(draft.type, payload.content_json)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    mod = await moderate_output(_concat_text(payload.content_json), surface="lesson")
+    draft.content_json = payload.content_json
+    draft.moderation_safe = mod.safe
+    draft.moderation_category = mod.category
+    await session.commit()
+    return LessonDraftOut.model_validate(draft)
+
+
+@router.post("/lesson-drafts/{draft_id}/approve", response_model=LessonOut)
+async def approve_lesson_draft(
+    draft_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    draft = await session.get(LessonDraft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
+    if not draft.moderation_safe:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Draft failed moderation")
+    level = await session.get(Level, draft.level_id)
+    max_order = await session.scalar(
+        select(func.max(Lesson.order_index)).where(Lesson.level_id == draft.level_id)
+    )
+    lesson = Lesson(
+        module_id=level.module_id, level_id=draft.level_id, type=draft.type,
+        content_json=draft.content_json, xp_reward=10, order_index=(max_order or 0) + 1,
+    )
+    session.add(lesson)
+    await session.delete(draft)
+    await session.commit()
+    await session.refresh(lesson)
+    return await _lesson_out(session, lesson)
+
+
+@router.post("/lesson-drafts/{draft_id}/regenerate", response_model=LessonDraftOut)
+@limiter.limit("5/minute")
+async def regenerate_lesson_draft(
+    request: Request,
+    draft_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    draft = await session.get(LessonDraft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
+    updated = await regenerate_draft(session, draft)
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Generation failed")
+    return LessonDraftOut.model_validate(updated)
+
+
+@router.delete("/lesson-drafts/{draft_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def reject_lesson_draft(
+    draft_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    draft = await session.get(LessonDraft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
+    await session.delete(draft)
+    await session.commit()
 
 
 # ── Badges ──────────────────────────────────────────────────────────

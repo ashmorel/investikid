@@ -4,11 +4,13 @@ import { contentApi, type LevelOut, type ModuleOut } from '@/api/content';
 import { LevelCard } from '@/components/child/LevelCard';
 import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
+import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 export default function Module() {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { open: openPaywall } = usePremiumPaywall();
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -81,7 +83,7 @@ export default function Module() {
               onOpen={() => navigate(`/lessons/${moduleId}/${level.id}`)}
               onLockedClick={() => {
                 if (level.locked_reason === 'premium') {
-                  toast({ title: 'Premium', description: 'Ask a grown-up to unlock.' });
+                  openPaywall({ kind: 'level', label: level.title });
                 } else {
                   toast({ title: 'Locked', description: 'Finish the previous level first.' });
                 }

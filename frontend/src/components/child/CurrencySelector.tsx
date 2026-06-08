@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { authApi } from '@/api/auth';
+import { simulatorApi } from '@/api/simulator';
 import { currencyOptions } from '@/lib/region';
 import { getCurrencySymbol } from '@/lib/currency';
 
@@ -8,7 +8,7 @@ export function CurrencySelector({ currentCurrency }: { currentCurrency: string 
   const options = currencyOptions(currentCurrency);
 
   const save = useMutation({
-    mutationFn: (currency_code: string) => authApi.updatePreferences({ currency_code }),
+    mutationFn: (currency_code: string) => simulatorApi.setCurrency(currency_code),
     onSuccess: () => {
       // Independent of region: holdings persist, totals re-display converted.
       for (const key of [['me'], ['portfolio'], ['portfolio-history']]) {

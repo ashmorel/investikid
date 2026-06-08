@@ -38,7 +38,10 @@ async def test_decide_approve_activates_user(client, db_session):
         subject_id=uuid.UUID(user_id), expires_in=timedelta(hours=1),
     )
     await db_session.commit()
-    r = await client.post(f"/consent/decide?token={token}", json={"decision": "approve"})
+    r = await client.post(
+        f"/consent/decide?token={token}",
+        json={"decision": "approve", "attest_guardian": True},
+    )
     assert r.status_code == 200
 
     user = await db_session.get(User, uuid.UUID(user_id))
@@ -69,13 +72,22 @@ async def test_decide_replay_returns_410(client, db_session):
         subject_id=uuid.UUID(user_id), expires_in=timedelta(hours=1),
     )
     await db_session.commit()
-    await client.post(f"/consent/decide?token={token}", json={"decision": "approve"})
-    r = await client.post(f"/consent/decide?token={token}", json={"decision": "approve"})
+    await client.post(
+        f"/consent/decide?token={token}",
+        json={"decision": "approve", "attest_guardian": True},
+    )
+    r = await client.post(
+        f"/consent/decide?token={token}",
+        json={"decision": "approve", "attest_guardian": True},
+    )
     assert r.status_code == 410
 
 
 async def test_decide_garbage_token_returns_410(client):
-    r = await client.post("/consent/decide?token=not-a-jwt", json={"decision": "approve"})
+    r = await client.post(
+        "/consent/decide?token=not-a-jwt",
+        json={"decision": "approve", "attest_guardian": True},
+    )
     assert r.status_code == 410
 
 

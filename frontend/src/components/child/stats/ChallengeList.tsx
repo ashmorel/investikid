@@ -1,12 +1,17 @@
 import { CheckCircle2 } from 'lucide-react';
 import type { ChallengeOut } from '@/api/gamification';
 import { cn } from '@/lib/utils';
+import { PremiumBadge } from '@/components/child/PremiumBadge';
+import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 type Props = {
   challenges: ChallengeOut[];
+  isPremium?: boolean;
 };
 
-export function ChallengeList({ challenges }: Props) {
+export function ChallengeList({ challenges, isPremium = false }: Props) {
+  const { open: openPaywall } = usePremiumPaywall();
+
   if (challenges.length === 0) {
     return (
       <p className="py-8 text-center text-muted-foreground">
@@ -20,14 +25,16 @@ export function ChallengeList({ challenges }: Props) {
       {challenges.map((c) => {
         const completed = c.completed_at !== null;
         const pct = Math.min(Math.round((c.progress / c.target_value) * 100), 100);
+        const locked = c.is_premium && !isPremium;
 
-        return (
-          <div key={c.id} className="rounded-lg border bg-card p-4">
+        const card = (
+          <div className="rounded-lg border bg-card p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   {completed && <CheckCircle2 className="h-4 w-4 shrink-0 text-success-600" />}
                   <p className="font-medium">{c.title}</p>
+                  {c.is_premium && <PremiumBadge />}
                 </div>
                 <p className="text-sm text-muted-foreground">{c.description}</p>
               </div>
@@ -57,6 +64,21 @@ export function ChallengeList({ challenges }: Props) {
             </div>
           </div>
         );
+
+        if (locked) {
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => openPaywall({ kind: 'challenge', label: c.title })}
+              className="block w-full text-left"
+            >
+              {card}
+            </button>
+          );
+        }
+
+        return <div key={c.id}>{card}</div>;
       })}
     </div>
   );

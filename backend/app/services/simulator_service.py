@@ -1,10 +1,11 @@
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import User
+from app.services import fx
 from app.services.price_provider import PriceQuote
 
 
@@ -26,6 +27,35 @@ async def get_or_create_portfolio(session: AsyncSession, user: User) -> Portfoli
     starting = cash_map.get(user.currency_code, Decimal("1000.00"))
     portfolio = Portfolio(user_id=user.id, virtual_cash=starting, currency_code=user.currency_code)
     session.add(portfolio)
+    await session.flush()
+    return portfolio
+
+
+async def set_portfolio_currency(
+    session: AsyncSession, user: User, new_currency: str
+) -> Portfolio | None:
+    user.currency_code = new_currency
+    portfolio = await session.scalar(select(Portfolio).where(Portfolio.user_id == user.id))
+    if portfolio is None:
+        return None
+    if portfolio.currency_code != new_currency:
+        portfolio.virtual_cash = fx.convert(
+            portfolio.virtual_cash, portfolio.currency_code, new_currency
+        )
+        portfolio.currency_code = new_currency
+    await session.flush()
+    return portfolio
+
+
+async def reset_portfolio(session: AsyncSession, user: User) -> Portfolio:
+    from app.services.app_settings import get_starting_cash
+
+    portfolio = await get_or_create_portfolio(session, user)
+    await session.execute(delete(Holding).where(Holding.portfolio_id == portfolio.id))
+    await session.execute(delete(Trade).where(Trade.portfolio_id == portfolio.id))
+    cash_map = await get_starting_cash(session)
+    portfolio.virtual_cash = cash_map.get(user.currency_code, Decimal("1000.00"))
+    portfolio.currency_code = user.currency_code
     await session.flush()
     return portfolio
 

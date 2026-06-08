@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 import Home from '@/pages/child/Home';
 
 vi.mock('@/components/child/HomeHero', () => ({ default: () => null }));
@@ -20,9 +21,11 @@ function renderHome() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>
+      <PremiumPaywallProvider>
+        <MemoryRouter>
+          <Home />
+        </MemoryRouter>
+      </PremiumPaywallProvider>
     </QueryClientProvider>,
   );
 }

@@ -14,8 +14,11 @@ vi.mock('@/api/billing', () => ({
 }));
 
 // Force native (Capacitor) platform — purchase UI must be suppressed.
+// iOS branch (not Android), so isAndroid() is false here.
 vi.mock('@/lib/platform', () => ({
   isNativeApp: () => true,
+  isAndroid: () => false,
+  getPlatform: () => 'ios',
 }));
 
 function wrap() {

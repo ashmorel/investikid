@@ -26,6 +26,12 @@ export type PortfolioOut = {
   holdings: HoldingOut[];
 };
 
+export type PortfolioSummaryOut = {
+  id: string;
+  virtual_cash: string;
+  currency_code: string;
+};
+
 export type TradeType = 'buy' | 'sell';
 
 export type TradeRequest = {
@@ -143,6 +149,15 @@ export const simulatorApi = {
     apiFetch<QuoteOut>(`/market/quote/${exchange}/${ticker}`),
 
   getPortfolio: () => apiFetch<PortfolioOut>('/portfolio'),
+
+  setCurrency: (currency_code: string) =>
+    apiFetch<PortfolioSummaryOut>('/portfolio/currency', {
+      method: 'POST',
+      body: JSON.stringify({ currency_code }),
+    }),
+
+  resetPortfolio: () =>
+    apiFetch<PortfolioSummaryOut>('/portfolio/reset', { method: 'POST' }),
 
   listTrades: () => apiFetch<TradeOut[]>('/portfolio/trades'),
 

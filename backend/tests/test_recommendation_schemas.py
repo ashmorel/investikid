@@ -49,3 +49,31 @@ def test_module_create_rejects_min_age_greater_than_max_age():
             topic="stocks", title="Test", icon="📈", order_index=0,
             min_age=15, max_age=8,
         )
+
+
+def test_recommendation_item_accepts_level_context():
+    import uuid as _uuid
+
+    from app.schemas.ai import RecommendationCategoryItem
+
+    lvl = _uuid.uuid4()
+    item = RecommendationCategoryItem(
+        module_id=_uuid.uuid4(),
+        lesson_id=_uuid.uuid4(),
+        level_id=lvl,
+        level_title="Level 2",
+        score=0.5,
+        reason="Keep going!",
+    )
+    assert item.level_id == lvl
+    assert item.level_title == "Level 2"
+
+
+def test_recommendation_item_level_context_defaults_none():
+    import uuid as _uuid
+
+    from app.schemas.ai import RecommendationCategoryItem
+
+    item = RecommendationCategoryItem(module_id=_uuid.uuid4(), score=0.0, reason="x")
+    assert item.level_id is None
+    assert item.level_title is None

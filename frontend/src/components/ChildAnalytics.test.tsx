@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { axe } from 'vitest-axe';
 import { ChildAnalytics } from './ChildAnalytics';
 import type { ChildAnalytics as ChildAnalyticsType } from '@/api/parent';
 
@@ -20,6 +21,19 @@ const MOCK_ANALYTICS: ChildAnalyticsType = {
     { name: 'First Lesson', icon: 'trophy', earned_at: '2026-05-15T10:00:00Z' },
     { name: 'Stock Savvy', icon: 'chart', earned_at: '2026-05-18T10:00:00Z' },
   ],
+  modules_progress: [
+    {
+      module_id: 'mod-1',
+      title: 'Stocks 101',
+      icon: '📈',
+      lessons_completed: 2,
+      lessons_total: 4,
+      levels: [
+        { level_id: 'l1', title: 'Level 1', state: 'completed', locked_reason: null, passed: true, lessons_completed: 2, lessons_total: 2 },
+        { level_id: 'l2', title: 'Level 2', state: 'locked', locked_reason: 'premium', passed: false, lessons_completed: 0, lessons_total: 2 },
+      ],
+    },
+  ],
 };
 
 const EMPTY_ANALYTICS: ChildAnalyticsType = {
@@ -31,6 +45,7 @@ const EMPTY_ANALYTICS: ChildAnalyticsType = {
   lessons_total: 30,
   recent_lessons: [],
   badges: [],
+  modules_progress: [],
 };
 
 describe('ChildAnalytics', () => {
@@ -98,5 +113,27 @@ describe('ChildAnalytics', () => {
     expect(screen.getByText('✓')).toBeInTheDocument();
     expect(screen.getByText('90%')).toBeInTheDocument();
     expect(screen.getByText('60%')).toBeInTheDocument();
+  });
+
+  it('shows the module progress disclosure when expanded', async () => {
+    const user = userEvent.setup();
+    render(<ChildAnalytics analytics={MOCK_ANALYTICS} />);
+    await user.click(screen.getByRole('button', { name: /show progress/i }));
+    expect(screen.getByText(/Progress by module/i)).toBeInTheDocument();
+    const moduleToggle = screen.getByRole('button', { name: /Stocks 101/i });
+    await user.click(moduleToggle);
+    expect(screen.getByText('Level 1')).toBeInTheDocument();
+    expect(screen.getByText('Level 2')).toBeInTheDocument();
+    expect(screen.getByText(/^Completed/)).toBeInTheDocument();
+    expect(screen.getByText(/Locked/i)).toBeInTheDocument();
+  });
+
+  it('has no axe violations when fully expanded', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<ChildAnalytics analytics={MOCK_ANALYTICS} />);
+    await user.click(screen.getByRole('button', { name: /show progress/i }));
+    await user.click(screen.getByRole('button', { name: /Stocks 101/i }));
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });

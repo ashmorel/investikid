@@ -19,6 +19,7 @@ const ANALYTICS: ChildAnalyticsType = {
   badges: [
     { name: 'First Lesson', icon: 'trophy', earned_at: '2026-05-15T10:00:00Z' },
   ],
+  modules_progress: [],
 };
 
 describe('a11y: ChildAnalytics', () => {

@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 TradeType = Literal["buy", "sell"]
 
@@ -142,3 +142,24 @@ class InvestingTipOut(BaseModel):
     description: str
     example_ticker: str
     example_exchange: str
+
+
+_MAJOR_CURRENCIES = {"USD", "GBP", "HKD"}
+
+
+class SetCurrencyRequest(BaseModel):
+    currency_code: str
+
+    @field_validator("currency_code")
+    @classmethod
+    def _supported(cls, v: str) -> str:
+        v = v.upper()
+        if v not in _MAJOR_CURRENCIES:
+            raise ValueError("currency_code must be one of USD, GBP, HKD")
+        return v
+
+
+class PortfolioSummaryOut(BaseModel):
+    id: uuid.UUID
+    virtual_cash: Decimal
+    currency_code: str

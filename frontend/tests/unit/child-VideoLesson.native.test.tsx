@@ -4,6 +4,7 @@ import { VideoLesson } from '@/components/child/lesson/VideoLesson';
 
 vi.mock('@/lib/platform', () => ({
   isNativeApp: () => true,
+  isAndroid: () => false,
 }));
 
 describe('VideoLesson on native', () => {

@@ -1,0 +1,11 @@
+# Capacitor Android — ignore build artifacts & local/secret files
+/build/
+/app/build/
+/.gradle/
+/capacitor-cordova-android-plugins/build/
+local.properties
+*.keystore
+*.jks
+google-services.json
+.DS_Store
+/app/src/main/assets/public/

@@ -4,6 +4,7 @@ import { useLevelLessons, useDeleteLesson, lessonLabel } from '@/api/admin';
 import type { AdminLesson } from '@/api/admin';
 import LessonForm from './LessonForm';
 import ConfirmDialog from './ConfirmDialog';
+import LessonDraftReview from './LessonDraftReview';
 
 export default function LevelLessonList() {
   const { moduleId = '', levelId = '' } = useParams<{ moduleId: string; levelId: string }>();
@@ -84,6 +85,8 @@ export default function LevelLessonList() {
         onConfirm={() => { if (deleteTarget) deleteLesson.mutate(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      <LessonDraftReview levelId={levelId} />
     </div>
   );
 }

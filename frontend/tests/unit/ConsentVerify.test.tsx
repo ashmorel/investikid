@@ -32,7 +32,8 @@ describe('ConsentVerify', () => {
     );
     renderAt('/consent/verify?token=abc');
     expect(await screen.findByRole('heading', { name: /approve your child's account/i })).toBeInTheDocument();
-    expect(await screen.findByText(/kid/)).toBeInTheDocument();
+    expect(await screen.findByText(/^kid$/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('checkbox', { name: /parent or legal guardian/i }));
     await userEvent.click(screen.getByRole('button', { name: /approve/i }));
     await waitFor(() => expect(screen.getByRole('heading', { name: /all set/i })).toBeInTheDocument());
   });

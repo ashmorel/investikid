@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 import Home from '../Home';
 
 // The highlight must follow the next-lesson resolver (m2), NOT the recommendations (m1).
@@ -39,7 +40,7 @@ vi.mock('@/api/content', () => ({
 
 function wrap(ui: React.ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={qc}><MemoryRouter>{ui}</MemoryRouter></QueryClientProvider>;
+  return <QueryClientProvider client={qc}><PremiumPaywallProvider><MemoryRouter>{ui}</MemoryRouter></PremiumPaywallProvider></QueryClientProvider>;
 }
 
 describe('Home module grid highlight', () => {

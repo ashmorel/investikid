@@ -294,6 +294,77 @@ export function useCreateLevelLesson(levelId: string) {
   });
 }
 
+// ── Lesson drafts (AI-generated) ───────────────────────────────────
+export type LessonDraft = {
+  id: string;
+  level_id: string;
+  type: 'card' | 'quiz' | 'scenario';
+  content_json: Record<string, unknown>;
+  concept: string;
+  moderation_safe: boolean;
+  moderation_category: string | null;
+  created_at: string;
+};
+
+export type GenerateLessonsBody = { concept: string; count: number; types: ('card' | 'quiz' | 'scenario')[] };
+
+export type GenerateLessonsResult = { created: LessonDraft[]; skipped: number };
+
+export function useLevelDrafts(levelId: string) {
+  return useQuery({
+    queryKey: ['admin', 'level-drafts', levelId],
+    queryFn: () => adminFetch<LessonDraft[]>(`/admin/levels/${levelId}/drafts`),
+    enabled: !!levelId,
+  });
+}
+
+export function useGenerateLevelLessons(levelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: GenerateLessonsBody) =>
+      adminFetch<GenerateLessonsResult>(`/admin/levels/${levelId}/generate`, { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] }),
+  });
+}
+
+export function useUpdateDraft(levelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, content_json }: { id: string; content_json: Record<string, unknown> }) =>
+      adminFetch<LessonDraft>(`/admin/lesson-drafts/${id}`, { method: 'PUT', body: JSON.stringify({ content_json }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] }),
+  });
+}
+
+export function useApproveDraft(levelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      adminFetch<AdminLesson>(`/admin/lesson-drafts/${id}/approve`, { method: 'POST' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] });
+      qc.invalidateQueries({ queryKey: ['admin', 'level-lessons', levelId] });
+    },
+  });
+}
+
+export function useRegenerateDraft(levelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      adminFetch<LessonDraft>(`/admin/lesson-drafts/${id}/regenerate`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] }),
+  });
+}
+
+export function useRejectDraft(levelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminFetch(`/admin/lesson-drafts/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] }),
+  });
+}
+
 // ── Badges ─────────────────────────────────────────────────────────
 export function useBadges() {
   return useQuery({ queryKey: ['admin', 'badges'], queryFn: () => adminFetch<AdminBadge[]>('/admin/badges') });

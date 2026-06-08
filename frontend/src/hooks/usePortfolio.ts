@@ -7,5 +7,6 @@ export function usePortfolio() {
     queryFn: () => simulatorApi.getPortfolio(),
     retry: false,
     refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
 }

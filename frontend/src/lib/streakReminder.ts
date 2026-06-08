@@ -1,6 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNativeApp } from './platform';
 import { REMINDER } from './reminderConfig';
+import { REMINDER_CHANNEL_ID } from './notifications';
 
 export type ReminderDecision = { action: 'cancel' } | { action: 'schedule'; at: Date };
 
@@ -71,6 +72,7 @@ export async function applyStreakReminder(
         title: REMINDER.title(streakCount),
         body: REMINDER.body,
         schedule: { at: decision.at },
+        channelId: REMINDER_CHANNEL_ID,
       },
     ],
   });

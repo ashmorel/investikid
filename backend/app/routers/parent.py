@@ -8,10 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.models.group import GroupMembership, LeaderboardGroup
+from app.models.parent_preferences import ParentPreferences
+from app.models.premium_request import PremiumRequest
 from app.models.user import User
 from app.routers.parent_auth import get_current_parent
 from app.schemas.group import GroupCreateRequest, GroupJoinRequest, GroupMemberOut, GroupOut
-from app.schemas.parent import ChildOut, FreezeRequest, PremiumToggleRequest
+from app.schemas.parent import ChildOut, FreezeRequest, PremiumRequestOut, PremiumToggleRequest
+from app.schemas.parent_preferences import ParentPreferencesOut, ParentPreferencesUpdate
 from app.services import group_service
 from app.services.analytics_service import build_child_analytics
 from app.services.content_service import content_region_for
@@ -63,6 +66,73 @@ async def list_children(
             )
         )
     return children
+
+
+@router.get("/preferences", response_model=ParentPreferencesOut)
+async def get_preferences(
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    pref = await session.get(ParentPreferences, parent_email)
+    return ParentPreferencesOut(
+        trial_reminder_opt_out=bool(pref and pref.trial_reminder_opt_out)
+    )
+
+
+@router.patch("/preferences", response_model=ParentPreferencesOut)
+async def update_preferences(
+    body: ParentPreferencesUpdate,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    pref = await session.get(ParentPreferences, parent_email)
+    if pref is None:
+        pref = ParentPreferences(
+            parent_email=parent_email,
+            trial_reminder_opt_out=body.trial_reminder_opt_out,
+        )
+        session.add(pref)
+    else:
+        pref.trial_reminder_opt_out = body.trial_reminder_opt_out
+    await session.commit()
+    return ParentPreferencesOut(trial_reminder_opt_out=body.trial_reminder_opt_out)
+
+
+@router.get("/premium-requests", response_model=list[PremiumRequestOut])
+async def list_premium_requests(
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    rows = (await session.execute(
+        select(PremiumRequest, User.username)
+        .join(User, User.id == PremiumRequest.child_user_id)
+        .where(PremiumRequest.parent_email == parent_email,
+               PremiumRequest.resolved_at.is_(None),
+               PremiumRequest.declined_at.is_(None))
+        .order_by(PremiumRequest.created_at.desc())
+    )).all()
+    return [
+        PremiumRequestOut(id=r.id, child_username=username, context_kind=r.context_kind,
+                          context_label=r.context_label, created_at=r.created_at)
+        for r, username in rows
+    ]
+
+
+@router.post("/premium-requests/{request_id}/decline")
+async def decline_premium_request(
+    request_id: uuid.UUID,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    row = await session.scalar(select(PremiumRequest).where(
+        PremiumRequest.id == request_id,
+        PremiumRequest.parent_email == parent_email))
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
+    if row.declined_at is None and row.resolved_at is None:
+        row.declined_at = datetime.now(UTC)
+        await session.commit()
+    return {"status": "ok"}
 
 
 @router.post("/children/{user_id}/freeze")

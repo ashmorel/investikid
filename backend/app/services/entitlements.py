@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit import AuditLog
+from app.models.subscription import Subscription
 from app.models.user import User
+
+# Statuses that grant entitlement across every provider.
+ACTIVE_SUBSCRIPTION_STATUSES = frozenset(
+    {"active", "trialing", "in_grace_period", "past_due"}
+)
 
 
 def is_premium(user: User) -> bool:
@@ -37,6 +44,22 @@ async def set_premium(
     ))
     await session.flush()
     return True
+
+
+async def recompute_household_premium(
+    session: AsyncSession, parent_email: str
+) -> None:
+    """Recompute premium for every child of `parent_email` as the OR of all the
+    household's subscription rows across providers. Idempotent; does not commit."""
+    rows = (await session.scalars(
+        select(Subscription).where(Subscription.parent_email == parent_email)
+    )).all()
+    entitled = any(r.status in ACTIVE_SUBSCRIPTION_STATUSES for r in rows)
+    children = (await session.scalars(
+        select(User).where(User.parent_email == parent_email)
+    )).all()
+    for child in children:
+        await set_premium(session, child, value=entitled, actor="billing:recompute")
 
 
 def is_admin(user: User) -> bool:

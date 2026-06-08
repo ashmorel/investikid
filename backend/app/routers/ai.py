@@ -26,6 +26,7 @@ from app.services.coach_service import coach_chat
 from app.services.entitlements import is_premium
 from app.services.gap_detection_service import get_strengths_and_gaps
 from app.services.home_greeting_service import generate_home_greeting
+from app.services.premium_config import premium_required_error
 from app.services.recommendation_service import get_recommendations
 from app.services.skill_profile_service import get_mastery_profile
 from app.services.spaced_repetition_service import record_review
@@ -172,7 +173,7 @@ async def home_greeting(
     current_user: User = Depends(get_current_user),
 ):
     if not is_premium(current_user):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Premium required")
+        raise premium_required_error("coach", "Coach Penny")
     try:
         text = await generate_home_greeting(
             name=current_user.username or payload.name,

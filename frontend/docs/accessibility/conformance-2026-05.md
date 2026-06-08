@@ -58,7 +58,7 @@ P = Pass, F = Fail (open), R = Resolved (Fail closed by a commit), N = N/A.
 | 1.3.5 | Identify Input Purpose | P | N | N | N | N | Login/Signup inputs carry `type="email"`, `type="password"`, `autocomplete="email"` / `"new-password"` / `"current-password"`. |
 | 1.4.1 | Use of Color | P | P | P | P | P | Trade up/down conveyed by text + ±sign + percent in addition to colour (`StockChart` summary text). |
 | 1.4.2 | Audio Control | N | N | N | N | N | No autoplaying audio. |
-| 1.4.3 | Contrast (Minimum) — text 4.5:1 | F | P | P | P | P | **OPEN — `OPEN-1`**: `bg-primary` (amber-500) + `text-primary-foreground` (white) ≈ 2.13:1 on the default `<Button>`. Fix requires touching brand `--primary` token (out of scope for sub-project 5). Tracked Playwright skips: `/login`, `/forgot-password` in `tests/e2e/a11y-flow.spec.ts`. |
+| 1.4.3 | Contrast (Minimum) — text 4.5:1 | P | P | P | P | P | **`OPEN-1` RESOLVED 2026-06-08**: `--color-primary` retuned amber-500 → `brand-600` (#2563eb); white on primary ≈ 5.17:1 (passes). The `/login` + `/forgot-password` Playwright skips were removed. |
 | 1.4.4 | Resize text up to 200% | P | P | P | P | P | Manual verification at 200%; layout reflows. |
 | 1.4.5 | Images of Text | P | P | P | P | P | No images-of-text used; all UI text is real text. |
 | 1.4.10 | Reflow (320 px) | P | P | P | P | P | Manual verification at 320 px viewport. |
@@ -106,7 +106,7 @@ P = Pass, F = Fail (open), R = Resolved (Fail closed by a commit), N = N/A.
 
 | ID | Surface | SC | Description | Decision | Owner |
 |----|---------|----|-------------|----------|-------|
-| OPEN-1 | AE (Login, ForgotPassword, plus every page rendering default `<Button>`) | 1.4.3 | `bg-primary` (amber-500) + `text-primary-foreground` (white) ≈ 2.13:1. Fix requires darkening the `--primary` brand token (or changing button text colour systemically), which is a brand decision outside sub-project 5's scope. Two Playwright cases (`/login`, `/forgot-password`) are `test.skip`-ed with this register row cited. | Defer to a follow-up brand/token pass; reassess before claiming public AA conformance. | TBD |
+| OPEN-1 | AE (Login, ForgotPassword, plus every page rendering default `<Button>`) | 1.4.3 | ~~`bg-primary` + white ≈ 2.13:1~~ | **RESOLVED 2026-06-08** — `--color-primary` retuned to `brand-600` (#2563eb), white ≈ 5.17:1 (passes 4.5:1). The two Playwright skips (`/login`, `/forgot-password`) were removed; they now run unconditionally. | Done |
 
 ## Residual / source-dependent items
 

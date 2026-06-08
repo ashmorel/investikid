@@ -330,13 +330,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Android project exists
-        run: |
-          if [ ! -d android ]; then
-            echo "::error::No Capacitor Android project exists yet. Add @capacitor/android and run 'npx cap add android' before enabling Android checkpoint builds."
-            exit 1
-          fi
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -346,7 +339,9 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
 
       - run: npm ci
 
@@ -357,4 +352,5 @@ jobs:
         run: npx cap sync android
 
       - name: Build Android debug app
-        run: ./android/gradlew -p android assembleDebug
+        working-directory: frontend/android
+        run: ./gradlew assembleDebug --no-daemon

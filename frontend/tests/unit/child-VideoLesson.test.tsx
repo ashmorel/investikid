@@ -21,7 +21,7 @@ describe('VideoLesson', () => {
   it('routes native (Capacitor) embeds through the https proxy page (fixes iOS error 153)', () => {
     const urls = buildYouTubeUrls('abc123', { isNative: true })!;
 
-    expect(urls.embed).toBe('https://lee-local-code-repo.vercel.app/yt.html?v=abc123');
+    expect(urls.embed).toBe('https://app.investikid.ai/yt.html?v=abc123');
     expect(urls.thumbnail).toBe('https://img.youtube.com/vi/abc123/hqdefault.jpg');
     expect(urls.watch).toBe('https://www.youtube.com/watch?v=abc123');
   });

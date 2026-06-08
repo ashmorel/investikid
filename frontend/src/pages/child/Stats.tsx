@@ -59,7 +59,7 @@ export default function Stats() {
         {challenges.isLoading ? (
           <SectionSkeleton />
         ) : challenges.data ? (
-          <ChallengeList challenges={challenges.data} />
+          <ChallengeList challenges={challenges.data} isPremium={session.data?.is_premium ?? false} />
         ) : null}
       </section>
 

@@ -6,6 +6,8 @@ from typing import Protocol
 
 import yfinance as yf
 
+from app.services import price_cache
+
 logger = logging.getLogger(__name__)
 
 
@@ -122,7 +124,22 @@ _FEATURED: dict[tuple[str, str], tuple[str, Decimal, str, str]] = {
 }
 
 _CACHE_TTL = 300  # 5 minutes
+_SEARCH_CACHE_TTL = 120  # 2 minutes
 _HISTORY_CACHE_TTL = 600  # 10 minutes
+
+
+def _quote_to_dict(q: PriceQuote) -> dict:
+    return {
+        "ticker": q.ticker, "exchange": q.exchange, "name": q.name,
+        "price": str(q.price), "currency": q.currency,
+    }
+
+
+def _quote_from_dict(d: dict) -> PriceQuote:
+    return PriceQuote(
+        ticker=d["ticker"], exchange=d["exchange"], name=d["name"],
+        price=Decimal(d["price"]), currency=d["currency"],
+    )
 
 
 def _to_yahoo_symbol(ticker: str, exchange: str) -> str:
@@ -176,7 +193,8 @@ class StaticPriceProvider:
         return out
 
     def is_free_tier(self, ticker: str, exchange: str) -> bool:
-        return True
+        # HKEX tickers are treated as premium-only so tests can exercise the gate.
+        return exchange.upper() != "HKEX"
 
     def get_history(self, ticker: str, exchange: str, period: str = "1mo") -> list[PricePoint]:
         return []
@@ -206,6 +224,13 @@ class LivePriceProvider:
         if cached and (time.monotonic() - cached[1]) < _CACHE_TTL:
             return cached[0]
 
+        rkey = f"mkt:quote:{key[0]}:{key[1]}"
+        l2 = price_cache.get_json(rkey)
+        if l2 is not None:
+            quote = _quote_from_dict(l2)
+            self._cache[key] = (quote, time.monotonic())
+            return quote
+
         yf_symbol = _to_yahoo_symbol(ticker, exchange)
         featured = _FEATURED.get(key)
 
@@ -232,10 +257,16 @@ class LivePriceProvider:
             price=live_price, currency=display_currency,
         )
         self._cache[key] = (quote, time.monotonic())
+        price_cache.set_json(rkey, _quote_to_dict(quote), _CACHE_TTL)
         return quote
 
     def search(self, query: str) -> list[PriceQuote]:
         q = query.strip()
+        norm = q.lower()
+        if q:
+            cached = price_cache.get_json(f"mkt:search:{norm}")
+            if cached is not None:
+                return [_quote_from_dict(d) for d in cached]
         if not q:
             # Empty query: return featured stocks with live prices
             out: list[PriceQuote] = []
@@ -296,6 +327,7 @@ class LivePriceProvider:
                 except Exception:
                     pass
 
+        price_cache.set_json(f"mkt:search:{norm}", [_quote_to_dict(x) for x in out], _SEARCH_CACHE_TTL)
         return out
 
     def is_free_tier(self, ticker: str, exchange: str) -> bool:

@@ -71,6 +71,7 @@ export default function Market() {
     queryFn: () => simulatorApi.searchMarket(''),
     retry: false,
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const { data: searchResults, isFetching: searchFetching } = useQuery<QuoteOut[] | null>({
@@ -78,7 +79,8 @@ export default function Market() {
     queryFn: () => simulatorApi.searchMarket(debouncedQuery),
     enabled: debouncedQuery.length >= 2,
     retry: false,
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     placeholderData: (prev) => prev,
   });
 
@@ -163,7 +165,11 @@ export default function Market() {
         </div>
       )}
 
-      {stocks.length === 0 ? (
+      {stocks.length === 0 && isSearching && searchFetching ? (
+        <p role="status" className="mt-6 text-center text-sm text-muted-foreground">
+          Searching…
+        </p>
+      ) : stocks.length === 0 ? (
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {isSearching
             ? `No stocks found for "${debouncedQuery}". Try a different name or ticker.`
