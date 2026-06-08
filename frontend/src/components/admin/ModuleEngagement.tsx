@@ -29,7 +29,7 @@ export default function ModuleEngagement({ moduleId }: { moduleId: string }) {
     <section aria-labelledby="engagement-heading" className="mt-6">
       <h3 id="engagement-heading" className="mb-3 text-lg font-semibold text-ink">Engagement</h3>
 
-      <dl className="mb-4 grid grid-cols-3 gap-3">
+      <dl className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-md border border-line bg-card p-3">
           <dt className="text-xs text-muted-foreground">Learners started</dt>
           <dd className="text-xl font-semibold text-ink">{data.learners_started}</dd>
@@ -44,6 +44,7 @@ export default function ModuleEngagement({ moduleId }: { moduleId: string }) {
         </div>
       </dl>
 
+      <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">Per-lesson engagement for this module</caption>
         <thead className="text-xs text-muted-foreground">
@@ -69,6 +70,7 @@ export default function ModuleEngagement({ moduleId }: { moduleId: string }) {
           ))}
         </tbody>
       </table>
+      </div>
     </section>
   );
 }

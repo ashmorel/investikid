@@ -45,6 +45,7 @@ export default function FeedbackList() {
 
       {data && (
         <>
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-line text-left text-muted-foreground">
@@ -79,6 +80,7 @@ export default function FeedbackList() {
               )}
             </tbody>
           </table>
+          </div>
 
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
             <button

@@ -35,6 +35,7 @@ export default function VideoHealthList() {
       {isError && <p className="text-danger-500">Failed to load video health.</p>}
 
       {data && (
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-line text-left text-muted-foreground">
@@ -66,6 +67,7 @@ export default function VideoHealthList() {
             )}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
