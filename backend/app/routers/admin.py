@@ -13,6 +13,7 @@ from app.core.rate_limit import limiter
 from app.models.apply_mission import ApplyMission
 from app.models.content import Lesson, Level, Module
 from app.models.gamification import Badge, Challenge, UserBadge
+from app.models.lesson_draft import LessonDraft
 from app.models.user import User
 from app.models.video_asset import VideoAsset
 from app.models.video_health import VideoHealth
@@ -420,6 +421,16 @@ async def generate_level_lessons_endpoint(
         created=[LessonDraftOut.model_validate(d) for d in result.created],
         skipped=result.skipped,
     )
+
+
+@router.get("/levels/{level_id}/drafts", response_model=list[LessonDraftOut])
+async def list_lesson_drafts(
+    level_id: uuid.UUID, session: AsyncSession = Depends(get_session),
+):
+    rows = (await session.scalars(
+        select(LessonDraft).where(LessonDraft.level_id == level_id).order_by(LessonDraft.created_at)
+    )).all()
+    return [LessonDraftOut.model_validate(d) for d in rows]
 
 
 # ── Badges ──────────────────────────────────────────────────────────

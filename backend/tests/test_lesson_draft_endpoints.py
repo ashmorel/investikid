@@ -54,3 +54,19 @@ async def test_generate_unknown_level_404(admin_client):
         json={"concept": "x", "count": 1, "types": ["card"]},
     )
     assert resp.status_code == 404
+
+
+async def test_list_drafts(admin_client):
+    level_id = await _make_level(admin_client)
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=CARD)
+    with patch("app.services.admin_content_generation_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.admin_content_generation_service.moderate_output",
+               AsyncMock(return_value=ModerationResult(safe=True, category=None, text="x"))):
+        await admin_client.post(
+            f"/admin/levels/{level_id}/generate",
+            json={"concept": "x", "count": 1, "types": ["card"]},
+        )
+    resp = await admin_client.get(f"/admin/levels/{level_id}/drafts")
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
