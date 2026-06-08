@@ -26,6 +26,8 @@ export type MasteryProfile = {
 export type RecommendationCategoryItem = {
   module_id: string;
   lesson_id: string | null;
+  level_id?: string | null;
+  level_title?: string | null;
   score: number;
   reason: string;
   review_prompt: string | null;

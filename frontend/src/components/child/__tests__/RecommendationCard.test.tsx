@@ -63,4 +63,14 @@ describe('RecommendationCard', () => {
     renderCard({ category: 'something_new', completedCount: 0, totalCount: 5 });
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
+
+  it('renders the level eyebrow when level_title is present', () => {
+    renderCard({ item: { ...BASE_ITEM, level_id: 'lvl-2', level_title: 'Level 2' } });
+    expect(screen.getByText(/Level 2/)).toBeInTheDocument();
+  });
+
+  it('omits the level eyebrow when level_title is absent', () => {
+    renderCard();
+    expect(screen.queryByText(/Level \d/)).not.toBeInTheDocument();
+  });
 });
