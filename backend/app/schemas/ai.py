@@ -68,6 +68,8 @@ class MasteryProfileResponse(BaseModel):
 class RecommendationCategoryItem(BaseModel):
     module_id: uuid.UUID
     lesson_id: uuid.UUID | None = None
+    level_id: uuid.UUID | None = None
+    level_title: str | None = None
     score: float
     reason: str
     review_prompt: str | None = None
