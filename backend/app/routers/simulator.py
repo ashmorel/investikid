@@ -42,6 +42,7 @@ from app.services.chart_coach_service import (
 )
 from app.services.content_service import record_daily_activity
 from app.services.entitlements import is_premium
+from app.services.fx import APPROX_USD_RATES
 from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
@@ -415,17 +416,6 @@ async def chart_coach(
     return result
 
 
-_APPROX_USD_RATES: dict[str, float] = {
-    "USD": 1.0,
-    "GBP": 1.27,
-    "HKD": 0.128,
-    "EUR": 1.08,
-    "JPY": 0.0067,
-    "CAD": 0.73,
-    "AUD": 0.65,
-}
-
-
 @router.get("/market/time-machine/{exchange}/{ticker}", response_model=TimeMachineOut)
 @limiter.limit("20/hour")
 async def get_time_machine(
@@ -449,7 +439,7 @@ async def get_time_machine(
 
     current_price = float(quote.price)
     currency = quote.currency
-    usd_rate = _APPROX_USD_RATES.get(currency, 1.0)
+    usd_rate = APPROX_USD_RATES.get(currency, 1.0)
     invest_amount = 5000.0
 
     today = date.today()
