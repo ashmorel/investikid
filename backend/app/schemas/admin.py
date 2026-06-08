@@ -158,6 +158,34 @@ class LessonOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class GenerateLessonsRequest(BaseModel):
+    concept: str = Field(min_length=1, max_length=200)
+    count: int = Field(ge=1, le=8)
+    types: list[Literal["card", "quiz", "scenario"]] = Field(min_length=1)
+
+
+class LessonDraftOut(BaseModel):
+    id: uuid.UUID
+    level_id: uuid.UUID
+    type: str
+    content_json: dict
+    concept: str
+    moderation_safe: bool
+    moderation_category: str | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GenerateLessonsResponse(BaseModel):
+    created: list[LessonDraftOut]
+    skipped: int
+
+
+class LessonDraftUpdate(BaseModel):
+    content_json: dict
+
+
 # ── Video presign ───────────────────────────────────────────────────
 class VideoPresignRequest(BaseModel):
     filename: str = Field(max_length=255)
