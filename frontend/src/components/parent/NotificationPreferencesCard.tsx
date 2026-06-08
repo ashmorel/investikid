@@ -30,7 +30,7 @@ export function NotificationPreferencesCard() {
   const optedIn = !(q.data?.trial_reminder_opt_out ?? false);
 
   return (
-    <section className="mt-6 rounded-2xl border border-brand-100 bg-card p-4 text-gray-900">
+    <section className="mt-6 rounded-2xl border border-brand-100 bg-card p-4 text-foreground">
       <h2 className="text-lg font-semibold">Email preferences</h2>
       <div className="mt-4 flex items-start justify-between gap-4">
         <div>

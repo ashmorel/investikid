@@ -94,7 +94,7 @@ export function GroupsCard({ childrenList }: { childrenList: ChildLite[] }) {
     : '';
 
   return (
-    <section className="mt-6 rounded-2xl border border-brand-100 bg-card p-4 text-gray-900">
+    <section className="mt-6 rounded-2xl border border-brand-100 bg-card p-4 text-foreground">
       <h2 className="text-lg font-semibold">Leaderboard groups</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Create a group and share its code so friends and family can compare progress.
@@ -176,7 +176,7 @@ export function GroupsCard({ childrenList }: { childrenList: ChildLite[] }) {
                       <button
                         type="button"
                         aria-label={`Remove ${m.username}`}
-                        className="rounded px-2 py-1 text-muted-foreground hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="rounded px-2 py-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         onClick={() => {
                           if (window.confirm(`Remove ${m.username} from "${g.name}"?`))
                             remove.mutate({ groupId: g.id, childUserId: m.child_user_id });

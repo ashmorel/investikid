@@ -162,7 +162,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
                   onClick={() => togglePrerequisite(m.id)}
                   className={`rounded-md px-3 py-1 text-xs ${
                     prerequisiteIds.includes(m.id)
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-brand-600 text-white'
                       : 'border border-input bg-background text-muted-foreground'
                   }`}
                 >
