@@ -64,7 +64,9 @@ describe('LessonForm', () => {
     render(<LessonForm moduleId="m1" nextOrderIndex={0} onClose={vi.fn()} />, { wrapper });
     fireEvent.click(screen.getByRole('button', { name: /video/i }));
     expect(screen.getByLabelText(/youtube url or id/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/caption/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^caption$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/transcript/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/captions available/i)).toBeInTheDocument();
   });
 
   it('extracts youtube_id from full URL on submit', async () => {

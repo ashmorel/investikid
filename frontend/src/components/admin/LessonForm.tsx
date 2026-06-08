@@ -71,6 +71,8 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
     lesson?.type === 'video' && (cj?.video_source as string) === 'hosted' ? 'hosted' : 'youtube',
   );
   const [videoUrl, setVideoUrl] = useState(lesson?.type === 'video' ? ((cj?.video_url as string) ?? '') : '');
+  const [videoTranscript, setVideoTranscript] = useState(lesson?.type === 'video' ? ((cj?.transcript as string) ?? '') : '');
+  const [captionsAvailable, setCaptionsAvailable] = useState(lesson?.type === 'video' ? Boolean(cj?.captions_available) : false);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
 
@@ -116,9 +118,10 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
     if (type === 'card') return { title: cardTitle, body: cardBody };
     if (type === 'quiz') return { question, choices, answer_index: answerIndex, explanation };
     if (type === 'video') {
+      const a11y = { transcript: videoTranscript, captions_available: captionsAvailable };
       return videoSource === 'hosted'
-        ? { video_source: 'hosted', video_url: videoUrl, caption: videoCaption }
-        : { video_source: 'youtube', youtube_id: extractYoutubeId(youtubeInput), caption: videoCaption };
+        ? { video_source: 'hosted', video_url: videoUrl, caption: videoCaption, ...a11y }
+        : { video_source: 'youtube', youtube_id: extractYoutubeId(youtubeInput), caption: videoCaption, ...a11y };
     }
     return { prompt, choices: scenarioChoices, correct_index: correctIndex };
   }
@@ -372,6 +375,21 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                 <input id="video-caption" value={videoCaption} onChange={(e) => setVideoCaption(e.target.value)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
+
+              <div>
+                <label htmlFor="video-transcript" className="mb-1 block text-sm text-ink">Transcript</label>
+                <textarea id="video-transcript" value={videoTranscript} onChange={(e) => setVideoTranscript(e.target.value)}
+                  rows={4}
+                  placeholder="Full text of the video so the lesson is accessible (WCAG)."
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
+                <p className="mt-1 text-xs text-muted-foreground">A transcript is required for WCAG 2.2 AA — the child can open it under the video.</p>
+              </div>
+
+              <label htmlFor="video-captions" className="flex items-center gap-2 text-sm text-ink">
+                <input id="video-captions" type="checkbox" className="h-4 w-4"
+                  checked={captionsAvailable} onChange={(e) => setCaptionsAvailable(e.target.checked)} />
+                <span>Captions available on this video</span>
+              </label>
             </>
           )}
 
