@@ -53,6 +53,7 @@ from app.services import storage, video_health_service
 from app.services.admin_content_generation_service import (
     _concat_text,
     generate_level_lessons,
+    regenerate_draft,
 )
 from app.services.app_settings import (
     get_alert_emails,
@@ -483,6 +484,34 @@ async def approve_lesson_draft(
     await session.commit()
     await session.refresh(lesson)
     return await _lesson_out(session, lesson)
+
+
+@router.post("/lesson-drafts/{draft_id}/regenerate", response_model=LessonDraftOut)
+@limiter.limit("5/minute")
+async def regenerate_lesson_draft(
+    request: Request,
+    draft_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    draft = await session.get(LessonDraft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
+    updated = await regenerate_draft(session, draft)
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Generation failed")
+    return LessonDraftOut.model_validate(updated)
+
+
+@router.delete("/lesson-drafts/{draft_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def reject_lesson_draft(
+    draft_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    draft = await session.get(LessonDraft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
+    await session.delete(draft)
+    await session.commit()
 
 
 # ── Badges ──────────────────────────────────────────────────────────

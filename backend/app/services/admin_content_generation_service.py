@@ -87,6 +87,22 @@ async def _generate_one(session, *, level, module, concept: str, lesson_type: st
     return draft
 
 
+async def regenerate_draft(session: AsyncSession, draft: LessonDraft) -> LessonDraft | None:
+    level = await session.get(Level, draft.level_id)
+    module = await session.get(Module, level.module_id)
+    fresh = await _generate_one(session, level=level, module=module, concept=draft.concept,
+                                lesson_type=draft.type)
+    if fresh is None:
+        return None
+    draft.content_json = fresh.content_json
+    draft.moderation_safe = fresh.moderation_safe
+    draft.moderation_category = fresh.moderation_category
+    draft.model_used = fresh.model_used
+    await session.delete(fresh)
+    await session.commit()
+    return draft
+
+
 async def generate_level_lessons(session: AsyncSession, level, *, concept: str, count: int,
                                  types: list[str]) -> GenerationResult:
     module = await session.get(Module, level.module_id)

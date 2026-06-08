@@ -115,6 +115,36 @@ async def test_approve_flagged_draft_409(admin_client, db_session):
     assert lessons == []
 
 
+async def test_reject_deletes_draft(admin_client, db_session):
+    from app.models.lesson_draft import LessonDraft
+    level_id = await _make_level(admin_client)
+    draft = LessonDraft(level_id=level_id, type="card", content_json={"title": "A", "body": "B"},
+                        concept="x", model_used="m", moderation_safe=True, moderation_category=None)
+    db_session.add(draft)
+    await db_session.flush()
+    resp = await admin_client.delete(f"/admin/lesson-drafts/{draft.id}")
+    assert resp.status_code == 204
+    assert await db_session.get(LessonDraft, draft.id) is None
+
+
+async def test_regenerate_replaces_content(admin_client, db_session):
+    from app.models.lesson_draft import LessonDraft
+    level_id = await _make_level(admin_client)
+    draft = LessonDraft(level_id=level_id, type="card", content_json={"title": "old", "body": "old"},
+                        concept="x", model_used="m", moderation_safe=True, moderation_category=None)
+    db_session.add(draft)
+    await db_session.flush()
+    NEW = json.dumps({"title": "new", "body": "new"})
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=NEW)
+    with patch("app.services.admin_content_generation_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.admin_content_generation_service.moderate_output",
+               AsyncMock(return_value=ModerationResult(safe=True, category=None, text="x"))):
+        resp = await admin_client.post(f"/admin/lesson-drafts/{draft.id}/regenerate")
+    assert resp.status_code == 200
+    assert resp.json()["content_json"]["title"] == "new"
+
+
 async def test_approve_safe_draft_materialises_lesson(admin_client, db_session):
     from sqlalchemy import select
 
