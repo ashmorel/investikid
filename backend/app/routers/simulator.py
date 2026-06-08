@@ -25,9 +25,11 @@ from app.schemas.simulator import (
     NewsSummaryOut,
     PortfolioOut,
     PortfolioSnapshot,
+    PortfolioSummaryOut,
     PricePointOut,
     QuoteOut,
     RewardsOut,
+    SetCurrencyRequest,
     StockNewsOut,
     TimeMachineOut,
     TimeMachinePeriod,
@@ -63,6 +65,8 @@ from app.services.simulator_service import (
     InsufficientSharesError,
     execute_trade,
     get_or_create_portfolio,
+    reset_portfolio,
+    set_portfolio_currency,
 )
 
 router = APIRouter(tags=["simulator"])
@@ -710,6 +714,33 @@ async def place_trade(
             ],
             badges_unlocked=[b.name for b in new_badges],
         ),
+    )
+
+
+@router.post("/portfolio/currency", response_model=PortfolioSummaryOut)
+async def set_currency(
+    payload: SetCurrencyRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    portfolio = await set_portfolio_currency(session, current_user, payload.currency_code)
+    if portfolio is None:
+        portfolio = await get_or_create_portfolio(session, current_user)
+    await session.commit()
+    return PortfolioSummaryOut(
+        id=portfolio.id, virtual_cash=portfolio.virtual_cash, currency_code=portfolio.currency_code,
+    )
+
+
+@router.post("/portfolio/reset", response_model=PortfolioSummaryOut)
+async def reset_portfolio_endpoint(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    portfolio = await reset_portfolio(session, current_user)
+    await session.commit()
+    return PortfolioSummaryOut(
+        id=portfolio.id, virtual_cash=portfolio.virtual_cash, currency_code=portfolio.currency_code,
     )
 
 
