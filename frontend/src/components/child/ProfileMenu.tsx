@@ -18,6 +18,8 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 import { RegionSwitcher } from '@/components/child/RegionSwitcher';
 import { CurrencySelector } from '@/components/child/CurrencySelector';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import { simulatorApi } from '@/api/simulator';
 import type { RegionCode } from '@/lib/region';
 import { isNativeApp } from '@/lib/platform';
 import { REMINDER } from '@/lib/reminderConfig';
@@ -33,6 +35,15 @@ export function ProfileMenu({ username }: { username: string }) {
   const [topic, setTopic] = useState('');
   const [reminderOn, setReminderOn] = useState(() => localStorage.getItem(REMINDER.storageKey) === '1');
   const [reminderDenied, setReminderDenied] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  const resetPf = useMutation({
+    mutationFn: () => simulatorApi.resetPortfolio(),
+    onSuccess: () => {
+      for (const key of [['portfolio'], ['portfolio-history']]) qc.invalidateQueries({ queryKey: key });
+      setConfirmReset(false);
+    },
+  });
 
   const me = qc.getQueryData<Me>(['me']);
   const currentRegion = (me?.content_region ?? me?.country_code ?? 'US') as RegionCode;
@@ -109,6 +120,20 @@ export function ProfileMenu({ username }: { username: string }) {
           <RegionSwitcher currentRegion={currentRegion} />
         </div>
         <CurrencySelector currentCurrency={currentCurrency} />
+        <button
+          type="button"
+          onClick={() => setConfirmReset(true)}
+          className="min-h-[44px] w-full rounded-md border border-line px-3 text-sm font-medium text-brand-700 hover:bg-brand-50"
+        >
+          Start fresh
+        </button>
+        <ConfirmDialog
+          open={confirmReset}
+          title="Start fresh?"
+          message={`Start your practice portfolio over in ${currentCurrency}? This clears your current play holdings and history. Your XP and badges are safe.`}
+          onConfirm={() => resetPf.mutate()}
+          onCancel={() => setConfirmReset(false)}
+        />
         {isNativeApp() && (
           <div className="space-y-1.5 border-t border-line pt-3">
             <label className="flex items-center justify-between gap-3 text-sm font-medium">
