@@ -6,10 +6,10 @@ from app.models.consent import OneTimeToken, SentEmail  # noqa: F401
 from app.models.content import Lesson, LessonCompletion, LessonView, Level, Module  # noqa: F401
 from app.models.cosmetics import CosmeticItem, UserCosmetic  # noqa: F401
 from app.models.feedback import Feedback  # noqa: F401
-from app.models.lesson_draft import LessonDraft  # noqa: F401
 from app.models.gamification import Badge, Challenge, UserBadge, UserChallenge  # noqa: F401
 from app.models.generated_content import GeneratedContent  # noqa: F401
 from app.models.group import GroupMembership, LeaderboardGroup  # noqa: F401
+from app.models.lesson_draft import LessonDraft  # noqa: F401
 from app.models.parent_identity import ParentIdentity  # noqa: F401
 from app.models.parent_preferences import ParentPreferences  # noqa: F401
 from app.models.parent_session import ParentSession  # noqa: F401
