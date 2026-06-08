@@ -1,0 +1,320 @@
+import { useState } from 'react';
+import {
+  useLevelDrafts,
+  useGenerateLevelLessons,
+  useApproveDraft,
+  useUpdateDraft,
+  useRegenerateDraft,
+  useRejectDraft,
+} from '@/api/admin';
+import type { LessonDraft } from '@/api/admin';
+import ConfirmDialog from './ConfirmDialog';
+
+const TYPE_BADGE: Record<LessonDraft['type'], string> = {
+  card: 'bg-brand-100 text-brand-700',
+  quiz: 'bg-success-500/20 text-success-600',
+  scenario: 'bg-accent-500/20 text-accent-500',
+};
+
+function DraftPreview({ draft }: { draft: LessonDraft }) {
+  const cj = draft.content_json;
+  if (draft.type === 'card') {
+    return (
+      <div className="text-sm text-ink">
+        <p className="font-medium">{String(cj.title ?? '')}</p>
+        <p className="text-muted-foreground">{String(cj.body ?? '')}</p>
+      </div>
+    );
+  }
+  if (draft.type === 'quiz') {
+    const choices = Array.isArray(cj.choices) ? (cj.choices as string[]) : [];
+    const answerIndex = typeof cj.answer_index === 'number' ? cj.answer_index : -1;
+    return (
+      <div className="text-sm text-ink">
+        <p className="font-medium">{String(cj.question ?? '')}</p>
+        <ul className="mt-1 list-disc pl-5">
+          {choices.map((c, i) => (
+            <li key={i} className={i === answerIndex ? 'font-semibold text-success-600' : 'text-muted-foreground'}>
+              {c}
+              {i === answerIndex ? ' ✓' : ''}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  // scenario
+  const choices = Array.isArray(cj.choices) ? (cj.choices as { label: string; outcome: string }[]) : [];
+  const correctIndex = typeof cj.correct_index === 'number' ? cj.correct_index : -1;
+  return (
+    <div className="text-sm text-ink">
+      <p className="font-medium">{String(cj.prompt ?? '')}</p>
+      <ul className="mt-1 list-disc pl-5">
+        {choices.map((c, i) => (
+          <li key={i} className={i === correctIndex ? 'font-semibold text-success-600' : 'text-muted-foreground'}>
+            {c.label}
+            {c.outcome ? ` — ${c.outcome}` : ''}
+            {i === correctIndex ? ' ✓' : ''}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+interface DraftCardProps {
+  draft: LessonDraft;
+  onApprove: (id: string) => void;
+  onRegenerate: (id: string) => void;
+  onReject: (draft: LessonDraft) => void;
+  onSaveEdit: (id: string, content_json: Record<string, unknown>) => void;
+}
+
+function DraftCard({ draft, onApprove, onRegenerate, onReject, onSaveEdit }: DraftCardProps) {
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState('');
+
+  function startEdit() {
+    setEditText(JSON.stringify(draft.content_json, null, 2));
+    setEditing(true);
+  }
+
+  function saveEdit() {
+    try {
+      const parsed = JSON.parse(editText) as Record<string, unknown>;
+      onSaveEdit(draft.id, parsed);
+      setEditing(false);
+    } catch {
+      // Invalid JSON — keep the editor open so the admin can fix it.
+    }
+  }
+
+  const editFieldId = `draft-edit-${draft.id}`;
+
+  return (
+    <div data-testid={`draft-${draft.id}`} className="rounded-md border border-line bg-card p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <span className={`rounded px-2 py-0.5 text-xs capitalize ${TYPE_BADGE[draft.type]}`}>{draft.type}</span>
+        {draft.moderation_safe ? (
+          <span className="rounded bg-success-100 px-2 py-0.5 text-xs text-success-800">Safe ✓</span>
+        ) : (
+          <span className="rounded bg-danger-100 px-2 py-0.5 text-xs text-danger-700">
+            ⚠ Flagged: {draft.moderation_category}
+          </span>
+        )}
+      </div>
+
+      {editing ? (
+        <div>
+          <label htmlFor={editFieldId} className="mb-1 block text-sm text-ink">
+            Edit content (JSON)
+          </label>
+          <textarea
+            id={editFieldId}
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            rows={8}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm text-ink focus:ring-2 focus:ring-brand-300"
+          />
+        </div>
+      ) : (
+        <DraftPreview draft={draft} />
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {editing ? (
+          <>
+            <button
+              type="button"
+              onClick={saveEdit}
+              className="min-h-[44px] rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="min-h-[44px] rounded-md border border-line px-4 py-2 text-sm text-muted-foreground hover:bg-brand-50"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => onApprove(draft.id)}
+              disabled={!draft.moderation_safe}
+              title={draft.moderation_safe ? 'Approve this draft' : 'Approval is blocked while this draft is flagged'}
+              aria-label={draft.moderation_safe ? 'Approve draft' : 'Approve draft (blocked — flagged content)'}
+              className="min-h-[44px] rounded-md bg-success-600 px-4 py-2 text-sm text-white hover:bg-success-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Approve
+            </button>
+            <button
+              type="button"
+              onClick={startEdit}
+              className="min-h-[44px] rounded-md border border-line px-4 py-2 text-sm text-brand-600 hover:bg-brand-50"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => onRegenerate(draft.id)}
+              className="min-h-[44px] rounded-md border border-line px-4 py-2 text-sm text-ink hover:bg-brand-50"
+            >
+              Regenerate
+            </button>
+            <button
+              type="button"
+              onClick={() => onReject(draft)}
+              className="min-h-[44px] rounded-md border border-line px-4 py-2 text-sm text-danger-500 hover:bg-danger-100"
+            >
+              Reject
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface LessonDraftReviewProps {
+  levelId: string;
+}
+
+export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
+  const { data: drafts = [], isLoading } = useLevelDrafts(levelId);
+  const generate = useGenerateLevelLessons(levelId);
+  const approve = useApproveDraft(levelId);
+  const update = useUpdateDraft(levelId);
+  const regenerate = useRegenerateDraft(levelId);
+  const reject = useRejectDraft(levelId);
+
+  const [concept, setConcept] = useState('');
+  const [count, setCount] = useState(3);
+  const [types, setTypes] = useState<Record<LessonDraft['type'], boolean>>({
+    card: true,
+    quiz: false,
+    scenario: false,
+  });
+  const [rejectTarget, setRejectTarget] = useState<LessonDraft | null>(null);
+
+  function toggleType(t: LessonDraft['type']) {
+    setTypes((prev) => ({ ...prev, [t]: !prev[t] }));
+  }
+
+  function handleGenerate(e: React.FormEvent) {
+    e.preventDefault();
+    const selected = (Object.keys(types) as LessonDraft['type'][]).filter((t) => types[t]);
+    generate.mutate({ concept, count, types: selected });
+  }
+
+  const skipped = generate.data?.skipped ?? 0;
+
+  return (
+    <section className="mt-8 border-t border-line pt-6">
+      <h2 className="mb-4 text-xl font-semibold text-ink">Generate lessons (AI)</h2>
+
+      <form onSubmit={handleGenerate} className="mb-6 flex flex-col gap-4">
+        <div>
+          <label htmlFor="gen-concept" className="mb-1 block text-sm text-ink">
+            Concept
+          </label>
+          <input
+            id="gen-concept"
+            value={concept}
+            onChange={(e) => setConcept(e.target.value)}
+            required
+            className="w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="gen-count" className="mb-1 block text-sm text-ink">
+            Count
+          </label>
+          <input
+            id="gen-count"
+            type="number"
+            min={1}
+            max={8}
+            value={count}
+            onChange={(e) => setCount(Number(e.target.value))}
+            className="w-24 rounded-md border border-input bg-background px-3 py-2 text-base text-ink focus:ring-2 focus:ring-brand-300"
+          />
+        </div>
+
+        <fieldset>
+          <legend className="mb-1 block text-sm text-ink">Lesson types</legend>
+          <div className="flex flex-wrap gap-4">
+            {(['card', 'quiz', 'scenario'] as const).map((t) => (
+              <label key={t} className="flex items-center gap-2 text-sm capitalize text-ink">
+                <input
+                  type="checkbox"
+                  checked={types[t]}
+                  onChange={() => toggleType(t)}
+                  className="h-4 w-4 rounded border-input bg-background"
+                />
+                {t}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div>
+          <button
+            type="submit"
+            disabled={generate.isPending}
+            className="min-h-[44px] rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
+          >
+            {generate.isPending ? 'Generating…' : 'Generate'}
+          </button>
+        </div>
+
+        {generate.isPending && (
+          <p role="status" className="text-sm text-muted-foreground">
+            Generating lessons…
+          </p>
+        )}
+        {skipped > 0 && (
+          <p className="text-sm text-danger-600">
+            {skipped} couldn&apos;t be generated — try regenerating.
+          </p>
+        )}
+      </form>
+
+      <h3 className="mb-3 text-lg font-semibold text-ink">Draft review</h3>
+
+      {isLoading ? (
+        <p className="text-muted-foreground">Loading drafts…</p>
+      ) : drafts.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No drafts yet. Generate some above.</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {drafts.map((draft) => (
+            <DraftCard
+              key={draft.id}
+              draft={draft}
+              onApprove={(id) => approve.mutate(id)}
+              onRegenerate={(id) => regenerate.mutate(id)}
+              onReject={(d) => setRejectTarget(d)}
+              onSaveEdit={(id, content_json) => update.mutate({ id, content_json })}
+            />
+          ))}
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!rejectTarget}
+        title="Reject draft?"
+        message="This will discard the generated draft. This cannot be undone."
+        onConfirm={() => {
+          if (rejectTarget) reject.mutate(rejectTarget.id);
+          setRejectTarget(null);
+        }}
+        onCancel={() => setRejectTarget(null)}
+      />
+    </section>
+  );
+}
