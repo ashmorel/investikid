@@ -61,6 +61,11 @@ async def decide_consent(
     payload: ConsentDecision,
     session: AsyncSession = Depends(get_session),
 ):
+    if payload.decision == "approve" and payload.attest_guardian is not True:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Guardian attestation required",
+        )
     try:
         record = await consume_one_time_token(session, token, CONSENT_AUDIENCE)
     except TokenInvalid:
@@ -79,6 +84,7 @@ async def decide_consent(
     now = datetime.now(UTC)
     if payload.decision == "approve":
         user.parent_consent_given_at = now
+        user.guardian_attested_at = now
         user.is_active = True
     else:
         user.consent_declined_at = now

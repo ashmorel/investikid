@@ -11,3 +11,4 @@ class ChildSummary(BaseModel):
 
 class ConsentDecision(BaseModel):
     decision: Literal["approve", "decline"]
+    attest_guardian: bool = False
