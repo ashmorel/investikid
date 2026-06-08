@@ -96,3 +96,37 @@ async def test_edit_draft_invalid_content_422(admin_client, db_session):
     await db_session.flush()
     resp = await admin_client.put(f"/admin/lesson-drafts/{draft.id}", json={"content_json": {"title": "only"}})
     assert resp.status_code == 422
+
+
+async def test_approve_flagged_draft_409(admin_client, db_session):
+    from app.models.lesson_draft import LessonDraft
+    level_id = await _make_level(admin_client)
+    draft = LessonDraft(level_id=level_id, type="card", content_json={"title": "A", "body": "B"},
+                        concept="x", model_used="m", moderation_safe=False, moderation_category="violence")
+    db_session.add(draft)
+    await db_session.flush()
+    resp = await admin_client.post(f"/admin/lesson-drafts/{draft.id}/approve")
+    assert resp.status_code == 409
+    # no Lesson created
+    from sqlalchemy import select
+
+    from app.models.content import Lesson
+    lessons = (await db_session.scalars(select(Lesson).where(Lesson.level_id == draft.level_id))).all()
+    assert lessons == []
+
+
+async def test_approve_safe_draft_materialises_lesson(admin_client, db_session):
+    from sqlalchemy import select
+
+    from app.models.content import Lesson
+    from app.models.lesson_draft import LessonDraft
+    level_id = await _make_level(admin_client)
+    draft = LessonDraft(level_id=level_id, type="card", content_json={"title": "A", "body": "B"},
+                        concept="x", model_used="m", moderation_safe=True, moderation_category=None)
+    db_session.add(draft)
+    await db_session.flush()
+    resp = await admin_client.post(f"/admin/lesson-drafts/{draft.id}/approve")
+    assert resp.status_code == 200
+    lessons = (await db_session.scalars(select(Lesson).where(Lesson.level_id == draft.level_id))).all()
+    assert any(le.type == "card" and le.content_json["title"] == "A" for le in lessons)
+    assert await db_session.get(LessonDraft, draft.id) is None

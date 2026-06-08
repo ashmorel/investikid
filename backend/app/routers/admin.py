@@ -460,6 +460,31 @@ async def update_lesson_draft(
     return LessonDraftOut.model_validate(draft)
 
 
+@router.post("/lesson-drafts/{draft_id}/approve", response_model=LessonOut)
+async def approve_lesson_draft(
+    draft_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    draft = await session.get(LessonDraft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
+    if not draft.moderation_safe:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Draft failed moderation")
+    level = await session.get(Level, draft.level_id)
+    max_order = await session.scalar(
+        select(func.max(Lesson.order_index)).where(Lesson.level_id == draft.level_id)
+    )
+    lesson = Lesson(
+        module_id=level.module_id, level_id=draft.level_id, type=draft.type,
+        content_json=draft.content_json, xp_reward=10, order_index=(max_order or 0) + 1,
+    )
+    session.add(lesson)
+    await session.delete(draft)
+    await session.commit()
+    await session.refresh(lesson)
+    return await _lesson_out(session, lesson)
+
+
 # ── Badges ──────────────────────────────────────────────────────────
 @router.get("/badges", response_model=list[BadgeOut])
 async def list_badges(session: AsyncSession = Depends(get_session)):
