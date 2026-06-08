@@ -35,6 +35,7 @@ from app.schemas.admin import (
     GenerateLessonsResponse,
     LessonCreate,
     LessonDraftOut,
+    LessonDraftUpdate,
     LessonOut,
     LessonUpdate,
     ModuleCreate,
@@ -46,9 +47,13 @@ from app.schemas.admin import (
     VideoHealthItem,
     VideoPresignRequest,
     VideoPresignResponse,
+    validate_lesson_content_json,
 )
 from app.services import storage, video_health_service
-from app.services.admin_content_generation_service import generate_level_lessons
+from app.services.admin_content_generation_service import (
+    _concat_text,
+    generate_level_lessons,
+)
 from app.services.app_settings import (
     get_alert_emails,
     get_starting_cash,
@@ -56,6 +61,7 @@ from app.services.app_settings import (
     set_starting_cash,
 )
 from app.services.engagement_service import get_module_engagement
+from app.services.moderation import moderate_output
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
 
@@ -431,6 +437,27 @@ async def list_lesson_drafts(
         select(LessonDraft).where(LessonDraft.level_id == level_id).order_by(LessonDraft.created_at)
     )).all()
     return [LessonDraftOut.model_validate(d) for d in rows]
+
+
+@router.put("/lesson-drafts/{draft_id}", response_model=LessonDraftOut)
+async def update_lesson_draft(
+    draft_id: uuid.UUID,
+    payload: LessonDraftUpdate,
+    session: AsyncSession = Depends(get_session),
+):
+    draft = await session.get(LessonDraft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
+    try:
+        validate_lesson_content_json(draft.type, payload.content_json)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    mod = await moderate_output(_concat_text(payload.content_json), surface="lesson")
+    draft.content_json = payload.content_json
+    draft.moderation_safe = mod.safe
+    draft.moderation_category = mod.category
+    await session.commit()
+    return LessonDraftOut.model_validate(draft)
 
 
 # ── Badges ──────────────────────────────────────────────────────────

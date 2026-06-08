@@ -70,3 +70,29 @@ async def test_list_drafts(admin_client):
     resp = await admin_client.get(f"/admin/levels/{level_id}/drafts")
     assert resp.status_code == 200
     assert len(resp.json()) == 1
+
+
+async def test_edit_draft_revalidates_and_remoderates(admin_client, db_session):
+    from app.models.lesson_draft import LessonDraft
+    level_id = await _make_level(admin_client)
+    draft = LessonDraft(level_id=level_id, type="card", content_json={"title": "A", "body": "B"},
+                        concept="x", model_used="m", moderation_safe=True, moderation_category=None)
+    db_session.add(draft)
+    await db_session.flush()
+    with patch("app.routers.admin.moderate_output",
+               AsyncMock(return_value=ModerationResult(safe=True, category=None, text="x"))):
+        resp = await admin_client.put(f"/admin/lesson-drafts/{draft.id}",
+                                      json={"content_json": {"title": "New", "body": "Body"}})
+    assert resp.status_code == 200
+    assert resp.json()["content_json"]["title"] == "New"
+
+
+async def test_edit_draft_invalid_content_422(admin_client, db_session):
+    from app.models.lesson_draft import LessonDraft
+    level_id = await _make_level(admin_client)
+    draft = LessonDraft(level_id=level_id, type="card", content_json={"title": "A", "body": "B"},
+                        concept="x", model_used="m", moderation_safe=True, moderation_category=None)
+    db_session.add(draft)
+    await db_session.flush()
+    resp = await admin_client.put(f"/admin/lesson-drafts/{draft.id}", json={"content_json": {"title": "only"}})
+    assert resp.status_code == 422
