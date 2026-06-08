@@ -13,6 +13,25 @@ export type BadgeInfo = {
   earned_at: string;
 };
 
+export type LevelProgress = {
+  level_id: string;
+  title: string;
+  state: 'in_progress' | 'completed' | 'locked';
+  locked_reason: 'premium' | 'progression' | null;
+  passed: boolean;
+  lessons_completed: number;
+  lessons_total: number;
+};
+
+export type ModuleProgress = {
+  module_id: string;
+  title: string;
+  icon: string;
+  lessons_completed: number;
+  lessons_total: number;
+  levels: LevelProgress[];
+};
+
 export type ChildAnalytics = {
   level: number;
   xp: number;
@@ -22,6 +41,7 @@ export type ChildAnalytics = {
   lessons_total: number;
   recent_lessons: RecentLesson[];
   badges: BadgeInfo[];
+  modules_progress: ModuleProgress[];
 };
 
 export type Child = {
