@@ -11,6 +11,7 @@ export default function ConsentVerify() {
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const [done, setDone] = useState<Decision | null>(null);
+  const [attested, setAttested] = useState(false);
 
   const peek = useQuery({
     queryKey: ['consent.verify', token],
@@ -20,7 +21,7 @@ export default function ConsentVerify() {
   });
 
   const decide = useMutation({
-    mutationFn: (d: Decision) => consentApi.decide(token, d),
+    mutationFn: (d: Decision) => consentApi.decide(token, d, d === 'approve' ? attested : false),
     onSuccess: (_data, d) => setDone(d),
   });
 
@@ -83,8 +84,20 @@ export default function ConsentVerify() {
           message={decideError.detail}
         />
       )}
+      <div className="mt-6 flex items-start gap-3">
+        <input
+          id="guardian-attest"
+          type="checkbox"
+          checked={attested}
+          onChange={(e) => setAttested(e.target.checked)}
+          className="mt-1 h-4 w-4"
+        />
+        <label htmlFor="guardian-attest" className="text-sm text-foreground">
+          I confirm I am {child.username}'s parent or legal guardian and am over 18.
+        </label>
+      </div>
       <div className="mt-6 flex gap-3">
-        <Button onClick={() => decide.mutate('approve')} disabled={decide.isPending}>
+        <Button onClick={() => decide.mutate('approve')} disabled={!attested || decide.isPending}>
           Approve
         </Button>
         <Button variant="outline" onClick={() => decide.mutate('decline')} disabled={decide.isPending}>
