@@ -10,26 +10,12 @@ type PageSpec = {
 };
 
 const PAGES: PageSpec[] = [
-  {
-    path: '/login',
-    name: 'login',
-    // Primary submit button uses --primary (amber-500, hsl(38 92% 50%)) with
-    // white text -> contrast 2.13:1 (fails WCAG 2 AA 4.5:1). Fix requires
-    // re-tuning the brand primary token (or introducing a paired
-    // primary-on-amber foreground), which is intentionally out of scope for
-    // Task 3 (per spec: "DO NOT change brand colors"). Tracked in the
-    // conformance register (Task 12).
-    skipReason:
-      'tracked in conformance register: primary brand color contrast on submit button (amber-500 / white) — brand token retune deferred to Task 12',
-  },
+  // OPEN-1 RESOLVED 2026-06-08: --color-primary retuned to brand-600 (#2563eb,
+  // white ≈ 5.17:1, passes WCAG 1.4.3) — /login + /forgot-password no longer skipped.
+  { path: '/login', name: 'login' },
   { path: '/signup', name: 'signup' },
   { path: '/privacy', name: 'privacy' },
-  {
-    path: '/forgot-password',
-    name: 'forgot-password',
-    skipReason:
-      'tracked in conformance register: primary brand color contrast on submit button (amber-500 / white) — brand token retune deferred to Task 12',
-  },
+  { path: '/forgot-password', name: 'forgot-password' },
 ];
 
 for (const { path, name, skipReason } of PAGES) {
