@@ -2,13 +2,14 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core.database import get_session
+from app.core.rate_limit import limiter
 from app.models.apply_mission import ApplyMission
 from app.models.content import Lesson, Level, Module
 from app.models.gamification import Badge, Challenge, UserBadge
@@ -29,7 +30,10 @@ from app.schemas.admin import (
     ChallengeCreate,
     ChallengeOut,
     ChallengeUpdate,
+    GenerateLessonsRequest,
+    GenerateLessonsResponse,
     LessonCreate,
+    LessonDraftOut,
     LessonOut,
     LessonUpdate,
     ModuleCreate,
@@ -43,6 +47,7 @@ from app.schemas.admin import (
     VideoPresignResponse,
 )
 from app.services import storage, video_health_service
+from app.services.admin_content_generation_service import generate_level_lessons
 from app.services.app_settings import (
     get_alert_emails,
     get_starting_cash,
@@ -394,6 +399,27 @@ async def admin_create_level_lesson(
     await session.commit()
     await session.refresh(lesson)
     return await _lesson_out(session, lesson)
+
+
+@router.post("/levels/{level_id}/generate", response_model=GenerateLessonsResponse)
+@limiter.limit("5/minute")
+async def generate_level_lessons_endpoint(
+    request: Request,
+    level_id: uuid.UUID,
+    payload: GenerateLessonsRequest,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    level = await session.get(Level, level_id)
+    if level is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
+    result = await generate_level_lessons(
+        session, level, concept=payload.concept, count=payload.count, types=payload.types,
+    )
+    return GenerateLessonsResponse(
+        created=[LessonDraftOut.model_validate(d) for d in result.created],
+        skipped=result.skipped,
+    )
 
 
 # ── Badges ──────────────────────────────────────────────────────────
