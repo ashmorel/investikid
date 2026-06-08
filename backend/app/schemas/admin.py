@@ -90,6 +90,41 @@ class ModuleOut(BaseModel):
 
 
 # ── Lesson ──────────────────────────────────────────────────────────
+def validate_lesson_content_json(lesson_type: str, v: dict) -> None:
+    """Per-type content_json rules. Raises ValueError on invalid. Shared by the
+    admin LessonCreate validator AND the AI generation service."""
+    if lesson_type == "card":
+        if "title" not in v or "body" not in v:
+            raise ValueError("Card requires title and body")
+    elif lesson_type == "quiz":
+        for key in ("question", "choices", "answer_index", "explanation"):
+            if key not in v:
+                raise ValueError(f"Quiz requires {key}")
+        if not isinstance(v["choices"], list) or len(v["choices"]) < 2:
+            raise ValueError("Quiz requires at least 2 choices")
+        if not (0 <= v["answer_index"] < len(v["choices"])):
+            raise ValueError("Invalid answer_index — must be within choices range")
+    elif lesson_type == "scenario":
+        for key in ("prompt", "choices", "correct_index"):
+            if key not in v:
+                raise ValueError(f"Scenario requires {key}")
+        if not isinstance(v["choices"], list) or len(v["choices"]) < 2:
+            raise ValueError("Scenario requires at least 2 choices")
+        for c in v["choices"]:
+            if not isinstance(c, dict) or "label" not in c or "outcome" not in c:
+                raise ValueError("Each scenario choice requires label and outcome")
+        if not (0 <= v["correct_index"] < len(v["choices"])):
+            raise ValueError("Invalid correct_index — must be within choices range")
+    elif lesson_type == "video":
+        source = v.get("video_source", "youtube")
+        if source == "hosted":
+            if not isinstance(v.get("video_url"), str) or not v["video_url"]:
+                raise ValueError("hosted video lessons require a non-empty video_url")
+        else:
+            if not isinstance(v.get("youtube_id"), str) or not v["youtube_id"]:
+                raise ValueError("video lessons require a non-empty youtube_id")
+
+
 class LessonCreate(BaseModel):
     type: Literal["card", "quiz", "scenario", "video"]
     content_json: dict
@@ -100,37 +135,7 @@ class LessonCreate(BaseModel):
     @field_validator("content_json")
     @classmethod
     def validate_content(cls, v: dict, info) -> dict:
-        lesson_type = info.data.get("type")
-        if lesson_type == "card":
-            if "title" not in v or "body" not in v:
-                raise ValueError("Card requires title and body")
-        elif lesson_type == "quiz":
-            for key in ("question", "choices", "answer_index", "explanation"):
-                if key not in v:
-                    raise ValueError(f"Quiz requires {key}")
-            if not isinstance(v["choices"], list) or len(v["choices"]) < 2:
-                raise ValueError("Quiz requires at least 2 choices")
-            if not (0 <= v["answer_index"] < len(v["choices"])):
-                raise ValueError("Invalid answer_index — must be within choices range")
-        elif lesson_type == "scenario":
-            for key in ("prompt", "choices", "correct_index"):
-                if key not in v:
-                    raise ValueError(f"Scenario requires {key}")
-            if not isinstance(v["choices"], list) or len(v["choices"]) < 2:
-                raise ValueError("Scenario requires at least 2 choices")
-            for c in v["choices"]:
-                if not isinstance(c, dict) or "label" not in c or "outcome" not in c:
-                    raise ValueError("Each scenario choice requires label and outcome")
-            if not (0 <= v["correct_index"] < len(v["choices"])):
-                raise ValueError("Invalid correct_index — must be within choices range")
-        elif lesson_type == "video":
-            source = v.get("video_source", "youtube")
-            if source == "hosted":
-                if not isinstance(v.get("video_url"), str) or not v["video_url"]:
-                    raise ValueError("hosted video lessons require a non-empty video_url")
-            else:
-                if not isinstance(v.get("youtube_id"), str) or not v["youtube_id"]:
-                    raise ValueError("video lessons require a non-empty youtube_id")
+        validate_lesson_content_json(info.data.get("type"), v)
         return v
 
 
