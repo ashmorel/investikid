@@ -21,6 +21,6 @@ describe('consentApi', () => {
     const call = (globalThis.fetch as any).mock.calls[0];
     expect(call[0]).toBe('/consent/decide?token=tok');
     expect(call[1].method).toBe('POST');
-    expect(JSON.parse(call[1].body)).toEqual({ decision: 'approve' });
+    expect(JSON.parse(call[1].body)).toEqual({ decision: 'approve', attest_guardian: false });
   });
 });
