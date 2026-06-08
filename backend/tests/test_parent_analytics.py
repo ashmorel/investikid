@@ -207,3 +207,74 @@ def test_module_progress_out_nests_levels():
     )
     assert mod.levels[0].state == "in_progress"
     assert mod.levels[0].locked_reason is None
+
+
+@asyncio_pytest_mark
+async def test_analytics_modules_progress_per_level(db_session):
+    from app.models.content import Level
+
+    user = User(
+        email="ana-levels@example.com", username="analevels",
+        password_hash="x", dob=date(2012, 1, 1),
+        country_code="GB", currency_code="GBP", is_premium=False,
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    module = Module(topic="stocks", title="Stocks 101", country_codes=["GB"],
+                    is_premium=False, order_index=0, icon="📈")
+    db_session.add(module)
+    await db_session.flush()
+    l1 = Level(module_id=module.id, title="Level 1", order_index=0,
+               is_premium=False, pass_threshold=0.7, icon="1️⃣")
+    l2 = Level(module_id=module.id, title="Level 2", order_index=1,
+               is_premium=True, pass_threshold=0.7, icon="2️⃣")
+    db_session.add_all([l1, l2])
+    await db_session.flush()
+
+    lessons = {}
+    for lv in (l1, l2):
+        lessons[lv.id] = []
+        for i in range(2):
+            lsn = Lesson(module_id=module.id, level_id=lv.id, type="card",
+                         xp_reward=10, order_index=i, content_json={"title": f"{lv.title}-{i}"})
+            db_session.add(lsn)
+            lessons[lv.id].append(lsn)
+    await db_session.flush()
+    for lsn in lessons[l1.id]:
+        db_session.add(LessonCompletion(user_id=user.id, lesson_id=lsn.id, score=0.9))
+    await db_session.flush()
+
+    result = await build_child_analytics(db_session, user.id, user.country_code)
+
+    assert len(result.modules_progress) == 1
+    mp = result.modules_progress[0]
+    assert mp.title == "Stocks 101"
+    assert mp.lessons_completed == 2
+    assert mp.lessons_total == 4
+    assert [lv.title for lv in mp.levels] == ["Level 1", "Level 2"]
+    assert mp.levels[0].state == "completed"
+    assert mp.levels[0].passed is True
+    assert mp.levels[1].state == "locked"
+    assert mp.levels[1].locked_reason == "premium"
+
+
+@asyncio_pytest_mark
+async def test_analytics_modules_progress_skips_unlevelled(db_session):
+    user = User(
+        email="ana-nolvl@example.com", username="ananolvl",
+        password_hash="x", dob=date(2012, 1, 1),
+        country_code="GB", currency_code="GBP", is_premium=False,
+    )
+    db_session.add(user)
+    await db_session.flush()
+    module = Module(topic="stocks", title="Legacy", country_codes=["GB"],
+                    is_premium=False, order_index=0, icon="📈")
+    db_session.add(module)
+    await db_session.flush()
+    db_session.add(Lesson(module_id=module.id, level_id=None, type="card",
+                          xp_reward=10, order_index=0, content_json={"title": "x"}))
+    await db_session.flush()
+
+    result = await build_child_analytics(db_session, user.id, user.country_code)
+    assert result.modules_progress == []
