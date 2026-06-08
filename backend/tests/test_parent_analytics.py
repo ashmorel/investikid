@@ -180,3 +180,30 @@ async def test_children_endpoint_includes_analytics(client, db_session):
     assert ana["badges"] == []
     assert "xp_to_next_level" in ana
     assert "lessons_total" in ana
+
+
+def test_child_analytics_out_has_modules_progress_default():
+    from app.schemas.parent import ChildAnalyticsOut
+
+    out = ChildAnalyticsOut(
+        level=1, xp=0, xp_to_next_level=100, streak_count=0,
+        lessons_completed=0, lessons_total=0, recent_lessons=[], badges=[],
+    )
+    assert out.modules_progress == []
+
+
+def test_module_progress_out_nests_levels():
+    import uuid as _uuid
+
+    from app.schemas.parent import LevelProgressOut, ModuleProgressOut
+
+    mod = ModuleProgressOut(
+        module_id=_uuid.uuid4(), title="Stocks", icon="📈",
+        lessons_completed=2, lessons_total=4,
+        levels=[LevelProgressOut(
+            level_id=_uuid.uuid4(), title="Level 1", state="in_progress",
+            locked_reason=None, passed=False, lessons_completed=2, lessons_total=2,
+        )],
+    )
+    assert mod.levels[0].state == "in_progress"
+    assert mod.levels[0].locked_reason is None

@@ -21,6 +21,25 @@ class BadgeOut(BaseModel):
     earned_at: datetime
 
 
+class LevelProgressOut(BaseModel):
+    level_id: uuid.UUID
+    title: str
+    state: str  # "in_progress" | "completed" | "locked"
+    locked_reason: str | None  # "premium" | "progression" | None
+    passed: bool
+    lessons_completed: int
+    lessons_total: int
+
+
+class ModuleProgressOut(BaseModel):
+    module_id: uuid.UUID
+    title: str
+    icon: str
+    lessons_completed: int
+    lessons_total: int
+    levels: list[LevelProgressOut]
+
+
 class ChildAnalyticsOut(BaseModel):
     level: int
     xp: int
@@ -30,6 +49,7 @@ class ChildAnalyticsOut(BaseModel):
     lessons_total: int
     recent_lessons: list[RecentLessonOut]
     badges: list[BadgeOut]
+    modules_progress: list[ModuleProgressOut] = []
 
 
 class ChildOut(BaseModel):
