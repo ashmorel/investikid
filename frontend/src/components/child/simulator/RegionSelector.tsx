@@ -18,7 +18,7 @@ export function RegionSelector({ value, onChange }: Props) {
     }
   }, [value]);
 
-  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+  function onKeyDown(e: KeyboardEvent<HTMLButtonElement>) {
     const idx = codes.indexOf(value);
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
       e.preventDefault();
@@ -34,7 +34,6 @@ export function RegionSelector({ value, onChange }: Props) {
       ref={groupRef}
       role="radiogroup"
       aria-label="Market region"
-      onKeyDown={onKeyDown}
       className="inline-flex rounded-full border border-brand-200 bg-brand-50 p-0.5"
     >
       {REGIONS.map((r) => {
@@ -50,6 +49,7 @@ export function RegionSelector({ value, onChange }: Props) {
             aria-checked={selected}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(r.code)}
+            onKeyDown={onKeyDown}
             className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500 ${
               selected ? 'bg-brand-600 text-white' : 'text-brand-700 hover:bg-brand-100'
             }`}
