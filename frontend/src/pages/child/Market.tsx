@@ -43,12 +43,28 @@ export function groupByExchange(stocks: QuoteOut[], priority: string[] = []) {
   return Object.entries(groups).sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
+/** Merge exchange-keyed groups that share a country label (e.g. NASDAQ + NYSE
+ *  → "US Stocks") into one group, preserving the incoming priority order. */
+function mergeByLabel(groups: [string, QuoteOut[]][]): [string, QuoteOut[]][] {
+  const order: string[] = [];
+  const byLabel: Record<string, QuoteOut[]> = {};
+  for (const [exchange, stocks] of groups) {
+    const label = EXCHANGE_GROUP_LABELS[exchange] ?? exchange;
+    if (!(label in byLabel)) {
+      byLabel[label] = [];
+      order.push(label);
+    }
+    byLabel[label].push(...stocks);
+  }
+  return order.map((label) => [label, byLabel[label]]);
+}
+
 function BrowseGroup({
-  exchange,
+  title,
   stocks,
   headingLevel = 2,
 }: {
-  exchange: string;
+  title: string;
   stocks: QuoteOut[];
   headingLevel?: 2 | 3;
 }) {
@@ -56,7 +72,7 @@ function BrowseGroup({
   return (
     <section>
       <Heading className="mb-2 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wider text-gray-700">
-        {EXCHANGE_GROUP_LABELS[exchange] ?? exchange}
+        {title}
         <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
           {stocks.length}
         </span>
@@ -151,11 +167,17 @@ export default function Market() {
     );
   }
 
-  const groups = groupByExchange(stocks, priorityExchanges);
-  const selectedSet = new Set(priorityExchanges);
-  const selectedGroups = isSearching ? groups : groups.filter(([ex]) => selectedSet.has(ex));
-  const otherGroups = isSearching ? [] : groups.filter(([ex]) => !selectedSet.has(ex));
+  // Group by exchange (priority-ordered), then merge same-country exchanges
+  // (e.g. NASDAQ + NYSE → one "US Stocks" section).
+  const groups = mergeByLabel(groupByExchange(stocks, priorityExchanges));
+  const selectedLabels = new Set(
+    priorityExchanges.map((ex) => EXCHANGE_GROUP_LABELS[ex] ?? ex),
+  );
+  const selectedGroups = isSearching ? groups : groups.filter(([label]) => selectedLabels.has(label));
+  const otherGroups = isSearching ? [] : groups.filter(([label]) => !selectedLabels.has(label));
   const otherCount = otherGroups.reduce((n, [, s]) => n + s.length, 0);
+  // Curated featured lists read as "Popular …"; search results keep the plain label.
+  const browseTitle = (label: string) => (isSearching ? label : `Popular ${label}`);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
@@ -220,14 +242,14 @@ export default function Market() {
         </p>
       ) : (
         <div className="mt-4 space-y-6">
-          {selectedGroups.map(([exchange, groupStocks]) => (
-            <BrowseGroup key={exchange} exchange={exchange} stocks={groupStocks} />
+          {selectedGroups.map(([label, groupStocks]) => (
+            <BrowseGroup key={label} title={browseTitle(label)} stocks={groupStocks} />
           ))}
           {otherGroups.length > 0 && (
             <SectionCard title="More markets" count={otherCount} collapsible defaultOpen={false}>
               <div className="space-y-6">
-                {otherGroups.map(([exchange, groupStocks]) => (
-                  <BrowseGroup key={exchange} exchange={exchange} stocks={groupStocks} headingLevel={3} />
+                {otherGroups.map(([label, groupStocks]) => (
+                  <BrowseGroup key={label} title={browseTitle(label)} stocks={groupStocks} headingLevel={3} />
                 ))}
               </div>
             </SectionCard>
