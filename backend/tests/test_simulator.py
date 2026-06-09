@@ -252,10 +252,10 @@ async def test_generate_tips_falls_back_when_model_unsafe():
     import json
     from unittest.mock import AsyncMock, patch
 
-    from app.routers import simulator
-    from app.routers.simulator import _FALLBACK_TIPS, _generate_tips
+    import app.services.tips_service as tips_service
+    from app.services.tips_service import _FALLBACK_TIPS, generate_generic_tips
 
-    simulator._tips_cache.clear()
+    tips_service._generic_cache.clear()
 
     unsafe_items = [
         {"id": "t1", "title": "Smart Saving", "description": "Saving regularly adds up over time.",
@@ -268,21 +268,21 @@ async def test_generate_tips_falls_back_when_model_unsafe():
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(return_value=json.dumps(unsafe_items))
 
-    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
-        result = await _generate_tips()
+    with patch("app.services.tips_service.get_llm_client", return_value=mock_client):
+        result = await generate_generic_tips()
 
     assert result is _FALLBACK_TIPS
-    simulator._tips_cache.clear()
+    tips_service._generic_cache.clear()
 
 
 async def test_generate_tips_returns_safe_model_tips():
     import json
     from unittest.mock import AsyncMock, patch
 
-    from app.routers import simulator
-    from app.routers.simulator import _FALLBACK_TIPS, _generate_tips
+    import app.services.tips_service as tips_service
+    from app.services.tips_service import _FALLBACK_TIPS, generate_generic_tips
 
-    simulator._tips_cache.clear()
+    tips_service._generic_cache.clear()
 
     safe_items = [
         {"id": "s1", "title": "Smart Saving", "description": "Saving a little regularly adds up over time.",
@@ -296,12 +296,12 @@ async def test_generate_tips_returns_safe_model_tips():
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(return_value=json.dumps(safe_items))
 
-    with patch("app.routers.simulator.get_llm_client", return_value=mock_client):
-        result = await _generate_tips()
+    with patch("app.services.tips_service.get_llm_client", return_value=mock_client):
+        result = await generate_generic_tips()
 
     assert result is not _FALLBACK_TIPS
     assert [t.id for t in result] == ["s1", "s2", "s3"]
-    simulator._tips_cache.clear()
+    tips_service._generic_cache.clear()
 
 
 # --- Seam-completeness: news-summary / chart-guide / time-machine surfaces ---
