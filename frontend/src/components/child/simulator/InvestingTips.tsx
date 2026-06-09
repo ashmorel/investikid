@@ -4,6 +4,7 @@ import { ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Lightbulb, Pause, Play } from 'lucide-react';
 import { simulatorApi, type InvestingTip, type PricePoint } from '@/api/simulator';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { SectionCard } from './SectionCard';
 
 function MiniChart({ exchange, ticker }: { exchange: string; ticker: string }) {
   const { data } = useQuery<PricePoint[] | null>({
@@ -121,21 +122,19 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
   };
 
   return (
-    <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <Lightbulb className="h-5 w-5 text-brand-700" />
-        <h3 className="text-base font-semibold text-gray-800">Investing Tips</h3>
-        {!reducedMotion && count > 1 && (
+    <SectionCard title="Investing Tips" icon={Lightbulb} collapsible defaultOpen headingLevel={3}>
+      {!reducedMotion && count > 1 && (
+        <div className="mb-2 flex justify-end">
           <button
             type="button"
             onClick={() => setIsPlaying((p) => !p)}
             aria-label={isPlaying ? 'Pause tips' : 'Play tips'}
-            className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
           >
             {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div
         ref={scrollRef}
@@ -189,6 +188,6 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
           </button>
         ))}
       </div>
-    </div>
+    </SectionCard>
   );
 }

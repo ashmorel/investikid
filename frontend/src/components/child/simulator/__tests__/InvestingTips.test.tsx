@@ -119,4 +119,14 @@ describe('InvestingTips auto-rotation', () => {
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
+
+  it('is collapsible and open by default; collapsing hides the tips', async () => {
+    await renderTips();
+    const toggle = screen.getByRole('button', { name: /^investing tips$/i });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Tip One')).toBeInTheDocument();
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Tip One')).toBeNull();
+  });
 });
