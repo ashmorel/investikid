@@ -73,6 +73,94 @@ _MODULES = [
                 "correct_index": 1,
             }},
         ],
+        "extra_levels": [
+            {"title": "Level 2", "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Where stocks are bought and sold",
+                    "body": "Stocks are traded on a stock exchange — a giant marketplace like the London Stock Exchange (LSE) or the New York Stock Exchange. Here's the surprise: when you buy a share, you're usually not buying it from the company. You're buying it from another investor who wants to sell theirs.",
+                }},
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Every stock has a ticker",
+                    "body": "A ticker is a short code that names a stock — like AAPL for Apple or TSLA for Tesla. Tickers make companies quick to find. Try searching one in the practice Simulator to see its price!",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "When you buy a share of a big company like Apple, who are you usually buying it from?",
+                    "choices": ["The company itself, directly", "Another investor who wants to sell their share", "The government", "Your bank's savings team"],
+                    "answer_index": 1,
+                    "explanation": "Most of the time you trade with other investors on an exchange — not the company. The company only sold those shares once, long ago.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "What is a stock exchange?",
+                    "choices": ["A marketplace where shares are bought and sold", "A shop that only sells company products", "A savings account for grown-ups", "A type of dividend"],
+                    "answer_index": 0,
+                    "explanation": "An exchange (like the LSE or NYSE) is the marketplace where buyers and sellers trade shares.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "You hear about the 'FTSE 100' or 'S&P 500'. What is an index like that?",
+                    "choices": ["A single company's share price", "A scoreboard that tracks many big companies at once", "A tax on investors", "A list of dividends"],
+                    "answer_index": 1,
+                    "explanation": "An index is like a scoreboard: it follows lots of companies together, so people can see how 'the market' is doing overall.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Company A is worth £1 trillion. Company B is worth £10 million. Which is the 'bigger' company by market value?",
+                    "choices": ["Company A", "Company B", "They're exactly the same", "You can't tell from value"],
+                    "answer_index": 0,
+                    "explanation": "A company's total value is its 'market cap'. £1 trillion is far bigger than £10 million — Company A is the giant.",
+                }},
+                {"type": "scenario", "xp_reward": 20, "content_json": {
+                    "prompt": "You're curious how a real company's share price moves, but you're brand new. What's the smartest first step?",
+                    "choices": [
+                        {"label": "Put your real birthday money straight into one stock", "outcome": "Risky — never invest real money you can't afford to lose, especially before you've learned the ropes."},
+                        {"label": "Search its ticker in the practice Simulator and watch it with pretend money", "outcome": "Perfect — the Simulator lets you explore real prices and practise with zero risk before any real money is involved."},
+                        {"label": "Buy whatever a video online tells you to", "outcome": "Be careful — lots of online 'tips' are hype or scams. Learn and practise first, and always ask a trusted grown-up."},
+                    ],
+                    "correct_index": 1,
+                }},
+            ]},
+            {"title": "Level 3", "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Don't put all your eggs in one basket",
+                    "body": "If you put all your money into one company and it does badly, you could lose a lot. Spreading your money across many different companies is called diversification — if one struggles, the others can balance it out.",
+                }},
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Time in the market beats timing the market",
+                    "body": "Nobody — not even experts — can reliably guess the best day to buy or sell. Investors who stay invested for many years usually do better than those who jump in and out trying to be clever.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Which is generally LESS risky?",
+                    "choices": ["Putting all your money in one company", "Spreading your money across many different companies", "They're equally risky", "Keeping it all as cash under your bed"],
+                    "answer_index": 1,
+                    "explanation": "Spreading out (diversifying) means one bad company won't sink everything. That's a core rule of smart investing.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "What is an index fund?",
+                    "choices": ["A single risky company", "A basket that holds many companies at once, giving instant diversification", "A loan you take out to invest", "A type of bank fee"],
+                    "answer_index": 1,
+                    "explanation": "An index fund holds lots of companies together — buying one is like buying a whole scoreboard of businesses at once.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Trying to guess the perfect day to buy or sell is called 'timing the market'. Is it a reliable way to invest?",
+                    "choices": ["Yes, anyone can do it easily", "No — even experts can't do it reliably, so staying invested long-term usually works better", "Yes, if you watch the news every hour", "Only on weekends"],
+                    "answer_index": 1,
+                    "explanation": "Short-term prices are unpredictable. Patience and time usually beat trying to guess the perfect moment.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Investments that could grow a lot usually also carry…",
+                    "choices": ["More risk of falling in value", "A guarantee from the government", "No risk at all", "Free money"],
+                    "answer_index": 0,
+                    "explanation": "Higher possible reward almost always comes with higher risk. There's no reward with zero risk — that's the trade-off.",
+                }},
+                {"type": "scenario", "xp_reward": 20, "content_json": {
+                    "prompt": "You have £100 of pretend money to invest for 10 years in the Simulator. What's the wisest approach?",
+                    "choices": [
+                        {"label": "Put all £100 into the one stock a friend is hyping", "outcome": "Too risky — if that single company struggles, your whole £100 is exposed. No diversification."},
+                        {"label": "Spread it across several companies (or a fund) and leave it to grow", "outcome": "Wise — diversifying and giving it years to grow is exactly how patient investors lower risk and let compounding work."},
+                        {"label": "Buy and sell every single day to chase quick wins", "outcome": "This is 'timing the market' — unreliable, stressful, and usually loses to just staying invested."},
+                    ],
+                    "correct_index": 1,
+                }},
+            ]},
+        ],
     },
     {
         "topic": "savings", "title": "Compound Interest Basics",
@@ -801,6 +889,28 @@ def _insert_position(ordered_types: list[str], new_type: str) -> int:
     return pos
 
 
+async def _ensure_level_lessons(session, module, level, lesson_specs):
+    ordered = list((await session.scalars(
+        select(Lesson).where(Lesson.level_id == level.id).order_by(Lesson.order_index)
+    )).all())
+    by_ident = {_lesson_identity(le.type, le.content_json): le for le in ordered}
+    for lesson_spec in lesson_specs:
+        ident = _lesson_identity(lesson_spec["type"], lesson_spec["content_json"])
+        if ident in by_ident:
+            continue
+        new_lesson = Lesson(
+            module_id=module.id, level_id=level.id,
+            type=lesson_spec["type"], content_json=lesson_spec["content_json"],
+            xp_reward=lesson_spec["xp_reward"], order_index=0,
+        )
+        session.add(new_lesson)
+        by_ident[ident] = new_lesson
+        pos = _insert_position([le.type for le in ordered], new_lesson.type)
+        ordered.insert(pos, new_lesson)
+    for i, le in enumerate(ordered):
+        le.order_index = i
+
+
 async def seed_modules_and_lessons(session: AsyncSession) -> None:
     """Idempotent: creates modules (matched by topic+title), ensures each has a
     Level 1, and inserts any lessons missing from the curriculum. New lessons are
@@ -834,31 +944,24 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
             session.add(level)
             await session.flush()
 
-        # Start from the CURRENT order (which reflects any manual admin
-        # reordering) and only insert lessons missing from the curriculum,
-        # slotting each into its difficulty band by type. Lessons already
-        # placed keep their relative order; we only normalise the integer
-        # order_index across the merged sequence at the end.
-        ordered = list((await session.scalars(
-            select(Lesson).where(Lesson.level_id == level.id).order_by(Lesson.order_index)
-        )).all())
-        by_ident = {_lesson_identity(le.type, le.content_json): le for le in ordered}
+        # Only insert lessons missing from the curriculum, slotting each into
+        # its difficulty band by type. Lessons already placed keep their
+        # relative order (so manual admin reordering survives re-seeding).
+        await _ensure_level_lessons(session, module, level, spec["lessons"])
 
-        for lesson_spec in spec["lessons"]:
-            ident = _lesson_identity(lesson_spec["type"], lesson_spec["content_json"])
-            if ident in by_ident:
-                continue  # already present — leave its position untouched
-            new_lesson = Lesson(
-                module_id=module.id, level_id=level.id,
-                type=lesson_spec["type"],
-                content_json=lesson_spec["content_json"],
-                xp_reward=lesson_spec["xp_reward"],
-                order_index=0,  # normalised below
+        for i, extra in enumerate(spec.get("extra_levels", []), start=1):
+            lv = await session.scalar(
+                select(Level).where(Level.module_id == module.id, Level.order_index == i)
             )
-            session.add(new_lesson)
-            by_ident[ident] = new_lesson
-            pos = _insert_position([le.type for le in ordered], new_lesson.type)
-            ordered.insert(pos, new_lesson)
-
-        for i, le in enumerate(ordered):
-            le.order_index = i
+            if lv is None:
+                lv = Level(
+                    module_id=module.id, title=extra["title"], order_index=i,
+                    is_premium=premium_for_position(i), pass_threshold=0.7,
+                    content_source="authored",
+                )
+                session.add(lv)
+                await session.flush()
+            else:
+                lv.title = extra["title"]
+                lv.is_premium = premium_for_position(i)
+            await _ensure_level_lessons(session, module, lv, extra["lessons"])
