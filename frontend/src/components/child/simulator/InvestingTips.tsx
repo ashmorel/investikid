@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Pause, Play } from 'lucide-react';
 import { simulatorApi, type InvestingTip, type PricePoint } from '@/api/simulator';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 function MiniChart({ exchange, ticker }: { exchange: string; ticker: string }) {
   const { data } = useQuery<PricePoint[] | null>({
@@ -49,15 +50,45 @@ type Props = {
   contextExchange?: string;
 };
 
+const ROTATE_MS = 7000;
+
 export function InvestingTips({ contextTicker, contextExchange }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [paused, setPaused] = useState(false); // transient hover/focus pause
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   const { data: tips } = useQuery<InvestingTip[] | null>({
     queryKey: ['investing-tips'],
     queryFn: () => simulatorApi.getInvestingTips(),
     staleTime: 30 * 60 * 1000,
   });
+
+  const count = tips?.length ?? 0;
+  const autoRotate = isPlaying && !paused && !reducedMotion && count > 1;
+
+  function scrollToIndex(i: number) {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ left: i * el.clientWidth * 0.65, behavior: 'smooth' });
+  }
+
+  function goToIndex(i: number) {
+    setActiveIndex(i);
+    scrollToIndex(i);
+  }
+
+  useEffect(() => {
+    if (!autoRotate) return;
+    const id = window.setInterval(() => {
+      setActiveIndex((prev) => {
+        const next = (prev + 1) % count;
+        scrollToIndex(next);
+        return next;
+      });
+    }, ROTATE_MS);
+    return () => window.clearInterval(id);
+  }, [autoRotate, count]);
 
   if (!tips) {
     return (
@@ -94,11 +125,27 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
       <div className="mb-3 flex items-center gap-2">
         <Lightbulb className="h-5 w-5 text-brand-700" />
         <h3 className="text-base font-semibold text-gray-800">Investing Tips</h3>
+        {!reducedMotion && count > 1 && (
+          <button
+            type="button"
+            onClick={() => setIsPlaying((p) => !p)}
+            aria-label={isPlaying ? 'Pause tips' : 'Play tips'}
+            className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+          >
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </button>
+        )}
       </div>
 
       <div
         ref={scrollRef}
         onScroll={handleScroll}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onFocus={() => setPaused(true)}
+        onBlur={() => setPaused(false)}
+        role="group"
+        aria-label="Investing tips"
         className="flex gap-3 overflow-x-auto scroll-smooth pb-2"
         style={{ scrollSnapType: 'x mandatory' }}
       >
@@ -126,12 +173,20 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
 
       <div className="mt-2 flex justify-center gap-1">
         {tips.map((_, i) => (
-          <span
+          <button
             key={i}
-            className={`inline-block h-1.5 w-1.5 rounded-full ${
-              i === activeIndex ? 'bg-brand-500' : 'bg-gray-200'
-            }`}
-          />
+            type="button"
+            onClick={() => goToIndex(i)}
+            aria-label={`Go to tip ${i + 1}`}
+            aria-current={i === activeIndex}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+          >
+            <span
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                i === activeIndex ? 'bg-brand-500' : 'bg-gray-200'
+              }`}
+            />
+          </button>
         ))}
       </div>
     </div>
