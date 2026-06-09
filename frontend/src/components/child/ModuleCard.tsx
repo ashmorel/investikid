@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import type { ModuleOut } from '@/api/content';
 import { cn } from '@/lib/utils';
+import { PremiumBadge } from './PremiumBadge';
 
 type Props = {
   module: ModuleOut;
@@ -25,10 +26,16 @@ export function ModuleCard({ module, completedCount, totalCount, onLockedClick }
       >
         <span className="text-3xl" aria-hidden="true">{module.icon}</span>
         <h2 className="font-bold text-sm text-gray-900">{module.title}</h2>
-        <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-          <Lock className="h-3.5 w-3.5" /> Premium
-        </span>
-        <p className="text-xs text-gray-400">Premium — ask a grown-up to unlock.</p>
+        {module.is_premium ? (
+          <>
+            <PremiumBadge />
+            <p className="text-xs text-gray-400">Unlock to continue</p>
+          </>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+            <Lock className="h-3.5 w-3.5" /> Locked
+          </span>
+        )}
       </button>
     );
   }

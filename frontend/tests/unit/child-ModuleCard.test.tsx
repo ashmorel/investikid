@@ -28,7 +28,7 @@ describe('ModuleCard', () => {
     expect(screen.getAllByText(/Premium/i).length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/locked/i)).toBeInTheDocument();
     expect(screen.getByTestId('module-locked')).toBeInTheDocument();
-    expect(screen.getByText(/ask a grown-up to unlock/i)).toBeInTheDocument();
+    expect(screen.getByText(/unlock to continue/i)).toBeInTheDocument();
     expect(screen.queryByRole('link')).toBeNull();
   });
 
