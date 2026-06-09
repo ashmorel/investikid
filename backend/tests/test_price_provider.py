@@ -3,6 +3,7 @@ from decimal import Decimal
 import pytest
 
 from app.services.price_provider import (
+    _FEATURED,
     PriceQuote,
     StaticPriceProvider,
     TickerNotAvailableError,
@@ -33,7 +34,7 @@ def test_search_by_prefix_returns_matches():
 
 def test_search_empty_query_returns_all():
     p = StaticPriceProvider()
-    assert len(p.search("")) == 12
+    assert len(p.search("")) == len(_FEATURED)
 
 
 def test_is_free_tier_allows_any_ticker():
