@@ -57,8 +57,16 @@ deploy (which runs `alembic upgrade head` against the live prod DB):
 3. Promote (`git checkout main && git merge --ff-only staging && git push`).
 4. Trigger the manual Railway production deploy (and Vercel "Promote to Production").
 
-**Production cutover one-offs (do once, when moving prod onto `ashmorel/investikid`):**
-- **Repoint prod backend domain** (optional): currently `lee-local-code-repo-production.up.railway.app`. If renamed to `investikid-production`, also update the cron workflow `BACKEND_URL` (`.github/workflows/video-health-cron.yml`) and any client referencing it.
+**Production cutover — ✅ COMPLETED 2026-06-08.** Production now runs on `ashmorel/investikid`
+(`main`): backend `https://investikid.up.railway.app` (Railway `Invest-Ed` → production →
+InvestiKid, **Root Directory `backend`**), frontend `https://app.investikid.ai` (Vercel
+production, deployed manually via `vercel --prod` from `main`). The four pending migrations
+(guardian-attested, lesson-drafts, subscriptions, parent-preferences) were applied to the prod DB
+after a manual snapshot; login verified end-to-end.
+  - **Root cause that had blocked it:** the prod Railway service's **Root Directory was stale**
+    (`invest-ed/backend`, from the old monorepo) → every prod backend deploy failed at build
+    (`directory … does not exist`) until it was changed to `backend`.
+- **Repoint prod backend domain** (optional): backend is `investikid.up.railway.app`. If ever renamed, also update the cron workflow `BACKEND_URL` (repo Actions variable `vars.BACKEND_URL`) and any client referencing it.
 - **Rotate prod secrets** (were exposed in old git history): `JWT_SECRET`, `SECRET_KEY`, `ADMIN_TOKEN`, `CRON_SECRET`, `RESEND_API_KEY` — give prod its own values, distinct from testing/staging.
 - ✅ **`CRON_SECRET` — RESOLVED 2026-06-08.** `CRON_SECRET` is set and **matched** on production Railway (`Invest-Ed` → production → InvestiKid) **and** the GitHub Actions secret. The `Video health cron` workflow is **enabled** and a manual run against production (`https://investikid.up.railway.app`) returned **HTTP 200** `{"ok":2,"dead":0,"unknown":0}`. The daily 06:00 UTC schedule now runs cleanly.
   - The cron workflow on **both `main` and `testing`** reads `BACKEND_URL` from the **repo Actions variable** (`${{ vars.BACKEND_URL || '<hardcoded fallback>' }}`; main `d8bef57`, testing `8622920`). The scheduled run executes from `main`.
@@ -66,7 +74,7 @@ deploy (which runs `alembic upgrade head` against the live prod DB):
   - History: pipeline first validated against `testing` (2026-06-07, HTTP 200), then pointed at prod and re-validated (2026-06-08). One transient 401 occurred before prod had redeployed with the new secret — re-running after the prod deploy completed returned 200.
   - If it ever fails again: **401**=GitHub vs Railway secret mismatch; **503**=`CRON_SECRET` unset on backend; **404**=backend not serving / wrong `BACKEND_URL`.
 - ⏳ **4C trial-reminders cron step — pending prod promotion.** Feature 4C adds a second daily cron step hitting `/internal/trial-reminders/run`. It is on the **`testing`** branch's `video-health-cron.yml` only (commit `1672c648`). **Do NOT add it to `main` until 4C is deployed to production** — the scheduled cron runs from `main` against prod, and the prod backend won't serve `/internal/trial-reminders/run` until 4C is promoted; adding it early would 404 and fail the daily cron. At 4C prod promotion: add the identical `Trigger trial-ending reminders` step to `main`'s `.github/workflows/video-health-cron.yml`.
-- **Vercel production env vars** (`VITE_API_BASE_URL`, `VITE_WEB_ORIGIN`) read back empty via CLI — verify/set them before/at cutover.
+- ✅ **Vercel production env vars set (2026-06-08).** `VITE_API_BASE_URL` = `https://investikid.up.railway.app` and `VITE_WEB_ORIGIN` = `https://app.investikid.ai` on the **Production** scope. They're Sensitive-flagged (read back blank via CLI) — verified instead from the live bundle, which bakes in exactly those two and **no** stale `lee-local-code-repo` refs.
 
 ## Repo configuration that supports this (already in place)
 
@@ -154,21 +162,21 @@ These need dashboard access and are not in the repo.
 
 ## Provisioning status (2026-06-07)
 
-**Railway (project `Invest-Ed`, service renamed `InvestiKid`) — testing + staging DONE, production untouched.**
+**Railway (project `Invest-Ed`, service renamed `InvestiKid`) — testing + staging + production DONE (production cut over 2026-06-08).**
 - **testing** → backend `https://investikid-testing.up.railway.app`; source `investikid@testing`, root `/backend`; own Postgres (`DATABASE_URL` = `${{ Postgres.DATABASE_URL }}` reference); migrated + seeded; `ENVIRONMENT=testing`, `EMAIL_BACKEND=logging`. Auto-deploys on push to `testing`.
 - **staging** → backend `https://investikid-staging.up.railway.app`; source `investikid@staging`, root `/backend`; own Postgres (reference); full migration chain + seeded; `ENVIRONMENT=staging`, `EMAIL_BACKEND=logging`; `CORS_ORIGINS` set to the staging Vercel origin. Auto-deploys on push to `staging`.
-- **production** → still on the old repo (`Lee-Local-Code-Repo`, `/invest-ed/backend`), domain still `lee-local-code-repo-production.up.railway.app`, own DB, **not migrated by the cutover**. Repoint later (gated, backup-first).
+- **production** → ✅ **cut over 2026-06-08** to `ashmorel/investikid@main`, **Root Directory `backend`** (was a stale `invest-ed/backend` — the bug that had failed every prod deploy at build), backend `https://investikid.up.railway.app`, own Postgres; full migration chain applied after a manual snapshot; `ENVIRONMENT=production`. The old `lee-local-code-repo-production.up.railway.app` host is now dead (Railway "Application not found").
 - ⚠️ testing + staging carry **forked production secrets** (live OpenAI/Together/Resend keys, `JWT_SECRET`, `CRON_SECRET`, DB password, `ADMIN_TOKEN`, `SECRET_KEY`), and they're **identical across both envs**. **Rotate / set unique test-only keys** — Coach Penny in non-prod currently bills your prod LLM accounts.
 - `APP_BASE_URL` in testing/staging still = `app.investikid.ai` (prod). Only affects email links, and email is `logging` in these envs, so low impact — repoint to the branch URLs if you want fully correct links.
 
-**Vercel (project `investikid.ai`, team `investikid`) — repoint CONFIRMED + env wired; production cutover pending.**
+**Vercel (project `investikid.ai`, team `investikid`) — repoint CONFIRMED + env wired; production cutover ✅ DONE 2026-06-08.**
 - **Git connection points at `ashmorel/investikid`** ✅ (Preview builds for `testing`/`staging` come from repo id `1260927337`). Root Directory = `frontend` ✅ (Vite builds succeed).
 - **Branch-scoped env vars set via Vercel CLI** ✅ (`vercel env ls`):
   - `VITE_API_BASE_URL` — Preview/`testing` → `https://investikid-testing.up.railway.app`; Preview/`staging` → `https://investikid-staging.up.railway.app`
   - `VITE_WEB_ORIGIN` — Preview/`testing` + Preview/`staging` → the branch URLs below
   - the old all-branches Preview `VITE_API_BASE_URL` was removed. testing + staging redeployed to bake in the new values.
 - **Preview deployments are auth-protected** (Vercel Authentication, default on Hobby) → reachable only by the Vercel team account, not anonymous/beta users. No password protection on Hobby — for beta access to staging, plan an **app-level allowlist** rather than Vercel protection.
-- **production** → still serving the **old-repo** build (`Lee-Local-Code-Repo@main` `de1eae1`); `vercel.json` `main:false` = no auto-build. **Cutover is a deliberate step** (frontend-only, no DB migration). Prod `VITE_*` values read back empty via CLI (likely Sensitive-flagged) — verify/set them at cutover.
+- **production** → ✅ serving `ashmorel/investikid@main` (deployed manually via `vercel --prod` from `main`, since `vercel.json` `main:false` disables auto-build). Prod `VITE_API_BASE_URL` was **added** at cutover — it had been **missing entirely**, which is why the old prod build pointed at a dead backend and login failed. Values are Sensitive-flagged (blank via CLI) but verified from the live bundle.
 - **⚠️ Vercel team slug is `investikid`** (was `lee-ashmore-s-projects`). Use the **`-investikid`** branch aliases below — the old `-lee-ashmore-s-projects` aliases still resolve but serve a **stale pre-migration build** (baked the old prod backend). `CORS_ORIGINS` (Railway) + `VITE_WEB_ORIGIN` (Vercel) are set to the `-investikid` origins.
 - Vercel branch URLs (current/canonical):
   - testing: `https://investikidai-git-testing-investikid.vercel.app`

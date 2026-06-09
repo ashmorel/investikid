@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { axe } from 'vitest-axe';
@@ -94,6 +95,9 @@ describe('a11y: simulator surfaces', () => {
       ) as never,
     );
     const { container } = wrap(<MarketNews />);
+    // News is collapsed by default — expand it before asserting on the list.
+    const toggle = await screen.findByRole('button', { name: /news for your stocks/i });
+    await userEvent.click(toggle);
     await waitFor(() => expect(screen.queryByText(/Headline/)).toBeInTheDocument());
     expect(await axe(container)).toHaveNoViolations();
   });

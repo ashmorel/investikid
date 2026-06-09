@@ -1,5 +1,6 @@
 import { Lock } from 'lucide-react';
 import type { LevelOut } from '@/api/content';
+import { PremiumBadge } from './PremiumBadge';
 
 type Props = {
   level: LevelOut;
@@ -39,8 +40,9 @@ export function LevelCard({ level, onOpen, onLockedClick }: Props) {
         </div>
       )}
       {locked && premium && (
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-accent-600">
-          <Lock className="h-3.5 w-3.5" aria-hidden="true" /> Premium
+        <span className="flex flex-col items-start gap-1">
+          <PremiumBadge />
+          <span className="text-xs text-gray-400">Unlock to continue</span>
         </span>
       )}
       {locked && !premium && (

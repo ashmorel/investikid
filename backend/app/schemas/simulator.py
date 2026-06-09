@@ -142,6 +142,7 @@ class InvestingTipOut(BaseModel):
     description: str
     example_ticker: str
     example_exchange: str
+    personalised: bool = False
 
 
 _MAJOR_CURRENCIES = {"USD", "GBP", "HKD"}

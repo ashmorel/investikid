@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { simulatorApi, type ExchangeMovers, type MarketMover } from '@/api/simulator';
+import { type RegionCode } from '@/lib/region';
 import { formatCurrency } from '@/lib/currency';
+import { SectionCard } from './SectionCard';
 
 function MoverRow({ mover, rank }: { mover: MarketMover; rank: number }) {
   const isPositive = mover.change_percent >= 0;
@@ -59,10 +61,10 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
   );
 }
 
-export function MarketMovers() {
+export function MarketMovers({ region }: { region: RegionCode }) {
   const { data, isLoading } = useQuery<Record<string, ExchangeMovers> | null>({
-    queryKey: ['market-movers'],
-    queryFn: () => simulatorApi.getMarketMovers(),
+    queryKey: ['market-movers', region],
+    queryFn: () => simulatorApi.getMarketMovers(region),
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
@@ -80,13 +82,12 @@ export function MarketMovers() {
   const exchanges = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
-      <h2 className="mb-4 text-lg font-semibold text-gray-800">Today's Market Movers</h2>
+    <SectionCard title="What's moving today" icon={TrendingUp}>
       <div className="space-y-5">
         {exchanges.map(([exchange, movers]) => (
           <ExchangeSection key={exchange} exchange={exchange} data={movers} />
         ))}
       </div>
-    </div>
+    </SectionCard>
   );
 }

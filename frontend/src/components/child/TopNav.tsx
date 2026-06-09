@@ -15,7 +15,7 @@ export function TopNav({ username }: { username: string }) {
     <header className="sticky top-0 z-10 border-b border-brand-200 bg-white/95 backdrop-blur" style={{ paddingTop: 'var(--safe-top)' }}>
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
         <Link to="/home" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gradient text-center text-sm font-extrabold text-white">IK</span>
+          <img src="/icons/icon-192.png" alt="" width={32} height={32} className="h-8 w-8 rounded-full" />
           <span className="text-lg font-extrabold text-gray-900">InvestiKid</span>
         </Link>
 

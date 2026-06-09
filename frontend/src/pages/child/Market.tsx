@@ -4,12 +4,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, Search } from 'lucide-react';
 import { simulatorApi, type QuoteOut } from '@/api/simulator';
 import { authApi, type Me } from '@/api/auth';
-import { REGION_EXCHANGES, type RegionCode } from '@/lib/region';
-import { EduTooltip } from '@/components/child/simulator/EduTooltip';
+import { REGION_EXCHANGES, toRegionCode, type RegionCode } from '@/lib/region';
+import { RegionSelector } from '@/components/child/simulator/RegionSelector';
 import { MarketMovers } from '@/components/child/simulator/MarketMovers';
 import { MarketNews } from '@/components/child/simulator/MarketNews';
 import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { BackButton } from '@/components/child/BackButton';
+import { SectionCard } from '@/components/child/simulator/SectionCard';
 import { formatCurrency } from '@/lib/currency';
 
 const EXCHANGE_BADGE_COLORS: Record<string, string> = {
@@ -42,6 +43,64 @@ export function groupByExchange(stocks: QuoteOut[], priority: string[] = []) {
   return Object.entries(groups).sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
+/** Merge exchange-keyed groups that share a country label (e.g. NASDAQ + NYSE
+ *  → "US Stocks") into one group, preserving the incoming priority order. */
+function mergeByLabel(groups: [string, QuoteOut[]][]): [string, QuoteOut[]][] {
+  const order: string[] = [];
+  const byLabel: Record<string, QuoteOut[]> = {};
+  for (const [exchange, stocks] of groups) {
+    const label = EXCHANGE_GROUP_LABELS[exchange] ?? exchange;
+    if (!(label in byLabel)) {
+      byLabel[label] = [];
+      order.push(label);
+    }
+    byLabel[label].push(...stocks);
+  }
+  return order.map((label) => [label, byLabel[label]]);
+}
+
+function BrowseGroup({
+  title,
+  stocks,
+  headingLevel = 2,
+}: {
+  title: string;
+  stocks: QuoteOut[];
+  headingLevel?: 2 | 3;
+}) {
+  const Heading = headingLevel === 3 ? 'h3' : 'h2';
+  return (
+    <section>
+      <Heading className="mb-2 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wider text-gray-700">
+        {title}
+        <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
+          {stocks.length}
+        </span>
+      </Heading>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {stocks.map((s) => (
+          <Link
+            key={`${s.exchange}-${s.ticker}`}
+            to={`/simulator/stock/${s.exchange}/${s.ticker}`}
+            className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm hover:border-brand-400 hover:shadow-md transition-all min-h-[44px]"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold">{s.ticker}</span>
+              <span
+                className={`rounded px-1.5 py-0.5 text-xs font-medium ${EXCHANGE_BADGE_COLORS[s.exchange] ?? 'bg-muted text-muted-foreground'}`}
+              >
+                {s.exchange}
+              </span>
+            </div>
+            <p className="mt-1 truncate text-sm text-muted-foreground">{s.name}</p>
+            <p className="mt-1 text-sm font-medium">{formatCurrency(s.price, s.currency)}</p>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function Market() {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -54,7 +113,8 @@ export default function Market() {
     queryFn: () => authApi.me(),
     staleTime: 60_000,
   });
-  const region = (me?.content_region ?? me?.country_code ?? 'US') as RegionCode;
+  const [selectedRegion, setSelectedRegion] = useState<RegionCode | null>(null);
+  const region = selectedRegion ?? toRegionCode(me?.content_region ?? me?.country_code);
   const priorityExchanges = REGION_EXCHANGES[region] ?? [];
 
   useEffect(() => {
@@ -107,17 +167,24 @@ export default function Market() {
     );
   }
 
-  const groups = groupByExchange(stocks, priorityExchanges);
+  // Group by exchange (priority-ordered), then merge same-country exchanges
+  // (e.g. NASDAQ + NYSE → one "US Stocks" section).
+  const groups = mergeByLabel(groupByExchange(stocks, priorityExchanges));
+  const selectedLabels = new Set(
+    priorityExchanges.map((ex) => EXCHANGE_GROUP_LABELS[ex] ?? ex),
+  );
+  const selectedGroups = isSearching ? groups : groups.filter(([label]) => selectedLabels.has(label));
+  const otherGroups = isSearching ? [] : groups.filter(([label]) => !selectedLabels.has(label));
+  const otherCount = otherGroups.reduce((n, [, s]) => n + s.length, 0);
+  // Curated featured lists read as "Popular …"; search results keep the plain label.
+  const browseTitle = (label: string) => (isSearching ? label : `Popular ${label}`);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
       <BackButton to="/simulator" label="Simulator" />
       <div className="mb-1 mt-2 flex items-center gap-2">
         <h1 className="text-2xl font-semibold">Browse Stocks</h1>
-        <EduTooltip
-          term="Exchange"
-          explanation="A stock exchange is a marketplace where stocks are bought and sold. Different countries have different exchanges."
-        />
+        <RegionSelector value={region} onChange={setSelectedRegion} />
         <button
           onClick={handleRefresh}
           disabled={refreshing}
@@ -158,10 +225,8 @@ export default function Market() {
       </div>
 
       {!isSearching && (
-        <div className="mt-4 space-y-4">
-          <MarketMovers />
-          <InvestingTips />
-          <MarketNews />
+        <div className="mt-4">
+          <MarketMovers region={region} />
         </div>
       )}
 
@@ -177,35 +242,25 @@ export default function Market() {
         </p>
       ) : (
         <div className="mt-4 space-y-6">
-          {groups.map(([exchange, groupStocks]) => (
-            <section key={exchange}>
-              <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wider text-gray-700">
-                {EXCHANGE_GROUP_LABELS[exchange] ?? exchange}
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {groupStocks.map((s) => (
-                  <Link
-                    key={`${s.exchange}-${s.ticker}`}
-                    to={`/simulator/stock/${s.exchange}/${s.ticker}`}
-                    className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm hover:border-brand-400 hover:shadow-md transition-all min-h-[44px]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold">{s.ticker}</span>
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${EXCHANGE_BADGE_COLORS[s.exchange] ?? 'bg-muted text-muted-foreground'}`}
-                      >
-                        {s.exchange}
-                      </span>
-                    </div>
-                    <p className="mt-1 truncate text-sm text-muted-foreground">{s.name}</p>
-                    <p className="mt-1 text-sm font-medium">
-                      {formatCurrency(s.price, s.currency)}
-                    </p>
-                  </Link>
+          {selectedGroups.map(([label, groupStocks]) => (
+            <BrowseGroup key={label} title={browseTitle(label)} stocks={groupStocks} />
+          ))}
+          {otherGroups.length > 0 && (
+            <SectionCard title="More markets" count={otherCount} collapsible defaultOpen={false}>
+              <div className="space-y-6">
+                {otherGroups.map(([label, groupStocks]) => (
+                  <BrowseGroup key={label} title={browseTitle(label)} stocks={groupStocks} headingLevel={3} />
                 ))}
               </div>
-            </section>
-          ))}
+            </SectionCard>
+          )}
+        </div>
+      )}
+
+      {!isSearching && (
+        <div className="mt-4 space-y-4">
+          <InvestingTips />
+          <MarketNews />
         </div>
       )}
     </div>

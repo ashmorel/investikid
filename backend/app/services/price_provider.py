@@ -60,6 +60,7 @@ class PriceProvider(Protocol):
     def get_quote(self, ticker: str, exchange: str) -> PriceQuote: ...
     def search(self, query: str) -> list[PriceQuote]: ...
     def is_free_tier(self, ticker: str, exchange: str) -> bool: ...
+    def get_market_movers(self, region: str) -> dict[str, dict[str, list[MarketMover]]]: ...
 
 
 # Yahoo exchange suffix → our display exchange name
@@ -121,6 +122,23 @@ _FEATURED: dict[tuple[str, str], tuple[str, Decimal, str, str]] = {
     ("TSCO", "LSE"): ("Tesco plc", Decimal("2.95"), "GBP", "TSCO.L"),
     ("0700", "HKEX"): ("Tencent Holdings", Decimal("320.00"), "HKD", "0700.HK"),
     ("0005", "HKEX"): ("HSBC Holdings HK", Decimal("62.50"), "HKD", "0005.HK"),
+    ("DIS", "NYSE"): ("Walt Disney Co.", Decimal("95.00"), "USD", "DIS"),
+    ("KO", "NYSE"): ("Coca-Cola Co.", Decimal("62.00"), "USD", "KO"),
+    ("NKE", "NYSE"): ("Nike Inc.", Decimal("78.00"), "USD", "NKE"),
+    ("MCD", "NYSE"): ("McDonald's Corp.", Decimal("290.00"), "USD", "MCD"),
+    ("BARC", "LSE"): ("Barclays plc", Decimal("2.10"), "GBP", "BARC.L"),
+    ("GSK", "LSE"): ("GSK plc", Decimal("15.20"), "GBP", "GSK.L"),
+    ("RR", "LSE"): ("Rolls-Royce Holdings", Decimal("4.20"), "GBP", "RR.L"),
+    ("9988", "HKEX"): ("Alibaba Group", Decimal("75.00"), "HKD", "9988.HK"),
+    ("1810", "HKEX"): ("Xiaomi Corp.", Decimal("17.00"), "HKD", "1810.HK"),
+    ("1211", "HKEX"): ("BYD Company", Decimal("245.00"), "HKD", "1211.HK"),
+    ("0992", "HKEX"): ("Lenovo Group", Decimal("10.00"), "HKD", "0992.HK"),
+}
+
+REGION_EXCHANGES: dict[str, list[str]] = {
+    "US": ["NASDAQ", "NYSE"],
+    "GB": ["LSE"],
+    "HK": ["HKEX"],
 }
 
 _CACHE_TTL = 300  # 5 minutes
@@ -199,7 +217,7 @@ class StaticPriceProvider:
     def get_history(self, ticker: str, exchange: str, period: str = "1mo") -> list[PricePoint]:
         return []
 
-    def get_market_movers(self) -> dict[str, dict[str, list[MarketMover]]]:
+    def get_market_movers(self, region: str) -> dict[str, dict[str, list[MarketMover]]]:
         return {}
 
     def get_news(self, holdings: list[tuple[str, str]]) -> list[StockNewsItem]:
@@ -383,53 +401,61 @@ class LivePriceProvider:
         self._history_cache[cache_key] = (points, time.monotonic())
         return points
 
-    def get_market_movers(self) -> dict[str, dict[str, list[MarketMover]]]:
-        cache_key = "_movers"
+    def _quote_change(
+        self, ticker: str, exchange: str, fallback_price: Decimal, currency: str
+    ) -> tuple[Decimal, str, float]:
+        """(price, display_currency, change_percent) for one featured ticker via
+        fast_info (last vs previous close). Never raises; 0.0 change on any error."""
+        try:
+            info = yf.Ticker(_to_yahoo_symbol(ticker, exchange)).fast_info
+            last = info["lastPrice"]
+            prev = info.get("previousClose")
+            display_currency, pence = _normalise_currency(str(info.get("currency", "")), currency)
+            if pence:
+                last = last / 100
+                if prev:
+                    prev = prev / 100
+            price = Decimal(str(round(last, 2)))
+            change = round((last - prev) / prev * 100, 2) if prev else 0.0
+            return price, display_currency, change
+        except Exception:
+            logger.warning("movers quote failed for %s on %s", ticker, exchange)
+            return fallback_price, currency, 0.0
+
+    def get_market_movers(self, region: str) -> dict[str, dict[str, list[MarketMover]]]:
+        exchanges = REGION_EXCHANGES.get(region, [])
+        cache_key = f"_movers:{region}"
         cached = self._history_cache.get(cache_key)
         if cached and (time.monotonic() - cached[1]) < _CACHE_TTL:
             return cached[0]
 
-        result: dict[str, dict[str, list[MarketMover]]] = {}
-
-        for screener_key, label in [("day_gainers", "winners"), ("day_losers", "losers")]:
-            try:
-                data = yf.screen(screener_key, count=25)
-                quotes = data.get("quotes", [])
-            except Exception:
-                logger.warning("yfinance screener %s failed", screener_key)
+        movers: list[MarketMover] = []
+        for (ticker, exchange), (name, fallback_price, currency, _yf) in _FEATURED.items():
+            if exchange not in exchanges:
                 continue
-
-            by_exchange: dict[str, list[MarketMover]] = {}
-            for item in quotes:
-                symbol = item.get("symbol", "")
-                raw_exchange = item.get("exchange", "")
-                exchange = _parse_exchange(raw_exchange, symbol)
-                name = item.get("shortName") or item.get("longName") or symbol
-                price_val = item.get("regularMarketPrice", 0)
-                change_pct = item.get("regularMarketChangePercent", 0)
-                currency = item.get("currency", "USD")
-                if currency in ("GBp", "GBX"):
-                    price_val = price_val / 100
-                    currency = "GBP"
-
-                display_ticker = symbol
-                for suffix in sorted(_SUFFIX_TO_EXCHANGE.keys(), key=len, reverse=True):
-                    if suffix and symbol.endswith(suffix):
-                        display_ticker = symbol[: -len(suffix)]
-                        break
-
-                mover = MarketMover(
-                    ticker=display_ticker,
-                    exchange=exchange,
-                    name=name,
-                    price=Decimal(str(round(price_val, 2))),
-                    currency=currency,
-                    change_percent=round(change_pct, 2),
+            price, disp_currency, change = self._quote_change(
+                ticker, exchange, fallback_price, currency
+            )
+            movers.append(
+                MarketMover(
+                    ticker=ticker, exchange=exchange, name=name,
+                    price=price, currency=disp_currency, change_percent=change,
                 )
-                by_exchange.setdefault(exchange, []).append(mover)
+            )
 
-            for exchange, movers in by_exchange.items():
-                result.setdefault(exchange, {})[label] = movers[:5]
+        result: dict[str, dict[str, list[MarketMover]]] = {}
+        for exch in exchanges:
+            ex_movers = [m for m in movers if m.exchange == exch]
+            winners = sorted(
+                [m for m in ex_movers if m.change_percent > 0],
+                key=lambda m: m.change_percent, reverse=True,
+            )[:5]
+            losers = sorted(
+                [m for m in ex_movers if m.change_percent < 0],
+                key=lambda m: m.change_percent,
+            )[:5]
+            if winners or losers:
+                result[exch] = {"winners": winners, "losers": losers}
 
         self._history_cache[cache_key] = (result, time.monotonic())
         return result

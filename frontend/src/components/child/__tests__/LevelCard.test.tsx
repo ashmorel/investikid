@@ -26,6 +26,13 @@ describe('LevelCard', () => {
     expect(onLockedClick).toHaveBeenCalled();
   });
 
+  it('premium-locked shows the PremiumBadge and an unlock teaser', () => {
+    render(<LevelCard level={{ ...base, state: 'locked', locked_reason: 'premium' }}
+      onOpen={() => {}} onLockedClick={() => {}} />);
+    expect(screen.getByText('Premium')).toBeInTheDocument();
+    expect(screen.getByText(/unlock to continue/i)).toBeInTheDocument();
+  });
+
   it('progression-locked shows unlock hint', () => {
     render(<LevelCard level={{ ...base, state: 'locked', locked_reason: 'progression' }}
       onOpen={() => {}} onLockedClick={() => {}} />);

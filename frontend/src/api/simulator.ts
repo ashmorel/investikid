@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import { type RegionCode } from '@/lib/region';
 
 export type QuoteOut = {
   ticker: string;
@@ -125,6 +126,7 @@ export type InvestingTip = {
   description: string;
   example_ticker: string;
   example_exchange: string;
+  personalised?: boolean;
 };
 
 export type ChartCoachRequest = {
@@ -172,8 +174,8 @@ export const simulatorApi = {
   getStockHistory: (exchange: string, ticker: string, period = '1mo') =>
     apiFetch<PricePoint[]>(`/market/history/${exchange}/${ticker}?period=${period}`),
 
-  getMarketMovers: () =>
-    apiFetch<Record<string, ExchangeMovers>>('/market/movers'),
+  getMarketMovers: (region: RegionCode) =>
+    apiFetch<Record<string, ExchangeMovers>>(`/market/movers?region=${region}`),
 
   getMarketNews: () =>
     apiFetch<StockNews[]>('/market/news'),
@@ -193,8 +195,8 @@ export const simulatorApi = {
   getTimeMachine: (exchange: string, ticker: string) =>
     apiFetch<TimeMachineData>(`/market/time-machine/${exchange}/${ticker}`),
 
-  getInvestingTips: () =>
-    apiFetch<InvestingTip[]>('/market/tips'),
+  getInvestingTips: (refresh = false) =>
+    apiFetch<InvestingTip[]>(`/market/tips${refresh ? '?refresh=true' : ''}`),
 
   sendChartCoachMessage: (req: ChartCoachRequest) =>
     apiFetch<ChartCoachResponse>('/market/chart-coach', {

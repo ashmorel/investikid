@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, Sparkles } from 'lucide-react';
 import { simulatorApi, type StockNews, type NewsSummary } from '@/api/simulator';
+import { SectionCard } from './SectionCard';
 
 function timeAgo(dateStr: string): string {
   if (!dateStr) return '';
@@ -106,17 +107,13 @@ export function MarketNews() {
   if (!data || data.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <Newspaper className="h-5 w-5 text-brand-700" />
-        <h2 className="text-lg font-semibold text-gray-800">News for Your Stocks</h2>
-      </div>
+    <SectionCard title="News for your stocks" icon={Newspaper} collapsible defaultOpen={false}>
       <AiSummary />
       <div className="-mx-1 divide-y divide-gray-100">
         {data.map((item, i) => (
           <NewsCard key={`${item.related_ticker}-${i}`} item={item} />
         ))}
       </div>
-    </div>
+    </SectionCard>
   );
 }

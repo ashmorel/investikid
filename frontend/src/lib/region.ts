@@ -13,6 +13,15 @@ export const REGION_EXCHANGES: Record<RegionCode, string[]> = {
   HK: ['HKEX'],
 };
 
+/**
+ * Clamp an arbitrary value (e.g. a child's `content_region` or free-form
+ * `country_code` like "FR") to a supported RegionCode, defaulting to 'US'.
+ * Guarantees the RegionSelector always has a valid, selected, focusable option.
+ */
+export function toRegionCode(value: string | null | undefined): RegionCode {
+  return value === 'US' || value === 'GB' || value === 'HK' ? value : 'US';
+}
+
 export const MAJOR_CURRENCIES = ['USD', 'GBP', 'HKD'] as const;
 
 /** Practice-currency options: the child's current currency plus the majors, deduped. */

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { contentApi, type LevelOut, type ModuleOut } from '@/api/content';
@@ -5,12 +6,15 @@ import { LevelCard } from '@/components/child/LevelCard';
 import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
+import { dismissNudge, isNudgeDismissed } from '@/lib/premiumNudge';
 
 export default function Module() {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { open: openPaywall } = usePremiumPaywall();
+  const nudgeKey = 'level-nudge:' + moduleId;
+  const [nudgeDismissed, setNudgeDismissed] = useState(() => isNudgeDismissed(nudgeKey));
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -40,6 +44,30 @@ export default function Module() {
   const module = (modulesQ.data ?? []).find((m) => m.id === moduleId);
   const levels = (levelsQ.data ?? []) as LevelOut[];
 
+  // Single-level modules read as "lessons" (not a misleading "1 of 1 levels").
+  const single = levels.length === 1;
+  const allComplete = levels.length > 0 && levels.every((l) => l.state === 'completed');
+  const totalLessons = levels.reduce((n, l) => n + l.lessons_total, 0);
+  const doneLessons = levels.reduce((n, l) => n + l.lessons_completed, 0);
+  const progressDone = single ? doneLessons : levels.filter((l) => l.state === 'completed').length;
+  const progressTotal = single ? totalLessons : levels.length;
+  const unit = single ? 'lesson' : 'level';
+  // Earned moment: the child finished their free levels and the next is premium-locked.
+  const orderedLevels = [...levels].sort((a, b) => a.order_index - b.order_index);
+  const nextPremiumLevel = orderedLevels.find(
+    (l, i) =>
+      l.state === 'locked' &&
+      l.locked_reason === 'premium' &&
+      orderedLevels.slice(0, i).every((p) => p.state === 'completed'),
+  );
+  const showEarnedNudge = !!nextPremiumLevel && !nudgeDismissed;
+  // Next module by order (for the "what's next" CTA after finishing).
+  const nextModule = module
+    ? [...(modulesQ.data ?? [])]
+        .sort((a, b) => a.order_index - b.order_index)
+        .find((m) => m.order_index > module.order_index)
+    : undefined;
+
   return (
     <div className="mx-auto max-w-3xl">
       <div className="px-4 pt-4 sm:px-6">
@@ -50,24 +78,25 @@ export default function Module() {
         <span className="text-5xl">{module?.icon ?? '📚'}</span>
         <h1 className="mt-3 text-2xl font-extrabold text-gray-900">{module?.title ?? 'Module'}</h1>
         <p className="mt-1 text-sm text-gray-600">
-          {levels.length} {levels.length === 1 ? 'level' : 'levels'}
+          {progressTotal} {progressTotal === 1 ? unit : `${unit}s`}
         </p>
-        {levels.length > 0 && (() => {
-          const done = levels.filter((l) => l.state === 'completed').length;
-          const pct = Math.round((done / levels.length) * 100);
+        {progressTotal > 0 && (() => {
+          const pct = Math.round((progressDone / progressTotal) * 100);
           return (
             <div className="mx-auto mt-3 max-w-xs">
               <div
                 className="h-2 w-full overflow-hidden rounded-full bg-white/60"
                 role="progressbar"
-                aria-valuenow={done}
+                aria-valuenow={progressDone}
                 aria-valuemin={0}
-                aria-valuemax={levels.length}
+                aria-valuemax={progressTotal}
                 aria-label="Module progress"
               >
                 <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${pct}%` }} />
               </div>
-              <p className="mt-1 text-xs font-semibold text-brand-700">{done} / {levels.length} levels complete</p>
+              <p className="mt-1 text-xs font-semibold text-brand-700">
+                {progressDone} / {progressTotal} {unit}s complete
+              </p>
             </div>
           );
         })()}
@@ -92,6 +121,55 @@ export default function Module() {
           ))}
         </div>
       </div>
+
+      {/* Earned moment: free levels done, next level is premium-locked. */}
+      {showEarnedNudge && nextPremiumLevel && (
+        <div className="px-4 pb-6 sm:px-6">
+          <div className="relative rounded-2xl border-2 border-accent-200 bg-accent-50 p-4 text-center">
+            <button
+              type="button"
+              aria-label="Dismiss"
+              onClick={() => {
+                dismissNudge(nudgeKey);
+                setNudgeDismissed(true);
+              }}
+              className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
+            >
+              ✕
+            </button>
+            <p className="text-base font-bold text-gray-900">
+              🎉 You're ready for {nextPremiumLevel.title}!
+            </p>
+            <p className="mt-1 text-sm text-gray-600">Unlock Premium to keep going 🌟</p>
+            <button
+              type="button"
+              onClick={() => openPaywall({ kind: 'level', label: nextPremiumLevel.title })}
+              className="mt-3 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+            >
+              Ask my grown-up ✨
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Module complete → what's next */}
+      {!showEarnedNudge && allComplete && (
+        <div className="px-4 pb-6 sm:px-6">
+          <div className="rounded-2xl border-2 border-brand-200 bg-brand-50 p-4 text-center">
+            <p className="text-base font-bold text-gray-900">🎉 Module complete!</p>
+            <p className="mt-1 text-sm text-gray-600">
+              Great work finishing {module?.title ?? 'this module'}.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate(nextModule ? `/lessons/${nextModule.id}` : '/lessons')}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+            >
+              {nextModule ? `Next: ${nextModule.title} →` : 'Back to all modules'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

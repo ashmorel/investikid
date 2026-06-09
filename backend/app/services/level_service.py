@@ -4,6 +4,11 @@ import uuid
 from dataclasses import dataclass
 
 
+def premium_for_position(order_index: int) -> bool:
+    """Levels 1-2 (order_index 0-1) are free; Level 3+ (order_index >= 2) is premium."""
+    return order_index >= 2
+
+
 @dataclass(frozen=True)
 class LevelStateInput:
     level_id: uuid.UUID

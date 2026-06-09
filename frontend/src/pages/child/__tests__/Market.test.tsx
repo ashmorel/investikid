@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { simulatorApi } from '@/api/simulator';
+import { authApi } from '@/api/auth';
 import Market from '../Market';
 
 vi.mock('@/api/simulator', () => ({
@@ -19,11 +20,18 @@ vi.mock('@/api/simulator', () => ({
 }));
 
 vi.mock('@/api/auth', () => ({
-  authApi: { me: vi.fn(() => Promise.resolve(null)) },
+  authApi: {
+    me: vi.fn(() =>
+      Promise.resolve({ id: 1, role: 'child', country_code: 'US', content_region: 'GB' }),
+    ),
+  },
 }));
 
 // The non-search child widgets only render when not searching; stub them out.
-vi.mock('@/components/child/simulator/MarketMovers', () => ({ MarketMovers: () => null }));
+// MarketMovers records its region prop so we can assert wiring.
+vi.mock('@/components/child/simulator/MarketMovers', () => ({
+  MarketMovers: ({ region }: { region: string }) => <div data-testid="movers">movers:{region}</div>,
+}));
 vi.mock('@/components/child/simulator/MarketNews', () => ({ MarketNews: () => null }));
 vi.mock('@/components/child/simulator/InvestingTips', () => ({ InvestingTips: () => null }));
 
@@ -60,6 +68,33 @@ describe('Market search loading vs empty', () => {
     renderWithProviders('/simulator/market');
     await userEvent.type(await screen.findByRole('searchbox', { name: /search stocks/i }), 'ZZZZ');
     expect(await screen.findByText(/no stocks found/i, {}, { timeout: 2000 })).toBeInTheDocument();
+  });
+
+  it('defaults the region selector to the child content_region and wires movers', async () => {
+    vi.mocked(simulatorApi.searchMarket).mockImplementation(() => Promise.resolve([]));
+    renderWithProviders('/simulator/market');
+    expect(await screen.findByRole('radio', { name: /UK/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('movers')).toHaveTextContent('movers:GB');
+    // the dead "Exchange" tooltip is gone
+    expect(screen.queryByLabelText(/info about exchange/i)).toBeNull();
+  });
+
+  it('switching region updates the movers query', async () => {
+    vi.mocked(simulatorApi.searchMarket).mockImplementation(() => Promise.resolve([]));
+    const user = userEvent.setup();
+    renderWithProviders('/simulator/market');
+    await user.click(await screen.findByRole('radio', { name: /US/i }));
+    expect(screen.getByTestId('movers')).toHaveTextContent('movers:US');
+  });
+
+  it('defaults to US when the child is in an unsupported country (no content_region)', async () => {
+    vi.mocked(simulatorApi.searchMarket).mockImplementation(() => Promise.resolve([]));
+    vi.mocked(authApi.me).mockResolvedValueOnce({
+      id: 1, role: 'child', country_code: 'FR', content_region: null,
+    } as never);
+    renderWithProviders('/simulator/market');
+    expect(await screen.findByRole('radio', { name: /US/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('movers')).toHaveTextContent('movers:US');
   });
 
   it('has no axe violations in the loading state', async () => {

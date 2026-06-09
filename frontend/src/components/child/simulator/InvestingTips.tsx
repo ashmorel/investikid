@@ -1,8 +1,10 @@
-import { useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Pause, Play, Sparkles } from 'lucide-react';
 import { simulatorApi, type InvestingTip, type PricePoint } from '@/api/simulator';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { SectionCard } from './SectionCard';
 
 function MiniChart({ exchange, ticker }: { exchange: string; ticker: string }) {
   const { data } = useQuery<PricePoint[] | null>({
@@ -49,15 +51,58 @@ type Props = {
   contextExchange?: string;
 };
 
+const ROTATE_MS = 7000;
+
 export function InvestingTips({ contextTicker, contextExchange }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [paused, setPaused] = useState(false); // transient hover/focus pause
+  const [refreshing, setRefreshing] = useState(false);
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   const { data: tips } = useQuery<InvestingTip[] | null>({
     queryKey: ['investing-tips'],
     queryFn: () => simulatorApi.getInvestingTips(),
     staleTime: 30 * 60 * 1000,
   });
+
+  const count = tips?.length ?? 0;
+  const autoRotate = isPlaying && !paused && !reducedMotion && count > 1;
+
+  function scrollToIndex(i: number) {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ left: i * el.clientWidth * 0.65, behavior: 'smooth' });
+  }
+
+  function goToIndex(i: number) {
+    setActiveIndex(i);
+    scrollToIndex(i);
+  }
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      const fresh = await simulatorApi.getInvestingTips(true);
+      queryClient.setQueryData(['investing-tips'], fresh);
+      setActiveIndex(0);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!autoRotate) return;
+    const id = window.setInterval(() => {
+      setActiveIndex((prev) => {
+        const next = (prev + 1) % count;
+        scrollToIndex(next);
+        return next;
+      });
+    }, ROTATE_MS);
+    return () => window.clearInterval(id);
+  }, [autoRotate, count]);
 
   if (!tips) {
     return (
@@ -90,15 +135,39 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
   };
 
   return (
-    <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <Lightbulb className="h-5 w-5 text-brand-700" />
-        <h3 className="text-base font-semibold text-gray-800">Investing Tips</h3>
+    <SectionCard title="Investing Tips" icon={Lightbulb} collapsible defaultOpen headingLevel={3}>
+      <div className="mb-2 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          aria-label="Get new tips"
+          className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500 disabled:opacity-50"
+        >
+          <Sparkles className={`h-3.5 w-3.5 ${!reducedMotion && refreshing ? 'animate-spin' : ''}`} />
+          New tips
+        </button>
+        {!reducedMotion && count > 1 && (
+          <button
+            type="button"
+            onClick={() => setIsPlaying((p) => !p)}
+            aria-label={isPlaying ? 'Pause tips' : 'Play tips'}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+          >
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </button>
+        )}
       </div>
 
       <div
         ref={scrollRef}
         onScroll={handleScroll}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onFocus={() => setPaused(true)}
+        onBlur={() => setPaused(false)}
+        role="group"
+        aria-label="Investing tips"
         className="flex gap-3 overflow-x-auto scroll-smooth pb-2"
         style={{ scrollSnapType: 'x mandatory' }}
       >
@@ -111,7 +180,14 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
               className="min-w-[220px] max-w-[260px] flex-shrink-0 rounded-xl border border-brand-200 bg-brand-50 p-3"
               style={{ scrollSnapAlign: 'start' }}
             >
-              <h4 className="mb-1.5 text-xs font-bold text-brand-800">{tip.title}</h4>
+              <div className="mb-1.5 flex items-center gap-1.5">
+                <h4 className="text-xs font-bold text-brand-800">{tip.title}</h4>
+                {tip.personalised && (
+                  <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
+                    For you
+                  </span>
+                )}
+              </div>
               <p className="mb-2 text-xs leading-relaxed text-gray-700">{tip.description}</p>
               <div className="overflow-hidden rounded-md">
                 <MiniChart exchange={chartExchange} ticker={chartTicker} />
@@ -126,14 +202,22 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
 
       <div className="mt-2 flex justify-center gap-1">
         {tips.map((_, i) => (
-          <span
+          <button
             key={i}
-            className={`inline-block h-1.5 w-1.5 rounded-full ${
-              i === activeIndex ? 'bg-brand-500' : 'bg-gray-200'
-            }`}
-          />
+            type="button"
+            onClick={() => goToIndex(i)}
+            aria-label={`Go to tip ${i + 1}`}
+            aria-current={i === activeIndex}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+          >
+            <span
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                i === activeIndex ? 'bg-brand-500' : 'bg-gray-200'
+              }`}
+            />
+          </button>
         ))}
       </div>
-    </div>
+    </SectionCard>
   );
 }

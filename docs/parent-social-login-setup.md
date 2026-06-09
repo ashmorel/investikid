@@ -43,12 +43,13 @@ If any of these are empty the backend raises `503 not_configured` for that provi
 2. Application type: **Web application**.
 3. Name: `InvestiKid Web`.
 4. Authorised JavaScript origins (origin only, no path):
-   - `https://<your-vercel-domain>.vercel.app` (your production Vercel URL)
+   - `https://app.investikid.ai` (**production** — the live app origin; the apex/`www` 301-redirect here, so only `app.` is needed)
    - `http://localhost:5173` (Vite dev server)
+   - *(testing/staging only if you want to test social there: add the `investikidai-git-testing-investikid.vercel.app` / `…-staging-…` origins)*
 5. **Authorised redirect URIs** (REQUIRED — the `@capgo/capacitor-social-login` web flow sends a `redirect_uri`; leaving this empty causes `Error 400: redirect_uri_mismatch` / "Access blocked: This app's request is invalid"). Add the **parent login page URL**:
-   - `https://<your-vercel-domain>.vercel.app/parent/login`
+   - `https://app.investikid.ai/parent/login` (production)
    - `http://localhost:5173/parent/login` (for local dev)
-   (This matches the deterministic redirect set in `src/lib/socialLogin.ts`.)
+   (This matches the deterministic redirect set in `src/lib/socialLogin.ts` — `window.location.origin + /parent/login`.)
 6. Click **Create** and copy the **Client ID** (looks like `XXXXXXXXX.apps.googleusercontent.com`). This is `GOOGLE_WEB_CLIENT_ID`.
 
 ### 2c. iOS OAuth client ID
@@ -78,11 +79,14 @@ If any of these are empty the backend raises `503 not_configured` for that provi
 3. Identifier: choose a reverse-domain string, e.g. `leeashmore.investikid.web` — this becomes `APPLE_SERVICES_ID`.
 4. After registering, select the new Services ID → enable **Sign In with Apple → Configure**.
 5. Primary App ID: select `leeashmore.investikid.ai.app`.
-6. Web domain: your Vercel domain (e.g. `investikid.vercel.app`).
-7. Return URLs: `https://<vercel-domain>/parent/login` (this matches the deterministic Apple `redirectUrl` set in `src/lib/socialLogin.ts` — the parent login page, NOT a separate callback path).
-8. Save.
+6. Under **Website URLs**, click the **＋** and add:
+   - **Domains and Subdomains:** `app.investikid.ai`
+   - **Return URLs:** `https://app.investikid.ai/parent/login` (matches the deterministic Apple `redirectUrl` in `src/lib/socialLogin.ts` — the parent login page, NOT a separate callback path).
+7. **⚠️ Gotcha (this bit is easy to miss):** after adding them, you must **tick the checkbox next to each** in the picker, click **Done**, then **Continue → Save**. If you skip this, the URLs are *registered but not attached to the Services ID*, and Apple returns `invalid_request: invalid web redirect url` at sign-in even though everything "looks" added. The domain-association file download only appears once a domain is added here; in practice Apple verified `app.investikid.ai` on Save without needing the file (we use ID-token verification, not code-exchange).
 
 No `.p8` key file is needed — the backend uses the JWKS/ID-token verification path, not the client-secret code-exchange path.
+
+> **Production status (2026-06-08):** Google + Apple parent social login are **live and verified** on `https://app.investikid.ai`. Backend prod (`investikid.up.railway.app`) has all four identifiers set; Vercel prod has the three `VITE_*` values.
 
 ---
 
