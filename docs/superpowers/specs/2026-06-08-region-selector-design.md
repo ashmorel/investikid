@@ -14,7 +14,7 @@ Add a **Region selector** (US / UK / HK) at the top of the Browse Stocks page th
 4. **replaces the dead "Exchange" `EduTooltip`** (Item 1).
 
 ## Spike outcome (data source)
-Decision: **compute region movers from our curated `_FEATURED` universe**, not a live Yahoo screener — safe, recognizable, deterministic, reuses the cached `get_quote` (which already carries `change_percent`). The current `_FEATURED` set is too small (NASDAQ 6 / LSE 4 / HKEX 2 / **no NYSE**), so we **expand it** (below) so movers and Browse are meaningful.
+Decision: **compute region movers from our curated `_FEATURED` universe**, not a live Yahoo screener — safe, recognizable, deterministic. **Correction found during planning:** `get_quote`/`PriceQuote`/`QuoteOut` do **not** carry a day-change %; only `MarketMover` does (today sourced from the Yahoo screener). So the movers computation fetches each featured ticker's **last vs previous close** via yfinance `fast_info` directly (independent of the price-display quote cache), and derives `change_percent` from that. The current `_FEATURED` set is too small (NASDAQ 6 / LSE 4 / HKEX 2 / **no NYSE**), so we **expand it** (below) so movers and Browse are meaningful.
 
 ---
 
@@ -41,9 +41,9 @@ Decision: **compute region movers from our curated `_FEATURED` universe**, not a
 - Add a backend region→exchanges map: `REGION_EXCHANGES = {"US": ["NASDAQ", "NYSE"], "GB": ["LSE"], "HK": ["HKEX"]}`.
 - Change `get_market_movers(self, region: str)`:
   - Featured keys whose exchange ∈ `REGION_EXCHANGES[region]`.
-  - For each, `get_quote(ticker, exchange)` (cached) → build a `MarketMover` (it carries `change_percent`).
-  - Group by exchange. Within each exchange: `winners` = movers sorted by `change_percent` **desc**, taking up to 5 (those with `change_percent >= 0` preferred; if fewer, fill from the top regardless); `losers` = sorted **asc**, up to 5 (prefer `< 0`). Keep the existing 5-minute movers cache, keyed per region (`f"_movers:{region}"`).
-  - Empty/Yahoo-down safe: if `get_quote` falls back (flat `change_percent`), still returns the names (a "flat day"); never raises.
+  - For each, fetch `yf.Ticker(_to_yahoo_symbol(ticker, exchange)).fast_info` → `lastPrice` + `previousClose`; `change_percent = round((last - prev) / prev * 100, 2)` (`0.0` if `prev` missing or any error); reuse `_normalise_currency` for the GBp→GBP pence case. Build a `MarketMover(ticker, exchange, name, price, currency, change_percent)` with name/currency from `_FEATURED`. **Does not use `get_quote` or the quote cache.**
+  - Group by exchange. Within each exchange: `winners` = movers with `change_percent > 0` sorted **desc** (≤5); `losers` = movers with `change_percent < 0` sorted **asc** (≤5). A stock at exactly 0 is in neither — a flat day yields empty lists (the FE already handles empty winners/losers). Cache the per-region result 5 min under `f"_movers:{region}"`.
+  - Per-ticker fetch is wrapped in try/except (logs + `change_percent = 0.0`, falls back to the `_FEATURED` price); the method never raises.
 - The base/stub provider's `get_market_movers(self, region)` returns `{}`.
 
 **Expand `_FEATURED`** (kid-safe, recognizable; fallback prices approximate — only used when Yahoo is down). Add:
