@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { simulatorApi, type ExchangeMovers, type MarketMover } from '@/api/simulator';
+import { type RegionCode } from '@/lib/region';
 import { formatCurrency } from '@/lib/currency';
 
 function MoverRow({ mover, rank }: { mover: MarketMover; rank: number }) {
@@ -59,10 +60,10 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
   );
 }
 
-export function MarketMovers() {
+export function MarketMovers({ region }: { region: RegionCode }) {
   const { data, isLoading } = useQuery<Record<string, ExchangeMovers> | null>({
-    queryKey: ['market-movers'],
-    queryFn: () => simulatorApi.getMarketMovers(),
+    queryKey: ['market-movers', region],
+    queryFn: () => simulatorApi.getMarketMovers(region),
     staleTime: 5 * 60 * 1000,
     retry: false,
   });

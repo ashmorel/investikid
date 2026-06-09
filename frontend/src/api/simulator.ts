@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import { type RegionCode } from '@/lib/region';
 
 export type QuoteOut = {
   ticker: string;
@@ -172,8 +173,8 @@ export const simulatorApi = {
   getStockHistory: (exchange: string, ticker: string, period = '1mo') =>
     apiFetch<PricePoint[]>(`/market/history/${exchange}/${ticker}?period=${period}`),
 
-  getMarketMovers: () =>
-    apiFetch<Record<string, ExchangeMovers>>('/market/movers'),
+  getMarketMovers: (region: RegionCode) =>
+    apiFetch<Record<string, ExchangeMovers>>(`/market/movers?region=${region}`),
 
   getMarketNews: () =>
     apiFetch<StockNews[]>('/market/news'),
