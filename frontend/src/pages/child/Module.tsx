@@ -144,7 +144,7 @@ export default function Module() {
             <button
               type="button"
               onClick={() => openPaywall({ kind: 'level', label: nextPremiumLevel.title })}
-              className="mt-3 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
+              className="mt-3 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
             >
               Ask my grown-up ✨
             </button>
