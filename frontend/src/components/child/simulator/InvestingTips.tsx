@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { Lightbulb, Pause, Play } from 'lucide-react';
+import { Lightbulb, Pause, Play, Sparkles } from 'lucide-react';
 import { simulatorApi, type InvestingTip, type PricePoint } from '@/api/simulator';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { SectionCard } from './SectionCard';
@@ -55,9 +55,11 @@ const ROTATE_MS = 7000;
 
 export function InvestingTips({ contextTicker, contextExchange }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [paused, setPaused] = useState(false); // transient hover/focus pause
+  const [refreshing, setRefreshing] = useState(false);
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   const { data: tips } = useQuery<InvestingTip[] | null>({
@@ -77,6 +79,17 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
   function goToIndex(i: number) {
     setActiveIndex(i);
     scrollToIndex(i);
+  }
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      const fresh = await simulatorApi.getInvestingTips(true);
+      queryClient.setQueryData(['investing-tips'], fresh);
+      setActiveIndex(0);
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   useEffect(() => {
@@ -123,8 +136,18 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
 
   return (
     <SectionCard title="Investing Tips" icon={Lightbulb} collapsible defaultOpen headingLevel={3}>
-      {!reducedMotion && count > 1 && (
-        <div className="mb-2 flex justify-end">
+      <div className="mb-2 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          aria-label="Get new tips"
+          className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500 disabled:opacity-50"
+        >
+          <Sparkles className={`h-3.5 w-3.5 ${!reducedMotion && refreshing ? 'animate-spin' : ''}`} />
+          New tips
+        </button>
+        {!reducedMotion && count > 1 && (
           <button
             type="button"
             onClick={() => setIsPlaying((p) => !p)}
@@ -133,8 +156,8 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
           >
             {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       <div
         ref={scrollRef}
@@ -157,7 +180,14 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
               className="min-w-[220px] max-w-[260px] flex-shrink-0 rounded-xl border border-brand-200 bg-brand-50 p-3"
               style={{ scrollSnapAlign: 'start' }}
             >
-              <h4 className="mb-1.5 text-xs font-bold text-brand-800">{tip.title}</h4>
+              <div className="mb-1.5 flex items-center gap-1.5">
+                <h4 className="text-xs font-bold text-brand-800">{tip.title}</h4>
+                {tip.personalised && (
+                  <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
+                    For you
+                  </span>
+                )}
+              </div>
               <p className="mb-2 text-xs leading-relaxed text-gray-700">{tip.description}</p>
               <div className="overflow-hidden rounded-md">
                 <MiniChart exchange={chartExchange} ticker={chartTicker} />

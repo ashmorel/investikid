@@ -129,4 +129,19 @@ describe('InvestingTips auto-rotation', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('Tip One')).toBeNull();
   });
+
+  it('renders a "For you" badge on personalised tips', async () => {
+    vi.mocked(simulatorApi.getInvestingTips).mockResolvedValue([
+      { id: 'p1', title: 'Your Apple', description: 'Since you own Apple…', example_ticker: 'AAPL', example_exchange: 'NASDAQ', personalised: true },
+      ...TIPS,
+    ] as never);
+    await renderTips();
+    expect(screen.getByText(/for you/i)).toBeInTheDocument();
+  });
+
+  it('"New tips" button refetches with refresh', async () => {
+    await renderTips();
+    await userEvent.click(screen.getByRole('button', { name: /new tips/i }));
+    expect(simulatorApi.getInvestingTips).toHaveBeenLastCalledWith(true);
+  });
 });

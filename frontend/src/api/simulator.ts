@@ -126,6 +126,7 @@ export type InvestingTip = {
   description: string;
   example_ticker: string;
   example_exchange: string;
+  personalised?: boolean;
 };
 
 export type ChartCoachRequest = {
@@ -194,8 +195,8 @@ export const simulatorApi = {
   getTimeMachine: (exchange: string, ticker: string) =>
     apiFetch<TimeMachineData>(`/market/time-machine/${exchange}/${ticker}`),
 
-  getInvestingTips: () =>
-    apiFetch<InvestingTip[]>('/market/tips'),
+  getInvestingTips: (refresh = false) =>
+    apiFetch<InvestingTip[]>(`/market/tips${refresh ? '?refresh=true' : ''}`),
 
   sendChartCoachMessage: (req: ChartCoachRequest) =>
     apiFetch<ChartCoachResponse>('/market/chart-coach', {
