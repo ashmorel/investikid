@@ -41,14 +41,18 @@ function renderPage(filterFn?: (q: string) => QuoteOut[]) {
 }
 
 describe('Market page', () => {
-  it('renders all stocks grouped by exchange', async () => {
+  it('shows the selected region first and other markets under a collapsible group', async () => {
     renderPage();
-    await waitFor(() => {
-      expect(screen.getByText('Apple Inc.')).toBeInTheDocument();
-      expect(screen.getByText('Vodafone Group')).toBeInTheDocument();
-      expect(screen.getByText('Tencent Holdings')).toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.getByText('Apple Inc.')).toBeInTheDocument());
+    // Selected region (US) is shown directly
     expect(screen.getByText(/US Stocks/i)).toBeInTheDocument();
+    // Other regions start hidden behind "More markets"
+    expect(screen.queryByText('Vodafone Group')).not.toBeInTheDocument();
+    expect(screen.queryByText('Tencent Holdings')).not.toBeInTheDocument();
+    const more = screen.getByRole('button', { name: /more markets/i });
+    await userEvent.click(more);
+    expect(screen.getByText('Vodafone Group')).toBeInTheDocument();
+    expect(screen.getByText('Tencent Holdings')).toBeInTheDocument();
     expect(screen.getByText(/UK Stocks/i)).toBeInTheDocument();
     expect(screen.getByText(/Hong Kong Stocks/i)).toBeInTheDocument();
   });

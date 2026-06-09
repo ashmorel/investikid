@@ -10,6 +10,7 @@ import { MarketMovers } from '@/components/child/simulator/MarketMovers';
 import { MarketNews } from '@/components/child/simulator/MarketNews';
 import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { BackButton } from '@/components/child/BackButton';
+import { SectionCard } from '@/components/child/simulator/SectionCard';
 import { formatCurrency } from '@/lib/currency';
 
 const EXCHANGE_BADGE_COLORS: Record<string, string> = {
@@ -40,6 +41,48 @@ export function groupByExchange(stocks: QuoteOut[], priority: string[] = []) {
     return i === -1 ? priority.length : i;
   };
   return Object.entries(groups).sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b));
+}
+
+function BrowseGroup({
+  exchange,
+  stocks,
+  headingLevel = 2,
+}: {
+  exchange: string;
+  stocks: QuoteOut[];
+  headingLevel?: 2 | 3;
+}) {
+  const Heading = headingLevel === 3 ? 'h3' : 'h2';
+  return (
+    <section>
+      <Heading className="mb-2 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wider text-gray-700">
+        {EXCHANGE_GROUP_LABELS[exchange] ?? exchange}
+        <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
+          {stocks.length}
+        </span>
+      </Heading>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {stocks.map((s) => (
+          <Link
+            key={`${s.exchange}-${s.ticker}`}
+            to={`/simulator/stock/${s.exchange}/${s.ticker}`}
+            className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm hover:border-brand-400 hover:shadow-md transition-all min-h-[44px]"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold">{s.ticker}</span>
+              <span
+                className={`rounded px-1.5 py-0.5 text-xs font-medium ${EXCHANGE_BADGE_COLORS[s.exchange] ?? 'bg-muted text-muted-foreground'}`}
+              >
+                {s.exchange}
+              </span>
+            </div>
+            <p className="mt-1 truncate text-sm text-muted-foreground">{s.name}</p>
+            <p className="mt-1 text-sm font-medium">{formatCurrency(s.price, s.currency)}</p>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export default function Market() {
@@ -109,6 +152,10 @@ export default function Market() {
   }
 
   const groups = groupByExchange(stocks, priorityExchanges);
+  const selectedSet = new Set(priorityExchanges);
+  const selectedGroups = isSearching ? groups : groups.filter(([ex]) => selectedSet.has(ex));
+  const otherGroups = isSearching ? [] : groups.filter(([ex]) => !selectedSet.has(ex));
+  const otherCount = otherGroups.reduce((n, [, s]) => n + s.length, 0);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
@@ -156,10 +203,8 @@ export default function Market() {
       </div>
 
       {!isSearching && (
-        <div className="mt-4 space-y-4">
+        <div className="mt-4">
           <MarketMovers region={region} />
-          <InvestingTips />
-          <MarketNews />
         </div>
       )}
 
@@ -175,35 +220,25 @@ export default function Market() {
         </p>
       ) : (
         <div className="mt-4 space-y-6">
-          {groups.map(([exchange, groupStocks]) => (
-            <section key={exchange}>
-              <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wider text-gray-700">
-                {EXCHANGE_GROUP_LABELS[exchange] ?? exchange}
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {groupStocks.map((s) => (
-                  <Link
-                    key={`${s.exchange}-${s.ticker}`}
-                    to={`/simulator/stock/${s.exchange}/${s.ticker}`}
-                    className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm hover:border-brand-400 hover:shadow-md transition-all min-h-[44px]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold">{s.ticker}</span>
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${EXCHANGE_BADGE_COLORS[s.exchange] ?? 'bg-muted text-muted-foreground'}`}
-                      >
-                        {s.exchange}
-                      </span>
-                    </div>
-                    <p className="mt-1 truncate text-sm text-muted-foreground">{s.name}</p>
-                    <p className="mt-1 text-sm font-medium">
-                      {formatCurrency(s.price, s.currency)}
-                    </p>
-                  </Link>
+          {selectedGroups.map(([exchange, groupStocks]) => (
+            <BrowseGroup key={exchange} exchange={exchange} stocks={groupStocks} />
+          ))}
+          {otherGroups.length > 0 && (
+            <SectionCard title="More markets" count={otherCount} collapsible defaultOpen={false}>
+              <div className="space-y-6">
+                {otherGroups.map(([exchange, groupStocks]) => (
+                  <BrowseGroup key={exchange} exchange={exchange} stocks={groupStocks} headingLevel={3} />
                 ))}
               </div>
-            </section>
-          ))}
+            </SectionCard>
+          )}
+        </div>
+      )}
+
+      {!isSearching && (
+        <div className="mt-4 space-y-4">
+          <InvestingTips />
+          <MarketNews />
         </div>
       )}
     </div>
