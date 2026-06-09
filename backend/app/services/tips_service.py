@@ -57,6 +57,16 @@ _generic_cache: dict[str, tuple[float, list[InvestingTipOut]]] = {}
 _GENERIC_TTL = 3600
 
 
+def learning_stage(completed_lessons: int) -> str:
+    if completed_lessons <= 0:
+        return "new"
+    if completed_lessons <= 5:
+        return "beginner"
+    if completed_lessons <= 15:
+        return "intermediate"
+    return "advanced"
+
+
 async def generate_generic_tips() -> list[InvestingTipOut]:
     cache_key = "global"
     now = time.time()
