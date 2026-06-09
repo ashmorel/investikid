@@ -79,8 +79,9 @@ describe('Market page', () => {
     expect(aaplLink).toHaveAttribute('href', '/simulator/stock/NASDAQ/AAPL');
   });
 
-  it('includes EduTooltip for Exchange', async () => {
+  it('shows the region selector (replacing the old Exchange tooltip)', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByRole('button', { name: /info about Exchange/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('radiogroup', { name: /market region/i })).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /info about Exchange/i })).not.toBeInTheDocument();
   });
 });

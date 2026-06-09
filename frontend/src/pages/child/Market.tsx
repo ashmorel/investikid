@@ -5,7 +5,7 @@ import { RefreshCw, Search } from 'lucide-react';
 import { simulatorApi, type QuoteOut } from '@/api/simulator';
 import { authApi, type Me } from '@/api/auth';
 import { REGION_EXCHANGES, type RegionCode } from '@/lib/region';
-import { EduTooltip } from '@/components/child/simulator/EduTooltip';
+import { RegionSelector } from '@/components/child/simulator/RegionSelector';
 import { MarketMovers } from '@/components/child/simulator/MarketMovers';
 import { MarketNews } from '@/components/child/simulator/MarketNews';
 import { InvestingTips } from '@/components/child/simulator/InvestingTips';
@@ -54,7 +54,8 @@ export default function Market() {
     queryFn: () => authApi.me(),
     staleTime: 60_000,
   });
-  const region = (me?.content_region ?? me?.country_code ?? 'US') as RegionCode;
+  const [selectedRegion, setSelectedRegion] = useState<RegionCode | null>(null);
+  const region = (selectedRegion ?? (me?.content_region ?? me?.country_code ?? 'US')) as RegionCode;
   const priorityExchanges = REGION_EXCHANGES[region] ?? [];
 
   useEffect(() => {
@@ -114,10 +115,7 @@ export default function Market() {
       <BackButton to="/simulator" label="Simulator" />
       <div className="mb-1 mt-2 flex items-center gap-2">
         <h1 className="text-2xl font-semibold">Browse Stocks</h1>
-        <EduTooltip
-          term="Exchange"
-          explanation="A stock exchange is a marketplace where stocks are bought and sold. Different countries have different exchanges."
-        />
+        <RegionSelector value={region} onChange={setSelectedRegion} />
         <button
           onClick={handleRefresh}
           disabled={refreshing}
@@ -159,7 +157,7 @@ export default function Market() {
 
       {!isSearching && (
         <div className="mt-4 space-y-4">
-          <MarketMovers />
+          <MarketMovers region={region} />
           <InvestingTips />
           <MarketNews />
         </div>
