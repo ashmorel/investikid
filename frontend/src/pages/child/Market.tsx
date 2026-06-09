@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, Search } from 'lucide-react';
 import { simulatorApi, type QuoteOut } from '@/api/simulator';
 import { authApi, type Me } from '@/api/auth';
-import { REGION_EXCHANGES, type RegionCode } from '@/lib/region';
+import { REGION_EXCHANGES, toRegionCode, type RegionCode } from '@/lib/region';
 import { RegionSelector } from '@/components/child/simulator/RegionSelector';
 import { MarketMovers } from '@/components/child/simulator/MarketMovers';
 import { MarketNews } from '@/components/child/simulator/MarketNews';
@@ -55,7 +55,7 @@ export default function Market() {
     staleTime: 60_000,
   });
   const [selectedRegion, setSelectedRegion] = useState<RegionCode | null>(null);
-  const region = (selectedRegion ?? (me?.content_region ?? me?.country_code ?? 'US')) as RegionCode;
+  const region = selectedRegion ?? toRegionCode(me?.content_region ?? me?.country_code);
   const priorityExchanges = REGION_EXCHANGES[region] ?? [];
 
   useEffect(() => {
