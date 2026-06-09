@@ -1,6 +1,56 @@
 from decimal import Decimal
 
+import pytest
+
 from app.services.price_provider import _FEATURED, REGION_EXCHANGES, LivePriceProvider
+
+REGISTER_URL = "/auth/register"
+LOGIN_URL = "/auth/login"
+_USER_BASE = {
+    "password": "SecurePass123!",
+    "dob": "2010-05-10",
+    "country_code": "GB",
+    "currency_code": "GBP",
+    "parent_email": "parent@example.com",
+}
+
+
+async def _login(client, email="movers@example.com", username="movers"):
+    payload = {**_USER_BASE, "email": email, "username": username}
+    await client.post(REGISTER_URL, json=payload)
+    await client.post(LOGIN_URL, json={"email": email, "password": "SecurePass123!"})
+    csrf = client.cookies.get("csrf_token")
+    if csrf:
+        client.headers["X-CSRF-Token"] = csrf
+
+
+class _FakeMoversProvider:
+    def get_market_movers(self, region):
+        if region == "GB":
+            return {"LSE": {"winners": [], "losers": []}}
+        return {}
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_movers_endpoint_region_param(client):
+    from app.main import app
+    from app.routers.simulator import get_price_provider
+
+    await _login(client)
+    app.dependency_overrides[get_price_provider] = lambda: _FakeMoversProvider()
+    try:
+        r = await client.get("/market/movers?region=GB")
+        assert r.status_code == 200
+        assert set(r.json().keys()) == {"LSE"}
+
+        r_default = await client.get("/market/movers")  # defaults to US
+        assert r_default.status_code == 200
+        assert r_default.json() == {}
+
+        r_bad = await client.get("/market/movers?region=ZZ")
+        assert r_bad.status_code == 422
+    finally:
+        app.dependency_overrides.pop(get_price_provider, None)
 
 
 def _provider(changes: dict[str, float]) -> LivePriceProvider:

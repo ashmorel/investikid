@@ -3,6 +3,7 @@ import time
 from collections import defaultdict
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
@@ -128,12 +129,13 @@ async def get_stock_history(
 
 @router.get("/market/movers", response_model=dict[str, ExchangeMoversOut])
 async def get_market_movers(
+    region: Literal["US", "GB", "HK"] = "US",
     _current: User = Depends(get_current_user),
     provider=Depends(get_price_provider),
 ):
     if not hasattr(provider, "get_market_movers"):
         return {}
-    raw = provider.get_market_movers()
+    raw = provider.get_market_movers(region)
     return {
         exchange: ExchangeMoversOut(
             winners=[MarketMoverOut(**m.__dict__) for m in data.get("winners", [])],
