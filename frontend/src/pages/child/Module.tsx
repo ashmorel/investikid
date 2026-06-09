@@ -40,6 +40,21 @@ export default function Module() {
   const module = (modulesQ.data ?? []).find((m) => m.id === moduleId);
   const levels = (levelsQ.data ?? []) as LevelOut[];
 
+  // Single-level modules read as "lessons" (not a misleading "1 of 1 levels").
+  const single = levels.length === 1;
+  const allComplete = levels.length > 0 && levels.every((l) => l.state === 'completed');
+  const totalLessons = levels.reduce((n, l) => n + l.lessons_total, 0);
+  const doneLessons = levels.reduce((n, l) => n + l.lessons_completed, 0);
+  const progressDone = single ? doneLessons : levels.filter((l) => l.state === 'completed').length;
+  const progressTotal = single ? totalLessons : levels.length;
+  const unit = single ? 'lesson' : 'level';
+  // Next module by order (for the "what's next" CTA after finishing).
+  const nextModule = module
+    ? [...(modulesQ.data ?? [])]
+        .sort((a, b) => a.order_index - b.order_index)
+        .find((m) => m.order_index > module.order_index)
+    : undefined;
+
   return (
     <div className="mx-auto max-w-3xl">
       <div className="px-4 pt-4 sm:px-6">
@@ -50,24 +65,25 @@ export default function Module() {
         <span className="text-5xl">{module?.icon ?? '📚'}</span>
         <h1 className="mt-3 text-2xl font-extrabold text-gray-900">{module?.title ?? 'Module'}</h1>
         <p className="mt-1 text-sm text-gray-600">
-          {levels.length} {levels.length === 1 ? 'level' : 'levels'}
+          {progressTotal} {progressTotal === 1 ? unit : `${unit}s`}
         </p>
-        {levels.length > 0 && (() => {
-          const done = levels.filter((l) => l.state === 'completed').length;
-          const pct = Math.round((done / levels.length) * 100);
+        {progressTotal > 0 && (() => {
+          const pct = Math.round((progressDone / progressTotal) * 100);
           return (
             <div className="mx-auto mt-3 max-w-xs">
               <div
                 className="h-2 w-full overflow-hidden rounded-full bg-white/60"
                 role="progressbar"
-                aria-valuenow={done}
+                aria-valuenow={progressDone}
                 aria-valuemin={0}
-                aria-valuemax={levels.length}
+                aria-valuemax={progressTotal}
                 aria-label="Module progress"
               >
                 <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${pct}%` }} />
               </div>
-              <p className="mt-1 text-xs font-semibold text-brand-700">{done} / {levels.length} levels complete</p>
+              <p className="mt-1 text-xs font-semibold text-brand-700">
+                {progressDone} / {progressTotal} {unit}s complete
+              </p>
             </div>
           );
         })()}
@@ -92,6 +108,25 @@ export default function Module() {
           ))}
         </div>
       </div>
+
+      {/* Module complete → what's next */}
+      {allComplete && (
+        <div className="px-4 pb-6 sm:px-6">
+          <div className="rounded-2xl border-2 border-brand-200 bg-brand-50 p-4 text-center">
+            <p className="text-base font-bold text-gray-900">🎉 Module complete!</p>
+            <p className="mt-1 text-sm text-gray-600">
+              Great work finishing {module?.title ?? 'this module'}.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate(nextModule ? `/lessons/${nextModule.id}` : '/lessons')}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+            >
+              {nextModule ? `Next: ${nextModule.title} →` : 'Back to all modules'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

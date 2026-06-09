@@ -53,6 +53,49 @@ describe('Module page', () => {
     expect(await screen.findByRole('button', { name: /Intermediate/i })).toBeInTheDocument();
   });
 
+  it('frames a single-level module as lessons (not "1 level")', async () => {
+    mockJsonRoute({
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'What is a stock', country_codes: [], is_premium: false, order_index: 0, icon: '📈', locked: false },
+      ],
+      '/modules/mod-1/levels': [
+        { id: 'lv-1', module_id: 'mod-1', title: 'Level 1', order_index: 0, is_premium: false, icon: '🌱', state: 'in_progress', locked_reason: null, passed: false, lessons_total: 4, lessons_completed: 1 },
+      ],
+    });
+    renderAt('/lessons/mod-1');
+    expect(await screen.findByText(/^4 lessons$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^1 level$/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/1 \/ 4 lessons complete/i)).toBeInTheDocument();
+  });
+
+  it('shows a "Module complete" next-module CTA when every level is done', async () => {
+    mockJsonRoute({
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'What is a stock', country_codes: [], is_premium: false, order_index: 0, icon: '📈', locked: false },
+        { id: 'mod-2', topic: 'savings', title: 'Saving Basics', country_codes: [], is_premium: false, order_index: 1, icon: '🏦', locked: false },
+      ],
+      '/modules/mod-1/levels': [
+        { id: 'lv-1', module_id: 'mod-1', title: 'Level 1', order_index: 0, is_premium: false, icon: '🌱', state: 'completed', locked_reason: null, passed: true, lessons_total: 4, lessons_completed: 4 },
+      ],
+    });
+    renderAt('/lessons/mod-1');
+    expect(await screen.findByText(/Module complete/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Next: Saving Basics/i })).toBeInTheDocument();
+  });
+
+  it('shows "Back to all modules" when the finished module is the last one', async () => {
+    mockJsonRoute({
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'What is a stock', country_codes: [], is_premium: false, order_index: 0, icon: '📈', locked: false },
+      ],
+      '/modules/mod-1/levels': [
+        { id: 'lv-1', module_id: 'mod-1', title: 'Level 1', order_index: 0, is_premium: false, icon: '🌱', state: 'completed', locked_reason: null, passed: true, lessons_total: 4, lessons_completed: 4 },
+      ],
+    });
+    renderAt('/lessons/mod-1');
+    expect(await screen.findByRole('button', { name: /Back to all modules/i })).toBeInTheDocument();
+  });
+
   it('toasts "Finish the previous level first." when progression-locked level clicked', async () => {
     mockJsonRoute({
       '/modules': [
