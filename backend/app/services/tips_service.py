@@ -100,3 +100,76 @@ async def generate_generic_tips() -> list[InvestingTipOut]:
         pass
 
     return _FALLBACK_TIPS
+
+
+_personal_cache: dict[str, tuple[float, list[InvestingTipOut]]] = {}
+_PERSONAL_TTL = 3600
+
+
+def _personal_key(user_id: int, holdings: list[tuple[str, str]], stage: str, age: int) -> str:
+    sig = ",".join(sorted(t for t, _ in holdings))
+    return f"{user_id}:{sig}:{stage}:{age}"
+
+
+def _personal_prompt(holdings: list[tuple[str, str]], stage: str, age: int) -> str:
+    owned = ", ".join(f"{name} ({ticker})" for ticker, name in holdings[:5]) or "none yet"
+    return (
+        f"You are writing personalised investing tips for a {age}-year-old kid who is at the "
+        f"'{stage}' stage of learning about the stock market. They currently own: {owned}.\n\n"
+        "Generate EXACTLY 2 short, encouraging, age-appropriate tips that connect to a stock they "
+        "own and/or a concept suited to their stage. Each tip:\n"
+        "- Short catchy title (under 8 words)\n"
+        "- 2-3 sentence description in simple language for their age\n"
+        "- Reference one of their owned tickers in example_ticker where natural "
+        "(else a well-known kid-friendly stock)\n"
+        "- Be educational and encouraging; NEVER give real investment advice\n\n"
+        "Return JSON: [{\"id\": \"slug\", \"title\": \"...\", \"description\": \"...\", "
+        "\"example_ticker\": \"AAPL\", \"example_exchange\": \"NASDAQ\"}]\n"
+        "Only return the JSON array."
+    )
+
+
+async def generate_personalised_tips(
+    *,
+    user_id: int,
+    holdings: list[tuple[str, str]],
+    stage: str,
+    age: int,
+    refresh: bool = False,
+) -> tuple[list[InvestingTipOut], bool]:
+    """2 holdings/level-tailored tips. Returns (tips, was_unsafe). was_unsafe is
+    True only when the model output was moderated out (so the endpoint can write
+    an AuditLog); False for no-context, cache, success, and error paths. Takes no
+    session and writes no AuditLog itself."""
+    if not holdings and stage == "new":
+        return [], False
+
+    key = _personal_key(user_id, holdings, stage, age)
+    now = time.time()
+    if not refresh:
+        cached = _personal_cache.get(key)
+        if cached and (now - cached[0]) < _PERSONAL_TTL:
+            return cached[1], False
+
+    try:
+        llm = get_llm_client(tier="lite")
+        raw = await llm.complete(
+            system_prompt=_personal_prompt(holdings, stage, age),
+            messages=[{"role": "user", "content": "Generate 2 personalised tips."}],
+            temperature=0.8,
+            max_tokens=400,
+            response_format="json",
+        )
+        items = json.loads(raw)[:2]
+        tips = [
+            InvestingTipOut(**{k: v for k, v in item.items() if k != "personalised"}, personalised=True)
+            for item in items
+        ]
+        joined = " ".join(f"{t.title} {t.description}" for t in tips)
+        _mod = await moderate_output(joined, surface="tips")
+        if not _mod.safe:
+            return [], True
+        _personal_cache[key] = (now, tips)
+        return tips, False
+    except Exception:
+        return [], False
