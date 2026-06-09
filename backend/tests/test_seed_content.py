@@ -111,7 +111,12 @@ async def test_seed_is_idempotent_and_meets_criterion(db_session):
 
     spec = _MODULES[0]
     count_after_first = await _count_lessons_for(db_session, spec["topic"], spec["title"])
-    assert count_after_first == len(spec["lessons"])
+    # _count_lessons_for counts ALL lessons in the module (across every level),
+    # so include any extra_levels (e.g. the "What is a Stock?" Level 2/3 pilot).
+    expected_lessons = len(spec["lessons"]) + sum(
+        len(lv["lessons"]) for lv in spec.get("extra_levels", [])
+    )
+    assert count_after_first == expected_lessons
 
     # A level should expose >= 5 quiz/scenario lessons.
     module = await db_session.scalar(
