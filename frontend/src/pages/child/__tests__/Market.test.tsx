@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { simulatorApi } from '@/api/simulator';
+import { authApi } from '@/api/auth';
 import Market from '../Market';
 
 vi.mock('@/api/simulator', () => ({
@@ -83,6 +84,16 @@ describe('Market search loading vs empty', () => {
     const user = userEvent.setup();
     renderWithProviders('/simulator/market');
     await user.click(await screen.findByRole('radio', { name: /US/i }));
+    expect(screen.getByTestId('movers')).toHaveTextContent('movers:US');
+  });
+
+  it('defaults to US when the child is in an unsupported country (no content_region)', async () => {
+    vi.mocked(simulatorApi.searchMarket).mockImplementation(() => Promise.resolve([]));
+    vi.mocked(authApi.me).mockResolvedValueOnce({
+      id: 1, role: 'child', country_code: 'FR', content_region: null,
+    } as never);
+    renderWithProviders('/simulator/market');
+    expect(await screen.findByRole('radio', { name: /US/i })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('movers')).toHaveTextContent('movers:US');
   });
 
