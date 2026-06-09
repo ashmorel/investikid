@@ -1,10 +1,22 @@
-import type { KeyboardEvent } from 'react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { REGIONS, type RegionCode } from '@/lib/region';
 
 type Props = { value: RegionCode; onChange: (region: RegionCode) => void };
 
 export function RegionSelector({ value, onChange }: Props) {
   const codes = REGIONS.map((r) => r.code);
+  const groupRef = useRef<HTMLDivElement>(null);
+  const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  // Faithful APG radiogroup: focus follows selection during keyboard
+  // navigation. Guarded so a controlled value reseed from the parent (e.g.
+  // Market.tsx seeding from content_region) never steals focus on mount or
+  // while the user is elsewhere on the page.
+  useEffect(() => {
+    if (groupRef.current?.contains(document.activeElement)) {
+      btnRefs.current[value]?.focus();
+    }
+  }, [value]);
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     const idx = codes.indexOf(value);
@@ -19,6 +31,7 @@ export function RegionSelector({ value, onChange }: Props) {
 
   return (
     <div
+      ref={groupRef}
       role="radiogroup"
       aria-label="Market region"
       onKeyDown={onKeyDown}
@@ -29,6 +42,9 @@ export function RegionSelector({ value, onChange }: Props) {
         return (
           <button
             key={r.code}
+            ref={(el) => {
+              btnRefs.current[r.code] = el;
+            }}
             type="button"
             role="radio"
             aria-checked={selected}
