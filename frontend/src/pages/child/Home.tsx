@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import HomeHero from '@/components/child/HomeHero';
 import { ModuleTile } from '@/components/child/ui/ModuleTile';
 import { LevelProgressCard } from '@/components/child/LevelProgressCard';
+import { PremiumUpsellCard } from '@/components/child/PremiumUpsellCard';
 import { PortfolioSnapshotCard } from '@/components/child/home/PortfolioSnapshotCard';
 import { AchievementsStrip } from '@/components/child/AchievementsStrip';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -18,6 +19,7 @@ import { useNextLesson } from '@/hooks/useNextLesson';
 import { orderModulesForTier } from '@/lib/tierModuleOrder';
 import { useAgeTier } from '@/lib/ageTier';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
+import { authApi, type Me } from '@/api/auth';
 
 const TOPIC_STYLE: Record<string, { accent: string; tint: string }> = {
   savings: { accent: '#0ea5e9', tint: '#e0f2fe' },
@@ -40,6 +42,12 @@ export default function Home() {
   const next = useNextLesson();
   const { data: portfolio } = usePortfolio();
   const { open: openPaywall } = usePremiumPaywall();
+  const { data: me } = useQuery<Me | null>({
+    queryKey: ['me'],
+    queryFn: () => authApi.me(),
+    retry: false,
+    staleTime: 60_000,
+  });
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -72,6 +80,10 @@ export default function Home() {
 
       <div className="mt-4">
         <LevelProgressCard level={level} xp={xp} />
+      </div>
+
+      <div className="mt-4">
+        <PremiumUpsellCard isPremium={me?.is_premium ?? false} />
       </div>
 
       {portfolio?.total_value && (
