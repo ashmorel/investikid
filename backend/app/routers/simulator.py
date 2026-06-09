@@ -4,12 +4,13 @@ from decimal import Decimal
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.rate_limit import limiter
 from app.models.audit import AuditLog
+from app.models.content import LessonCompletion
 from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
@@ -67,7 +68,11 @@ from app.services.simulator_service import (
     reset_portfolio,
     set_portfolio_currency,
 )
-from app.services.tips_service import generate_generic_tips
+from app.services.tips_service import (
+    generate_generic_tips,
+    generate_personalised_tips,
+    learning_stage,
+)
 
 router = APIRouter(tags=["simulator"])
 
@@ -528,10 +533,48 @@ async def get_time_machine(
 
 
 @router.get("/market/tips", response_model=list[InvestingTipOut])
+@limiter.limit("30/hour")
 async def get_investing_tips(
-    _current: User = Depends(get_current_user),
+    request: Request,
+    refresh: bool = False,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ):
-    return await generate_generic_tips()
+    generic = await generate_generic_tips()
+
+    portfolio = await session.scalar(
+        select(Portfolio).where(Portfolio.user_id == current_user.id)
+    )
+    holdings: list[tuple[str, str]] = []
+    if portfolio:
+        rows = (await session.scalars(
+            select(Holding).where(Holding.portfolio_id == portfolio.id)
+        )).all()
+        # Holding has no company-name column, so pass the ticker as both labels.
+        holdings = [(h.ticker, h.ticker) for h in rows]
+
+    completed = await session.scalar(
+        select(func.count(LessonCompletion.id)).where(
+            LessonCompletion.user_id == current_user.id
+        )
+    ) or 0
+    stage = learning_stage(completed)
+    age = (date.today() - current_user.dob).days // 365
+
+    personalised, was_unsafe = await generate_personalised_tips(
+        user_id=current_user.id, holdings=holdings, stage=stage, age=age, refresh=refresh,
+    )
+    if was_unsafe:
+        session.add(AuditLog(
+            user_id=current_user.id,
+            event_type="moderation_block",
+            metadata_json={"surface": "tips", "category": "personalised_tips"},
+        ))
+        await session.commit()
+
+    seen = {t.id for t in personalised}
+    merged = personalised + [t for t in generic if t.id not in seen]
+    return merged[:6]
 
 
 @router.get("/portfolio", response_model=PortfolioOut)
