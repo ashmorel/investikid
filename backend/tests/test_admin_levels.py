@@ -31,7 +31,8 @@ async def test_level_crud_and_lessons(admin_client):
     assert r.status_code == 200
     assert r.json()["type"] == "video"
 
-    r = await admin_client.put(f"/admin/levels/{level_id}", json={"is_premium": True})
+    # is_premium is derived from order_index, so moving to position 2 makes it premium.
+    r = await admin_client.put(f"/admin/levels/{level_id}", json={"order_index": 2})
     assert r.status_code == 200 and r.json()["is_premium"] is True
 
     r = await admin_client.delete(f"/admin/levels/{level_id}")

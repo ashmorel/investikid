@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import Lesson, Level, Module
+from app.services.level_service import premium_for_position
 
 _MODULES = [
     {
@@ -828,7 +829,7 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
         if level is None:
             level = Level(
                 module_id=module.id, title="Level 1", order_index=0,
-                is_premium=module.is_premium, pass_threshold=0.7, content_source="authored",
+                is_premium=premium_for_position(0), pass_threshold=0.7, content_source="authored",
             )
             session.add(level)
             await session.flush()

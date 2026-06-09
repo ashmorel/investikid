@@ -62,6 +62,7 @@ from app.services.app_settings import (
     set_starting_cash,
 )
 from app.services.engagement_service import get_module_engagement
+from app.services.level_service import premium_for_position
 from app.services.moderation import moderate_output
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
@@ -344,7 +345,8 @@ async def admin_create_level(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     level = Level(
         module_id=module_id, title=payload.title, order_index=payload.order_index,
-        is_premium=payload.is_premium, pass_threshold=payload.pass_threshold,
+        is_premium=premium_for_position(payload.order_index),
+        pass_threshold=payload.pass_threshold,
         content_source="authored", icon=payload.icon,
     )
     session.add(level)
@@ -361,8 +363,10 @@ async def admin_update_level(
     if not level:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Level not found")
     data = payload.model_dump(exclude_unset=True)
+    data.pop("is_premium", None)  # derived from position, never client-set
     for k, val in data.items():
         setattr(level, k, val)
+    level.is_premium = premium_for_position(level.order_index)
     await session.commit()
     await session.refresh(level)
     n = await session.scalar(
