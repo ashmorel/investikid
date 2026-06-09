@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { simulatorApi, type ExchangeMovers, type MarketMover } from '@/api/simulator';
 import { type RegionCode } from '@/lib/region';
 import { formatCurrency } from '@/lib/currency';
+import { SectionCard } from './SectionCard';
 
 function MoverRow({ mover, rank }: { mover: MarketMover; rank: number }) {
   const isPositive = mover.change_percent >= 0;
@@ -81,13 +82,12 @@ export function MarketMovers({ region }: { region: RegionCode }) {
   const exchanges = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
-      <h2 className="mb-4 text-lg font-semibold text-gray-800">Today's Market Movers</h2>
+    <SectionCard title="What's moving today" icon={TrendingUp}>
       <div className="space-y-5">
         {exchanges.map(([exchange, movers]) => (
           <ExchangeSection key={exchange} exchange={exchange} data={movers} />
         ))}
       </div>
-    </div>
+    </SectionCard>
   );
 }
