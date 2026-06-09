@@ -13,6 +13,7 @@ import { SignInMethods } from '@/components/parent/SignInMethods';
 import { GroupsCard } from '@/components/parent/GroupsCard';
 import { NotificationPreferencesCard } from '@/components/parent/NotificationPreferencesCard';
 import { PremiumRequestsCard } from '@/components/parent/PremiumRequestsCard';
+import { PremiumValueCard } from '@/components/parent/PremiumValueCard';
 import { Penny } from '@/components/child/ui/Penny';
 
 export default function ParentDashboard() {
@@ -70,6 +71,11 @@ export default function ParentDashboard() {
 
       <PremiumRequestsCard
         onApprove={() =>
+          document.getElementById('subscription-card')?.scrollIntoView({ behavior: 'smooth' })
+        }
+      />
+      <PremiumValueCard
+        onSubscribe={() =>
           document.getElementById('subscription-card')?.scrollIntoView({ behavior: 'smooth' })
         }
       />
