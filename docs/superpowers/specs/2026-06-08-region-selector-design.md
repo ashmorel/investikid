@@ -58,8 +58,10 @@ Decision: **compute region movers from our curated `_FEATURED` universe**, not a
 | `("RR","LSE")` | `("Rolls-Royce Holdings", Decimal("4.20"), "GBP", "RR.L")` |
 | `("9988","HKEX")` | `("Alibaba Group", Decimal("75.00"), "HKD", "9988.HK")` |
 | `("1810","HKEX")` | `("Xiaomi Corp.", Decimal("17.00"), "HKD", "1810.HK")` |
+| `("1211","HKEX")` | `("BYD Company", Decimal("245.00"), "HKD", "1211.HK")` |
+| `("0992","HKEX")` | `("Lenovo Group", Decimal("10.00"), "HKD", "0992.HK")` |
 
-Resulting universe: **US 10** (6 NASDAQ + 4 NYSE), **GB 7** (LSE), **HK 4** (HKEX). (HK stays smallest — acceptable; all four are recognizable.) These flow into Browse too (it lists `_FEATURED` on empty search).
+Resulting universe: **US 10** (6 NASDAQ + 4 NYSE), **GB 7** (LSE), **HK 6** (HKEX). All names are recognizable family brands. These flow into Browse too (it lists `_FEATURED` on empty search).
 
 ## Section 3 — Browse wiring (frontend)
 No new logic — `selectedRegion` already feeds `priorityExchanges` into the existing `groupByExchange(stocks, priorityExchanges)` (Section 1). The selected region's exchanges sort first; labels come from the existing `EXCHANGE_GROUP_LABELS` (already maps NASDAQ/NYSE→"US Stocks", LSE→"UK Stocks", HKEX→"Hong Kong Stocks").
