@@ -518,7 +518,7 @@ export interface VideoHealthItem {
   module_title: string;
   lesson_title: string;
   youtube_id: string;
-  status: 'ok' | 'dead' | 'unknown' | null;
+  status: 'ok' | 'dead' | 'blocked' | 'unknown' | null;
   http_status: number | null;
   checked_at: string | null;
 }
