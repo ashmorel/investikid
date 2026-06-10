@@ -25,6 +25,17 @@ export interface BuildYouTubeOptions {
   webOrigin?: string;
 }
 
+/**
+ * Origins from which a player `postMessage` may legitimately arrive:
+ *  - the YouTube nocookie embed origin (web/Android, via the IFrame API), and
+ *  - the app's https web origin (iOS, from the `/yt.html` proxy page).
+ * The player message handler rejects any other origin.
+ */
+export function youtubeMessageOrigins(opts: BuildYouTubeOptions = {}): string[] {
+  const webOrigin = opts.webOrigin ?? defaultWebOrigin();
+  return [WEB_EMBED_ORIGIN, webOrigin];
+}
+
 export function buildYouTubeUrls(youtubeId: string, opts: BuildYouTubeOptions = {}) {
   const trimmed = youtubeId.trim();
   if (!YOUTUBE_ID_RE.test(trimmed)) return null;
