@@ -76,6 +76,18 @@ export function PrivacyNotice() {
       </section>
 
       <section className="mt-6">
+        <h2 className="text-lg font-semibold">Lesson videos (YouTube)</h2>
+        <p className="mt-2 text-sm">
+          Some lessons include educational videos embedded from YouTube. When a video loads,
+          YouTube (a Google service) may receive technical data — such as device and IP
+          information — so it can play the video. We use YouTube's privacy-enhanced mode
+          (<strong>youtube-nocookie.com</strong>), which does not set tracking cookies unless a
+          video is actually played. We do <strong>not</strong> share your child's account
+          details with YouTube. Google handles this technical data under its own privacy policy.
+        </p>
+      </section>
+
+      <section className="mt-6">
         <h2 className="text-lg font-semibold">How long do we keep your information?</h2>
         <p className="mt-2 text-sm">
           We keep your information for as long as you have an account with us.

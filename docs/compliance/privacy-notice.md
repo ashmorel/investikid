@@ -63,6 +63,12 @@ We do **not** share your personal information with advertisers, data brokers, or
 
 ---
 
+## Lesson videos (YouTube)
+
+Some lessons include educational videos embedded from YouTube. When a video loads, YouTube (a Google service) may receive technical data — such as device and IP information — so it can play the video. We use YouTube's privacy-enhanced mode (`youtube-nocookie.com`), which does not set tracking cookies unless a video is actually played. We do **not** share your child's account details with YouTube. Google handles this technical data under its own privacy policy.
+
+---
+
 ## How long do we keep your information?
 
 We keep your information for as long as you have an account with us.
