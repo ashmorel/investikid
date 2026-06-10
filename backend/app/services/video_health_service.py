@@ -6,6 +6,7 @@ import httpx
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.content import Lesson, Module
 from app.models.video_health import VideoHealth
 
@@ -28,13 +29,41 @@ def classify(http_status: int | None) -> str:
     return "unknown"
 
 
+async def _embeddable(client: httpx.AsyncClient, youtube_id: str) -> bool:
+    """Whether the YouTube owner allows embedding (via the Data API).
+
+    Fail-open: returns True on any HTTP error, non-200, or missing item, so a
+    transient API issue never raises a false "blocked" alarm. Returns False
+    only when the API clearly reports items[0].status.embeddable is False.
+    """
+    try:
+        resp = await client.get(
+            "https://www.googleapis.com/youtube/v3/videos"
+            f"?part=status&id={youtube_id}&key={settings.youtube_api_key}",
+            timeout=_TIMEOUT,
+        )
+        if resp.status_code != 200:
+            return True
+        items = resp.json().get("items") or []
+        if not items:
+            return True
+        status = items[0].get("status") or {}
+        return status.get("embeddable", True) is not False
+    except (httpx.HTTPError, ValueError, AttributeError, TypeError):
+        return True
+
+
 async def _probe(client: httpx.AsyncClient, youtube_id: str, sem: asyncio.Semaphore) -> tuple[str, int | None]:
     if not youtube_id:
         return "dead", None
     async with sem:
         try:
             resp = await client.get(oembed_url(youtube_id), timeout=_TIMEOUT)
-            return classify(resp.status_code), resp.status_code
+            status = classify(resp.status_code)
+            if status == "ok" and settings.youtube_api_key:
+                if not await _embeddable(client, youtube_id):
+                    return "blocked", resp.status_code
+            return status, resp.status_code
         except httpx.HTTPError:
             return "unknown", None  # transient — never alerted
 
@@ -96,7 +125,10 @@ async def check_all_videos(
         await session.execute(delete(VideoHealth))
 
     now = datetime.now(UTC)
-    summary: dict[str, Any] = {"ok": 0, "dead": 0, "unknown": 0, "dead_items": []}
+    summary: dict[str, Any] = {
+        "ok": 0, "dead": 0, "unknown": 0, "blocked": 0,
+        "dead_items": [], "blocked_items": [],
+    }
     for (lesson, module_title), (status, http_status) in zip(rows, results):
         yt = _identifier(lesson)
         existing = await session.scalar(
@@ -113,8 +145,8 @@ async def check_all_videos(
             existing.http_status = http_status
             existing.checked_at = now
         summary[status] += 1
-        if status == "dead":
-            summary["dead_items"].append({
+        if status in ("dead", "blocked"):
+            summary[f"{status}_items"].append({
                 "lesson_id": str(lesson.id), "youtube_id": yt,
                 "module_title": module_title,
                 "lesson_title": (lesson.content_json or {}).get("caption") or "Video lesson",
