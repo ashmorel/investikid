@@ -4,13 +4,22 @@ import { useVideoHealth, useCheckVideoHealth } from '@/api/admin';
 const STATUS_BADGE: Record<string, string> = {
   ok: 'bg-success-100 text-success-700',
   dead: 'bg-danger-100 text-danger-700',
-  unknown: 'bg-accent-100 text-accent-700',
+  blocked: 'bg-accent-100 text-accent-700',
+  unknown: 'bg-muted text-muted-foreground',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  ok: 'ok',
+  dead: 'unavailable',
+  blocked: 'embedding disabled',
+  unknown: 'unknown',
 };
 
 function badge(status: string | null) {
   const key = status ?? 'unchecked';
+  const label = status ? STATUS_LABEL[status] ?? key : key;
   const cls = status ? STATUS_BADGE[status] ?? 'bg-muted text-muted-foreground' : 'bg-muted text-muted-foreground';
-  return <span className={`rounded px-2 py-0.5 text-xs font-semibold ${cls}`}>{key}</span>;
+  return <span className={`rounded px-2 py-0.5 text-xs font-semibold ${cls}`}>{label}</span>;
 }
 
 export default function VideoHealthList() {

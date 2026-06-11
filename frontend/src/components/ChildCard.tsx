@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { childStatus, type ChildStatus } from '@/lib/format';
-import { parentApi, type Child } from '@/api/parent';
+import { parentApi, type Child, type TierOverride } from '@/api/parent';
 import { ApiError } from '@/api/client';
 import { cn } from '@/lib/utils';
 import { ChildAnalytics } from '@/components/ChildAnalytics';
@@ -69,6 +69,26 @@ export function ChildCard({ child }: { child: Child }) {
       qc.setQueryData(['children'], ctx?.prev);
       toast({
         title: 'Could not update premium',
+        description: err instanceof ApiError ? err.detail : 'Please try again.',
+      });
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['children'] }),
+  });
+
+  const tier = useMutation({
+    mutationFn: (value: TierOverride) => parentApi.setChildTier(child.user_id, value),
+    onMutate: async (value) => {
+      await qc.cancelQueries({ queryKey: ['children'] });
+      const prev = qc.getQueryData<Child[]>(['children']);
+      qc.setQueryData<Child[]>(['children'], (old) =>
+        old?.map((c) => c.user_id === child.user_id ? { ...c, tier_override: value } : c),
+      );
+      return { prev };
+    },
+    onError: (err, _value, ctx) => {
+      qc.setQueryData(['children'], ctx?.prev);
+      toast({
+        title: 'Could not update experience mode',
         description: err instanceof ApiError ? err.detail : 'Please try again.',
       });
     },
@@ -164,6 +184,29 @@ export function ChildCard({ child }: { child: Child }) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Label htmlFor={`tier-${child.user_id}`} className="text-sm">
+          Experience mode
+        </Label>
+        <select
+          id={`tier-${child.user_id}`}
+          className="rounded-md border bg-background px-2 py-1 text-sm"
+          value={child.tier_override ?? 'auto'}
+          disabled={isDeleted || tier.isPending}
+          onChange={(e) => {
+            const v = e.target.value;
+            tier.mutate(v === 'auto' ? null : (v as 'explorer' | 'investor'));
+          }}
+        >
+          <option value="auto">Auto (recommended)</option>
+          <option value="explorer">Explorer</option>
+          <option value="investor">Investor</option>
+        </select>
+        <span className="text-xs text-muted-foreground">
+          Currently: {child.age_tier === 'investor' ? 'Investor' : 'Explorer'}. Auto switches to Investor at 14.
+        </span>
       </div>
     </article>
   );

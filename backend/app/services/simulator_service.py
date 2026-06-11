@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import NamedTuple
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -70,21 +71,31 @@ async def _get_holding(session: AsyncSession, portfolio_id, ticker: str, exchang
     )
 
 
+class TradeExecution(NamedTuple):
+    trade: Trade
+    fee: Decimal
+    commission_pct: Decimal
+
+
 async def execute_trade(
     session: AsyncSession,
     portfolio: Portfolio,
     quote: PriceQuote,
     trade_type: str,
     shares: Decimal,
-) -> Trade:
-    """Execute a buy or sell. Caller commits."""
+) -> TradeExecution:
+    """Execute a buy or sell, charging a percentage commission. Caller commits."""
+    from app.services.app_settings import get_trade_commission_pct
+
     cost = (quote.price * shares).quantize(Decimal("0.01"))
+    commission_pct = await get_trade_commission_pct(session)
+    fee = (cost * commission_pct / Decimal("100")).quantize(Decimal("0.01"))
     holding = await _get_holding(session, portfolio.id, quote.ticker, quote.exchange)
 
     if trade_type == "buy":
-        if portfolio.virtual_cash < cost:
+        if portfolio.virtual_cash < cost + fee:
             raise InsufficientFundsError("Not enough virtual cash")
-        portfolio.virtual_cash = portfolio.virtual_cash - cost
+        portfolio.virtual_cash = portfolio.virtual_cash - cost - fee
         if holding is None:
             holding = Holding(
                 portfolio_id=portfolio.id, ticker=quote.ticker, exchange=quote.exchange,
@@ -99,7 +110,8 @@ async def execute_trade(
     elif trade_type == "sell":
         if holding is None or holding.shares < shares:
             raise InsufficientSharesError("Not enough shares to sell")
-        portfolio.virtual_cash = portfolio.virtual_cash + cost
+        proceeds = max(cost - fee, Decimal("0.00"))  # never go negative
+        portfolio.virtual_cash = portfolio.virtual_cash + proceeds
         holding.shares = holding.shares - shares
         if holding.shares == 0:
             await session.delete(holding)
@@ -112,4 +124,4 @@ async def execute_trade(
     )
     session.add(trade)
     await session.flush()
-    return trade
+    return TradeExecution(trade=trade, fee=fee, commission_pct=commission_pct)

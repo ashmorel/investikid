@@ -96,3 +96,20 @@ describe('Simulator page', () => {
     });
   });
 });
+
+describe('Simulator long-term signal cards', () => {
+  it('renders the diversification and growth projection cards', async () => {
+    mockFetchRoutes({
+      '/portfolio': {
+        id: 'p1', virtual_cash: '9000.00', currency_code: 'USD', total_value: '9927.10',
+        holdings: [{ ticker: 'AAPL', exchange: 'NASDAQ', shares: '5', avg_buy_price: '180.00', current_price: '185.42', market_value: '927.10', unrealized_pl: '27.10' }],
+      },
+      '/portfolio/trades': [],
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('All eggs in one basket')).toBeInTheDocument();
+      expect(screen.getByText('An illustration of compounding — not a prediction or a promise.')).toBeInTheDocument();
+    });
+  });
+});

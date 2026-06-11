@@ -1,4 +1,6 @@
+import concurrent.futures
 import logging
+import threading
 import time
 from dataclasses import dataclass
 from decimal import Decimal
@@ -145,6 +147,9 @@ _CACHE_TTL = 300  # 5 minutes
 _SEARCH_CACHE_TTL = 120  # 2 minutes
 _HISTORY_CACHE_TTL = 600  # 10 minutes
 
+# Bounded pool for per-ticker quote/news fan-outs (provider stays sync).
+_FANOUT = concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="quotes")
+
 
 def _quote_to_dict(q: PriceQuote) -> dict:
     return {
@@ -230,16 +235,42 @@ class LivePriceProvider:
     def __init__(self) -> None:
         self._cache: dict[tuple[str, str], tuple[PriceQuote, float]] = {}
         self._history_cache: dict[str, tuple[list[PricePoint], float]] = {}
+        self._refreshing: set = set()
+        self._refresh_lock = threading.Lock()
 
     def clear_cache(self) -> None:
         self._cache.clear()
         self._history_cache.clear()
 
+    def _schedule_refresh(self, refresh_key, fn) -> None:
+        """Run fn on a daemon thread, deduped per key (no thundering herd)."""
+        with self._refresh_lock:
+            if refresh_key in self._refreshing:
+                return
+            self._refreshing.add(refresh_key)
+
+        def _run() -> None:
+            try:
+                fn()
+            except Exception:
+                logger.warning("background refresh failed for %s", refresh_key)
+            finally:
+                with self._refresh_lock:
+                    self._refreshing.discard(refresh_key)
+
+        threading.Thread(target=_run, name=f"swr-{refresh_key}", daemon=True).start()
+
     def get_quote(self, ticker: str, exchange: str) -> PriceQuote:
         key = (ticker.upper(), exchange.upper())
 
         cached = self._cache.get(key)
-        if cached and (time.monotonic() - cached[1]) < _CACHE_TTL:
+        if cached:
+            if (time.monotonic() - cached[1]) < _CACHE_TTL:
+                return cached[0]
+            # Stale-while-revalidate: serve the old quote, refresh in background.
+            self._schedule_refresh(
+                ("quote", *key), lambda: self._fetch_quote(key[0], key[1])
+            )
             return cached[0]
 
         rkey = f"mkt:quote:{key[0]}:{key[1]}"
@@ -249,6 +280,12 @@ class LivePriceProvider:
             self._cache[key] = (quote, time.monotonic())
             return quote
 
+        return self._fetch_quote(key[0], key[1])
+
+    def _fetch_quote(self, ticker: str, exchange: str) -> PriceQuote:
+        """Fetch a quote from Yahoo and write both cache layers."""
+        key = (ticker.upper(), exchange.upper())
+        rkey = f"mkt:quote:{key[0]}:{key[1]}"
         yf_symbol = _to_yahoo_symbol(ticker, exchange)
         featured = _FEATURED.get(key)
 
@@ -423,19 +460,36 @@ class LivePriceProvider:
             return fallback_price, currency, 0.0
 
     def get_market_movers(self, region: str) -> dict[str, dict[str, list[MarketMover]]]:
-        exchanges = REGION_EXCHANGES.get(region, [])
         cache_key = f"_movers:{region}"
         cached = self._history_cache.get(cache_key)
-        if cached and (time.monotonic() - cached[1]) < _CACHE_TTL:
+        if cached:
+            if (time.monotonic() - cached[1]) < _CACHE_TTL:
+                return cached[0]
+            # Stale-while-revalidate: serve old movers, refresh in background.
+            self._schedule_refresh(
+                ("movers", region), lambda: self._fetch_market_movers(region)
+            )
             return cached[0]
 
+        return self._fetch_market_movers(region)
+
+    def _fetch_market_movers(self, region: str) -> dict[str, dict[str, list[MarketMover]]]:
+        exchanges = REGION_EXCHANGES.get(region, [])
+        cache_key = f"_movers:{region}"
+
+        featured = [
+            (ticker, exchange, name, fallback_price, currency)
+            for (ticker, exchange), (name, fallback_price, currency, _yf) in _FEATURED.items()
+            if exchange in exchanges
+        ]
+        # Bounded parallel quote fan-out; map preserves input order.
+        changes = list(_FANOUT.map(
+            lambda f: self._quote_change(f[0], f[1], f[3], f[4]), featured
+        ))
         movers: list[MarketMover] = []
-        for (ticker, exchange), (name, fallback_price, currency, _yf) in _FEATURED.items():
-            if exchange not in exchanges:
-                continue
-            price, disp_currency, change = self._quote_change(
-                ticker, exchange, fallback_price, currency
-            )
+        for (ticker, exchange, name, _fallback, _currency), (
+            price, disp_currency, change
+        ) in zip(featured, changes, strict=True):
             movers.append(
                 MarketMover(
                     ticker=ticker, exchange=exchange, name=name,
@@ -463,20 +517,37 @@ class LivePriceProvider:
     def get_news(self, holdings: list[tuple[str, str]]) -> list[StockNewsItem]:
         cache_key = "_news:" + ",".join(f"{t}:{e}" for t, e in sorted(holdings))
         cached = self._history_cache.get(cache_key)
-        if cached and (time.monotonic() - cached[1]) < _CACHE_TTL:
+        if cached:
+            if (time.monotonic() - cached[1]) < _CACHE_TTL:
+                return cached[0]
+            # Stale-while-revalidate: serve old news, refresh in background.
+            self._schedule_refresh(
+                ("news", cache_key), lambda: self._fetch_news(list(holdings))
+            )
             return cached[0]
+
+        return self._fetch_news(holdings)
+
+    @staticmethod
+    def _fetch_raw_news(yf_symbol: str) -> list:
+        try:
+            return yf.Ticker(yf_symbol).news or []
+        except Exception:
+            logger.warning("yfinance news failed for %s", yf_symbol)
+            return []
+
+    def _fetch_news(self, holdings: list[tuple[str, str]]) -> list[StockNewsItem]:
+        cache_key = "_news:" + ",".join(f"{t}:{e}" for t, e in sorted(holdings))
+
+        # Bounded parallel news fan-out; map preserves input order.
+        raw_news = list(_FANOUT.map(
+            lambda h: self._fetch_raw_news(_to_yahoo_symbol(h[0], h[1])), holdings
+        ))
 
         items: list[StockNewsItem] = []
         seen_titles: set[str] = set()
 
-        for ticker, exchange in holdings:
-            yf_symbol = _to_yahoo_symbol(ticker, exchange)
-            try:
-                news = yf.Ticker(yf_symbol).news or []
-            except Exception:
-                logger.warning("yfinance news failed for %s", yf_symbol)
-                continue
-
+        for (ticker, exchange), news in zip(holdings, raw_news, strict=True):
             for article in news[:5]:
                 content = article.get("content", {})
                 title = content.get("title", "")

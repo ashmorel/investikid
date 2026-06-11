@@ -22,6 +22,7 @@ import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { simulatorApi } from '@/api/simulator';
 import type { RegionCode } from '@/lib/region';
 import { isNativeApp } from '@/lib/platform';
+import { isSoundEnabled, playSound, setSoundEnabled } from '@/lib/sound';
 import { REMINDER } from '@/lib/reminderConfig';
 import { requestReminderPermission, syncStreakReminder } from '@/lib/streakReminder';
 
@@ -36,6 +37,13 @@ export function ProfileMenu({ username }: { username: string }) {
   const [reminderOn, setReminderOn] = useState(() => localStorage.getItem(REMINDER.storageKey) === '1');
   const [reminderDenied, setReminderDenied] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
+
+  function toggleSound(next: boolean) {
+    setSoundEnabled(next);
+    setSoundOn(next);
+    if (next) playSound('correct'); // instant audition so kids hear what they enabled
+  }
 
   const resetPf = useMutation({
     mutationFn: () => simulatorApi.resetPortfolio(),
@@ -120,6 +128,21 @@ export function ProfileMenu({ username }: { username: string }) {
           <RegionSwitcher currentRegion={currentRegion} />
         </div>
         <CurrencySelector currentCurrency={currentCurrency} />
+        <div className="space-y-1.5">
+          <label className="flex min-h-[44px] items-center justify-between gap-3 text-sm font-medium">
+            <span>Sounds</span>
+            <input
+              type="checkbox"
+              checked={soundOn}
+              onChange={(e) => toggleSound(e.target.checked)}
+              className="h-5 w-5"
+              aria-describedby="sound-help"
+            />
+          </label>
+          <p id="sound-help" className="text-xs text-muted-foreground">
+            Fun little sound effects when you learn and trade. On by default.
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setConfirmReset(true)}

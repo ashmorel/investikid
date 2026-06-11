@@ -1,8 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { axe } from 'vitest-axe';
 import { QuizLesson } from '../QuizLesson';
+import { playSound } from '@/lib/sound';
+import { haptic } from '@/lib/haptics';
+
+vi.mock('@/lib/sound', () => ({ playSound: vi.fn() }));
+vi.mock('@/lib/haptics', () => ({ haptic: vi.fn() }));
 
 const content = {
   question: 'What is 2 + 2?',
@@ -12,6 +17,44 @@ const content = {
 };
 
 describe('QuizLesson', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('correct answer fires the correct sound and success haptic exactly once', async () => {
+    const user = userEvent.setup();
+    render(<QuizLesson contentJson={content} onComplete={() => {}} />);
+
+    await user.click(screen.getByRole('radio', { name: /^4$/ }));
+    await user.click(screen.getByRole('button', { name: /Check answer/i }));
+
+    expect(playSound).toHaveBeenCalledTimes(1);
+    expect(playSound).toHaveBeenCalledWith('correct');
+    expect(haptic).toHaveBeenCalledTimes(1);
+    expect(haptic).toHaveBeenCalledWith('success');
+  });
+
+  it('wrong answer fires the wrong sound and warning haptic exactly once', async () => {
+    const user = userEvent.setup();
+    render(<QuizLesson contentJson={content} onComplete={() => {}} />);
+
+    await user.click(screen.getByRole('radio', { name: /^3$/ }));
+    await user.click(screen.getByRole('button', { name: /Check answer/i }));
+
+    expect(playSound).toHaveBeenCalledTimes(1);
+    expect(playSound).toHaveBeenCalledWith('wrong');
+    expect(haptic).toHaveBeenCalledTimes(1);
+    expect(haptic).toHaveBeenCalledWith('warning');
+  });
+
+  it('no a11y violations in the submitted feedback state', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<QuizLesson contentJson={content} onComplete={() => {}} />);
+    await user.click(screen.getByRole('radio', { name: /^3$/ }));
+    await user.click(screen.getByRole('button', { name: /Check answer/i }));
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('renders the question and choices', () => {
     render(<QuizLesson contentJson={content} onComplete={() => {}} />);
     expect(screen.getByText('What is 2 + 2?')).toBeInTheDocument();

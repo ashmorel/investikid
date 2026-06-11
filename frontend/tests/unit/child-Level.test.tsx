@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { axe } from 'vitest-axe';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
@@ -63,6 +64,79 @@ describe('Level page', () => {
     renderAt('/lessons/mod-1/lv-1');
     const back = await screen.findByRole('link', { name: /back to levels/i });
     expect(back).toHaveAttribute('href', '/lessons/mod-1');
+  });
+
+  it('shows the objectives intro block when the level has learning_objectives', async () => {
+    mockJsonRoute({
+      '/levels/lv-1/lessons': [
+        { id: 'L1', type: 'card', title: 'First', xp_reward: 10, order_index: 0, completed: false },
+      ],
+      '/modules/mod-1/levels': [
+        { id: 'lv-1', module_id: 'mod-1', title: 'Beginner', order_index: 0, is_premium: false, icon: '🌱', state: 'in_progress', locked_reason: null, passed: false, lessons_total: 1, lessons_completed: 0, learning_objectives: ['What a stock is', 'Why companies sell shares'], mastered_at: null },
+      ],
+    });
+    renderAt('/lessons/mod-1/lv-1');
+    expect(await screen.findByText(/in this level you'll learn/i)).toBeInTheDocument();
+    const list = screen.getByRole('list', { name: /you'll learn/i });
+    expect(list).toBeInTheDocument();
+    expect(screen.getByText('What a stock is')).toBeInTheDocument();
+    expect(screen.getByText('Why companies sell shares')).toBeInTheDocument();
+  });
+
+  it('hides the objectives block when the level has no learning_objectives', async () => {
+    mockJsonRoute({
+      '/levels/lv-1/lessons': [
+        { id: 'L1', type: 'card', title: 'First', xp_reward: 10, order_index: 0, completed: false },
+      ],
+      '/modules/mod-1/levels': [
+        { id: 'lv-1', module_id: 'mod-1', title: 'Beginner', order_index: 0, is_premium: false, icon: '🌱', state: 'in_progress', locked_reason: null, passed: false, lessons_total: 1, lessons_completed: 0, learning_objectives: null, mastered_at: null },
+      ],
+    });
+    renderAt('/lessons/mod-1/lv-1');
+    expect(await screen.findByText(/1\. First/)).toBeInTheDocument();
+    expect(screen.queryByText(/in this level you'll learn/i)).not.toBeInTheDocument();
+  });
+
+  it('shows a Mastered stamp with the date when mastered_at is set', async () => {
+    mockJsonRoute({
+      '/levels/lv-1/lessons': [
+        { id: 'L1', type: 'card', title: 'First', xp_reward: 10, order_index: 0, completed: true },
+      ],
+      '/modules/mod-1/levels': [
+        { id: 'lv-1', module_id: 'mod-1', title: 'Beginner', order_index: 0, is_premium: false, icon: '🌱', state: 'completed', locked_reason: null, passed: true, lessons_total: 1, lessons_completed: 1, learning_objectives: null, mastered_at: '2026-06-11T09:30:00Z' },
+      ],
+    });
+    renderAt('/lessons/mod-1/lv-1');
+    expect(await screen.findByText(/Mastered/)).toBeInTheDocument();
+    expect(screen.getByText(/11 Jun 2026/)).toBeInTheDocument();
+  });
+
+  it('shows no Mastered stamp when mastered_at is null', async () => {
+    mockJsonRoute({
+      '/levels/lv-1/lessons': [
+        { id: 'L1', type: 'card', title: 'First', xp_reward: 10, order_index: 0, completed: false },
+      ],
+      '/modules/mod-1/levels': [
+        { id: 'lv-1', module_id: 'mod-1', title: 'Beginner', order_index: 0, is_premium: false, icon: '🌱', state: 'in_progress', locked_reason: null, passed: false, lessons_total: 1, lessons_completed: 0, learning_objectives: null, mastered_at: null },
+      ],
+    });
+    renderAt('/lessons/mod-1/lv-1');
+    expect(await screen.findByText(/1\. First/)).toBeInTheDocument();
+    expect(screen.queryByText(/Mastered/)).not.toBeInTheDocument();
+  });
+
+  it('has no axe violations with objectives and mastered stamp', async () => {
+    mockJsonRoute({
+      '/levels/lv-1/lessons': [
+        { id: 'L1', type: 'card', title: 'First', xp_reward: 10, order_index: 0, completed: true },
+      ],
+      '/modules/mod-1/levels': [
+        { id: 'lv-1', module_id: 'mod-1', title: 'Beginner', order_index: 0, is_premium: false, icon: '🌱', state: 'completed', locked_reason: null, passed: true, lessons_total: 1, lessons_completed: 1, learning_objectives: ['What a stock is'], mastered_at: '2026-06-11T09:30:00Z' },
+      ],
+    });
+    const { container } = renderAt('/lessons/mod-1/lv-1');
+    expect(await screen.findByText(/Mastered/)).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('opens the paywall on a premium_required 403 error', async () => {

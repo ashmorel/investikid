@@ -8,6 +8,7 @@ import { tierConfig, DEFAULT_TIER, type AgeTier } from '@/lib/ageTier';
 import { HeroCard } from '@/components/child/ui/HeroCard';
 import { Penny } from '@/components/child/ui/Penny';
 import { GradientButton } from '@/components/child/ui/GradientButton';
+import { TierChip } from '@/components/child/TierChip';
 
 export default function HomeHero() {
   const next = useNextLesson();
@@ -35,13 +36,16 @@ export default function HomeHero() {
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-100 shadow" aria-hidden="true">
           <Penny size={tierConfig[tier].pennyHeroSize} mood="happy" />
         </div>
-        <motion.p
-          id="home-hero-greeting"
-          className="rounded-2xl rounded-tl-sm border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-sm"
-          initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-        >
-          {greeting}
-        </motion.p>
+        <div className="flex min-w-0 flex-col items-start gap-1">
+          {tierConfig[tier].showTierChip && <TierChip />}
+          <motion.p
+            id="home-hero-greeting"
+            className="rounded-2xl rounded-tl-sm border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-sm"
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+          >
+            {greeting}
+          </motion.p>
+        </div>
       </div>
 
       <div className="mt-3">

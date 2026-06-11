@@ -1,9 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import type { LessonCompletionResult } from '@/api/content';
 import { StatChip } from '@/components/child/ui/StatChip';
+import { XpCountUp } from '@/components/child/ui/XpCountUp';
 import { GradientButton } from '@/components/child/ui/GradientButton';
+import { playSound } from '@/lib/sound';
+import { haptic } from '@/lib/haptics';
 
 type Props = {
   result: LessonCompletionResult;
@@ -14,14 +17,19 @@ export function CompletionPanel({ result, onContinue }: Props) {
   const heading = result.already_completed ? "You've already done this one" : 'Lesson complete!';
   const xpInLevel = result.total_xp % 100;
 
+  // One-shot celebration on mount (juice pack, spec C). Ref-guarded so
+  // re-renders never replay it; skipped entirely for repeat completions.
+  const celebrated = useRef(false);
   useEffect(() => {
-    if (!result.already_completed) {
-      if (
-        typeof window !== 'undefined' &&
-        !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-      ) {
-        confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
-      }
+    if (result.already_completed || celebrated.current) return;
+    celebrated.current = true;
+    playSound('lessonComplete');
+    void haptic('success');
+    if (
+      typeof window !== 'undefined' &&
+      !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ) {
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
     }
   }, [result.already_completed]);
 
@@ -41,7 +49,7 @@ export function CompletionPanel({ result, onContinue }: Props) {
       <div className="text-2xl" aria-hidden="true">⭐ ⭐ ⭐</div>
 
       <div className="flex w-full gap-3">
-        <StatChip emoji="⭐" value={`+${result.xp_awarded}`} label="XP" />
+        <StatChip emoji="⭐" value={<XpCountUp value={result.xp_awarded} />} label="XP" />
         <StatChip emoji="🏆" value={String(result.level)} label="Level" />
         <StatChip emoji="🔥" value={String(result.streak_count)} label="Streak" />
       </div>

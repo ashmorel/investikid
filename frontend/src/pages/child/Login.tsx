@@ -65,6 +65,9 @@ export default function Login() {
       <p className="mt-2 text-sm text-muted-foreground">
         New to InvestiKid? <Link to="/signup" className="underline">Create an account</Link>.
       </p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Curious? <Link to="/try" className="underline">Try a lesson first</Link> — no account needed.
+      </p>
     </AuthPage>
   );
 }

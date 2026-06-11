@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useReducedMotion } from 'framer-motion';
 import { contentApi, type LevelOut, type ModuleOut } from '@/api/content';
+import { playSound } from '@/lib/sound';
+import { haptic } from '@/lib/haptics';
+import { celebrate } from '@/lib/confetti';
 import { LevelCard } from '@/components/child/LevelCard';
 import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 import { dismissNudge, isNudgeDismissed } from '@/lib/premiumNudge';
+import { tierConfig, useAgeTier } from '@/lib/ageTier';
 
 export default function Module() {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -14,7 +19,11 @@ export default function Module() {
   const { toast } = useToast();
   const { open: openPaywall } = usePremiumPaywall();
   const nudgeKey = 'level-nudge:' + moduleId;
+  const tier = useAgeTier();
+  // Investor tier celebrates quietly: same banners and buttons, plainer emoji-free copy.
+  const subtle = tierConfig[tier].celebration === 'subtle';
   const [nudgeDismissed, setNudgeDismissed] = useState(() => isNudgeDismissed(nudgeKey));
+  const reducedMotion = useReducedMotion();
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -27,6 +36,30 @@ export default function Module() {
     queryFn: () => contentApi.listLevels(moduleId!),
     enabled: !!moduleId, retry: false, staleTime: 60_000,
   });
+
+  const levels = (levelsQ.data ?? []) as LevelOut[];
+  const allComplete = levels.length > 0 && levels.every((l) => l.state === 'completed');
+  // Earned moment: the child finished their free levels and the next is premium-locked.
+  const orderedLevels = [...levels].sort((a, b) => a.order_index - b.order_index);
+  const nextPremiumLevel = orderedLevels.find(
+    (l, i) =>
+      l.state === 'locked' &&
+      l.locked_reason === 'premium' &&
+      orderedLevels.slice(0, i).every((p) => p.state === 'completed'),
+  );
+  const showEarnedNudge = !!nextPremiumLevel && !nudgeDismissed;
+  const showCompleteBanner = !showEarnedNudge && allComplete;
+
+  // Mastery moment (juice pack, spec C): once per visit when the module-complete
+  // banner appears. Confetti is explorers-only and skipped under reduced motion.
+  const masteryFired = useRef(false);
+  useEffect(() => {
+    if (!showCompleteBanner || masteryFired.current) return;
+    masteryFired.current = true;
+    playSound('mastery');
+    void haptic('heavy');
+    if (!subtle && !reducedMotion) celebrate();
+  }, [showCompleteBanner, subtle, reducedMotion]);
 
   if (modulesQ.isLoading || levelsQ.isLoading) {
     return <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6 text-sm text-gray-500">Loading…</div>;
@@ -42,25 +75,14 @@ export default function Module() {
   }
 
   const module = (modulesQ.data ?? []).find((m) => m.id === moduleId);
-  const levels = (levelsQ.data ?? []) as LevelOut[];
 
   // Single-level modules read as "lessons" (not a misleading "1 of 1 levels").
   const single = levels.length === 1;
-  const allComplete = levels.length > 0 && levels.every((l) => l.state === 'completed');
   const totalLessons = levels.reduce((n, l) => n + l.lessons_total, 0);
   const doneLessons = levels.reduce((n, l) => n + l.lessons_completed, 0);
   const progressDone = single ? doneLessons : levels.filter((l) => l.state === 'completed').length;
   const progressTotal = single ? totalLessons : levels.length;
   const unit = single ? 'lesson' : 'level';
-  // Earned moment: the child finished their free levels and the next is premium-locked.
-  const orderedLevels = [...levels].sort((a, b) => a.order_index - b.order_index);
-  const nextPremiumLevel = orderedLevels.find(
-    (l, i) =>
-      l.state === 'locked' &&
-      l.locked_reason === 'premium' &&
-      orderedLevels.slice(0, i).every((p) => p.state === 'completed'),
-  );
-  const showEarnedNudge = !!nextPremiumLevel && !nudgeDismissed;
   // Next module by order (for the "what's next" CTA after finishing).
   const nextModule = module
     ? [...(modulesQ.data ?? [])]
@@ -138,27 +160,33 @@ export default function Module() {
               ✕
             </button>
             <p className="text-base font-bold text-gray-900">
-              🎉 You're ready for {nextPremiumLevel.title}!
+              {subtle ? `You're ready for ${nextPremiumLevel.title}.` : `🎉 You're ready for ${nextPremiumLevel.title}!`}
             </p>
-            <p className="mt-1 text-sm text-gray-600">Unlock Premium to keep going 🌟</p>
+            <p className="mt-1 text-sm text-gray-600">
+              {subtle ? 'Premium unlocks the next level.' : 'Unlock Premium to keep going 🌟'}
+            </p>
             <button
               type="button"
               onClick={() => openPaywall({ kind: 'level', label: nextPremiumLevel.title })}
               className="mt-3 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
             >
-              Ask my grown-up ✨
+              {subtle ? 'Ask my grown-up' : 'Ask my grown-up ✨'}
             </button>
           </div>
         </div>
       )}
 
       {/* Module complete → what's next */}
-      {!showEarnedNudge && allComplete && (
+      {showCompleteBanner && (
         <div className="px-4 pb-6 sm:px-6">
           <div className="rounded-2xl border-2 border-brand-200 bg-brand-50 p-4 text-center">
-            <p className="text-base font-bold text-gray-900">🎉 Module complete!</p>
+            <p className="text-base font-bold text-gray-900">
+              {subtle ? 'Module complete.' : '🎉 Module complete!'}
+            </p>
             <p className="mt-1 text-sm text-gray-600">
-              Great work finishing {module?.title ?? 'this module'}.
+              {subtle
+                ? `Great work on ${module?.title ?? 'this module'}.`
+                : `Great work finishing ${module?.title ?? 'this module'}.`}
             </p>
             <button
               type="button"

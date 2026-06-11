@@ -9,6 +9,8 @@ import { HoldingsTable } from '@/components/child/simulator/HoldingsTable';
 import { TradeHistoryTab } from '@/components/child/simulator/TradeHistoryTab';
 import { PortfolioHero } from '@/components/child/simulator/PortfolioHero';
 import { MissionBanner } from '@/components/child/simulator/MissionBanner';
+import { DiversificationCard } from '@/components/child/simulator/DiversificationCard';
+import { GrowthProjectionCard } from '@/components/child/simulator/GrowthProjectionCard';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 
@@ -65,6 +67,16 @@ export default function Simulator() {
         />
       </div>
 
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <DiversificationCard
+          holdingsCount={new Set(holdings.map((h) => `${h.exchange}:${h.ticker}`)).size}
+        />
+        <GrowthProjectionCard
+          totalValue={portfolio.total_value}
+          currencyCode={portfolio.currency_code}
+        />
+      </div>
+
       <div className="mt-6">
         <div role="tablist" className="mb-3 flex gap-1 rounded-lg bg-brand-50 p-1">
           <button
@@ -93,7 +105,12 @@ export default function Simulator() {
 
         <div role="tabpanel">
           {activeTab === 'holdings' ? (
-            <HoldingsTable holdings={holdings} />
+            <HoldingsTable
+              holdings={holdings}
+              holdingsValue={portfolio.holdings_value}
+              totalUnrealizedPl={portfolio.total_unrealized_pl}
+              currencyCode={portfolio.currency_code}
+            />
           ) : (
             <TradeHistoryTab trades={trades ?? []} />
           )}

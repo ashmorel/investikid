@@ -73,7 +73,68 @@ def _render(template: str, context: dict) -> str:
             f"After that, Premium keeps unlocking:\n\n{benefits}\n\n"
             f"{context['manage_hint']}\n"
         )
+    if template == "weekly_digest":
+        return _render_weekly_digest_text(context)
     raise ValueError(f"Unknown template: {template}")
+
+
+def _join_names(names: list[str]) -> str:
+    if len(names) <= 1:
+        return names[0] if names else "your child"
+    return ", ".join(names[:-1]) + f" and {names[-1]}"
+
+
+def _premium_child_name(context: dict) -> str:
+    """Name to personalise the premium nudge: first child with a mastery, else first child."""
+    children = context.get("children", [])
+    for child in children:
+        if child.get("masteries"):
+            return child["name"]
+    return children[0]["name"] if children else "your child"
+
+
+def _render_weekly_digest_text(context: dict) -> str:
+    from app.core.config import settings
+
+    dashboard_url = f"{settings.app_base_url}/parent"
+    names = _join_names([c["name"] for c in context.get("children", [])])
+    parts = [f"Hi,\n\nHere's what {names} got up to on InvestiKid this week."]
+
+    for child in context.get("children", []):
+        lines = []
+        for mastery in child.get("masteries", []):
+            objectives = mastery.get("objectives") or []
+            line = f"{child['name']} mastered {mastery['module_title']} · {mastery['level_title']}"
+            if objectives:
+                line += f" — they can now {objectives[0]}"
+            lines.append(line)
+            lines.extend(f"  - {extra}" for extra in objectives[1:])
+        lines.append(
+            f"This week: {child['lessons_completed']} lessons · {child['streak']}-day streak"
+        )
+        if child.get("weak_topic"):
+            lines.append(f"Worth practising: {child['weak_topic']}")
+        rec = child.get("next_recommendation")
+        if rec:
+            up_next = rec["module_title"]
+            if rec.get("level_title"):
+                up_next += f" — {rec['level_title']}"
+            lines.append(f"Up next: {up_next}")
+        if child.get("conversation_prompt"):
+            lines.append(f"Talk about it: {child['conversation_prompt']}")
+        parts.append("\n".join(lines))
+
+    if not context.get("parent_subscribed"):
+        parts.append(
+            f"Premium unlocks the next levels — deeper skills like the ones "
+            f"{_premium_child_name(context)} just mastered. See your options: {dashboard_url}"
+        )
+
+    parts.append(
+        f"See the full picture in your parent dashboard: {dashboard_url}\n"
+        "Manage email preferences in your dashboard settings."
+    )
+    return "\n\n".join(parts) + "\n"
 
 
 _SUBJECT = {
@@ -84,6 +145,7 @@ _SUBJECT = {
     "admin_llm_alert": "⚠️ InvestiKid system alert",
     "premium_request": "Your child would love InvestiKid Premium",
     "trial_ending": "Your InvestiKid trial ends soon",
+    "weekly_digest": "What your child learned this week 🌟",
 }
 
 
@@ -180,6 +242,8 @@ def _render_html(template: str, context: dict) -> str:
         cta_label = "Open parent dashboard"
         cta_url = f"{settings.app_base_url}/parent"
         footer = context["manage_hint"]
+    elif template == "weekly_digest":
+        return _render_weekly_digest_html(context)
     else:
         raise ValueError(f"Unknown template: {template}")
 
@@ -206,6 +270,102 @@ def _render_html(template: str, context: dict) -> str:
         f'font-weight:600;color:#ffffff;text-decoration:none;">{cta_label}</a>'
         "</td></tr></table>"
         f'<p style="margin:24px 0 0;font-size:13px;color:#6b7280;">{footer}</p>'
+        "</td></tr></table>"
+        "</td></tr></table>"
+        "</body></html>"
+    )
+
+
+def _render_weekly_digest_html(context: dict) -> str:
+    from app.core.config import settings
+
+    dashboard_url = f"{settings.app_base_url}/parent"
+    names = _join_names([c["name"] for c in context.get("children", [])])
+
+    sections: list[str] = []
+    for child in context.get("children", []):
+        rows: list[str] = []
+        for mastery in child.get("masteries", []):
+            objectives = mastery.get("objectives") or []
+            line = (
+                f"{child['name']} mastered <strong>{mastery['module_title']} · "
+                f"{mastery['level_title']}</strong>"
+            )
+            if objectives:
+                line += f" — they can now {objectives[0]}"
+            rows.append(f'<p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#374151;">{line}</p>')
+            if objectives[1:]:
+                items = "".join(
+                    f'<li style="margin:0 0 4px;">{extra}</li>' for extra in objectives[1:]
+                )
+                rows.append(
+                    f'<ul style="margin:0 0 8px;padding-left:20px;font-size:14px;'
+                    f'line-height:1.6;color:#374151;">{items}</ul>'
+                )
+        rows.append(
+            f'<p style="margin:0 0 8px;font-size:14px;color:#374151;">'
+            f"This week: {child['lessons_completed']} lessons · "
+            f"{child['streak']}-day streak</p>"
+        )
+        if child.get("weak_topic"):
+            rows.append(
+                f'<p style="margin:0 0 8px;font-size:14px;color:#374151;">'
+                f"Worth practising: {child['weak_topic']}</p>"
+            )
+        rec = child.get("next_recommendation")
+        if rec:
+            up_next = rec["module_title"]
+            if rec.get("level_title"):
+                up_next += f" — {rec['level_title']}"
+            rows.append(
+                f'<p style="margin:0 0 8px;font-size:14px;color:#374151;">'
+                f"Up next: {up_next}</p>"
+            )
+        if child.get("conversation_prompt"):
+            rows.append(
+                f'<p style="margin:0 0 8px;font-size:14px;color:#374151;">'
+                f"Talk about it: {child['conversation_prompt']}</p>"
+            )
+        sections.append(
+            f'<h2 style="margin:24px 0 8px;font-size:16px;color:#111827;">{child["name"]}</h2>'
+            + "".join(rows)
+        )
+
+    premium_html = ""
+    if not context.get("parent_subscribed"):
+        premium_html = (
+            f'<p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#374151;">'
+            f"Premium unlocks the next levels — deeper skills like the ones "
+            f"{_premium_child_name(context)} just mastered. "
+            f'<a href="{dashboard_url}" style="color:#2563eb;">See your options</a>.</p>'
+        )
+
+    return (
+        '<!DOCTYPE html>'
+        '<html lang="en">'
+        "<head>"
+        '<meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        "</head>"
+        "<body style=\"margin:0;padding:0;background-color:#f4f4f5;"
+        "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;\">"
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+        '<tr><td align="center" style="padding:40px 20px;">'
+        '<table role="presentation" width="100%"'
+        ' style="max-width:480px;background:#ffffff;border-radius:8px;overflow:hidden;">'
+        '<tr><td style="padding:32px 24px;">'
+        f'<h1 style="margin:0 0 16px;font-size:20px;color:#111827;">'
+        f"What {names} learned this week &#x1F31F;</h1>"
+        + "".join(sections)
+        + premium_html
+        + '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px auto 0;">'
+        '<tr><td align="center" style="border-radius:6px;background-color:#2563eb;">'
+        f'<a href="{dashboard_url}" target="_blank" '
+        'style="display:inline-block;padding:12px 24px;font-size:15px;'
+        'font-weight:600;color:#ffffff;text-decoration:none;">Open parent dashboard</a>'
+        "</td></tr></table>"
+        '<p style="margin:24px 0 0;font-size:13px;color:#6b7280;">'
+        "Manage email preferences in your dashboard settings.</p>"
         "</td></tr></table>"
         "</td></tr></table>"
         "</body></html>"

@@ -1,0 +1,123 @@
+{
+  "module_title": "What is a Stock?",
+  "icon": "📈",
+  "learning_objectives": [
+    "Explain that a share is a small piece of a company",
+    "Describe why people buy shares (growth and dividends)",
+    "Recognise that share prices move up and down"
+  ],
+  "lessons": [
+    {
+      "type": "card",
+      "xp_reward": 10,
+      "content_json": {
+        "title": "A stock is a slice of a company",
+        "body": "When you buy a stock, you own a tiny piece of that business. If the business does well, your piece can be worth more."
+      }
+    },
+    {
+      "type": "card",
+      "xp_reward": 10,
+      "content_json": {
+        "title": "Why do people buy stocks?",
+        "body": "Stocks can grow in value over time and some pay dividends — small cash payments to shareholders."
+      }
+    },
+    {
+      "type": "video",
+      "xp_reward": 10,
+      "content_json": {
+        "youtube_id": "p7HKvqRI_Bo",
+        "caption": "What is a stock? (intro)",
+        "captions_available": true,
+        "transcript": "A stock is a small piece of ownership in a company. When you buy a share, you own a tiny fraction of that business. If the company does well and grows, your share can become worth more. If it does poorly, your share can be worth less. Companies sell shares to raise money, and people buy them hoping the company will grow over time. Owning a stock does not mean you run the company — it means you own a part of it along with many other shareholders."
+      }
+    },
+    {
+      "type": "quiz",
+      "xp_reward": 25,
+      "content_json": {
+        "question": "If you own one stock in a company with 1,000,000 shares, what fraction of the company do you own?",
+        "choices": [
+          "1/100",
+          "1/1,000,000",
+          "1%",
+          "All of it"
+        ],
+        "answer_index": 1,
+        "explanation": "One share out of one million is 1/1,000,000 of the company."
+      }
+    },
+    {
+      "type": "quiz",
+      "xp_reward": 25,
+      "content_json": {
+        "question": "What does it mean when a company 'pays a dividend'?",
+        "choices": [
+          "It shares part of its profits with shareholders, usually as cash",
+          "It charges shareholders a yearly fee",
+          "It splits every share into two",
+          "It buys your shares back whether you want to sell or not"
+        ],
+        "answer_index": 0,
+        "explanation": "A dividend is a slice of the company's profits paid out to shareholders — often as a small cash payment."
+      }
+    },
+    {
+      "type": "quiz",
+      "xp_reward": 25,
+      "content_json": {
+        "question": "A share's price rises from £2 to £3. If you owned 10 shares, how much did your investment grow?",
+        "choices": [
+          "£1",
+          "£10",
+          "£30",
+          "£100"
+        ],
+        "answer_index": 1,
+        "explanation": "Each share gained £1 (£3 − £2). 10 shares × £1 = £10 increase in value."
+      }
+    },
+    {
+      "type": "quiz",
+      "xp_reward": 25,
+      "content_json": {
+        "question": "Why might a company's share price go DOWN?",
+        "choices": [
+          "Its profits fell, or people expect it to do worse",
+          "The stock market is open for trading",
+          "It hired a few new staff",
+          "Share prices can only ever go up over time"
+        ],
+        "answer_index": 0,
+        "explanation": "Prices fall when more people want to sell than buy — usually because they expect the company to do worse."
+      }
+    },
+    {
+      "type": "scenario",
+      "xp_reward": 20,
+      "content_json": {
+        "prompt": "A share you bought for £50 is now worth £40. A friend says 'sell now before it drops more!' What's the wisest first step?",
+        "choices": [
+          {
+            "label": "Sell immediately to avoid losing more",
+            "outcome": "Selling locks in the £10 loss. Panic-selling on a dip is one of the most common mistakes — the price may well recover."
+          },
+          {
+            "label": "Check WHY it dropped before deciding anything",
+            "outcome": "Best move. If the company is still healthy, a dip can be temporary. Decisions should be based on the company, not on fear."
+          },
+          {
+            "label": "Borrow money to buy lots more",
+            "outcome": "Never borrow to invest. 'Buying the dip' can work, but only after research — and never with money you can't afford to lose."
+          }
+        ],
+        "correct_index": 1
+      }
+    }
+  ],
+  "tease": {
+    "extra_level_count": 2,
+    "other_module_count": 14
+  }
+}

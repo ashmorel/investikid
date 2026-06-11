@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
-from app.models.content import Lesson, LessonCompletion, LessonView, Level, Module
+from app.models.content import Lesson, LessonCompletion, LessonView, Level, LevelMastery, Module
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
 from app.schemas.content import (
@@ -19,12 +19,14 @@ from app.schemas.content import (
     ModuleOut,
     NextLessonEnvelope,
 )
+from app.services.age_tier import age_in_years
 from app.services.content_service import (
     compute_level,
     content_region_for,
     derive_lesson_title,
     grant_module_completion_cash,
     is_module_accessible,
+    is_module_age_ok,
     record_daily_activity,
 )
 from app.services.entitlements import is_premium
@@ -33,6 +35,7 @@ from app.services.gamification_service import (
     update_challenge_progress,
 )
 from app.services.level_service import LevelStateInput, derive_level_states
+from app.services.mastery_service import record_mastery_if_earned
 from app.services.next_lesson_service import resolve_next_lesson
 from app.services.premium_config import premium_required_error
 from app.services.skill_profile_service import (
@@ -54,6 +57,11 @@ async def _get_accessible_module(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     country_ok = not module.country_codes or content_region_for(current_user) in module.country_codes
     if not country_ok:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
+    # Age gate uses the actual age from dob (NEVER the parent tier_override) and
+    # mirrors the inaccessible-country behaviour: a plain 404, no content tease.
+    user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
+    if not is_module_age_ok(user_age, module.min_age, module.max_age):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     if not is_module_accessible(
         content_region_for(current_user), is_premium(current_user),
@@ -78,10 +86,15 @@ async def list_modules(
 ):
     result = await session.scalars(select(Module).order_by(Module.order_index))
     modules = result.all()
+    user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
     out: list[ModuleOut] = []
     for m in modules:
         country_ok = not m.country_codes or content_region_for(current_user) in m.country_codes
         if not country_ok:
+            continue
+        # Hidden, not teased: out-of-age modules never appear in the list
+        # (actual age from dob — the parent tier_override must not unlock these).
+        if not is_module_age_ok(user_age, m.min_age, m.max_age):
             continue
         accessible = is_module_accessible(
             content_region_for(current_user), is_premium(current_user),
@@ -91,6 +104,7 @@ async def list_modules(
             id=m.id, topic=m.topic, title=m.title,
             country_codes=m.country_codes, is_premium=m.is_premium,
             order_index=m.order_index, icon=m.icon, locked=not accessible,
+            standards_alignment=m.standards_alignment, sources=m.sources,
         ))
     pref = current_user.topic_path
     if pref and pref in {m.topic for m in modules}:
@@ -184,6 +198,15 @@ async def list_levels(
         completed_ids=completed_ids, scores=scores,
         user_is_premium=is_premium(current_user),
     )
+    mastered_at_by_level: dict = {}
+    if levels:
+        mastery_rows = (await session.execute(
+            select(LevelMastery.level_id, LevelMastery.mastered_at).where(
+                LevelMastery.user_id == current_user.id,
+                LevelMastery.level_id.in_([lv.id for lv in levels]),
+            )
+        )).all()
+        mastered_at_by_level = dict(mastery_rows)
     return [
         LevelOut(
             id=lv.id, module_id=lv.module_id, title=lv.title, order_index=lv.order_index,
@@ -191,6 +214,8 @@ async def list_levels(
             state=states[lv.id].state, locked_reason=states[lv.id].locked_reason,
             passed=states[lv.id].passed, lessons_total=states[lv.id].lessons_total,
             lessons_completed=states[lv.id].lessons_completed,
+            learning_objectives=lv.learning_objectives,
+            mastered_at=mastered_at_by_level.get(lv.id),
         )
         for lv in levels
     ]
@@ -289,6 +314,7 @@ async def complete_lesson(
     # Capture scalar attributes early before session expires ORM objects
     topic = module.topic
     lesson_type = lesson.type
+    lesson_level_id = lesson.level_id
     lesson_content = lesson.content_json or {}
     is_quiz = lesson_type in ("quiz", "scenario")
 
@@ -302,6 +328,9 @@ async def complete_lesson(
     xp_awarded, already = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today
     )
+
+    if lesson_level_id is not None:
+        await record_mastery_if_earned(session, current_user.id, lesson_level_id)
 
     if not already:
         await update_challenge_progress(

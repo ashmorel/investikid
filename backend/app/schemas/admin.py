@@ -3,11 +3,14 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
+from app.schemas.content import SourceRef, StandardRef
 from app.services.simulator_rewards_config import MISSION_TYPES
+
+NonEmptyStr = Annotated[str, Field(min_length=1)]
 
 
 # ── Apply mission ───────────────────────────────────────────────────
@@ -70,6 +73,8 @@ class ModuleUpdate(BaseModel):
     min_age: int | None = None
     max_age: int | None = None
     completion_cash_reward: Decimal | None = None
+    standards_alignment: list[StandardRef] | None = None
+    sources: list[SourceRef] | None = None
 
 
 class ModuleOut(BaseModel):
@@ -85,6 +90,8 @@ class ModuleOut(BaseModel):
     min_age: int | None = None
     max_age: int | None = None
     completion_cash_reward: Decimal | None = None
+    standards_alignment: list[StandardRef] | None = None
+    sources: list[SourceRef] | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -300,6 +307,7 @@ class AdminLevelUpdate(BaseModel):
     is_premium: bool | None = None
     pass_threshold: float | None = None
     icon: str | None = None
+    learning_objectives: list[NonEmptyStr] | None = None
 
 
 class AdminLevelOut(BaseModel):
@@ -314,17 +322,33 @@ class AdminLevelOut(BaseModel):
     content_source: str
     icon: str
     lesson_count: int = 0
+    learning_objectives: list[str] | None = None
 
 
 # ── Settings ────────────────────────────────────────────────────────
 class AdminSettingsOut(BaseModel):
     alert_emails: list[str]
     starting_cash: dict[str, str] = {}
+    trade_commission_pct: str = "1.0"
 
 
 class AdminSettingsUpdate(BaseModel):
     alert_emails: list[EmailStr]
     starting_cash: dict[str, str] | None = None
+    trade_commission_pct: str | None = None
+
+    @field_validator("trade_commission_pct")
+    @classmethod
+    def _valid_pct(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        try:
+            pct = Decimal(v)
+        except ArithmeticError:
+            raise ValueError("trade_commission_pct must be a number")
+        if not Decimal("0") <= pct <= Decimal("10"):
+            raise ValueError("trade_commission_pct must be between 0 and 10")
+        return v
 
     @field_validator("alert_emails")
     @classmethod

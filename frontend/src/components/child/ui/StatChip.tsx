@@ -1,4 +1,4 @@
-export function StatChip({ emoji, value, label }: { emoji: string; value: string; label: string }) {
+export function StatChip({ emoji, value, label }: { emoji: string; value: React.ReactNode; label: string }) {
   return (
     <div className="flex flex-1 flex-col items-center rounded-2xl border border-brand-200 bg-white px-2 py-2.5 shadow-sm">
       <span className="text-lg" aria-hidden="true">{emoji}</span>

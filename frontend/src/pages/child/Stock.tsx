@@ -12,8 +12,12 @@ import { InvestmentTimeMachine } from '@/components/child/simulator/InvestmentTi
 import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { ChartCoachPanel } from '@/components/child/simulator/ChartCoachPanel';
 import { BackButton } from '@/components/child/BackButton';
+import { OfflineNotice } from '@/components/child/OfflineNotice';
 import { useToast } from '@/hooks/use-toast';
+import { useOnline } from '@/hooks/useOnline';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
+import { playSound } from '@/lib/sound';
+import { haptic } from '@/lib/haptics';
 
 export default function Stock() {
   const { exchange, ticker } = useParams<{ exchange: string; ticker: string }>();
@@ -24,11 +28,13 @@ export default function Stock() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [chartPeriod, setChartPeriod] = useState('1mo');
   const [showCoachPenny, setShowCoachPenny] = useState(false);
+  const online = useOnline();
 
   const quoteQ = useQuery<QuoteOut | null, ApiError>({
     queryKey: ['quote', exchange, ticker],
     queryFn: () => simulatorApi.getQuote(exchange!, ticker!),
     retry: false,
+    staleTime: 60_000,
     refetchOnWindowFocus: true,
   });
 
@@ -42,6 +48,9 @@ export default function Stock() {
   const tradeMutation = useMutation({
     mutationFn: (req: TradeRequest) => simulatorApi.placeTrade(req),
     onSuccess: (result) => {
+      // Trade executed (juice pack, spec C) — alongside the reward toast below.
+      playSound('trade');
+      void haptic('medium');
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       queryClient.invalidateQueries({ queryKey: ['active-missions'] });
@@ -97,7 +106,17 @@ export default function Stock() {
 
   const quote = quoteQ.data;
   const portfolio = portfolioQ.data;
-  if (!quote || !portfolio) return null;
+  if (!quote || !portfolio) {
+    if (!online) {
+      return (
+        <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
+          <BackButton to="/simulator/market" label="Market" />
+          <OfflineNotice className="mt-3" />
+        </div>
+      );
+    }
+    return null;
+  }
 
   const existingHolding = portfolio.holdings.find(
     (h) => h.ticker === ticker && h.exchange === exchange,
@@ -106,6 +125,8 @@ export default function Stock() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
       <BackButton to="/simulator/market" label="Market" className="mb-4" />
+
+      {!online && <OfflineNotice className="mb-4" />}
 
       <StockHeader
         name={quote.name}
@@ -149,6 +170,7 @@ export default function Stock() {
           currency={quote.currency}
           availableCash={portfolio.virtual_cash}
           ownedShares={existingHolding?.shares ?? '0'}
+          avgBuyPrice={existingHolding?.avg_buy_price ?? null}
           onSubmit={async (req) => {
             setSubmitError(null);
             // Errors are surfaced via the mutation's onError (toast or paywall);

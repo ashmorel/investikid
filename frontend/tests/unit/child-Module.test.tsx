@@ -8,6 +8,9 @@ import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 import { isNudgeDismissed } from '@/lib/premiumNudge';
 import Module from '@/pages/child/Module';
 
+// Silence canvas-confetti in jsdom (mastery banner fires a celebrate() burst).
+vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
+
 vi.mock('@/lib/premiumNudge', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/premiumNudge')>();
   return { ...actual, isNudgeDismissed: vi.fn(() => false), dismissNudge: vi.fn() };
@@ -89,6 +92,9 @@ describe('Module page', () => {
     });
     renderAt('/lessons/mod-1');
     expect(await screen.findByText(/Module complete/i)).toBeInTheDocument();
+    // Explorer (default tier) keeps the big celebration.
+    expect(screen.getByText(/🎉 Module complete!/)).toBeInTheDocument();
+    expect(screen.getByText(/Great work finishing What is a stock\./)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Next: Saving Basics/i })).toBeInTheDocument();
   });
 
@@ -172,5 +178,55 @@ describe('Module page', () => {
     expect(await screen.findByRole('button', { name: /Level 2/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Ask my grown-up/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/unlock premium/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('Module page — investor tier', () => {
+  const ME_INVESTOR = {
+    id: 'u1', username: 'sam', dob: '2010-01-01', country_code: 'US',
+    currency_code: 'USD', is_premium: false, age_tier: 'investor',
+  };
+
+  it('renders a subtle, emoji-free completion banner with investor copy', async () => {
+    mockJsonRoute({
+      '/users/me': ME_INVESTOR,
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'What is a stock', country_codes: [], is_premium: false, order_index: 0, icon: '📈', locked: false },
+        { id: 'mod-2', topic: 'savings', title: 'Saving Basics', country_codes: [], is_premium: false, order_index: 1, icon: '🏦', locked: false },
+      ],
+      '/modules/mod-1/levels': [
+        { id: 'lv-1', module_id: 'mod-1', title: 'Level 1', order_index: 0, is_premium: false, icon: '🌱', state: 'completed', locked_reason: null, passed: true, lessons_total: 4, lessons_completed: 4 },
+      ],
+    });
+    renderAt('/lessons/mod-1');
+    const headline = await screen.findByText('Module complete.');
+    expect(/\p{Extended_Pictographic}/u.test(headline.textContent ?? '')).toBe(false);
+    expect(screen.getByText('Great work on What is a stock.')).toBeInTheDocument();
+    expect(screen.queryByText(/🎉/)).not.toBeInTheDocument();
+    // Same next-module button and behaviour.
+    expect(screen.getByRole('button', { name: /Next: Saving Basics/i })).toBeInTheDocument();
+  });
+
+  it('renders a plain, emoji-free earned-moment nudge with the same Ask button', async () => {
+    mockJsonRoute({
+      '/users/me': ME_INVESTOR,
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'Stocks 101', country_codes: [], is_premium: false, order_index: 0, icon: '📈', locked: false },
+      ],
+      '/modules/mod-1/levels': [
+        { id: 'lv-1', module_id: 'mod-1', title: 'Level 1', order_index: 0, is_premium: false, icon: '🌱', state: 'completed', locked_reason: null, passed: true, lessons_total: 3, lessons_completed: 3 },
+        { id: 'lv-2', module_id: 'mod-1', title: 'Pro Trader', order_index: 1, is_premium: true, icon: '⭐', state: 'locked', locked_reason: 'premium', passed: false, lessons_total: 3, lessons_completed: 0 },
+      ],
+    });
+    renderAt('/lessons/mod-1');
+    const headline = await screen.findByText("You're ready for Pro Trader.");
+    expect(/\p{Extended_Pictographic}/u.test(headline.textContent ?? '')).toBe(false);
+    const sub = screen.getByText('Premium unlocks the next level.');
+    expect(/\p{Extended_Pictographic}/u.test(sub.textContent ?? '')).toBe(false);
+    expect(screen.queryByText(/🎉|🌟/)).not.toBeInTheDocument();
+    const ask = screen.getByRole('button', { name: /Ask my grown-up/i });
+    expect(/\p{Extended_Pictographic}/u.test(ask.textContent ?? '')).toBe(false);
+    await userEvent.click(ask);
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 });

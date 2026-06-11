@@ -49,6 +49,23 @@ def is_module_accessible(
     return country_ok and premium_ok
 
 
+def is_module_age_ok(
+    user_age: int,
+    module_min_age: int | None,
+    module_max_age: int | None,
+) -> bool:
+    """Age gate for module browse/access (mirrors recommendation_service's hard filter).
+
+    A module is age-appropriate if the user's actual age (from dob — NEVER the
+    parent tier_override) is >= min_age and <= max_age, treating None as unbounded.
+    """
+    if module_min_age is not None and user_age < module_min_age:
+        return False
+    if module_max_age is not None and user_age > module_max_age:
+        return False
+    return True
+
+
 def _grant_milestone(streak: int, freezes: int) -> int:
     """Grant one freeze (capped) when the streak hits a milestone."""
     if streak % STREAK_MILESTONE == 0:

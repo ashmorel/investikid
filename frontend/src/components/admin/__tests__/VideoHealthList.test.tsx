@@ -12,6 +12,7 @@ vi.mock('@/api/admin', () => ({
     data: [
       { lesson_id: 'l1', module_id: 'm1', module_title: 'Savings', lesson_title: 'Compound', youtube_id: 'deadID', status: 'dead', http_status: 404, checked_at: '2026-06-05T00:00:00Z' },
       { lesson_id: 'l2', module_id: 'm2', module_title: 'Stocks', lesson_title: 'What is a stock', youtube_id: 'liveID', status: 'ok', http_status: 200, checked_at: '2026-06-05T00:00:00Z' },
+      { lesson_id: 'l3', module_id: 'm3', module_title: 'Bonds', lesson_title: 'Embedding off', youtube_id: 'blockedID', status: 'blocked', http_status: 200, checked_at: '2026-06-05T00:00:00Z' },
     ],
     isLoading: false, isError: false,
   }),
@@ -27,8 +28,15 @@ describe('VideoHealthList', () => {
   it('renders statuses and flags the dead video', () => {
     wrap(<VideoHealthList />);
     expect(screen.getByText('Compound')).toBeInTheDocument();
-    expect(screen.getByText(/^dead$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^unavailable$/i)).toBeInTheDocument();
     expect(screen.getByText(/^ok$/i)).toBeInTheDocument();
+  });
+
+  it('shows the embedding-blocked status distinctly from dead', () => {
+    wrap(<VideoHealthList />);
+    expect(screen.getByText(/^embedding disabled$/i)).toBeInTheDocument();
+    // the blocked row is NOT mislabelled as the dead/"unavailable" badge
+    expect(screen.getAllByText(/^unavailable$/i)).toHaveLength(1);
   });
 
   it('Check now triggers a re-check', async () => {

@@ -61,6 +61,8 @@ export type LevelOut = {
   passed: boolean;
   lessons_total: number;
   lessons_completed: number;
+  learning_objectives?: string[] | null;
+  mastered_at?: string | null;
 };
 
 export type LessonCompletionResult = {

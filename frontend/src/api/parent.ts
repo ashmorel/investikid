@@ -13,6 +13,12 @@ export type BadgeInfo = {
   earned_at: string;
 };
 
+export type StandardRef = {
+  framework: string;
+  code: string;
+  label: string;
+};
+
 export type LevelProgress = {
   level_id: string;
   title: string;
@@ -21,6 +27,7 @@ export type LevelProgress = {
   passed: boolean;
   lessons_completed: number;
   lessons_total: number;
+  mastered_at: string | null;
 };
 
 export type ModuleProgress = {
@@ -29,6 +36,7 @@ export type ModuleProgress = {
   icon: string;
   lessons_completed: number;
   lessons_total: number;
+  standards_alignment: StandardRef[] | null;
   levels: LevelProgress[];
 };
 
@@ -54,13 +62,20 @@ export type Child = {
   consent_declined_at: string | null;
   deleted_at: string | null;
   deletion_requested_at: string | null;
+  age_tier: 'explorer' | 'investor';
+  tier_override: 'explorer' | 'investor' | null;
   analytics: ChildAnalytics | null;
 };
+
+export type TierOverride = 'explorer' | 'investor' | null;
 
 export type GroupMember = { child_user_id: string; username: string };
 export type ParentGroup = { id: string; name: string; code: string | null; is_owner: boolean; members: GroupMember[] };
 
-export type ParentPreferences = { trial_reminder_opt_out: boolean };
+export type ParentPreferences = {
+  trial_reminder_opt_out: boolean;
+  weekly_digest_opt_out: boolean;
+};
 
 export const parentApi = {
   requestMagicLink: (email: string) =>
@@ -88,6 +103,11 @@ export const parentApi = {
       `/parent/children/${userId}/premium`,
       { method: 'POST', body: JSON.stringify({ premium }) },
     ),
+  setChildTier: (userId: string, tierOverride: TierOverride) =>
+    apiFetch<{ tier_override: TierOverride; age_tier: 'explorer' | 'investor' }>(
+      `/parent/children/${userId}/tier`,
+      { method: 'POST', body: JSON.stringify({ tier_override: tierOverride }) },
+    ),
   listGroups: () => apiFetch<ParentGroup[]>('/parent/groups'),
   createGroup: (name: string) =>
     apiFetch<ParentGroup>('/parent/groups', { method: 'POST', body: JSON.stringify({ name }) }),
@@ -100,9 +120,9 @@ export const parentApi = {
   deleteGroup: (groupId: string) =>
     apiFetch<{ status: string }>(`/parent/groups/${groupId}`, { method: 'DELETE' }),
   getPreferences: () => apiFetch<ParentPreferences>('/parent/preferences'),
-  updatePreferences: (trialReminderOptOut: boolean) =>
+  updatePreferences: (update: Partial<ParentPreferences>) =>
     apiFetch<ParentPreferences>('/parent/preferences', {
       method: 'PATCH',
-      body: JSON.stringify({ trial_reminder_opt_out: trialReminderOptOut }),
+      body: JSON.stringify(update),
     }),
 };

@@ -17,6 +17,59 @@ function renderTable(h: HoldingOut[] = holdings) {
   );
 }
 
+describe('HoldingsTable totals row', () => {
+  it('renders the Total row with holdings value and overall unrealized P/L', () => {
+    render(
+      <MemoryRouter>
+        <HoldingsTable
+          holdings={holdings}
+          holdingsValue="1050.50"
+          totalUnrealizedPl="20.50"
+          currencyCode="GBP"
+        />
+      </MemoryRouter>,
+    );
+    const totals = screen.getByTestId('holdings-totals');
+    expect(totals).toHaveTextContent('Total');
+    expect(totals).toHaveTextContent('£1,050.50');
+    expect(totals).toHaveTextContent('+£20.50');
+    expect(totals.querySelector('[data-pl="positive"]')).toBeInTheDocument();
+  });
+
+  it('shows a negative overall P/L in red with minus icon', () => {
+    render(
+      <MemoryRouter>
+        <HoldingsTable
+          holdings={holdings}
+          holdingsValue="900.00"
+          totalUnrealizedPl="-12.34"
+          currencyCode="GBP"
+        />
+      </MemoryRouter>,
+    );
+    const totals = screen.getByTestId('holdings-totals');
+    expect(totals.querySelector('[data-pl="negative"]')).toBeInTheDocument();
+  });
+
+  it('omits the totals row when totals props are absent', () => {
+    render(
+      <MemoryRouter>
+        <HoldingsTable holdings={holdings} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByTestId('holdings-totals')).not.toBeInTheDocument();
+  });
+
+  it('omits the totals row when there are no holdings', () => {
+    render(
+      <MemoryRouter>
+        <HoldingsTable holdings={[]} holdingsValue="0.00" totalUnrealizedPl="0.00" currencyCode="GBP" />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByTestId('holdings-totals')).not.toBeInTheDocument();
+  });
+});
+
 describe('HoldingsTable', () => {
   it('renders a row per holding with ticker and exchange badge', () => {
     renderTable();
@@ -26,11 +79,11 @@ describe('HoldingsTable', () => {
     expect(screen.getByText('LSE')).toBeInTheDocument();
   });
 
-  it('shows green icon for positive P/L and red for negative', () => {
+  it('shows signed currency P/L with green icon for gains and red for losses', () => {
     renderTable();
-    const positiveRow = screen.getByText('27.10').closest('tr')!;
+    const positiveRow = screen.getByText('+$27.10 USD').closest('tr')!;
     expect(positiveRow.querySelector('[data-pl="positive"]')).toBeInTheDocument();
-    const negativeRow = screen.getByText('-6.60').closest('tr')!;
+    const negativeRow = screen.getByText('−£6.60 GBP').closest('tr')!;
     expect(negativeRow.querySelector('[data-pl="negative"]')).toBeInTheDocument();
   });
 

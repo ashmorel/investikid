@@ -9,6 +9,8 @@ from app.models.app_setting import AppSetting
 _ALERT_EMAILS_KEY = "alert_emails"
 
 _STARTING_CASH_KEY = "simulator.starting_cash"
+_TRADE_COMMISSION_PCT_KEY = "simulator.trade_commission_pct"
+_DEFAULT_TRADE_COMMISSION_PCT = Decimal("1.0")
 _DEFAULT_STARTING_CASH: dict[str, Decimal] = {
     "GBP": Decimal("1000.00"),
     "USD": Decimal("1000.00"),
@@ -67,3 +69,22 @@ async def set_starting_cash(session: AsyncSession, mapping: dict[str, Decimal]) 
     await set_setting(
         session, _STARTING_CASH_KEY, json.dumps({k: str(v) for k, v in mapping.items()})
     )
+
+
+async def get_trade_commission_pct(session: AsyncSession) -> Decimal:
+    raw = await get_setting(session, _TRADE_COMMISSION_PCT_KEY)
+    if raw:
+        try:
+            pct = Decimal(raw)
+            if Decimal("0") <= pct <= Decimal("10"):
+                return pct
+        except ArithmeticError:
+            # Corrupt/hand-edited setting -> fall back to default rather than crash.
+            pass
+    return _DEFAULT_TRADE_COMMISSION_PCT
+
+
+async def set_trade_commission_pct(session: AsyncSession, pct: Decimal) -> None:
+    if not Decimal("0") <= pct <= Decimal("10"):
+        raise ValueError("trade_commission_pct must be between 0 and 10")
+    await set_setting(session, _TRADE_COMMISSION_PCT_KEY, str(pct))

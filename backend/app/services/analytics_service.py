@@ -1,9 +1,10 @@
 import uuid
+from datetime import date
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.content import Lesson, LessonCompletion, Level, Module
+from app.models.content import Lesson, LessonCompletion, Level, LevelMastery, Module
 from app.models.gamification import Badge, UserBadge
 from app.models.user import User, UserProgress
 from app.schemas.parent import (
@@ -13,7 +14,12 @@ from app.schemas.parent import (
     ModuleProgressOut,
     RecentLessonOut,
 )
-from app.services.content_service import derive_lesson_title, is_module_accessible
+from app.services.age_tier import age_in_years
+from app.services.content_service import (
+    derive_lesson_title,
+    is_module_accessible,
+    is_module_age_ok,
+)
 from app.services.entitlements import is_premium
 from app.services.level_service import LevelStateInput, derive_level_states
 
@@ -103,12 +109,20 @@ async def build_child_analytics(
     completed_ids = {lid for lid, _ in all_completions}
     completion_scores = {lid: s for lid, s in all_completions}
 
+    mastered_at_by_level = dict((await session.execute(
+        select(LevelMastery.level_id, LevelMastery.mastered_at)
+        .where(LevelMastery.user_id == user_id)
+    )).all())
+
     modules = list(await session.scalars(
         select(Module).order_by(Module.order_index)
     ))
+    child_age = age_in_years(child.dob, date.today()) if child else 0
     modules_progress: list[ModuleProgressOut] = []
     for m in modules:
         if not is_module_accessible(country_code, child_premium, m.country_codes, m.is_premium):
+            continue
+        if not is_module_age_ok(child_age, m.min_age, m.max_age):
             continue
         levels = list(await session.scalars(
             select(Level).where(Level.module_id == m.id).order_by(Level.order_index)
@@ -140,11 +154,13 @@ async def build_child_analytics(
                 level_id=lv.id, title=lv.title, state=st.state,
                 locked_reason=st.locked_reason, passed=st.passed,
                 lessons_completed=st.lessons_completed, lessons_total=st.lessons_total,
+                mastered_at=mastered_at_by_level.get(lv.id),
             ))
         modules_progress.append(ModuleProgressOut(
             module_id=m.id, title=m.title, icon=m.icon,
             lessons_completed=m_completed, lessons_total=m_total,
             levels=level_outs,
+            standards_alignment=m.standards_alignment,
         ))
 
     return ChildAnalyticsOut(

@@ -10,6 +10,7 @@ const baseChild: Child = {
   is_active: true, is_premium: false,
   parent_consent_given_at: '2026-01-01T00:00:00Z',
   consent_declined_at: null, deleted_at: null, deletion_requested_at: null,
+  age_tier: 'explorer' as const, tier_override: null,
   analytics: null,
 };
 

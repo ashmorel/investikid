@@ -11,9 +11,19 @@ describe('public/yt.html proxy page', () => {
     expect(html).toContain("params.get('v')");
   });
 
-  it('embeds the nocookie player inline with playsinline', () => {
-    expect(html).toContain('https://www.youtube-nocookie.com/embed/');
-    expect(html).toContain('playsinline=1');
+  it('drives the nocookie player via the IFrame API with playsinline', () => {
+    // Player is now built by the IFrame Player API against the nocookie host so
+    // we can observe ended/error lifecycle events (no bare iframe end-screen).
+    expect(html).toContain("host: 'https://www.youtube-nocookie.com'");
+    expect(html).toContain('playsinline: 1');
+    expect(html).toContain('https://www.youtube.com/iframe_api');
+  });
+
+  it('posts ended/error lifecycle events to the parent app', () => {
+    expect(html).toContain("type: 'investikid-yt'");
+    expect(html).toContain("notify('ended')");
+    expect(html).toContain("notify('error'");
+    expect(html).toContain('parent.postMessage');
   });
 
   it('declares a strict-origin referrer policy so YouTube gets a valid https referer', () => {

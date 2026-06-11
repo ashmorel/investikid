@@ -32,6 +32,8 @@ class PortfolioOut(BaseModel):
     virtual_cash: Decimal
     currency_code: str
     total_value: Decimal
+    holdings_value: Decimal
+    total_unrealized_pl: Decimal
     holdings: list[HoldingOut]
 
 
@@ -66,7 +68,13 @@ class RewardsOut(BaseModel):
 
 
 class TradeResultOut(TradeOut):
+    fee: Decimal
+    commission_pct: Decimal
     rewards: RewardsOut
+
+
+class TradeConfigOut(BaseModel):
+    commission_pct: Decimal
 
 
 class PortfolioSnapshot(BaseModel):

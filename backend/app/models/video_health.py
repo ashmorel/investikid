@@ -16,6 +16,6 @@ class VideoHealth(Base):
         UUID(as_uuid=True), ForeignKey("lessons.id", ondelete="CASCADE"), unique=True, nullable=False
     )
     youtube_id: Mapped[str] = mapped_column(String(64), nullable=False)
-    status: Mapped[str] = mapped_column(String(16), nullable=False)  # ok | dead | unknown
+    status: Mapped[str] = mapped_column(String(16), nullable=False)  # ok | dead | unknown | blocked
     http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
     checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

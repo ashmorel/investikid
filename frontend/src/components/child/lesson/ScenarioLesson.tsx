@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { OptionCard, type OptionState } from '@/components/child/ui/OptionCard';
 import { GradientButton } from '@/components/child/ui/GradientButton';
 import { FeedbackPanel } from '@/components/child/ui/FeedbackPanel';
+import { playSound } from '@/lib/sound';
+import { haptic } from '@/lib/haptics';
 
 type ScenarioContent = {
   prompt: string;
@@ -23,6 +25,14 @@ export function ScenarioLesson({ contentJson, onComplete, illustration, onShowPe
   const [selected, setSelected] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const isCorrect = selected === contentJson.correct_index;
+
+  // Judge moment: sound + haptic fire here exactly once — the Check answer
+  // button is replaced by the feedback panel after submit.
+  function handleCheck() {
+    playSound(isCorrect ? 'correct' : 'wrong');
+    void haptic(isCorrect ? 'success' : 'warning');
+    setSubmitted(true);
+  }
 
   function optionState(i: number): OptionState {
     if (!submitted) return selected === i ? 'selected' : 'default';
@@ -55,7 +65,7 @@ export function ScenarioLesson({ contentJson, onComplete, illustration, onShowPe
           {onShowPenny ? (
             <button type="button" onClick={onShowPenny} className="text-sm font-bold text-brand-700 underline hover:text-brand-800">Ask Coach Penny</button>
           ) : <span />}
-          <GradientButton disabled={selected === null} onClick={() => setSubmitted(true)}>Check answer</GradientButton>
+          <GradientButton disabled={selected === null} onClick={handleCheck}>Check answer</GradientButton>
         </div>
       )}
     </div>

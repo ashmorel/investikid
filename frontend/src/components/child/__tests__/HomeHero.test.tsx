@@ -39,6 +39,11 @@ describe('HomeHero', () => {
     expect(/\p{Extended_Pictographic}/u.test(greeting.textContent ?? '')).toBe(true);
   });
 
+  it('does not show the Investor tier chip for explorers', () => {
+    render(wrap(<HomeHero />));
+    expect(screen.queryByLabelText('Investor mode')).not.toBeInTheDocument();
+  });
+
   it('has no accessibility violations', async () => {
     const { container } = render(wrap(<HomeHero />));
     expect(await axe(container)).toHaveNoViolations();

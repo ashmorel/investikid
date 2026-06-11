@@ -241,3 +241,108 @@ async def test_lesson_summary_includes_derived_title(client, db_session):
     assert response.status_code == 200
     titles = [lesson["title"] for lesson in response.json()]
     assert titles == ["Card title", "Quiz question?", "Scenario prompt", "Caption text", "Video lesson"]
+
+
+async def test_modules_include_standards_and_sources(client, db_session):
+    standards = [{"framework": "Jump$tart", "code": "SI-1", "label": "Saving & Investing 1"}]
+    sources = [{"title": "Bank of England — What are interest rates?",
+                "url": "https://www.bankofengland.co.uk/explainers"}]
+    with_meta = Module(
+        topic="stocks", title="Stocks Credible", country_codes=["GB"],
+        is_premium=False, order_index=0,
+        standards_alignment=standards, sources=sources,
+    )
+    without_meta = Module(
+        topic="savings", title="Savings Plain", country_codes=["GB"],
+        is_premium=False, order_index=1,
+    )
+    db_session.add_all([with_meta, without_meta])
+    await db_session.commit()
+    await _register_and_login(client, email="cred@example.com", username="creduser")
+
+    response = await client.get("/modules")
+    assert response.status_code == 200
+    by_title = {m["title"]: m for m in response.json()}
+    assert by_title["Stocks Credible"]["standards_alignment"] == standards
+    assert by_title["Stocks Credible"]["sources"] == sources
+    assert by_title["Savings Plain"]["standards_alignment"] is None
+    assert by_title["Savings Plain"]["sources"] is None
+
+
+# --- W5b prerequisite: age gating on browse + access paths ---
+
+def _dob_for_age(years: int) -> str:
+    """A dob that makes the user exactly `years` old today (UTC)."""
+    from datetime import UTC, datetime
+
+    today = datetime.now(UTC).date()
+    try:
+        return today.replace(year=today.year - years).isoformat()
+    except ValueError:  # Feb 29
+        return today.replace(year=today.year - years, day=28).isoformat()
+
+
+async def _register_and_login_with_dob(client, dob, email, username):
+    payload = {**_USER_BASE, "email": email, "username": username, "dob": dob}
+    await client.post(REGISTER_URL, json=payload)
+    await client.post(LOGIN_URL, json={"email": email, "password": "SecurePass123!"})
+    csrf = client.cookies.get("csrf_token")
+    if csrf:
+        client.headers["X-CSRF-Token"] = csrf
+
+
+async def _seed_teen_module(db_session):
+    teen = Module(
+        topic="crypto", title="Teen Module 14+", country_codes=[],
+        is_premium=False, order_index=0, min_age=14,
+    )
+    db_session.add(teen)
+    await db_session.commit()
+    return teen
+
+
+async def test_under_age_user_does_not_see_age_gated_module(client, db_session):
+    teen = await _seed_teen_module(db_session)
+    await _register_and_login_with_dob(
+        client, _dob_for_age(13), email="kid13@example.com", username="kid13"
+    )
+
+    listing = await client.get("/modules")
+    assert listing.status_code == 200
+    assert teen.title not in [m["title"] for m in listing.json()]
+
+    # Direct access mirrors the inaccessible-country behaviour: 404, not premium error.
+    detail = await client.get(f"/modules/{teen.id}/levels")
+    assert detail.status_code == 404
+
+
+async def test_old_enough_user_sees_and_opens_age_gated_module(client, db_session):
+    teen = await _seed_teen_module(db_session)
+    await _register_and_login_with_dob(
+        client, _dob_for_age(15), email="teen15@example.com", username="teen15"
+    )
+
+    listing = await client.get("/modules")
+    assert listing.status_code == 200
+    assert teen.title in [m["title"] for m in listing.json()]
+
+    detail = await client.get(f"/modules/{teen.id}/levels")
+    assert detail.status_code == 200
+
+
+async def test_over_max_age_module_hidden(client, db_session):
+    capped = Module(
+        topic="savings", title="Little Kids Only", country_codes=[],
+        is_premium=False, order_index=0, max_age=12,
+    )
+    db_session.add(capped)
+    await db_session.commit()
+    await _register_and_login_with_dob(
+        client, _dob_for_age(15), email="teen15b@example.com", username="teen15b"
+    )
+
+    listing = await client.get("/modules")
+    assert listing.status_code == 200
+    assert "Little Kids Only" not in [m["title"] for m in listing.json()]
+    detail = await client.get(f"/modules/{capped.id}/levels")
+    assert detail.status_code == 404

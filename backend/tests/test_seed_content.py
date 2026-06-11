@@ -183,3 +183,255 @@ async def test_reseed_preserves_manual_reorder(db_session):
         select(Lesson).where(Lesson.level_id == level.id).order_by(Lesson.order_index)
     )).all())
     assert [le.id for le in after] == expected_order
+
+
+def _fake_spec(**overrides):
+    """Minimal module spec for exercising the seeder in isolation."""
+    spec = {
+        "topic": "w3a_fake",
+        "title": "W3a Fake Module",
+        "country_codes": [],
+        "is_premium": False,
+        "order_index": 99,
+        "icon": "🧪",
+        "lessons": [
+            {"type": "card", "xp_reward": 10, "content_json": {
+                "title": "Fake card", "body": "Fake body",
+            }},
+        ],
+        "extra_levels": [
+            {"title": "Level 2", "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Fake L2 card", "body": "Fake L2 body",
+                }},
+            ]},
+        ],
+    }
+    spec.update(overrides)
+    return spec
+
+
+async def _fetch_module_and_levels(session, spec):
+    module = await session.scalar(
+        select(Module).where(Module.topic == spec["topic"], Module.title == spec["title"])
+    )
+    assert module is not None
+    level1 = await session.scalar(
+        select(Level).where(Level.module_id == module.id, Level.order_index == 0)
+    )
+    level2 = await session.scalar(
+        select(Level).where(Level.module_id == module.id, Level.order_index == 1)
+    )
+    return module, level1, level2
+
+
+async def test_seed_applies_standards_sources_objectives(db_session, monkeypatch):
+    """On create, the seeder applies standards_alignment/sources to the module
+    and learning_objectives to Level 1 and extra levels; re-seeding is idempotent."""
+    spec = _fake_spec(
+        standards_alignment=[{"framework": "FCA", "code": "F1"}],
+        sources=[{"title": "Source A", "url": "https://example.com/a"}],
+        learning_objectives=["Understand fake things"],
+        extra_levels=[{
+            "title": "Level 2",
+            "learning_objectives": ["Apply fake things"],
+            "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Fake L2 card", "body": "Fake L2 body",
+                }},
+            ],
+        }],
+    )
+    monkeypatch.setattr("app.seed.content._MODULES", [spec])
+
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, level1, level2 = await _fetch_module_and_levels(db_session, spec)
+    assert module.standards_alignment == [{"framework": "FCA", "code": "F1"}]
+    assert module.sources == [{"title": "Source A", "url": "https://example.com/a"}]
+    assert level1.learning_objectives == ["Understand fake things"]
+    assert level2 is not None
+    assert level2.learning_objectives == ["Apply fake things"]
+
+    # Re-seed: values unchanged, no duplicate levels.
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+    module, level1, level2 = await _fetch_module_and_levels(db_session, spec)
+    assert module.standards_alignment == [{"framework": "FCA", "code": "F1"}]
+    assert module.sources == [{"title": "Source A", "url": "https://example.com/a"}]
+    assert level1.learning_objectives == ["Understand fake things"]
+    assert level2.learning_objectives == ["Apply fake things"]
+    level_count = await db_session.scalar(
+        select(func.count()).select_from(Level).where(Level.module_id == module.id)
+    )
+    assert level_count == 2
+
+
+async def test_seed_applies_metadata_on_update_path(db_session, monkeypatch):
+    """When a module already exists, a spec that gains the keys updates the rows."""
+    bare = _fake_spec()
+    monkeypatch.setattr("app.seed.content._MODULES", [bare])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, level1, level2 = await _fetch_module_and_levels(db_session, bare)
+    assert module.standards_alignment is None
+    assert level1.learning_objectives is None
+
+    enriched = _fake_spec(
+        standards_alignment=[{"framework": "FCA", "code": "F2"}],
+        sources=[{"title": "Source B", "url": "https://example.com/b"}],
+        learning_objectives=["Updated objective"],
+        extra_levels=[{
+            "title": "Level 2",
+            "learning_objectives": ["Updated L2 objective"],
+            "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Fake L2 card", "body": "Fake L2 body",
+                }},
+            ],
+        }],
+    )
+    monkeypatch.setattr("app.seed.content._MODULES", [enriched])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, level1, level2 = await _fetch_module_and_levels(db_session, enriched)
+    assert module.standards_alignment == [{"framework": "FCA", "code": "F2"}]
+    assert module.sources == [{"title": "Source B", "url": "https://example.com/b"}]
+    assert level1.learning_objectives == ["Updated objective"]
+    assert level2.learning_objectives == ["Updated L2 objective"]
+
+
+def test_every_module_has_conversation_prompt():
+    """Every authored module carries a non-empty conversation_prompt <= 300 chars."""
+    assert len(_MODULES) >= 12
+    for spec in _MODULES:
+        prompt = spec.get("conversation_prompt")
+        assert isinstance(prompt, str) and prompt.strip(), (
+            f"module {spec['title']!r} missing conversation_prompt"
+        )
+        assert len(prompt) <= 300, (
+            f"module {spec['title']!r}: conversation_prompt is {len(prompt)} chars (max 300)"
+        )
+
+
+async def test_seed_applies_conversation_prompt_on_create_and_update(db_session, monkeypatch):
+    """The seeder upserts conversation_prompt on both create and update paths."""
+    spec = _fake_spec(conversation_prompt="Ask them about fake things.")
+    monkeypatch.setattr("app.seed.content._MODULES", [spec])
+
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, spec)
+    assert module.conversation_prompt == "Ask them about fake things."
+
+    # Update path: existing module, spec carries a new prompt.
+    updated = _fake_spec(conversation_prompt="Ask them about updated fake things.")
+    monkeypatch.setattr("app.seed.content._MODULES", [updated])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, updated)
+    assert module.conversation_prompt == "Ask them about updated fake things."
+
+    # Idempotent re-seed: value unchanged.
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+    module, _, _ = await _fetch_module_and_levels(db_session, updated)
+    assert module.conversation_prompt == "Ask them about updated fake things."
+
+
+async def test_seed_without_prompt_key_leaves_manual_value_untouched(db_session, monkeypatch):
+    """A spec lacking conversation_prompt must not null out a manually-set value."""
+    bare = _fake_spec()
+    monkeypatch.setattr("app.seed.content._MODULES", [bare])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, bare)
+    assert module.conversation_prompt is None
+    module.conversation_prompt = "Manual prompt"
+    await db_session.flush()
+
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+    module, _, _ = await _fetch_module_and_levels(db_session, bare)
+    assert module.conversation_prompt == "Manual prompt"
+
+
+async def test_seed_without_keys_leaves_manual_values_untouched(db_session, monkeypatch):
+    """A spec lacking the keys must not null out values set manually on rows."""
+    bare = _fake_spec()
+    monkeypatch.setattr("app.seed.content._MODULES", [bare])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, level1, level2 = await _fetch_module_and_levels(db_session, bare)
+    module.standards_alignment = [{"framework": "Manual", "code": "M1"}]
+    module.sources = [{"title": "Manual source", "url": "https://example.com/m"}]
+    level1.learning_objectives = ["Manual objective"]
+    level2.learning_objectives = ["Manual L2 objective"]
+    await db_session.flush()
+
+    # Re-seed with the same bare spec (no metadata keys).
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, level1, level2 = await _fetch_module_and_levels(db_session, bare)
+    assert module.standards_alignment == [{"framework": "Manual", "code": "M1"}]
+    assert module.sources == [{"title": "Manual source", "url": "https://example.com/m"}]
+    assert level1.learning_objectives == ["Manual objective"]
+    assert level2.learning_objectives == ["Manual L2 objective"]
+
+
+async def test_seed_applies_age_bounds_on_create(db_session, monkeypatch):
+    """On create, min_age/max_age from the spec land on the module."""
+    spec = _fake_spec(min_age=14, max_age=18)
+    monkeypatch.setattr("app.seed.content._MODULES", [spec])
+
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, spec)
+    assert module.min_age == 14
+    assert module.max_age == 18
+
+
+async def test_seed_applies_age_bounds_on_update(db_session, monkeypatch):
+    """An existing module gains age bounds when the spec adds the keys."""
+    bare = _fake_spec()
+    monkeypatch.setattr("app.seed.content._MODULES", [bare])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, bare)
+    assert module.min_age is None
+    assert module.max_age is None
+
+    enriched = _fake_spec(min_age=14)
+    monkeypatch.setattr("app.seed.content._MODULES", [enriched])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, enriched)
+    assert module.min_age == 14
+
+
+async def test_seed_without_age_keys_leaves_manual_values(db_session, monkeypatch):
+    """A spec with no min_age/max_age keys never clobbers manually-set bounds."""
+    bare = _fake_spec()
+    monkeypatch.setattr("app.seed.content._MODULES", [bare])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, bare)
+    module.min_age = 16  # manual admin edit
+    await db_session.flush()
+
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+    module, _, _ = await _fetch_module_and_levels(db_session, bare)
+    assert module.min_age == 16

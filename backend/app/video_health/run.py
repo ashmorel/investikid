@@ -23,17 +23,30 @@ async def send_video_alert(session: AsyncSession, headline: str, detail: str) ->
         )
 
 
+def _format_items(items: list[dict]) -> str:
+    return "\n".join(
+        f"- {d['module_title']} → {d['lesson_title']} (youtube_id: {d['youtube_id'] or '∅'})"
+        for d in items
+    )
+
+
 async def run(session: AsyncSession) -> dict:
     summary = await check_all_videos(session)
     if summary["dead"]:
-        lines = "\n".join(
-            f"- {d['module_title']} → {d['lesson_title']} (youtube_id: {d['youtube_id'] or '∅'})"
-            for d in summary["dead_items"]
-        )
         await send_video_alert(
             session,
             headline=f"{summary['dead']} lesson video(s) are unavailable",
-            detail=f"Update them in Admin → Video health.\n\n{lines}",
+            detail=f"Update them in Admin → Video health.\n\n{_format_items(summary['dead_items'])}",
+        )
+    if summary["blocked"]:
+        await send_video_alert(
+            session,
+            headline=f"{summary['blocked']} lesson video(s) can't be embedded",
+            detail=(
+                "These videos exist but the owner disabled embedding — "
+                "replace them in Admin → Video health.\n\n"
+                + _format_items(summary["blocked_items"])
+            ),
         )
     await session.commit()
     return summary
@@ -42,7 +55,10 @@ async def run(session: AsyncSession) -> dict:
 async def main() -> None:
     async with async_session_factory() as session:
         summary = await run(session)
-    print(f"Video health check complete: {summary['ok']} ok, {summary['dead']} dead, {summary['unknown']} unknown.")
+    print(
+        f"Video health check complete: {summary['ok']} ok, {summary['dead']} dead, "
+        f"{summary['blocked']} blocked, {summary['unknown']} unknown."
+    )
 
 
 if __name__ == "__main__":

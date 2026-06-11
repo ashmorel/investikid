@@ -24,6 +24,8 @@ export type PortfolioOut = {
   virtual_cash: string;
   currency_code: string;
   total_value: string;
+  holdings_value: string;
+  total_unrealized_pl: string;
   holdings: HoldingOut[];
 };
 
@@ -59,7 +61,15 @@ export type TradeReward = {
   badges_unlocked: string[];
 };
 
-export type TradeResult = TradeOut & { rewards: TradeReward };
+export type TradeResult = TradeOut & {
+  fee: string;
+  commission_pct: string;
+  rewards: TradeReward;
+};
+
+export type TradeConfigOut = {
+  commission_pct: string;
+};
 
 export type PortfolioSnapshot = {
   date: string;
@@ -146,6 +156,8 @@ export type ChartCoachResponse = {
 export const simulatorApi = {
   searchMarket: (q: string, refresh = false) =>
     apiFetch<QuoteOut[]>(`/market/search?q=${encodeURIComponent(q)}${refresh ? '&refresh=true' : ''}`),
+
+  getTradeConfig: () => apiFetch<TradeConfigOut>('/market/trade-config'),
 
   getQuote: (exchange: string, ticker: string) =>
     apiFetch<QuoteOut>(`/market/quote/${exchange}/${ticker}`),

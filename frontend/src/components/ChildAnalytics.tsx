@@ -2,7 +2,34 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ProgressBar } from './ProgressBar';
 import { Disclosure } from './a11y/Disclosure';
-import type { ChildAnalytics as ChildAnalyticsType, ModuleProgress, LevelProgress } from '@/api/parent';
+import type { ChildAnalytics as ChildAnalyticsType, ModuleProgress, LevelProgress, StandardRef } from '@/api/parent';
+
+function frameworkShortName(framework: string): string {
+  if (framework.includes('MaPS')) return 'UK MaPS';
+  if (framework.includes('Jump$tart')) return 'US Jump$tart 2021';
+  return framework;
+}
+
+function StandardsBadge({ standards }: { standards: StandardRef[] }) {
+  const frameworks = [...new Set(standards.map((s) => s.framework))];
+  const shortNames = [...new Set(frameworks.map(frameworkShortName))];
+  return (
+    <p
+      className="mb-1.5 text-[11px] text-muted-foreground"
+      title={standards.map((s) => `${s.code}: ${s.label}`).join(' · ')}
+    >
+      Aligned to {shortNames.join(' · ')}
+    </p>
+  );
+}
+
+function formatMasteredDate(masteredAt: string): string {
+  return new Date(masteredAt).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 function formatScore(type: string, score: number | null): string {
   if (type === 'card' || type === 'video') return '✓';
@@ -44,11 +71,19 @@ function LevelStateBadge({ level }: { level: LevelProgress }) {
 function ModuleProgressBlock({ module }: { module: ModuleProgress }) {
   return (
     <Disclosure label={`${module.icon} ${module.title} — ${module.lessons_completed}/${module.lessons_total}`}>
+      {module.standards_alignment && module.standards_alignment.length > 0 && (
+        <StandardsBadge standards={module.standards_alignment} />
+      )}
       <ul className="space-y-1.5">
         {module.levels.map((level) => (
           <li key={level.level_id} className="flex items-center justify-between gap-2 text-xs">
             <span className="text-gray-700">{level.title}</span>
             <span className="flex items-center gap-2">
+              {level.mastered_at && (
+                <span className="text-[11px] text-success-700">
+                  Mastered {formatMasteredDate(level.mastered_at)}
+                </span>
+              )}
               <LevelStateBadge level={level} />
               <span className="text-muted-foreground">
                 {level.lessons_completed}/{level.lessons_total}

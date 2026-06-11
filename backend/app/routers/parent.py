@@ -13,7 +13,14 @@ from app.models.premium_request import PremiumRequest
 from app.models.user import User
 from app.routers.parent_auth import get_current_parent
 from app.schemas.group import GroupCreateRequest, GroupJoinRequest, GroupMemberOut, GroupOut
-from app.schemas.parent import ChildOut, FreezeRequest, PremiumRequestOut, PremiumToggleRequest
+from app.schemas.parent import (
+    ChildOut,
+    FreezeRequest,
+    PremiumRequestOut,
+    PremiumToggleRequest,
+    TierOverrideOut,
+    TierOverrideRequest,
+)
 from app.schemas.parent_preferences import ParentPreferencesOut, ParentPreferencesUpdate
 from app.services import group_service
 from app.services.analytics_service import build_child_analytics
@@ -62,6 +69,8 @@ async def list_children(
                 consent_declined_at=r.consent_declined_at,
                 deleted_at=r.deleted_at,
                 deletion_requested_at=r.deletion_requested_at,
+                age_tier=r.age_tier,
+                tier_override=r.tier_override,
                 analytics=analytics,
             )
         )
@@ -75,7 +84,8 @@ async def get_preferences(
 ):
     pref = await session.get(ParentPreferences, parent_email)
     return ParentPreferencesOut(
-        trial_reminder_opt_out=bool(pref and pref.trial_reminder_opt_out)
+        trial_reminder_opt_out=bool(pref and pref.trial_reminder_opt_out),
+        weekly_digest_opt_out=bool(pref and pref.weekly_digest_opt_out),
     )
 
 
@@ -85,17 +95,19 @@ async def update_preferences(
     parent_email: str = Depends(get_current_parent),
     session: AsyncSession = Depends(get_session),
 ):
+    updates = body.model_dump(exclude_unset=True, exclude_none=True)
     pref = await session.get(ParentPreferences, parent_email)
     if pref is None:
-        pref = ParentPreferences(
-            parent_email=parent_email,
-            trial_reminder_opt_out=body.trial_reminder_opt_out,
-        )
+        pref = ParentPreferences(parent_email=parent_email, **updates)
         session.add(pref)
     else:
-        pref.trial_reminder_opt_out = body.trial_reminder_opt_out
+        for field, value in updates.items():
+            setattr(pref, field, value)
     await session.commit()
-    return ParentPreferencesOut(trial_reminder_opt_out=body.trial_reminder_opt_out)
+    return ParentPreferencesOut(
+        trial_reminder_opt_out=pref.trial_reminder_opt_out,
+        weekly_digest_opt_out=pref.weekly_digest_opt_out,
+    )
 
 
 @router.get("/premium-requests", response_model=list[PremiumRequestOut])
@@ -163,6 +175,21 @@ async def set_child_premium(
     await set_premium(session, child, value=payload.premium, actor=parent_email)
     await session.commit()
     return {"status": "ok", "premium": payload.premium}
+
+
+@router.post("/children/{user_id}/tier", response_model=TierOverrideOut)
+async def set_child_tier_override(
+    user_id: uuid.UUID,
+    payload: TierOverrideRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    child = await _get_owned_child(session, parent_email, user_id)
+    if child.deleted_at is not None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account deleted")
+    child.tier_override = payload.tier_override
+    await session.commit()
+    return TierOverrideOut(tier_override=child.tier_override, age_tier=child.age_tier)
 
 
 @router.post("/children/{user_id}/erasure")

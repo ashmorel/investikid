@@ -28,9 +28,13 @@ const MOCK_ANALYTICS: ChildAnalyticsType = {
       icon: '📈',
       lessons_completed: 2,
       lessons_total: 4,
+      standards_alignment: [
+        { framework: 'UK MaPS/YE Financial Education Planning Framework', code: 'F1', label: 'Where money comes from' },
+        { framework: 'US National Standards for Personal Financial Education (CEE/Jump$tart 2021)', code: 'I-4a', label: 'Investing basics' },
+      ],
       levels: [
-        { level_id: 'l1', title: 'Level 1', state: 'completed', locked_reason: null, passed: true, lessons_completed: 2, lessons_total: 2 },
-        { level_id: 'l2', title: 'Level 2', state: 'locked', locked_reason: 'premium', passed: false, lessons_completed: 0, lessons_total: 2 },
+        { level_id: 'l1', title: 'Level 1', state: 'completed', locked_reason: null, passed: true, lessons_completed: 2, lessons_total: 2, mastered_at: '2026-05-20T10:00:00Z' },
+        { level_id: 'l2', title: 'Level 2', state: 'locked', locked_reason: 'premium', passed: false, lessons_completed: 0, lessons_total: 2, mastered_at: null },
       ],
     },
   ],
@@ -126,6 +130,37 @@ describe('ChildAnalytics', () => {
     expect(screen.getByText('Level 2')).toBeInTheDocument();
     expect(screen.getByText(/^Completed/)).toBeInTheDocument();
     expect(screen.getByText(/Locked/i)).toBeInTheDocument();
+  });
+
+  it('shows a standards alignment badge for modules with standards', async () => {
+    const user = userEvent.setup();
+    render(<ChildAnalytics analytics={MOCK_ANALYTICS} />);
+    await user.click(screen.getByRole('button', { name: /show progress/i }));
+    await user.click(screen.getByRole('button', { name: /Stocks 101/i }));
+    expect(screen.getByText('Aligned to UK MaPS · US Jump$tart 2021')).toBeInTheDocument();
+  });
+
+  it('does not show a standards badge when standards_alignment is null', async () => {
+    const user = userEvent.setup();
+    const analytics: ChildAnalyticsType = {
+      ...MOCK_ANALYTICS,
+      modules_progress: [
+        { ...MOCK_ANALYTICS.modules_progress[0], standards_alignment: null },
+      ],
+    };
+    render(<ChildAnalytics analytics={analytics} />);
+    await user.click(screen.getByRole('button', { name: /show progress/i }));
+    await user.click(screen.getByRole('button', { name: /Stocks 101/i }));
+    expect(screen.queryByText(/Aligned to/)).not.toBeInTheDocument();
+  });
+
+  it('shows a mastered date on level rows with mastered_at', async () => {
+    const user = userEvent.setup();
+    render(<ChildAnalytics analytics={MOCK_ANALYTICS} />);
+    await user.click(screen.getByRole('button', { name: /show progress/i }));
+    await user.click(screen.getByRole('button', { name: /Stocks 101/i }));
+    expect(screen.getByText(/Mastered/)).toBeInTheDocument();
+    expect(screen.getByText(/20 May 2026/)).toBeInTheDocument();
   });
 
   it('has no axe violations when fully expanded', async () => {

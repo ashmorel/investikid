@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { EduTooltip } from './EduTooltip';
 import { formatCurrency } from '@/lib/currency';
@@ -9,10 +9,41 @@ const EXCHANGE_CURRENCY: Record<string, string> = {
   NASDAQ: 'USD', LSE: 'GBP', HKEX: 'HKD',
 };
 
-type Props = { holdings: HoldingOut[] };
+type Props = {
+  holdings: HoldingOut[];
+  /** Portfolio-level totals from the API; the row is omitted when absent. */
+  holdingsValue?: string;
+  totalUnrealizedPl?: string;
+  currencyCode?: string;
+};
 
-export function HoldingsTable({ holdings }: Props) {
+/** "+£27.10 GBP" / "−£6.60 GBP" — sign first, then symbol, so negatives read cleanly. */
+function formatSignedCurrency(value: string, currencyCode: string): string {
+  const num = parseFloat(value);
+  const sign = num > 0 ? '+' : num < 0 ? '−' : '';
+  return `${sign}${formatCurrency(Math.abs(num), currencyCode)}`;
+}
+
+function TotalPl({ value, currencyCode }: { value: string; currencyCode: string }) {
+  const pl = parseFloat(value);
+  const sign = pl > 0 ? 'positive' : pl < 0 ? 'negative' : 'neutral';
+  return (
+    <span
+      className={`flex items-center gap-1 font-bold ${sign === 'positive' ? 'text-success-600' : sign === 'negative' ? 'text-danger-600' : ''}`}
+    >
+      {sign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
+      {sign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
+      {sign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}
+      {formatSignedCurrency(value, currencyCode)}
+    </span>
+  );
+}
+
+export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, currencyCode }: Props) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  const navigate = useNavigate();
+  const showTotals =
+    holdings.length > 0 && !!holdingsValue && !!totalUnrealizedPl && !!currencyCode;
 
   if (holdings.length === 0) {
     return (
@@ -53,7 +84,7 @@ export function HoldingsTable({ holdings }: Props) {
                   {plSign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
                   {plSign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
                   {plSign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}
-                  {h.unrealized_pl}
+                  {formatSignedCurrency(h.unrealized_pl, currency)}
                 </span>
               </div>
               <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
@@ -64,6 +95,17 @@ export function HoldingsTable({ holdings }: Props) {
             </Link>
           );
         })}
+        {showTotals && (
+          <div className="rounded-xl border border-brand-200 bg-brand-50 p-3" data-testid="holdings-totals">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-gray-900">Total</span>
+              <TotalPl value={totalUnrealizedPl!} currencyCode={currencyCode!} />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              value {formatCurrency(holdingsValue!, currencyCode!)}
+            </p>
+          </div>
+        )}
       </div>
     );
   }
@@ -74,11 +116,11 @@ export function HoldingsTable({ holdings }: Props) {
         <thead className="border-b bg-muted/50">
           <tr>
             <th className="px-3 py-2 text-left font-medium">Ticker</th>
-            <th className="px-3 py-2 text-right font-medium">Shares</th>
-            <th className="px-3 py-2 text-right font-medium">Avg Buy</th>
-            <th className="px-3 py-2 text-right font-medium">Current</th>
-            <th className="px-3 py-2 text-right font-medium">Value</th>
-            <th className="px-3 py-2 text-right font-medium">
+            <th className="px-3 py-2 text-left font-medium">Shares</th>
+            <th className="px-3 py-2 text-left font-medium">Avg Buy</th>
+            <th className="px-3 py-2 text-left font-medium">Current</th>
+            <th className="px-3 py-2 text-left font-medium">Value</th>
+            <th className="px-3 py-2 text-left font-medium">
               <EduTooltip
                 term="Unrealized P/L"
                 explanation="This is how much you'd gain or lose if you sold now. It's 'unrealized' because you haven't sold yet."
@@ -92,34 +134,46 @@ export function HoldingsTable({ holdings }: Props) {
             const plSign = pl > 0 ? 'positive' : pl < 0 ? 'negative' : 'neutral';
             const currency = EXCHANGE_CURRENCY[h.exchange] ?? 'USD';
             return (
-              <tr key={`${h.exchange}-${h.ticker}`} className="border-b last:border-0 hover:bg-muted/30">
-                <td colSpan={6} className="p-0">
+              <tr
+                key={`${h.exchange}-${h.ticker}`}
+                className="cursor-pointer border-b last:border-0 hover:bg-muted/30"
+                onClick={() => navigate(`/simulator/stock/${h.exchange}/${h.ticker}`)}
+              >
+                <td className="px-3 py-2">
                   <Link
                     to={`/simulator/stock/${h.exchange}/${h.ticker}`}
-                    className="flex items-center justify-between gap-2 px-3 py-2"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2"
                   >
-                    <span className="flex items-center gap-2">
-                      <span className="font-medium">{h.ticker}</span>
-                      <span className="rounded bg-muted px-1.5 py-0.5 text-xs">{h.exchange}</span>
-                    </span>
-                    <span className="flex items-center gap-4 text-right">
-                      <span>{h.shares}</span>
-                      <span>{formatCurrency(h.avg_buy_price, currency)}</span>
-                      <span>{formatCurrency(h.current_price, currency)}</span>
-                      <span>{formatCurrency(h.market_value, currency)}</span>
-                      <span className={`flex items-center gap-1 ${plSign === 'positive' ? 'text-success-600' : plSign === 'negative' ? 'text-danger-600' : ''}`}>
-                        {plSign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
-                        {plSign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
-                        {plSign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}
-                        {h.unrealized_pl}
-                      </span>
-                    </span>
+                    <span className="font-medium">{h.ticker}</span>
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs">{h.exchange}</span>
                   </Link>
+                </td>
+                <td className="px-3 py-2 text-left">{h.shares}</td>
+                <td className="px-3 py-2 text-left">{formatCurrency(h.avg_buy_price, currency)}</td>
+                <td className="px-3 py-2 text-left">{formatCurrency(h.current_price, currency)}</td>
+                <td className="px-3 py-2 text-left">{formatCurrency(h.market_value, currency)}</td>
+                <td className="px-3 py-2 text-left">
+                  <span className={`flex items-center gap-1 ${plSign === 'positive' ? 'text-success-600' : plSign === 'negative' ? 'text-danger-600' : ''}`}>
+                    {plSign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
+                    {plSign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
+                    {plSign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}
+                    {formatSignedCurrency(h.unrealized_pl, currency)}
+                  </span>
                 </td>
               </tr>
             );
           })}
         </tbody>
+        {showTotals && (
+          <tfoot className="border-t bg-brand-50" data-testid="holdings-totals">
+            <tr>
+              <td className="px-3 py-2 font-bold text-gray-900" colSpan={4}>Total</td>
+              <td className="px-3 py-2 font-bold">{formatCurrency(holdingsValue!, currencyCode!)}</td>
+              <td className="px-3 py-2"><TotalPl value={totalUnrealizedPl!} currencyCode={currencyCode!} /></td>
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );
