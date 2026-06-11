@@ -62,8 +62,12 @@ export type Child = {
   consent_declined_at: string | null;
   deleted_at: string | null;
   deletion_requested_at: string | null;
+  age_tier: 'explorer' | 'investor';
+  tier_override: 'explorer' | 'investor' | null;
   analytics: ChildAnalytics | null;
 };
+
+export type TierOverride = 'explorer' | 'investor' | null;
 
 export type GroupMember = { child_user_id: string; username: string };
 export type ParentGroup = { id: string; name: string; code: string | null; is_owner: boolean; members: GroupMember[] };
@@ -98,6 +102,11 @@ export const parentApi = {
     apiFetch<{ status: string; premium: boolean }>(
       `/parent/children/${userId}/premium`,
       { method: 'POST', body: JSON.stringify({ premium }) },
+    ),
+  setChildTier: (userId: string, tierOverride: TierOverride) =>
+    apiFetch<{ tier_override: TierOverride; age_tier: 'explorer' | 'investor' }>(
+      `/parent/children/${userId}/tier`,
+      { method: 'POST', body: JSON.stringify({ tier_override: tierOverride }) },
     ),
   listGroups: () => apiFetch<ParentGroup[]>('/parent/groups'),
   createGroup: (name: string) =>

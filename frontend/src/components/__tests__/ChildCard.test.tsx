@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { axe } from 'vitest-axe';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChildCard } from '../ChildCard';
 import { parentApi, type Child } from '@/api/parent';
@@ -14,6 +15,8 @@ const BASE_CHILD: Child = {
   consent_declined_at: null,
   deleted_at: null,
   deletion_requested_at: null,
+  age_tier: 'explorer',
+  tier_override: null,
   analytics: null,
 };
 
@@ -51,5 +54,48 @@ describe('ChildCard premium toggle', () => {
     renderCard();
     fireEvent.click(screen.getByLabelText('Premium'));
     await waitFor(() => expect(spy).toHaveBeenCalledWith('child-1', true));
+  });
+});
+
+describe('ChildCard experience mode', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows Auto when no override and the effective mode line', () => {
+    renderCard();
+    const select = screen.getByLabelText('Experience mode') as HTMLSelectElement;
+    expect(select.value).toBe('auto');
+    expect(screen.getByText(/Currently: Explorer/)).toBeInTheDocument();
+  });
+
+  it('shows the override value and effective Investor mode when overridden', () => {
+    renderCard({ ...BASE_CHILD, tier_override: 'investor', age_tier: 'investor' });
+    const select = screen.getByLabelText('Experience mode') as HTMLSelectElement;
+    expect(select.value).toBe('investor');
+    expect(screen.getByText(/Currently: Investor/)).toBeInTheDocument();
+  });
+
+  it('changing to Explorer calls the API with the override', async () => {
+    const spy = vi
+      .spyOn(parentApi, 'setChildTier')
+      .mockResolvedValue({ tier_override: 'explorer', age_tier: 'explorer' });
+    renderCard();
+    fireEvent.change(screen.getByLabelText('Experience mode'), { target: { value: 'explorer' } });
+    await waitFor(() => expect(spy).toHaveBeenCalledWith('child-1', 'explorer'));
+  });
+
+  it('changing back to Auto sends null', async () => {
+    const spy = vi
+      .spyOn(parentApi, 'setChildTier')
+      .mockResolvedValue({ tier_override: null, age_tier: 'investor' });
+    renderCard({ ...BASE_CHILD, tier_override: 'investor', age_tier: 'investor' });
+    fireEvent.change(screen.getByLabelText('Experience mode'), { target: { value: 'auto' } });
+    await waitFor(() => expect(spy).toHaveBeenCalledWith('child-1', null));
+  });
+
+  it('has no axe violations with the experience mode control', async () => {
+    const { container } = renderCard();
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
