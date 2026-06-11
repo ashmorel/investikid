@@ -79,11 +79,11 @@ describe('HoldingsTable', () => {
     expect(screen.getByText('LSE')).toBeInTheDocument();
   });
 
-  it('shows green icon for positive P/L and red for negative', () => {
+  it('shows signed currency P/L with green icon for gains and red for losses', () => {
     renderTable();
-    const positiveRow = screen.getByText('27.10').closest('tr')!;
+    const positiveRow = screen.getByText('+$27.10 USD').closest('tr')!;
     expect(positiveRow.querySelector('[data-pl="positive"]')).toBeInTheDocument();
-    const negativeRow = screen.getByText('-6.60').closest('tr')!;
+    const negativeRow = screen.getByText('−£6.60 GBP').closest('tr')!;
     expect(negativeRow.querySelector('[data-pl="negative"]')).toBeInTheDocument();
   });
 

@@ -17,6 +17,13 @@ type Props = {
   currencyCode?: string;
 };
 
+/** "+£27.10 GBP" / "−£6.60 GBP" — sign first, then symbol, so negatives read cleanly. */
+function formatSignedCurrency(value: string, currencyCode: string): string {
+  const num = parseFloat(value);
+  const sign = num > 0 ? '+' : num < 0 ? '−' : '';
+  return `${sign}${formatCurrency(Math.abs(num), currencyCode)}`;
+}
+
 function TotalPl({ value, currencyCode }: { value: string; currencyCode: string }) {
   const pl = parseFloat(value);
   const sign = pl > 0 ? 'positive' : pl < 0 ? 'negative' : 'neutral';
@@ -27,8 +34,7 @@ function TotalPl({ value, currencyCode }: { value: string; currencyCode: string 
       {sign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
       {sign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
       {sign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}
-      {pl > 0 ? '+' : ''}
-      {formatCurrency(value, currencyCode)}
+      {formatSignedCurrency(value, currencyCode)}
     </span>
   );
 }
@@ -78,7 +84,7 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
                   {plSign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
                   {plSign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
                   {plSign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}
-                  {h.unrealized_pl}
+                  {formatSignedCurrency(h.unrealized_pl, currency)}
                 </span>
               </div>
               <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
@@ -152,7 +158,7 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
                     {plSign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
                     {plSign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
                     {plSign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}
-                    {h.unrealized_pl}
+                    {formatSignedCurrency(h.unrealized_pl, currency)}
                   </span>
                 </td>
               </tr>
