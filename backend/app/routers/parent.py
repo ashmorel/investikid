@@ -75,7 +75,8 @@ async def get_preferences(
 ):
     pref = await session.get(ParentPreferences, parent_email)
     return ParentPreferencesOut(
-        trial_reminder_opt_out=bool(pref and pref.trial_reminder_opt_out)
+        trial_reminder_opt_out=bool(pref and pref.trial_reminder_opt_out),
+        weekly_digest_opt_out=bool(pref and pref.weekly_digest_opt_out),
     )
 
 
@@ -85,17 +86,19 @@ async def update_preferences(
     parent_email: str = Depends(get_current_parent),
     session: AsyncSession = Depends(get_session),
 ):
+    updates = body.model_dump(exclude_unset=True, exclude_none=True)
     pref = await session.get(ParentPreferences, parent_email)
     if pref is None:
-        pref = ParentPreferences(
-            parent_email=parent_email,
-            trial_reminder_opt_out=body.trial_reminder_opt_out,
-        )
+        pref = ParentPreferences(parent_email=parent_email, **updates)
         session.add(pref)
     else:
-        pref.trial_reminder_opt_out = body.trial_reminder_opt_out
+        for field, value in updates.items():
+            setattr(pref, field, value)
     await session.commit()
-    return ParentPreferencesOut(trial_reminder_opt_out=body.trial_reminder_opt_out)
+    return ParentPreferencesOut(
+        trial_reminder_opt_out=pref.trial_reminder_opt_out,
+        weekly_digest_opt_out=pref.weekly_digest_opt_out,
+    )
 
 
 @router.get("/premium-requests", response_model=list[PremiumRequestOut])

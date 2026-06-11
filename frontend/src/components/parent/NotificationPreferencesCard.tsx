@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parentApi } from '@/api/parent';
+import { parentApi, type ParentPreferences } from '@/api/parent';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,7 +15,7 @@ export function NotificationPreferencesCard() {
   });
 
   const mutation = useMutation({
-    mutationFn: (optOut: boolean) => parentApi.updatePreferences(optOut),
+    mutationFn: (update: Partial<ParentPreferences>) => parentApi.updatePreferences(update),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: PREFERENCES_KEY });
     },
@@ -28,6 +28,7 @@ export function NotificationPreferencesCard() {
   });
 
   const optedIn = !(q.data?.trial_reminder_opt_out ?? false);
+  const digestOptedIn = !(q.data?.weekly_digest_opt_out ?? false);
 
   return (
     <section className="mt-6 rounded-2xl border border-brand-100 bg-card p-4 text-foreground">
@@ -46,7 +47,24 @@ export function NotificationPreferencesCard() {
           checked={optedIn}
           aria-describedby="sub-email-help"
           disabled={q.isLoading || mutation.isPending}
-          onCheckedChange={(checked) => mutation.mutate(!checked)}
+          onCheckedChange={(checked) => mutation.mutate({ trial_reminder_opt_out: !checked })}
+        />
+      </div>
+      <div className="mt-4 flex items-start justify-between gap-4">
+        <div>
+          <label htmlFor="digest-email-toggle" className="block text-sm font-medium">
+            Weekly progress email
+          </label>
+          <p id="digest-email-help" className="mt-1 text-sm text-muted-foreground">
+            A weekly summary of what your child learned.
+          </p>
+        </div>
+        <Switch
+          id="digest-email-toggle"
+          checked={digestOptedIn}
+          aria-describedby="digest-email-help"
+          disabled={q.isLoading || mutation.isPending}
+          onCheckedChange={(checked) => mutation.mutate({ weekly_digest_opt_out: !checked })}
         />
       </div>
     </section>

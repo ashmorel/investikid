@@ -68,7 +68,10 @@ export type Child = {
 export type GroupMember = { child_user_id: string; username: string };
 export type ParentGroup = { id: string; name: string; code: string | null; is_owner: boolean; members: GroupMember[] };
 
-export type ParentPreferences = { trial_reminder_opt_out: boolean };
+export type ParentPreferences = {
+  trial_reminder_opt_out: boolean;
+  weekly_digest_opt_out: boolean;
+};
 
 export const parentApi = {
   requestMagicLink: (email: string) =>
@@ -108,9 +111,9 @@ export const parentApi = {
   deleteGroup: (groupId: string) =>
     apiFetch<{ status: string }>(`/parent/groups/${groupId}`, { method: 'DELETE' }),
   getPreferences: () => apiFetch<ParentPreferences>('/parent/preferences'),
-  updatePreferences: (trialReminderOptOut: boolean) =>
+  updatePreferences: (update: Partial<ParentPreferences>) =>
     apiFetch<ParentPreferences>('/parent/preferences', {
       method: 'PATCH',
-      body: JSON.stringify({ trial_reminder_opt_out: trialReminderOptOut }),
+      body: JSON.stringify(update),
     }),
 };
