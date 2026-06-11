@@ -7,6 +7,19 @@ from app.services.level_service import premium_for_position
 _MODULES = [
     {
         "topic": "stocks", "title": "What is a Stock?",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "Understanding the important role money plays in our lives"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "IV", "label": "Investing"},
+        ],
+        "sources": [
+            {"title": "FCA InvestSmart", "url": "https://www.fca.org.uk/investsmart"},
+            {"title": "Investor.gov (US SEC) — Stocks", "url": "https://www.investor.gov/introduction-investing/investing-basics/investment-products/stocks"},
+        ],
+        "learning_objectives": [
+            "Explain that a share is a small piece of a company",
+            "Describe why people buy shares (growth and dividends)",
+            "Recognise that share prices move up and down",
+        ],
         "country_codes": [], "is_premium": False, "order_index": 0, "icon": "📈",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -74,7 +87,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Explain what a stock exchange is and that you usually trade with other investors",
+                 "Use a ticker to find a company and explain what an index (like the FTSE 100) tracks",
+                 "Compare company sizes using market value",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Where stocks are bought and sold",
                     "body": "Stocks are traded on a stock exchange — a giant marketplace like the London Stock Exchange (LSE) or the New York Stock Exchange. Here's the surprise: when you buy a share, you're usually not buying it from the company. You're buying it from another investor who wants to sell theirs.",
@@ -117,7 +134,11 @@ _MODULES = [
                     "correct_index": 1,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Explain why spreading money across companies (diversification) lowers risk",
+                 "Explain why time in the market usually beats trying to time it",
+                 "Recognise that higher possible reward comes with higher risk",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Don't put all your eggs in one basket",
                     "body": "If you put all your money into one company and it does badly, you could lose a lot. Spreading your money across many different companies is called diversification — if one struggles, the others can balance it out.",
@@ -164,6 +185,19 @@ _MODULES = [
     },
     {
         "topic": "savings", "title": "Compound Interest Basics",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "How to manage money"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "III", "label": "Saving"},
+        ],
+        "sources": [
+            {"title": "MoneyHelper — Savings", "url": "https://www.moneyhelper.org.uk/en/savings"},
+            {"title": "Bank of England — What are interest rates?", "url": "https://www.bankofengland.co.uk/explainers/what-are-interest-rates"},
+        ],
+        "learning_objectives": [
+            "Explain that compound interest is interest earned on interest",
+            "Show how money grows faster the longer it is saved",
+            "Compare simple and compound growth",
+        ],
         "country_codes": [], "is_premium": False, "order_index": 1, "icon": "🏦",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -229,7 +263,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Explain how compounding frequency changes growth",
+                 "Use the Rule of 72 to estimate doubling time",
+                 "Explain why saving regularly gives compounding more to work with — and spot 'guaranteed doubling' scams",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "How often does it compound?",
                     "body": "Not all interest is added once a year. Some accounts add interest every month, or even every day. The more often interest is added (or 'compounded'), the more often your interest starts earning its own interest. So two accounts with the same rate can grow by slightly different amounts depending on how often they pay.",
@@ -272,7 +310,11 @@ _MODULES = [
                     "correct_index": 1,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Explain how compounding can work against you on unpaid debt",
+                 "Describe how inflation erodes buying power",
+                 "Explain why tax-free wrappers (like a Junior ISA) and starting early boost long-term growth",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Compounding can work AGAINST you too",
                     "body": "Compound interest is brilliant when it's growing your savings. But it works the same way on money you OWE. If someone borrows money and doesn't pay it back, the interest piles up on the interest — and the debt can snowball quickly. The same force that grows savings can grow a debt, so borrowing always needs care.",
@@ -319,6 +361,18 @@ _MODULES = [
     },
     {
         "topic": "real_estate", "title": "What is a REIT?",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "Understanding the important role money plays in our lives"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "IV", "label": "Investing"},
+        ],
+        "sources": [
+            {"title": "Investor.gov (US SEC) — REITs", "url": "https://www.investor.gov/introduction-investing/investing-basics/investment-products/real-estate-investment-trusts-reits"},
+            {"title": "MoneyHelper — Investing in property", "url": "https://www.moneyhelper.org.uk/en/savings/types-of-savings/investing-in-property"},
+        ],
+        "learning_objectives": [
+            "Explain that a REIT lets you invest in property through shares",
+            "Describe how REITs make money from rent paid out to shareholders",
+        ],
         "country_codes": [], "is_premium": False, "order_index": 2, "icon": "🏠",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -379,7 +433,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "List the kinds of property REITs can own",
+                 "Explain why REITs pay high dividends and how owning many buildings spreads risk",
+                 "Explain that REIT shares trade on the stock market",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Not just houses",
                     "body": "A REIT can own all sorts of property, not just homes. Some own shopping centres, some own warehouses where parcels are stored, some own office blocks, hospitals, or even mobile-phone towers. Different REITs focus on different types — so when you pick one, it helps to know what kind of property is actually inside it.",
@@ -422,7 +480,11 @@ _MODULES = [
                     "correct_index": 1,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Calculate a dividend yield and treat an unusually high one as a warning sign",
+                 "Explain why rising interest rates can hurt REITs",
+                 "Place REITs as one slice of a diversified mix",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Reading the dividend yield",
                     "body": "The 'dividend yield' is a quick way to compare REITs: it's the yearly dividend shown as a percentage of the share price. A REIT priced at £10 paying 40p a year has a 4% yield. A very high yield can look exciting, but it sometimes means investors are worried — so a big number isn't automatically a good number.",
@@ -469,6 +531,18 @@ _MODULES = [
     },
     {
         "topic": "budgeting", "title": "Budgeting Basics",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "How to manage money"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "II", "label": "Spending"},
+        ],
+        "sources": [
+            {"title": "MoneyHelper — Budgeting", "url": "https://www.moneyhelper.org.uk/en/everyday-money/budgeting"},
+            {"title": "FDIC Money Smart", "url": "https://www.fdic.gov/consumer-resource-center/money-smart"},
+        ],
+        "learning_objectives": [
+            "Explain what a budget is and why it helps",
+            "Apply a simple rule (like 50/30/20) to split money between spending and saving",
+        ],
         "country_codes": [], "is_premium": False, "order_index": 3, "icon": "💰",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -532,7 +606,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Explain why tracking real spending against the plan reveals surprises",
+                 "Tell fixed costs from variable costs",
+                 "Plan ahead for known costs with a sinking fund",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "A budget only works if you track it",
                     "body": "A plan is a guess until you check it against reality. Tracking means writing down what you actually spend — in a notes app, a little notebook, or a simple spreadsheet. At the end of the week you compare what you planned to spend with what you really spent. The gaps are where the surprises hide, and they're usually the small, easy-to-forget buys.",
@@ -575,7 +653,11 @@ _MODULES = [
                     "correct_index": 1,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Give every pound a job (zero-based budgeting)",
+                 "Pay yourself first when money comes in",
+                 "Budget with variable income and spot lifestyle creep",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Give every pound a job (zero-based budgeting)",
                     "body": "A powerful method is to plan until your income minus your planned spending-and-saving equals zero — not because you spend it all, but because every pound has been assigned a job (spending, saving, or a sinking fund). Nothing is left 'floating' and unaccounted for, which is exactly where money tends to disappear.",
@@ -622,6 +704,18 @@ _MODULES = [
     },
     {
         "topic": "budgeting", "title": "Needs vs Wants",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "Becoming a critical consumer"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "II", "label": "Spending"},
+        ],
+        "sources": [
+            {"title": "MoneyHelper — Everyday money", "url": "https://www.moneyhelper.org.uk/en/everyday-money"},
+            {"title": "FDIC Money Smart", "url": "https://www.fdic.gov/consumer-resource-center/money-smart"},
+        ],
+        "learning_objectives": [
+            "Tell the difference between a need and a want",
+            "Explain why the difference isn't always obvious and depends on context",
+        ],
         "country_codes": [], "is_premium": False, "order_index": 4, "icon": "🛒",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -676,7 +770,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Use the 'wait a bit' test to avoid impulse buys",
+                 "Compare value using cost-per-use",
+                 "Recognise opportunity cost and judge whether a 'sale' is really a smart buy",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "The 'wait a bit' test",
                     "body": "When you really want something, try the wait-a-bit test: give yourself a short pause — a day, or even just a sleep on it — before buying. Lots of wants feel huge in the moment and much smaller the next day. If you still want it after waiting, it's probably a genuine choice, not just an impulse. Waiting costs you nothing and often saves you money.",
@@ -719,7 +817,11 @@ _MODULES = [
                     "correct_index": 0,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Explain that adverts are designed to make you want things",
+                 "Spot hurry-up tricks ('limited time!', scarcity) and peer/influencer pressure",
+                 "Decide for yourself whether something is worth its price",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Adverts are made to make you want",
                     "body": "Adverts, sponsored posts and influencer videos exist to make you feel you need something. Bright colours, happy faces, 'everyone has it' — these are clever tools, not facts. Spotting that an advert is designed to nudge you is a superpower: once you see the trick, it has far less power over you. Wanting something because an advert told you to isn't the same as actually needing it.",
@@ -766,6 +868,19 @@ _MODULES = [
     },
     {
         "topic": "risk", "title": "Risk & Diversification",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "Managing risks and emotions associated with money"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "IV", "label": "Investing"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "VI", "label": "Managing Risk"},
+        ],
+        "sources": [
+            {"title": "FCA InvestSmart — Understanding investment risk", "url": "https://www.fca.org.uk/investsmart"},
+            {"title": "Investor.gov (US SEC) — Diversification", "url": "https://www.investor.gov/additional-resources/information/youth/teachers-classroom-resources/what-diversification"},
+        ],
+        "learning_objectives": [
+            "Explain what investment risk is",
+            "Explain why putting all your eggs in one basket is dangerous and how diversification helps",
+        ],
         "country_codes": [], "is_premium": False, "order_index": 5, "icon": "🎲",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -827,7 +942,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Name different kinds of risk (company-specific, market, inflation, liquidity)",
+                 "Match where you keep money to when you'll need it (time horizon)",
+                 "Build an emergency fund before investing",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "There's more than one kind of risk",
                     "body": "Risk isn't just one thing. 'Company-specific risk' is the danger that one business does badly — maybe its product flops. 'Market risk' is when lots of investments fall together, like during a downturn. Diversifying across many companies helps with company-specific risk, but market risk affects almost everyone at once. Knowing the difference helps you understand what you can and can't protect against.",
@@ -870,7 +989,12 @@ _MODULES = [
                     "correct_index": 1,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Tell risk tolerance from risk capacity",
+                 "Describe bonds as a steadier complement to shares",
+                 "Stay calm in a downturn and explain rebalancing",
+                 "Explain how insurance transfers risk — and spot 'no risk, guaranteed' scams",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Risk tolerance vs risk capacity",
                     "body": "These sound the same but aren't. Risk tolerance is how comfortable you feel when investments wobble — some people stay calm, others lose sleep. Risk capacity is how much risk you can actually afford to take, based on your money and how soon you need it. A wise plan respects both: never take more risk than you can handle emotionally or financially. Grown-ups think about both before deciding.",
@@ -917,6 +1041,19 @@ _MODULES = [
     },
     {
         "topic": "crypto", "title": "What is Crypto?",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "Managing risks and emotions associated with money"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "IV", "label": "Investing"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "VI", "label": "Managing Risk"},
+        ],
+        "sources": [
+            {"title": "FCA — Cryptoassets consumer guidance", "url": "https://www.fca.org.uk/consumers/cryptoassets"},
+            {"title": "Bank of England — What are cryptoassets?", "url": "https://www.bankofengland.co.uk/explainers/what-are-cryptocurrencies"},
+        ],
+        "learning_objectives": [
+            "Describe crypto as digital money recorded on a shared ledger",
+            "Explain why crypto prices are far more volatile than ordinary money",
+        ],
         "country_codes": [], "is_premium": True, "order_index": 6, "icon": "₿",  # SAMPLE premium gating fixture — real premium curriculum is sub-project #4
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -979,7 +1116,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Explain why a blockchain is hard to tamper with",
+                 "Keep private keys and seed phrases secret, and explain why lost keys usually mean lost crypto",
+                 "Spot classic crypto scams ('send 1, get 2 back')",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "A chain that's hard to cheat",
                     "body": "A blockchain stores transactions in 'blocks' that are joined in order, like links in a chain. Each new block carries a fingerprint of the one before it, so if anyone tried to secretly change an old block, the fingerprints would stop matching and the whole network would notice. Thousands of computers keep their own copy and compare notes, so there's no single record a cheat could quietly rewrite. Trust comes from lots of computers agreeing, not from one boss in charge.",
@@ -1022,7 +1163,11 @@ _MODULES = [
                     "correct_index": 0,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Compare crypto with ordinary money on the jobs money must do",
+                 "Explain that crypto usually lacks bank-style protections",
+                 "Resist hype and FOMO from celebrities, and consider the environmental cost",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "What makes 'money' actually money?",
                     "body": "Normal money like the pound does three jobs well: you can spend it almost anywhere, its value stays fairly steady day to day, and the Bank of England helps manage it. Most crypto struggles with those jobs — few shops accept it, its price can swing wildly in a single day, and no central body steadies it. That doesn't make crypto 'fake', but it's why many experts treat it more like a risky bet than like everyday money. Understanding the difference helps you see through people who call it 'the future of all money'.",
@@ -1069,6 +1214,18 @@ _MODULES = [
     },
     {
         "topic": "taxes", "title": "How Taxes Work",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "Understanding the important role money plays in our lives"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "I", "label": "Earning Income"},
+        ],
+        "sources": [
+            {"title": "GOV.UK — Income Tax", "url": "https://www.gov.uk/income-tax"},
+            {"title": "GOV.UK — How VAT works", "url": "https://www.gov.uk/how-vat-works"},
+        ],
+        "learning_objectives": [
+            "Explain why we pay tax and what it funds",
+            "Describe income tax basics (allowances and bands)",
+        ],
         "country_codes": [], "is_premium": False, "order_index": 7, "icon": "🧾",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1130,7 +1287,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Recognise taxes beyond income tax (VAT, National Insurance)",
+                 "Explain that VAT is built into prices and what NI helps fund",
+                 "Connect taxes to public services like the NHS, schools and roads",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Income tax isn't the only tax",
                     "body": "Income tax is just one of many. The government also collects tax when you spend money (VAT), when you earn money in other ways, and through National Insurance. Most adults pay several different taxes without even noticing. Learning the main ones helps you understand the true cost of things — and where that money goes.",
@@ -1173,7 +1334,11 @@ _MODULES = [
                     "correct_index": 1,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Explain how progressive tax bands work (only the extra is taxed at the higher rate)",
+                 "Describe how tax and benefits flow both ways",
+                 "Act as an honest taxpayer and recognise that 'cash in hand, tell no one' is not OK",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Why 'progressive' tax tries to be fair",
                     "body": "A 'progressive' tax means people who earn more pay a higher rate on the extra they earn — not on everything. Think of income split into slices: the first slice is tax-free, the next slice is taxed at a lower rate, and only the highest slices are taxed more. The idea is that those who can afford to contribute more, do — while a tax-free slice protects people on lower incomes. Whether that balance is 'fair' is something adults genuinely debate.",
@@ -1220,6 +1385,19 @@ _MODULES = [
     },
     {
         "topic": "debt", "title": "Debt & Credit Explained",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "How to manage money"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "V", "label": "Managing Credit"},
+        ],
+        "sources": [
+            {"title": "MoneyHelper — Credit", "url": "https://www.moneyhelper.org.uk/en/everyday-money/credit"},
+            {"title": "FDIC Money Smart", "url": "https://www.fdic.gov/consumer-resource-center/money-smart"},
+        ],
+        "learning_objectives": [
+            "Explain that borrowing money costs money (interest)",
+            "Tell good debt from bad debt",
+            "Describe what a credit score is",
+        ],
         "country_codes": [], "is_premium": False, "order_index": 8, "icon": "💳",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1287,7 +1465,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Explain how interest compounds monthly on unpaid balances",
+                 "Name common types of credit (cards, loans, BNPL, overdrafts)",
+                 "Use credit responsibly: spend only what you can clear",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "How interest piles up (not just once)",
                     "body": "APR is a yearly price tag, but interest on a credit card is usually added every month on whatever you still owe. So if you don't clear the balance, next month's interest is charged on the old amount PLUS last month's interest. It's compound interest working in reverse — against you instead of for you. The longer a debt sits unpaid, the faster it grows.",
@@ -1330,7 +1512,11 @@ _MODULES = [
                     "correct_index": 2,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Build and protect a good credit score (pay on time, low utilisation)",
+                 "Recognise a debt spiral and how to step out (including free UK debt help)",
+                 "Judge when borrowing is a wise decision",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "How to build (and protect) a good credit score",
                     "body": "A credit score grows with steady, boring good habits: paying every bill on time, not using your whole limit, and keeping accounts open for a long while. One missed payment can dent it, and using almost all your available credit makes lenders nervous. You can't build a score overnight — it's a long game of small, reliable actions. Protecting it means checking statements, never ignoring a bill, and being cautious about how many credit deals you sign up for.",
@@ -1377,6 +1563,18 @@ _MODULES = [
     },
     {
         "topic": "entrepreneurship", "title": "Starting a Side Hustle",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "Understanding the important role money plays in our lives"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "I", "label": "Earning Income"},
+        ],
+        "sources": [
+            {"title": "Young Enterprise", "url": "https://www.young-enterprise.org.uk"},
+            {"title": "GOV.UK — Tax-free allowances on trading income", "url": "https://www.gov.uk/guidance/tax-free-allowances-on-property-and-trading-income"},
+        ],
+        "learning_objectives": [
+            "Recognise that everyone starts somewhere",
+            "Match a side-hustle idea to your skills and interests",
+        ],
         "country_codes": [], "is_premium": False, "order_index": 9, "icon": "🚀",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1438,7 +1636,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Test an idea with a real sale before spending big",
+                 "Set a fair price by checking the local market",
+                 "Win first customers nearby and use word of mouth",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Test before you build",
                     "body": "Before you spend time or money, find out if people actually want your thing. This is called testing your idea. Ask a few people: 'Would you buy this? What would you pay?' Even better — try to make one real sale. A 'yes, here's the money' tells you far more than ten people saying 'that sounds nice.' Real customers are the best teachers.",
@@ -1481,7 +1683,11 @@ _MODULES = [
                     "correct_index": 1,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Build reputation by fixing mistakes honestly",
+                 "Reinvest time and earnings wisely while protecting school/life balance",
+                 "Stay safe with strangers online — involve a trusted grown-up",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Reputation is everything",
                     "body": "When you run anything, your reputation is what people say about you when you're not in the room. Doing a great job, being on time, and being honest make customers come back and recommend you. One brilliant experience can bring you three new customers; one broken promise can lose you ten. Treat every customer like you want them to tell their friends — because they will, either way.",
@@ -1528,6 +1734,18 @@ _MODULES = [
     },
     {
         "topic": "entrepreneurship", "title": "Revenue, Costs & Profit",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "Understanding the important role money plays in our lives"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "I", "label": "Earning Income"},
+        ],
+        "sources": [
+            {"title": "Young Enterprise", "url": "https://www.young-enterprise.org.uk"},
+            {"title": "Bank of England KnowledgeBank", "url": "https://www.bankofengland.co.uk/explainers"},
+        ],
+        "learning_objectives": [
+            "Explain that revenue isn't profit",
+            "Tell fixed costs from variable costs",
+        ],
         "country_codes": [], "is_premium": True, "order_index": 10, "icon": "📊",  # SAMPLE premium gating fixture — real premium curriculum is sub-project #4
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1586,7 +1804,10 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Calculate profit margin and set a price from cost plus desired profit",
+                 "Work out a break-even point",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Profit margin: how much of each £ you keep",
                     "body": "Profit margin tells you how much of every pound you actually keep. If you sell something for £5 and it costs you £3 to make, your profit is £2. Your margin is £2 out of £5 — that's 40%. A bigger margin means more of each sale stays with you. Two stalls can both make sales, but the one with the better margin keeps more.",
@@ -1629,7 +1850,11 @@ _MODULES = [
                     "correct_index": 0,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Explain why profit isn't the same as cash in hand",
+                 "Decide how much profit to reinvest",
+                 "Read a simple revenue/costs/profit summary and scale sensibly",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Profit isn't the same as cash in your pocket",
                     "body": "You can be profitable on paper but still short of cash right now. Imagine you sell £100 of cookies to a café, but they'll pay you next month. Meanwhile you spent £40 on ingredients today. Your profit will be £60 — but right now you're actually £40 out of pocket until the café pays. That gap between money earned and money actually in hand is called cash flow. Healthy businesses watch both.",
@@ -1676,6 +1901,18 @@ _MODULES = [
     },
     {
         "topic": "taxes", "title": "Your First Paycheque",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "How to manage money"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "I", "label": "Earning Income"},
+        ],
+        "sources": [
+            {"title": "MoneyHelper — Understanding your payslip", "url": "https://www.moneyhelper.org.uk/en/work/employment/understanding-your-payslip"},
+            {"title": "GOV.UK — Understanding your pay", "url": "https://www.gov.uk/understanding-your-pay"},
+        ],
+        "learning_objectives": [
+            "Read a payslip (gross vs net pay)",
+            "Identify common deductions",
+        ],
         "country_codes": [], "is_premium": True, "order_index": 11, "icon": "💷",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1735,7 +1972,11 @@ _MODULES = [
             }},
         ],
         "extra_levels": [
-            {"title": "Level 2", "lessons": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Explain where deductions go and that your pension contribution is your own savings",
+                 "Read your tax code and YTD figures, and describe auto-enrolment",
+                 "Calculate net pay from gross and deductions",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Where your deductions actually go",
                     "body": "On Level 1 you met the names on a payslip. Here's where the money goes: Income Tax and National Insurance are sent to HMRC (the government's tax office) to pay for shared things like the NHS and the state pension. A pension deduction isn't a tax at all — it's YOUR own money being saved for your future. So your deductions split two ways: money that leaves for good (tax, NI) and money that's still yours, just locked away for later (pension).",
@@ -1778,7 +2019,11 @@ _MODULES = [
                     "correct_index": 1,
                 }},
             ]},
-            {"title": "Level 3", "lessons": [
+            {"title": "Level 3", "learning_objectives": [
+                 "Pay yourself first from each paycheque",
+                 "Build an emergency buffer and spot lifestyle creep after a pay rise",
+                 "Plan a first wage sensibly: save a slice, keep a buffer, enjoy the rest",
+             ], "lessons": [
                 {"type": "card", "xp_reward": 10, "content_json": {
                     "title": "Pay yourself first",
                     "body": "Most people spend, then save whatever's left — and usually nothing's left. Flip it: the moment your net pay lands, move a small slice into savings BEFORE you spend anything. That's 'paying yourself first'. Even £1 in every £10 (10%) adds up, and because it happens first, you never miss it. Some people even set up an automatic transfer on payday so the choice is made for them.",
