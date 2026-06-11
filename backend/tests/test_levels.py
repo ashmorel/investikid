@@ -51,3 +51,65 @@ async def test_level_lessons_premium_gate(client, db_session):
     r1 = await client.get(f"/levels/{l1.id}/lessons")
     assert r1.status_code == 200
     assert len(r1.json()) == 1
+
+
+# ── W3a Task 3: learning_objectives + mastered_at on the child levels API ──
+
+async def _user_id(db_session, email):
+    from app.models.user import User
+    return await db_session.scalar(select(User.id).where(User.email == email))
+
+
+async def test_levels_include_learning_objectives_and_mastered_at(client, db_session):
+    import uuid as _uuid
+    from datetime import UTC, datetime
+
+    from app.models.content import LevelMastery
+
+    await _login(client, "lvobj@example.com", "lvobjuser")
+    m, l1, l2, q1, q2 = await _module_two_levels(db_session)
+    l1.learning_objectives = ["Explain what a stock is", "Spot risk in a portfolio"]
+    uid = await _user_id(db_session, "lvobj@example.com")
+    db_session.add(LevelMastery(
+        id=_uuid.uuid4(), user_id=uid, level_id=l1.id,
+        mastered_at=datetime.now(UTC), score=0.9,
+    ))
+    await db_session.flush()
+
+    r = await client.get(f"/modules/{m.id}/levels")
+    assert r.status_code == 200
+    body = sorted(r.json(), key=lambda x: x["order_index"])
+    assert body[0]["learning_objectives"] == [
+        "Explain what a stock is", "Spot risk in a portfolio",
+    ]
+    assert body[0]["mastered_at"] is not None
+    assert body[1]["learning_objectives"] is None
+    assert body[1]["mastered_at"] is None
+
+
+async def test_levels_mastery_does_not_leak_other_users(client, db_session):
+    import datetime as dt
+    import uuid as _uuid
+    from datetime import UTC, datetime
+
+    from app.models.content import LevelMastery
+    from app.models.user import User
+
+    await _login(client, "lvleak@example.com", "lvleakuser")
+    m, l1, l2, q1, q2 = await _module_two_levels(db_session)
+    other = User(
+        username="lvotheruser", email="lvother@example.com", password_hash="x",
+        dob=dt.date(2012, 1, 1), country_code="GB", currency_code="GBP",
+    )
+    db_session.add(other)
+    await db_session.flush()
+    db_session.add(LevelMastery(
+        id=_uuid.uuid4(), user_id=other.id, level_id=l1.id,
+        mastered_at=datetime.now(UTC), score=1.0,
+    ))
+    await db_session.flush()
+
+    r = await client.get(f"/modules/{m.id}/levels")
+    assert r.status_code == 200
+    body = sorted(r.json(), key=lambda x: x["order_index"])
+    assert body[0]["mastered_at"] is None

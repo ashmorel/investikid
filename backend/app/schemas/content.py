@@ -1,7 +1,8 @@
 import uuid
+from datetime import datetime
 from typing import Literal, get_args
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 LessonType = Literal["card", "quiz", "scenario", "video"]
 ModuleTopic = Literal[
@@ -10,6 +11,24 @@ ModuleTopic = Literal[
 ]
 
 TOPIC_PATH_VALUES: frozenset[str] = frozenset(get_args(ModuleTopic))
+
+
+class StandardRef(BaseModel):
+    framework: str = Field(min_length=1)
+    code: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+
+
+class SourceRef(BaseModel):
+    title: str = Field(min_length=1)
+    url: str = Field(min_length=1)
+
+    @field_validator("url")
+    @classmethod
+    def _http_only(cls, v: str) -> str:
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("url must start with http:// or https://")
+        return v
 
 
 class ModuleOut(BaseModel):
@@ -23,6 +42,8 @@ class ModuleOut(BaseModel):
     order_index: int
     icon: str = "📚"
     locked: bool = False
+    standards_alignment: list[StandardRef] | None = None
+    sources: list[SourceRef] | None = None
 
 
 class LessonOut(BaseModel):
@@ -78,6 +99,8 @@ class LevelOut(BaseModel):
     passed: bool = False
     lessons_total: int = 0
     lessons_completed: int = 0
+    learning_objectives: list[str] | None = None
+    mastered_at: datetime | None = None
 
 
 class NextLessonOut(BaseModel):

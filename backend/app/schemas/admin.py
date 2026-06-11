@@ -3,11 +3,14 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
+from app.schemas.content import SourceRef, StandardRef
 from app.services.simulator_rewards_config import MISSION_TYPES
+
+NonEmptyStr = Annotated[str, Field(min_length=1)]
 
 
 # ── Apply mission ───────────────────────────────────────────────────
@@ -70,6 +73,8 @@ class ModuleUpdate(BaseModel):
     min_age: int | None = None
     max_age: int | None = None
     completion_cash_reward: Decimal | None = None
+    standards_alignment: list[StandardRef] | None = None
+    sources: list[SourceRef] | None = None
 
 
 class ModuleOut(BaseModel):
@@ -85,6 +90,8 @@ class ModuleOut(BaseModel):
     min_age: int | None = None
     max_age: int | None = None
     completion_cash_reward: Decimal | None = None
+    standards_alignment: list[StandardRef] | None = None
+    sources: list[SourceRef] | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -300,6 +307,7 @@ class AdminLevelUpdate(BaseModel):
     is_premium: bool | None = None
     pass_threshold: float | None = None
     icon: str | None = None
+    learning_objectives: list[NonEmptyStr] | None = None
 
 
 class AdminLevelOut(BaseModel):
@@ -314,6 +322,7 @@ class AdminLevelOut(BaseModel):
     content_source: str
     icon: str
     lesson_count: int = 0
+    learning_objectives: list[str] | None = None
 
 
 # ── Settings ────────────────────────────────────────────────────────

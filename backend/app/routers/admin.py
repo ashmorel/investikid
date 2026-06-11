@@ -133,6 +133,7 @@ async def list_modules(session: AsyncSession = Depends(get_session)):
             is_premium=m.is_premium, country_codes=m.country_codes,
             order_index=m.order_index, lesson_count=len(m.lessons),
             prerequisite_ids=m.prerequisite_ids, min_age=m.min_age, max_age=m.max_age,
+            standards_alignment=m.standards_alignment, sources=m.sources,
         )
         for m in modules
     ]
@@ -200,6 +201,7 @@ async def update_module(
         order_index=module.order_index, lesson_count=len(module.lessons),
         prerequisite_ids=module.prerequisite_ids, min_age=module.min_age, max_age=module.max_age,
         completion_cash_reward=module.completion_cash_reward,
+        standards_alignment=module.standards_alignment, sources=module.sources,
     )
 
 
@@ -319,6 +321,7 @@ def _level_out(level: Level, lesson_count: int) -> AdminLevelOut:
         order_index=level.order_index, is_premium=level.is_premium,
         pass_threshold=level.pass_threshold, content_source=level.content_source,
         icon=level.icon, lesson_count=lesson_count,
+        learning_objectives=level.learning_objectives,
     )
 
 

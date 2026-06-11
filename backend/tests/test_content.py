@@ -241,3 +241,29 @@ async def test_lesson_summary_includes_derived_title(client, db_session):
     assert response.status_code == 200
     titles = [lesson["title"] for lesson in response.json()]
     assert titles == ["Card title", "Quiz question?", "Scenario prompt", "Caption text", "Video lesson"]
+
+
+async def test_modules_include_standards_and_sources(client, db_session):
+    standards = [{"framework": "Jump$tart", "code": "SI-1", "label": "Saving & Investing 1"}]
+    sources = [{"title": "Bank of England — What are interest rates?",
+                "url": "https://www.bankofengland.co.uk/explainers"}]
+    with_meta = Module(
+        topic="stocks", title="Stocks Credible", country_codes=["GB"],
+        is_premium=False, order_index=0,
+        standards_alignment=standards, sources=sources,
+    )
+    without_meta = Module(
+        topic="savings", title="Savings Plain", country_codes=["GB"],
+        is_premium=False, order_index=1,
+    )
+    db_session.add_all([with_meta, without_meta])
+    await db_session.commit()
+    await _register_and_login(client, email="cred@example.com", username="creduser")
+
+    response = await client.get("/modules")
+    assert response.status_code == 200
+    by_title = {m["title"]: m for m in response.json()}
+    assert by_title["Stocks Credible"]["standards_alignment"] == standards
+    assert by_title["Stocks Credible"]["sources"] == sources
+    assert by_title["Savings Plain"]["standards_alignment"] is None
+    assert by_title["Savings Plain"]["sources"] is None

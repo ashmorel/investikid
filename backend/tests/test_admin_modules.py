@@ -144,3 +144,40 @@ async def test_lesson_content_validation_rejects_invalid(admin_client):
 
     # Cleanup
     await admin_client.delete(f"/admin/modules/{module_id}")
+
+
+async def test_module_update_standards_and_sources(admin_client):
+    resp = await admin_client.post("/admin/modules", json={
+        "topic": "stocks", "title": "Cred Module", "icon": "🏛️",
+        "is_premium": False, "country_codes": [], "order_index": 0,
+    })
+    module_id = resp.json()["id"]
+
+    standards = [{"framework": "Jump$tart", "code": "SI-1", "label": "Saving & Investing 1"}]
+    sources = [{"title": "Bank of England explainer",
+                "url": "https://www.bankofengland.co.uk/explainers"}]
+    resp = await admin_client.put(f"/admin/modules/{module_id}", json={
+        "standards_alignment": standards, "sources": sources,
+    })
+    assert resp.status_code == 200
+    assert resp.json()["standards_alignment"] == standards
+    assert resp.json()["sources"] == sources
+
+    # Persists — visible on the admin list too
+    resp = await admin_client.get("/admin/modules")
+    mod = next(m for m in resp.json() if m["id"] == module_id)
+    assert mod["standards_alignment"] == standards
+    assert mod["sources"] == sources
+
+
+async def test_module_update_rejects_bad_source_url(admin_client):
+    resp = await admin_client.post("/admin/modules", json={
+        "topic": "stocks", "title": "Bad URL Module", "icon": "🏛️",
+        "is_premium": False, "country_codes": [], "order_index": 0,
+    })
+    module_id = resp.json()["id"]
+
+    resp = await admin_client.put(f"/admin/modules/{module_id}", json={
+        "sources": [{"title": "Sketchy", "url": "javascript:alert(1)"}],
+    })
+    assert resp.status_code == 422

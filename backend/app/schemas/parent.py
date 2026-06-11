@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr
 
+from app.schemas.content import StandardRef
+
 
 class ParentMagicLinkRequest(BaseModel):
     email: EmailStr
@@ -29,6 +31,7 @@ class LevelProgressOut(BaseModel):
     passed: bool
     lessons_completed: int
     lessons_total: int
+    mastered_at: datetime | None = None
 
 
 class ModuleProgressOut(BaseModel):
@@ -38,6 +41,7 @@ class ModuleProgressOut(BaseModel):
     lessons_completed: int
     lessons_total: int
     levels: list[LevelProgressOut]
+    standards_alignment: list[StandardRef] | None = None
 
 
 class ChildAnalyticsOut(BaseModel):

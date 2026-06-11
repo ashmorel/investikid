@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
-from app.models.content import Lesson, LessonCompletion, LessonView, Level, Module
+from app.models.content import Lesson, LessonCompletion, LessonView, Level, LevelMastery, Module
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
 from app.schemas.content import (
@@ -92,6 +92,7 @@ async def list_modules(
             id=m.id, topic=m.topic, title=m.title,
             country_codes=m.country_codes, is_premium=m.is_premium,
             order_index=m.order_index, icon=m.icon, locked=not accessible,
+            standards_alignment=m.standards_alignment, sources=m.sources,
         ))
     pref = current_user.topic_path
     if pref and pref in {m.topic for m in modules}:
@@ -185,6 +186,15 @@ async def list_levels(
         completed_ids=completed_ids, scores=scores,
         user_is_premium=is_premium(current_user),
     )
+    mastered_at_by_level: dict = {}
+    if levels:
+        mastery_rows = (await session.execute(
+            select(LevelMastery.level_id, LevelMastery.mastered_at).where(
+                LevelMastery.user_id == current_user.id,
+                LevelMastery.level_id.in_([lv.id for lv in levels]),
+            )
+        )).all()
+        mastered_at_by_level = dict(mastery_rows)
     return [
         LevelOut(
             id=lv.id, module_id=lv.module_id, title=lv.title, order_index=lv.order_index,
@@ -192,6 +202,8 @@ async def list_levels(
             state=states[lv.id].state, locked_reason=states[lv.id].locked_reason,
             passed=states[lv.id].passed, lessons_total=states[lv.id].lessons_total,
             lessons_completed=states[lv.id].lessons_completed,
+            learning_objectives=lv.learning_objectives,
+            mastered_at=mastered_at_by_level.get(lv.id),
         )
         for lv in levels
     ]

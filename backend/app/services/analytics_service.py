@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.content import Lesson, LessonCompletion, Level, Module
+from app.models.content import Lesson, LessonCompletion, Level, LevelMastery, Module
 from app.models.gamification import Badge, UserBadge
 from app.models.user import User, UserProgress
 from app.schemas.parent import (
@@ -103,6 +103,11 @@ async def build_child_analytics(
     completed_ids = {lid for lid, _ in all_completions}
     completion_scores = {lid: s for lid, s in all_completions}
 
+    mastered_at_by_level = dict((await session.execute(
+        select(LevelMastery.level_id, LevelMastery.mastered_at)
+        .where(LevelMastery.user_id == user_id)
+    )).all())
+
     modules = list(await session.scalars(
         select(Module).order_by(Module.order_index)
     ))
@@ -140,11 +145,13 @@ async def build_child_analytics(
                 level_id=lv.id, title=lv.title, state=st.state,
                 locked_reason=st.locked_reason, passed=st.passed,
                 lessons_completed=st.lessons_completed, lessons_total=st.lessons_total,
+                mastered_at=mastered_at_by_level.get(lv.id),
             ))
         modules_progress.append(ModuleProgressOut(
             module_id=m.id, title=m.title, icon=m.icon,
             lessons_completed=m_completed, lessons_total=m_total,
             levels=level_outs,
+            standards_alignment=m.standards_alignment,
         ))
 
     return ChildAnalyticsOut(

@@ -49,3 +49,34 @@ async def test_video_lesson_requires_youtube_id(admin_client):
         "type": "video", "order_index": 0, "xp_reward": 10, "content_json": {"caption": "no id"},
     })
     assert r.status_code == 422
+
+
+async def test_level_update_learning_objectives(admin_client):
+    module_id = await _make_module(admin_client)
+    r = await admin_client.post(f"/admin/modules/{module_id}/levels", json={
+        "title": "L1", "order_index": 0,
+    })
+    level_id = r.json()["id"]
+
+    objectives = ["Explain compounding", "Compare saving vs investing"]
+    r = await admin_client.put(f"/admin/levels/{level_id}", json={
+        "learning_objectives": objectives,
+    })
+    assert r.status_code == 200
+    assert r.json()["learning_objectives"] == objectives
+
+    r = await admin_client.get(f"/admin/modules/{module_id}/levels")
+    assert r.json()[0]["learning_objectives"] == objectives
+
+
+async def test_level_update_rejects_empty_objective(admin_client):
+    module_id = await _make_module(admin_client)
+    r = await admin_client.post(f"/admin/modules/{module_id}/levels", json={
+        "title": "L1", "order_index": 0,
+    })
+    level_id = r.json()["id"]
+
+    r = await admin_client.put(f"/admin/levels/{level_id}", json={
+        "learning_objectives": [""],
+    })
+    assert r.status_code == 422

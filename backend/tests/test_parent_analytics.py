@@ -278,3 +278,40 @@ async def test_analytics_modules_progress_skips_unlevelled(db_session):
 
     result = await build_child_analytics(db_session, user.id, user.country_code)
     assert result.modules_progress == []
+
+
+@asyncio_pytest_mark
+async def test_analytics_carries_standards_and_mastered_at(db_session):
+    from app.models.content import Level, LevelMastery
+
+    user = User(
+        email="ana-cred@example.com", username="anacred",
+        password_hash="x", dob=date(2012, 1, 1),
+        country_code="GB", currency_code="GBP", is_premium=False,
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    standards = [{"framework": "Jump$tart", "code": "SI-1", "label": "Saving & Investing 1"}]
+    module = Module(topic="stocks", title="Stocks Credible", country_codes=["GB"],
+                    is_premium=False, order_index=0, icon="📈",
+                    standards_alignment=standards)
+    db_session.add(module)
+    await db_session.flush()
+    l1 = Level(module_id=module.id, title="Level 1", order_index=0,
+               is_premium=False, pass_threshold=0.7, icon="1️⃣")
+    db_session.add(l1)
+    await db_session.flush()
+    db_session.add(Lesson(module_id=module.id, level_id=l1.id, type="card",
+                          xp_reward=10, order_index=0, content_json={"title": "x"}))
+    await db_session.flush()
+    mastered = datetime.now(UTC)
+    db_session.add(LevelMastery(user_id=user.id, level_id=l1.id,
+                                mastered_at=mastered, score=0.9))
+    await db_session.flush()
+
+    result = await build_child_analytics(db_session, user.id, user.country_code)
+
+    mp = result.modules_progress[0]
+    assert [s.model_dump() for s in mp.standards_alignment] == standards
+    assert mp.levels[0].mastered_at is not None
