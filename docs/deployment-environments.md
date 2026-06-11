@@ -53,9 +53,15 @@ deploy (which runs `alembic upgrade head` against the live prod DB):
 1. **🛑 Take a production database backup / snapshot FIRST.** The assistant MUST ask the user
    whether to take a backup before every production migration, and wait for an answer. Use
    Railway's DB snapshot (or `pg_dump`) before the prod deploy runs the migration.
-2. Confirm the migration has already been applied + validated on testing **and** staging.
-3. Promote (`git checkout main && git merge --ff-only staging && git push`).
-4. Trigger the manual Railway production deploy (and Vercel "Promote to Production").
+2. **🛑 Physical-device QA sign-off (hard gate).** A completed, PASS sign-off for the build being
+   promoted MUST exist in `docs/release-signoffs/` (copy of `docs/release-qa-checklist.md`, run on a
+   **real iPhone and Android**). Do NOT promote without it. Green CI + web build is necessary but
+   **not** sufficient — StoreKit/Play billing, WKWebView video, push prompts, app-kill persistence,
+   and safe-area layout only behave truthfully on hardware. Any FAIL on auth, video, progress-save,
+   or billing blocks the release until fixed and re-tested (or an explicit written waiver is recorded).
+3. Confirm the migration has already been applied + validated on testing **and** staging.
+4. Promote (`git checkout main && git merge --ff-only staging && git push`).
+5. Trigger the manual Railway production deploy (and Vercel "Promote to Production").
 
 **Production cutover — ✅ COMPLETED 2026-06-08.** Production now runs on `ashmorel/investikid`
 (`main`): backend `https://investikid.up.railway.app` (Railway `Invest-Ed` → production →
