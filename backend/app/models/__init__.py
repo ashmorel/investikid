@@ -3,7 +3,14 @@ from app.models.apply_mission import ApplyMission, ApplyMissionCompletion  # noq
 from app.models.audit import AuditLog  # noqa: F401
 from app.models.cash_grant import CashGrant  # noqa: F401
 from app.models.consent import OneTimeToken, SentEmail  # noqa: F401
-from app.models.content import Lesson, LessonCompletion, LessonView, Level, Module  # noqa: F401
+from app.models.content import (  # noqa: F401
+    Lesson,
+    LessonCompletion,
+    LessonView,
+    Level,
+    LevelMastery,
+    Module,
+)
 from app.models.cosmetics import CosmeticItem, UserCosmetic  # noqa: F401
 from app.models.feedback import Feedback  # noqa: F401
 from app.models.gamification import Badge, Challenge, UserBadge, UserChallenge  # noqa: F401

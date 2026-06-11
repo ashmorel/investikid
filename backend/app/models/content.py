@@ -36,6 +36,8 @@ class Module(Base):
     min_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     completion_cash_reward: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    standards_alignment: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    sources: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     lessons: Mapped[list["Lesson"]] = relationship("Lesson", back_populates="module")
 
@@ -55,6 +57,7 @@ class Level(Base):
         String(16), nullable=False, server_default="authored"
     )
     icon: Mapped[str] = mapped_column(String(10), nullable=False, server_default="📊")
+    learning_objectives: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
@@ -95,6 +98,23 @@ class LessonCompletion(Base):
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
     )
     score: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+
+class LevelMastery(Base):
+    __tablename__ = "level_mastery"
+    __table_args__ = (
+        UniqueConstraint("user_id", "level_id", name="uq_level_mastery_user_level"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    level_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("levels.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    mastered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
 
 
 class LessonView(Base):
