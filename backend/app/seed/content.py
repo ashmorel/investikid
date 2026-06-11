@@ -20,6 +20,7 @@ _MODULES = [
             "Describe why people buy shares (growth and dividends)",
             "Recognise that share prices move up and down",
         ],
+        "conversation_prompt": "Ask them what you actually own when you buy a share — and who you're buying it from.",
         "country_codes": [], "is_premium": False, "order_index": 0, "icon": "📈",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -198,6 +199,7 @@ _MODULES = [
             "Show how money grows faster the longer it is saved",
             "Compare simple and compound growth",
         ],
+        "conversation_prompt": "Ask how long money takes to double at 6% — they know a quick trick (the Rule of 72).",
         "country_codes": [], "is_premium": False, "order_index": 1, "icon": "🏦",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -373,6 +375,7 @@ _MODULES = [
             "Explain that a REIT lets you invest in property through shares",
             "Describe how REITs make money from rent paid out to shareholders",
         ],
+        "conversation_prompt": "Ask how someone could invest in property without buying a house.",
         "country_codes": [], "is_premium": False, "order_index": 2, "icon": "🏠",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -543,6 +546,7 @@ _MODULES = [
             "Explain what a budget is and why it helps",
             "Apply a simple rule (like 50/30/20) to split money between spending and saving",
         ],
+        "conversation_prompt": "Ask them to help plan one family purchase this week using their budgeting rule.",
         "country_codes": [], "is_premium": False, "order_index": 3, "icon": "💰",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -716,6 +720,7 @@ _MODULES = [
             "Tell the difference between a need and a want",
             "Explain why the difference isn't always obvious and depends on context",
         ],
+        "conversation_prompt": "Next time an advert comes on, ask them what tricks it's using to make you want it.",
         "country_codes": [], "is_premium": False, "order_index": 4, "icon": "🛒",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -881,6 +886,7 @@ _MODULES = [
             "Explain what investment risk is",
             "Explain why putting all your eggs in one basket is dangerous and how diversification helps",
         ],
+        "conversation_prompt": "Ask why putting all your money on one thing is risky — and what 'don't put all your eggs in one basket' means for investing.",
         "country_codes": [], "is_premium": False, "order_index": 5, "icon": "🎲",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1054,6 +1060,7 @@ _MODULES = [
             "Describe crypto as digital money recorded on a shared ledger",
             "Explain why crypto prices are far more volatile than ordinary money",
         ],
+        "conversation_prompt": "Ask them what they'd say if a video promised to double your crypto in a week.",
         "country_codes": [], "is_premium": True, "order_index": 6, "icon": "₿",  # SAMPLE premium gating fixture — real premium curriculum is sub-project #4
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1226,6 +1233,7 @@ _MODULES = [
             "Explain why we pay tax and what it funds",
             "Describe income tax basics (allowances and bands)",
         ],
+        "conversation_prompt": "On your next shop, ask them where the VAT on the receipt goes.",
         "country_codes": [], "is_premium": False, "order_index": 7, "icon": "🧾",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1398,6 +1406,7 @@ _MODULES = [
             "Tell good debt from bad debt",
             "Describe what a credit score is",
         ],
+        "conversation_prompt": "Ask them when borrowing money can be a good idea — and when it's a trap.",
         "country_codes": [], "is_premium": False, "order_index": 8, "icon": "💳",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1575,6 +1584,7 @@ _MODULES = [
             "Recognise that everyone starts somewhere",
             "Match a side-hustle idea to your skills and interests",
         ],
+        "conversation_prompt": "Ask what they'd sell to earn their first £10 — and how they'd test the idea cheaply.",
         "country_codes": [], "is_premium": False, "order_index": 9, "icon": "🚀",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1746,6 +1756,7 @@ _MODULES = [
             "Explain that revenue isn't profit",
             "Tell fixed costs from variable costs",
         ],
+        "conversation_prompt": "Ask them how a lemonade stand selling £20 of drinks could still lose money.",
         "country_codes": [], "is_premium": True, "order_index": 10, "icon": "📊",  # SAMPLE premium gating fixture — real premium curriculum is sub-project #4
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -1913,6 +1924,7 @@ _MODULES = [
             "Read a payslip (gross vs net pay)",
             "Identify common deductions",
         ],
+        "conversation_prompt": "Show them (or sketch) a payslip and ask them to find the difference between gross and net pay.",
         "country_codes": [], "is_premium": True, "order_index": 11, "icon": "💷",
         "lessons": [
             {"type": "card", "xp_reward": 10, "content_json": {
@@ -2151,6 +2163,8 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
             module.standards_alignment = spec["standards_alignment"]
         if "sources" in spec:
             module.sources = spec["sources"]
+        if "conversation_prompt" in spec:
+            module.conversation_prompt = spec["conversation_prompt"]
 
         level = await session.scalar(
             select(Level).where(Level.module_id == module.id, Level.order_index == 0)

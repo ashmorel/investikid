@@ -38,6 +38,7 @@ class Module(Base):
     completion_cash_reward: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     standards_alignment: Mapped[list | None] = mapped_column(JSON, nullable=True)
     sources: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    conversation_prompt: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
     lessons: Mapped[list["Lesson"]] = relationship("Lesson", back_populates="module")
 

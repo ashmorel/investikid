@@ -304,6 +304,64 @@ async def test_seed_applies_metadata_on_update_path(db_session, monkeypatch):
     assert level2.learning_objectives == ["Updated L2 objective"]
 
 
+def test_every_module_has_conversation_prompt():
+    """All 12 authored modules carry a non-empty conversation_prompt <= 300 chars."""
+    assert len(_MODULES) == 12
+    for spec in _MODULES:
+        prompt = spec.get("conversation_prompt")
+        assert isinstance(prompt, str) and prompt.strip(), (
+            f"module {spec['title']!r} missing conversation_prompt"
+        )
+        assert len(prompt) <= 300, (
+            f"module {spec['title']!r}: conversation_prompt is {len(prompt)} chars (max 300)"
+        )
+
+
+async def test_seed_applies_conversation_prompt_on_create_and_update(db_session, monkeypatch):
+    """The seeder upserts conversation_prompt on both create and update paths."""
+    spec = _fake_spec(conversation_prompt="Ask them about fake things.")
+    monkeypatch.setattr("app.seed.content._MODULES", [spec])
+
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, spec)
+    assert module.conversation_prompt == "Ask them about fake things."
+
+    # Update path: existing module, spec carries a new prompt.
+    updated = _fake_spec(conversation_prompt="Ask them about updated fake things.")
+    monkeypatch.setattr("app.seed.content._MODULES", [updated])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, updated)
+    assert module.conversation_prompt == "Ask them about updated fake things."
+
+    # Idempotent re-seed: value unchanged.
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+    module, _, _ = await _fetch_module_and_levels(db_session, updated)
+    assert module.conversation_prompt == "Ask them about updated fake things."
+
+
+async def test_seed_without_prompt_key_leaves_manual_value_untouched(db_session, monkeypatch):
+    """A spec lacking conversation_prompt must not null out a manually-set value."""
+    bare = _fake_spec()
+    monkeypatch.setattr("app.seed.content._MODULES", [bare])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, bare)
+    assert module.conversation_prompt is None
+    module.conversation_prompt = "Manual prompt"
+    await db_session.flush()
+
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+    module, _, _ = await _fetch_module_and_levels(db_session, bare)
+    assert module.conversation_prompt == "Manual prompt"
+
+
 async def test_seed_without_keys_leaves_manual_values_untouched(db_session, monkeypatch):
     """A spec lacking the keys must not null out values set manually on rows."""
     bare = _fake_spec()
