@@ -1,6 +1,7 @@
 import { Lock } from 'lucide-react';
 import type { LevelOut } from '@/api/content';
 import { PremiumBadge } from './PremiumBadge';
+import { MasteredStamp } from './MasteredStamp';
 
 type Props = {
   level: LevelOut;
@@ -21,9 +22,11 @@ export function LevelCard({ level, onOpen, onLockedClick }: Props) {
     >
       <span className="text-2xl" aria-hidden="true">{level.icon}</span>
       <h2 className="text-sm font-bold text-gray-900">{level.title}</h2>
-      {level.state === 'completed' && (
+      {level.mastered_at ? (
+        <MasteredStamp masteredAt={level.mastered_at} />
+      ) : level.state === 'completed' ? (
         <span className="text-xs font-medium text-success-600">✓ Completed</span>
-      )}
+      ) : null}
       {level.state === 'in_progress' && (
         <div className="w-full">
           <span className="text-xs text-gray-500">{level.lessons_completed}/{level.lessons_total} lessons</span>

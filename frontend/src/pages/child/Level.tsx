@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { contentApi, type LessonSummary } from '@/api/content';
+import { contentApi, type LessonSummary, type LevelOut } from '@/api/content';
 import { ApiError } from '@/api/client';
 import { LessonRow } from '@/components/child/LessonRow';
 import { BackButton } from '@/components/child/BackButton';
+import { MasteredStamp } from '@/components/child/MasteredStamp';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 export default function Level() {
@@ -16,6 +17,14 @@ export default function Level() {
     queryFn: () => contentApi.listLevelLessons(levelId!),
     enabled: !!levelId, retry: false, staleTime: 60_000,
   });
+
+  const levelsQ = useQuery<LevelOut[] | null>({
+    queryKey: ['module-levels', moduleId],
+    queryFn: () => contentApi.listLevels(moduleId!),
+    enabled: !!moduleId, retry: false, staleTime: 60_000,
+  });
+  const level = levelsQ.data?.find((l) => l.id === levelId);
+  const objectives = level?.learning_objectives ?? [];
 
   const premiumErr = lessonsQ.isError && lessonsQ.error instanceof ApiError
     && lessonsQ.error.code === 'premium_required' ? lessonsQ.error : null;
@@ -62,6 +71,12 @@ export default function Level() {
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
       <BackButton to={`/lessons/${moduleId ?? ''}`} label="Levels" />
 
+      {level?.mastered_at && (
+        <div className="mt-3">
+          <MasteredStamp masteredAt={level.mastered_at} />
+        </div>
+      )}
+
       <div className="mt-3 rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
           <span>Level progress</span>
@@ -78,6 +93,25 @@ export default function Level() {
           <div className="h-full rounded-full bg-brand-gradient transition-all" style={{ width: `${lessons.length ? Math.round((completed / lessons.length) * 100) : 0}%` }} />
         </div>
       </div>
+
+      {objectives.length > 0 && (
+        <section
+          aria-labelledby="level-objectives-heading"
+          className="mt-4 rounded-2xl border border-brand-100 bg-brand-50 p-4"
+        >
+          <h2 id="level-objectives-heading" className="text-sm font-bold text-gray-900">
+            In this level you'll learn…
+          </h2>
+          <ul aria-labelledby="level-objectives-heading" className="mt-2 space-y-1.5">
+            {objectives.map((obj) => (
+              <li key={obj} className="flex items-start gap-2 text-sm text-gray-700">
+                <span aria-hidden="true" className="mt-0.5 text-brand-500">★</span>
+                <span>{obj}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="mt-4 rounded-2xl border-2 border-brand-200 bg-white overflow-hidden">
         {lessons.map((lesson, i) => {
