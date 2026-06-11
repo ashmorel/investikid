@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +14,12 @@ from app.schemas.parent import (
     ModuleProgressOut,
     RecentLessonOut,
 )
-from app.services.content_service import derive_lesson_title, is_module_accessible
+from app.services.age_tier import age_in_years
+from app.services.content_service import (
+    derive_lesson_title,
+    is_module_accessible,
+    is_module_age_ok,
+)
 from app.services.entitlements import is_premium
 from app.services.level_service import LevelStateInput, derive_level_states
 
@@ -111,9 +117,12 @@ async def build_child_analytics(
     modules = list(await session.scalars(
         select(Module).order_by(Module.order_index)
     ))
+    child_age = age_in_years(child.dob, date.today()) if child else 0
     modules_progress: list[ModuleProgressOut] = []
     for m in modules:
         if not is_module_accessible(country_code, child_premium, m.country_codes, m.is_premium):
+            continue
+        if not is_module_age_ok(child_age, m.min_age, m.max_age):
             continue
         levels = list(await session.scalars(
             select(Level).where(Level.module_id == m.id).order_by(Level.order_index)

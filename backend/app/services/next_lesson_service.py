@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Any
 
 from sqlalchemy import select
@@ -5,10 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import Lesson, LessonCompletion, Level, Module
 from app.schemas.content import NextLessonOut
+from app.services.age_tier import age_in_years
 from app.services.content_service import (
     content_region_for,
     derive_lesson_title,
     is_module_accessible,
+    is_module_age_ok,
 )
 from app.services.entitlements import is_premium
 from app.services.level_service import LevelStateInput, derive_level_states
@@ -18,11 +21,14 @@ async def resolve_next_lesson(session: AsyncSession, user: Any) -> NextLessonOut
     """Return the user's next actionable lesson across all accessible modules,
     or None when genuinely caught up. Reuses derive_level_states so locking and
     completion match the level screens exactly."""
+    user_age = age_in_years(user.dob, date.today())
     modules = list(await session.scalars(select(Module).order_by(Module.order_index)))
     for m in modules:
         if not is_module_accessible(
             content_region_for(user), is_premium(user), m.country_codes, m.is_premium
         ):
+            continue
+        if not is_module_age_ok(user_age, m.min_age, m.max_age):
             continue
 
         levels = list(await session.scalars(
