@@ -22,7 +22,7 @@ import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { simulatorApi } from '@/api/simulator';
 import type { RegionCode } from '@/lib/region';
 import { isNativeApp } from '@/lib/platform';
-import { isSoundEnabled, setSoundEnabled } from '@/lib/sound';
+import { isSoundEnabled, playSound, setSoundEnabled } from '@/lib/sound';
 import { REMINDER } from '@/lib/reminderConfig';
 import { requestReminderPermission, syncStreakReminder } from '@/lib/streakReminder';
 
@@ -42,6 +42,7 @@ export function ProfileMenu({ username }: { username: string }) {
   function toggleSound(next: boolean) {
     setSoundEnabled(next);
     setSoundOn(next);
+    if (next) playSound('correct'); // instant audition so kids hear what they enabled
   }
 
   const resetPf = useMutation({

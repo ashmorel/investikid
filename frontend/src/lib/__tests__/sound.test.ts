@@ -68,8 +68,13 @@ describe('playSound', () => {
     const { playSound, SOUND_RECIPES } = await freshSound();
 
     playSound('correct');
-    expect(createOscillator).toHaveBeenCalledTimes(SOUND_RECIPES.correct.length);
-    expect(createGain).toHaveBeenCalledTimes(SOUND_RECIPES.correct.length);
+    // Layered voices (harmonics/detune) mean MORE oscillators than tones.
+    expect(createOscillator.mock.calls.length).toBeGreaterThanOrEqual(
+      SOUND_RECIPES.correct.tones.length,
+    );
+    expect(createGain.mock.calls.length).toBeGreaterThanOrEqual(
+      SOUND_RECIPES.correct.tones.length,
+    );
   });
 
   it('does NOT create nodes when muted', async () => {
@@ -102,9 +107,10 @@ describe('recipe registry', () => {
     ] as const;
     expect(Object.keys(SOUND_RECIPES).sort()).toEqual([...names].sort());
     for (const name of names) {
-      const tones = SOUND_RECIPES[name];
-      expect(tones.length).toBeGreaterThan(0);
-      for (const tone of tones) expect(tone.gain).toBeLessThanOrEqual(0.15);
+      const recipe = SOUND_RECIPES[name];
+      expect(recipe.tones.length).toBeGreaterThan(0);
+      for (const tone of recipe.tones) expect(tone.gain).toBeLessThanOrEqual(0.15);
+      for (const noise of recipe.noises ?? []) expect(noise.gain).toBeLessThanOrEqual(0.1);
     }
   });
 });
