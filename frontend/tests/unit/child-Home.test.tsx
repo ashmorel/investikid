@@ -98,6 +98,44 @@ describe('Home', () => {
     expect(screen.getByText(/2 concepts/i)).toBeInTheDocument();
   });
 
+  it('uses the cozy module-grid gap for explorers (default tier)', async () => {
+    mockJsonRoute({
+      '/users/me/progress': { xp: 0, level: 1, streak_count: 0, last_activity_date: null },
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'Stocks', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
+      ],
+      '/recommendations': {
+        continue_learning: [], practise_again: [], something_new: [],
+        review_summary: { due_count: 0, next_due_at: null },
+      },
+    });
+    const { container } = renderHome();
+    await waitFor(() => expect(screen.getByText(/Stocks/i)).toBeInTheDocument());
+    const grid = container.querySelector('section[aria-label="Your modules"] .grid');
+    expect(grid).toHaveClass('gap-3');
+    expect(grid).not.toHaveClass('gap-2');
+  });
+
+  it('uses the compact module-grid gap for investors', async () => {
+    mockJsonRoute({
+      '/users/me': { id: 'u1', username: 'sam', is_premium: false, age_tier: 'investor' },
+      '/users/me/progress': { xp: 0, level: 1, streak_count: 0, last_activity_date: null },
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'Stocks', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
+      ],
+      '/recommendations': {
+        continue_learning: [], practise_again: [], something_new: [],
+        review_summary: { due_count: 0, next_due_at: null },
+      },
+    });
+    const { container } = renderHome();
+    await waitFor(() => expect(screen.getByText(/Stocks/i)).toBeInTheDocument());
+    await waitFor(() => {
+      const grid = container.querySelector('section[aria-label="Your modules"] .grid');
+      expect(grid).toHaveClass('gap-2');
+    });
+  });
+
   it('marks the next-lesson module tile', async () => {
     mockJsonRoute({
       '/users/me/progress': { xp: 50, level: 1, streak_count: 0, last_activity_date: null },

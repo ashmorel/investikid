@@ -7,6 +7,7 @@ import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 import { dismissNudge, isNudgeDismissed } from '@/lib/premiumNudge';
+import { tierConfig, useAgeTier } from '@/lib/ageTier';
 
 export default function Module() {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -14,6 +15,9 @@ export default function Module() {
   const { toast } = useToast();
   const { open: openPaywall } = usePremiumPaywall();
   const nudgeKey = 'level-nudge:' + moduleId;
+  const tier = useAgeTier();
+  // Investor tier celebrates quietly: same banners and buttons, plainer emoji-free copy.
+  const subtle = tierConfig[tier].celebration === 'subtle';
   const [nudgeDismissed, setNudgeDismissed] = useState(() => isNudgeDismissed(nudgeKey));
 
   const modulesQ = useQuery<ModuleOut[] | null>({
@@ -138,15 +142,17 @@ export default function Module() {
               ✕
             </button>
             <p className="text-base font-bold text-gray-900">
-              🎉 You're ready for {nextPremiumLevel.title}!
+              {subtle ? `You're ready for ${nextPremiumLevel.title}.` : `🎉 You're ready for ${nextPremiumLevel.title}!`}
             </p>
-            <p className="mt-1 text-sm text-gray-600">Unlock Premium to keep going 🌟</p>
+            <p className="mt-1 text-sm text-gray-600">
+              {subtle ? 'Premium unlocks the next level.' : 'Unlock Premium to keep going 🌟'}
+            </p>
             <button
               type="button"
               onClick={() => openPaywall({ kind: 'level', label: nextPremiumLevel.title })}
               className="mt-3 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
             >
-              Ask my grown-up ✨
+              {subtle ? 'Ask my grown-up' : 'Ask my grown-up ✨'}
             </button>
           </div>
         </div>
@@ -156,9 +162,13 @@ export default function Module() {
       {!showEarnedNudge && allComplete && (
         <div className="px-4 pb-6 sm:px-6">
           <div className="rounded-2xl border-2 border-brand-200 bg-brand-50 p-4 text-center">
-            <p className="text-base font-bold text-gray-900">🎉 Module complete!</p>
+            <p className="text-base font-bold text-gray-900">
+              {subtle ? 'Module complete.' : '🎉 Module complete!'}
+            </p>
             <p className="mt-1 text-sm text-gray-600">
-              Great work finishing {module?.title ?? 'this module'}.
+              {subtle
+                ? `Great work on ${module?.title ?? 'this module'}.`
+                : `Great work finishing ${module?.title ?? 'this module'}.`}
             </p>
             <button
               type="button"

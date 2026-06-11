@@ -25,4 +25,9 @@ describe('HomeHero investor tier', () => {
     const greeting = screen.getByText(/Welcome back, Sam\./);
     expect(/\p{Extended_Pictographic}/u.test(greeting.textContent ?? '')).toBe(false);
   });
+
+  it('shows the Investor tier chip near the greeting', () => {
+    render(wrap(<HomeHero />));
+    expect(screen.getByLabelText('Investor mode')).toBeInTheDocument();
+  });
 });

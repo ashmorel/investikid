@@ -5,7 +5,7 @@ import { RegionSwitcher } from '@/components/child/RegionSwitcher';
 import { authApi, type Me } from '@/api/auth';
 import type { RegionCode } from '@/lib/region';
 import { orderModulesForTier } from '@/lib/tierModuleOrder';
-import { DEFAULT_TIER } from '@/lib/ageTier';
+import { DEFAULT_TIER, densityGridGap, tierConfig } from '@/lib/ageTier';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 export default function Lessons() {
@@ -74,7 +74,7 @@ export default function Lessons() {
           </div>
         );
       })()}
-      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+      <div className={`mt-5 grid grid-cols-1 ${densityGridGap[tierConfig[tier].density]} sm:grid-cols-2 md:grid-cols-3`}>
         {modules.map((m) => {
           const lessons = lessonsByModuleId.get(m.id) ?? [];
           const completedCount = lessons.filter((l) => l.completed).length;

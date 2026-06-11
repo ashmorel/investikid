@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
@@ -51,6 +51,35 @@ describe('Lessons page', () => {
     expect(await screen.findByText('M1')).toBeInTheDocument();
     expect(await screen.findByText('M2')).toBeInTheDocument();
     expect(await screen.findByText(/1\s*\/\s*2 lessons/)).toBeInTheDocument();
+  });
+
+  it('uses the cozy module-grid gap for explorers (default tier)', async () => {
+    mockJsonRoute({
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false },
+      ],
+      '/modules/mod-1/lessons': [],
+    });
+    const { container } = renderLessons();
+    expect(await screen.findByText('M1')).toBeInTheDocument();
+    const grid = container.querySelector('.grid');
+    expect(grid).toHaveClass('gap-3');
+    expect(grid).not.toHaveClass('gap-2');
+  });
+
+  it('uses the compact module-grid gap for investors', async () => {
+    mockJsonRoute({
+      '/users/me': { id: 'u1', username: 'sam', is_premium: false, age_tier: 'investor' },
+      '/modules': [
+        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false },
+      ],
+      '/modules/mod-1/lessons': [],
+    });
+    const { container } = renderLessons();
+    expect(await screen.findByText('M1')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(container.querySelector('.grid')).toHaveClass('gap-2');
+    });
   });
 
   it('locked module card shows Premium and does not navigate on click', async () => {
