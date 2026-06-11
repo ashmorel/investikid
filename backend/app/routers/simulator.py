@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict
 from datetime import UTC, date, datetime
 from decimal import Decimal
@@ -95,7 +96,7 @@ async def search_market(
 ):
     if refresh and hasattr(provider, "clear_cache"):
         provider.clear_cache()
-    results = provider.search(q)
+    results = await asyncio.to_thread(provider.search, q)
     return [
         QuoteOut(ticker=r.ticker, exchange=r.exchange, name=r.name, price=r.price, currency=r.currency)
         for r in results
@@ -110,7 +111,7 @@ async def get_quote(
     provider=Depends(get_price_provider),
 ):
     try:
-        q = provider.get_quote(ticker, exchange)
+        q = await asyncio.to_thread(provider.get_quote, ticker, exchange)
     except TickerNotAvailableError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Ticker not available")
     return QuoteOut(ticker=q.ticker, exchange=q.exchange, name=q.name, price=q.price, currency=q.currency)
@@ -126,7 +127,7 @@ async def get_stock_history(
 ):
     if not hasattr(provider, "get_history"):
         return []
-    points = provider.get_history(ticker, exchange, period)
+    points = await asyncio.to_thread(provider.get_history, ticker, exchange, period)
     return [
         PricePointOut(date=p.date, open=p.open, high=p.high, low=p.low, close=p.close, volume=p.volume)
         for p in points
@@ -141,7 +142,7 @@ async def get_market_movers(
 ):
     if not hasattr(provider, "get_market_movers"):
         return {}
-    raw = provider.get_market_movers(region)
+    raw = await asyncio.to_thread(provider.get_market_movers, region)
     return {
         exchange: ExchangeMoversOut(
             winners=[MarketMoverOut(**m.__dict__) for m in data.get("winners", [])],
@@ -170,7 +171,7 @@ async def get_market_news(
     if not holdings:
         return []
     ticker_pairs = [(h.ticker, h.exchange) for h in holdings]
-    items = provider.get_news(ticker_pairs)
+    items = await asyncio.to_thread(provider.get_news, ticker_pairs)
     return [StockNewsOut(**i.__dict__) for i in items]
 
 
@@ -198,7 +199,7 @@ async def get_news_summary(
         return NewsSummaryOut(summary="Buy some stocks and news about them will appear here!", tickers_mentioned=[])
 
     ticker_pairs = [(h.ticker, h.exchange) for h in holdings]
-    items = provider.get_news(ticker_pairs)
+    items = await asyncio.to_thread(provider.get_news, ticker_pairs)
     if not items:
         return NewsSummaryOut(summary="No recent news for your stocks.", tickers_mentioned=[])
 
@@ -258,7 +259,7 @@ async def get_stock_news(
 ):
     if not hasattr(provider, "get_news"):
         return []
-    items = provider.get_news([(ticker, exchange)])
+    items = await asyncio.to_thread(provider.get_news, [(ticker, exchange)])
     return [StockNewsOut(**i.__dict__) for i in items]
 
 
@@ -273,7 +274,7 @@ async def get_stock_news_summary(
 ):
     if not hasattr(provider, "get_news"):
         return NewsSummaryOut(summary="", tickers_mentioned=[])
-    items = provider.get_news([(ticker, exchange)])
+    items = await asyncio.to_thread(provider.get_news, [(ticker, exchange)])
     if not items:
         return NewsSummaryOut(summary="", tickers_mentioned=[])
 
@@ -328,7 +329,7 @@ async def get_chart_guide(
     if not hasattr(provider, "get_history"):
         return NewsSummaryOut(summary="", tickers_mentioned=[])
 
-    points = provider.get_history(ticker, exchange, period)
+    points = await asyncio.to_thread(provider.get_history, ticker, exchange, period)
     if len(points) < 2:
         return NewsSummaryOut(summary="", tickers_mentioned=[])
 
@@ -396,13 +397,13 @@ async def chart_coach(
     provider=Depends(get_price_provider),
 ):
     try:
-        quote = provider.get_quote(payload.ticker, payload.exchange)
+        quote = await asyncio.to_thread(provider.get_quote, payload.ticker, payload.exchange)
     except TickerNotAvailableError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Ticker not available")
 
     points = []
     if hasattr(provider, "get_history"):
-        points = provider.get_history(payload.ticker, payload.exchange, payload.period)
+        points = await asyncio.to_thread(provider.get_history, payload.ticker, payload.exchange, payload.period)
 
     if len(points) < 2:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Not enough chart data for coaching")
@@ -440,12 +441,12 @@ async def get_time_machine(
     if not hasattr(provider, "get_history"):
         return TimeMachineOut(ticker=ticker, periods=[], fun_fact="")
 
-    points = provider.get_history(ticker, exchange, "max")
+    points = await asyncio.to_thread(provider.get_history, ticker, exchange, "max")
     if len(points) < 2:
         return TimeMachineOut(ticker=ticker, periods=[], fun_fact="")
 
     try:
-        quote = provider.get_quote(ticker, exchange)
+        quote = await asyncio.to_thread(provider.get_quote, ticker, exchange)
     except TickerNotAvailableError:
         return TimeMachineOut(ticker=ticker, periods=[], fun_fact="")
 
@@ -596,7 +597,7 @@ async def get_portfolio(
     total_market_value = Decimal("0.00")
     for h in holdings:
         try:
-            q = provider.get_quote(h.ticker, h.exchange)
+            q = await asyncio.to_thread(provider.get_quote, h.ticker, h.exchange)
             current_price = q.price
         except TickerNotAvailableError:
             current_price = h.avg_buy_price  # fall back
@@ -635,7 +636,7 @@ async def place_trade(
     if not is_premium(current_user) and not provider.is_free_tier(payload.ticker, payload.exchange):
         raise premium_required_error("ticker", payload.ticker)
     try:
-        quote = provider.get_quote(payload.ticker, payload.exchange)
+        quote = await asyncio.to_thread(provider.get_quote, payload.ticker, payload.exchange)
     except TickerNotAvailableError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Ticker not available")
 
@@ -786,7 +787,7 @@ async def portfolio_history(
                 continue
             exchange = ticker_exchange.get(ticker, "")
             try:
-                q = provider.get_quote(ticker, exchange)
+                q = await asyncio.to_thread(provider.get_quote, ticker, exchange)
                 holding_value += q.price * qty
             except Exception:
                 holding_value += t.price * qty
