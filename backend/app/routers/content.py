@@ -33,6 +33,7 @@ from app.services.gamification_service import (
     update_challenge_progress,
 )
 from app.services.level_service import LevelStateInput, derive_level_states
+from app.services.mastery_service import record_mastery_if_earned
 from app.services.next_lesson_service import resolve_next_lesson
 from app.services.premium_config import premium_required_error
 from app.services.skill_profile_service import (
@@ -289,6 +290,7 @@ async def complete_lesson(
     # Capture scalar attributes early before session expires ORM objects
     topic = module.topic
     lesson_type = lesson.type
+    lesson_level_id = lesson.level_id
     lesson_content = lesson.content_json or {}
     is_quiz = lesson_type in ("quiz", "scenario")
 
@@ -302,6 +304,9 @@ async def complete_lesson(
     xp_awarded, already = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today
     )
+
+    if lesson_level_id is not None:
+        await record_mastery_if_earned(session, current_user.id, lesson_level_id)
 
     if not already:
         await update_challenge_progress(
