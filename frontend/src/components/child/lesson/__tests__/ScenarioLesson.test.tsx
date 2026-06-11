@@ -1,8 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { axe } from 'vitest-axe';
 import { ScenarioLesson } from '../ScenarioLesson';
+import { playSound } from '@/lib/sound';
+import { haptic } from '@/lib/haptics';
+
+vi.mock('@/lib/sound', () => ({ playSound: vi.fn() }));
+vi.mock('@/lib/haptics', () => ({ haptic: vi.fn() }));
 
 const content = {
   prompt: 'You receive £20 for your birthday. What do you do?',
@@ -15,6 +20,28 @@ const content = {
 };
 
 describe('ScenarioLesson', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('correct answer fires correct sound + success haptic once; wrong fires wrong + warning', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<ScenarioLesson contentJson={content} onComplete={() => {}} />);
+    await user.click(screen.getByRole('radio', { name: /Save it all/ }));
+    await user.click(screen.getByRole('button', { name: /Check answer/i }));
+    expect(playSound).toHaveBeenCalledTimes(1);
+    expect(playSound).toHaveBeenCalledWith('correct');
+    expect(haptic).toHaveBeenCalledExactlyOnceWith('success');
+    unmount();
+
+    vi.clearAllMocks();
+    render(<ScenarioLesson contentJson={content} onComplete={() => {}} />);
+    await user.click(screen.getByRole('radio', { name: /Spend it all immediately/ }));
+    await user.click(screen.getByRole('button', { name: /Check answer/i }));
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('wrong');
+    expect(haptic).toHaveBeenCalledExactlyOnceWith('warning');
+  });
+
   it('renders the scenario eyebrow, prompt, and choices', () => {
     render(<ScenarioLesson contentJson={content} onComplete={() => {}} />);
     expect(screen.getByText(/Real-life scenario/)).toBeInTheDocument();

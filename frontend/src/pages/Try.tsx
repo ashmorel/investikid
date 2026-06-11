@@ -6,6 +6,8 @@ import { CardLesson } from '@/components/child/lesson/CardLesson';
 import { QuizLesson } from '@/components/child/lesson/QuizLesson';
 import { ScenarioLesson } from '@/components/child/lesson/ScenarioLesson';
 import { VideoLesson } from '@/components/child/lesson/VideoLesson';
+import { XpCountUp } from '@/components/child/ui/XpCountUp';
+import { playSound } from '@/lib/sound';
 import demoContent from '@/demo/demoContent.json';
 
 type DemoLesson = { type: string; xp_reward: number; content_json: unknown };
@@ -57,6 +59,7 @@ export default function Try() {
   const onComplete = (_score: number | null) => {
     setXp((v) => v + lesson.xp_reward);
     if (index + 1 >= total) {
+      playSound('lessonComplete');
       setStage('done');
     } else {
       setIndex((i) => i + 1);
@@ -110,7 +113,7 @@ export default function Try() {
             You finished your first lesson! <span aria-hidden="true">🎉</span>
           </h1>
           <p className="mt-3 inline-block rounded-full bg-brand-gradient px-4 py-1.5 text-sm font-extrabold text-white shadow">
-            +{xp} XP
+            <XpCountUp value={xp} /> <span aria-hidden="true">XP</span>
           </p>
         </div>
 

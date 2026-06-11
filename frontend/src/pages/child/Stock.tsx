@@ -16,6 +16,8 @@ import { OfflineNotice } from '@/components/child/OfflineNotice';
 import { useToast } from '@/hooks/use-toast';
 import { useOnline } from '@/hooks/useOnline';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
+import { playSound } from '@/lib/sound';
+import { haptic } from '@/lib/haptics';
 
 export default function Stock() {
   const { exchange, ticker } = useParams<{ exchange: string; ticker: string }>();
@@ -46,6 +48,9 @@ export default function Stock() {
   const tradeMutation = useMutation({
     mutationFn: (req: TradeRequest) => simulatorApi.placeTrade(req),
     onSuccess: (result) => {
+      // Trade executed (juice pack, spec C) — alongside the reward toast below.
+      playSound('trade');
+      void haptic('medium');
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       queryClient.invalidateQueries({ queryKey: ['active-missions'] });

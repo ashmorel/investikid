@@ -8,6 +8,9 @@ import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 import { isNudgeDismissed } from '@/lib/premiumNudge';
 import Module from '@/pages/child/Module';
 
+// Silence canvas-confetti in jsdom (mastery banner fires a celebrate() burst).
+vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
+
 vi.mock('@/lib/premiumNudge', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/premiumNudge')>();
   return { ...actual, isNudgeDismissed: vi.fn(() => false), dismissNudge: vi.fn() };
