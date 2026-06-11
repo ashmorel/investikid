@@ -44,7 +44,7 @@ async function openReminderToggle() {
   await userEvent.click(screen.getByRole('button', { name: /account menu/i }));
   await userEvent.click(await screen.findByRole('menuitem', { name: /profile/i }));
   await screen.findByText(/daily streak reminder/i);
-  return screen.getByRole('checkbox');
+  return screen.getByRole('checkbox', { name: /daily streak reminder/i });
 }
 
 describe('ProfileMenu daily reminder toggle (native)', () => {
