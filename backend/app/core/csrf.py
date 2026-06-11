@@ -33,6 +33,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/billing/google/notifications",
     "/internal/video-health/run",
     "/internal/trial-reminders/run",
+    "/internal/weekly-digest/run",
     "/parent/auth/oauth/google",
     "/parent/auth/oauth/apple",
 })
