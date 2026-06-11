@@ -50,7 +50,9 @@ The codebase is further along than an external review could see:
 **W6 (original scope).** Today: anti-churn rewards exist but diversification/fees/reflection/compounding aren't shown. Change: a **diversification meter** (distinct tickers already tracked), a **"why are you selling?" reflection** before a sell, light **fee/spread modelling** as a teaching moment, a **compounding-over-time visualiser**. **Success:** the simulator visibly rewards patience, research, and diversification.
 
 ### Phase 4 — Funnel
-**W7 · Demo / no-account mode.** Today: **none** — signup+consent gate everything. Change: one polished module + a simulator taste with no account, converting to signup at the value moment. **Success:** a parent or teen can try a full lesson before creating an account.
+**W7 · Demo / no-account mode. ✅ DONE (2026-06-11, on `testing`, CI green) — ROADMAP COMPLETE.** Public `/try` route: the full "What is a Stock?" Level 1 arc (8 lessons) rendered from a committed, drift-guarded JSON export of the seed (`backend/scripts/export_demo_content.py` + CI test) — zero API calls, zero auth-surface change, local XP, completion screen teasing Levels 2-3 + 14 more modules with a "Create an account" CTA into the real signup flow. "Try a lesson first" entry on the login screen.
+
+**W7 (original scope).** Today: **none** — signup+consent gate everything. Change: one polished module + a simulator taste with no account, converting to signup at the value moment. **Success:** a parent or teen can try a full lesson before creating an account.
 
 ---
 
