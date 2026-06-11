@@ -615,6 +615,7 @@ async def get_portfolio(
 
     holding_out: list[HoldingOut] = []
     total_market_value = Decimal("0.00")
+    total_unrealized = Decimal("0.00")
     quotes = await _gather_quotes(provider, [(h.ticker, h.exchange) for h in holdings])
     for h, q in zip(holdings, quotes, strict=True):
         if isinstance(q, TickerNotAvailableError):
@@ -626,6 +627,7 @@ async def get_portfolio(
         market_value = (current_price * h.shares).quantize(Decimal("0.01"))
         unrealized = (market_value - (h.avg_buy_price * h.shares)).quantize(Decimal("0.01"))
         total_market_value += market_value
+        total_unrealized += unrealized
         holding_out.append(HoldingOut(
             ticker=h.ticker, exchange=h.exchange, shares=h.shares,
             avg_buy_price=h.avg_buy_price, current_price=current_price,
@@ -635,6 +637,8 @@ async def get_portfolio(
     return PortfolioOut(
         id=portfolio.id, virtual_cash=portfolio.virtual_cash, currency_code=portfolio.currency_code,
         total_value=(portfolio.virtual_cash + total_market_value).quantize(Decimal("0.01")),
+        holdings_value=total_market_value.quantize(Decimal("0.01")),
+        total_unrealized_pl=total_unrealized.quantize(Decimal("0.01")),
         holdings=holding_out,
     )
 

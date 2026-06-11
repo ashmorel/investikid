@@ -32,6 +32,8 @@ class PortfolioOut(BaseModel):
     virtual_cash: Decimal
     currency_code: str
     total_value: Decimal
+    holdings_value: Decimal
+    total_unrealized_pl: Decimal
     holdings: list[HoldingOut]
 
 

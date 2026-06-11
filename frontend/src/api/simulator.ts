@@ -24,6 +24,8 @@ export type PortfolioOut = {
   virtual_cash: string;
   currency_code: string;
   total_value: string;
+  holdings_value: string;
+  total_unrealized_pl: string;
   holdings: HoldingOut[];
 };
 

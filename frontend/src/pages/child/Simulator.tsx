@@ -105,7 +105,12 @@ export default function Simulator() {
 
         <div role="tabpanel">
           {activeTab === 'holdings' ? (
-            <HoldingsTable holdings={holdings} />
+            <HoldingsTable
+              holdings={holdings}
+              holdingsValue={portfolio.holdings_value}
+              totalUnrealizedPl={portfolio.total_unrealized_pl}
+              currencyCode={portfolio.currency_code}
+            />
           ) : (
             <TradeHistoryTab trades={trades ?? []} />
           )}

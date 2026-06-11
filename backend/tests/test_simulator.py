@@ -58,6 +58,20 @@ async def test_buy_trade_decreases_cash_adds_holding(client):
     assert Decimal(pf["holdings"][0]["shares"]) == Decimal("10")
 
 
+async def test_portfolio_returns_holdings_value_and_total_unrealized_pl(client):
+    await _login(client)
+    await client.post("/portfolio/trades", json={"ticker": "VOD", "exchange": "LSE", "type": "buy", "shares": "10"})
+    await client.post("/portfolio/trades", json={"ticker": "AAPL", "exchange": "NASDAQ", "type": "buy", "shares": "1"})
+    pf = (await client.get("/portfolio")).json()
+    holdings_value = sum(Decimal(h["market_value"]) for h in pf["holdings"])
+    total_pl = sum(Decimal(h["unrealized_pl"]) for h in pf["holdings"])
+    assert Decimal(pf["holdings_value"]) == holdings_value
+    assert Decimal(pf["total_unrealized_pl"]) == total_pl
+    # Static provider: price == avg buy price, so unrealized P/L is zero.
+    assert Decimal(pf["total_unrealized_pl"]) == Decimal("0.00")
+    assert Decimal(pf["total_value"]) == Decimal(pf["virtual_cash"]) + holdings_value
+
+
 async def test_sell_trade_increases_cash_removes_holding(client):
     await _login(client)
     await client.post("/portfolio/trades", json={"ticker": "VOD", "exchange": "LSE", "type": "buy", "shares": "10"})

@@ -9,10 +9,34 @@ const EXCHANGE_CURRENCY: Record<string, string> = {
   NASDAQ: 'USD', LSE: 'GBP', HKEX: 'HKD',
 };
 
-type Props = { holdings: HoldingOut[] };
+type Props = {
+  holdings: HoldingOut[];
+  /** Portfolio-level totals from the API; the row is omitted when absent. */
+  holdingsValue?: string;
+  totalUnrealizedPl?: string;
+  currencyCode?: string;
+};
 
-export function HoldingsTable({ holdings }: Props) {
+function TotalPl({ value, currencyCode }: { value: string; currencyCode: string }) {
+  const pl = parseFloat(value);
+  const sign = pl > 0 ? 'positive' : pl < 0 ? 'negative' : 'neutral';
+  return (
+    <span
+      className={`flex items-center gap-1 font-bold ${sign === 'positive' ? 'text-success-600' : sign === 'negative' ? 'text-danger-600' : ''}`}
+    >
+      {sign === 'positive' && <TrendingUp className="h-3.5 w-3.5" data-pl="positive" />}
+      {sign === 'negative' && <TrendingDown className="h-3.5 w-3.5" data-pl="negative" />}
+      {sign === 'neutral' && <Minus className="h-3.5 w-3.5" data-pl="neutral" />}
+      {pl > 0 ? '+' : ''}
+      {formatCurrency(value, currencyCode)}
+    </span>
+  );
+}
+
+export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, currencyCode }: Props) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  const showTotals =
+    holdings.length > 0 && !!holdingsValue && !!totalUnrealizedPl && !!currencyCode;
 
   if (holdings.length === 0) {
     return (
@@ -64,6 +88,17 @@ export function HoldingsTable({ holdings }: Props) {
             </Link>
           );
         })}
+        {showTotals && (
+          <div className="rounded-xl border border-brand-200 bg-brand-50 p-3" data-testid="holdings-totals">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-gray-900">Total</span>
+              <TotalPl value={totalUnrealizedPl!} currencyCode={currencyCode!} />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              value {formatCurrency(holdingsValue!, currencyCode!)}
+            </p>
+          </div>
+        )}
       </div>
     );
   }
@@ -120,6 +155,21 @@ export function HoldingsTable({ holdings }: Props) {
             );
           })}
         </tbody>
+        {showTotals && (
+          <tfoot className="border-t bg-brand-50" data-testid="holdings-totals">
+            <tr>
+              <td colSpan={6} className="px-3 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-gray-900">Total</span>
+                  <span className="flex items-center gap-4 text-right">
+                    <span className="font-bold">{formatCurrency(holdingsValue!, currencyCode!)}</span>
+                    <TotalPl value={totalUnrealizedPl!} currencyCode={currencyCode!} />
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );
