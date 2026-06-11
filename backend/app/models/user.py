@@ -73,10 +73,13 @@ class User(Base):
     policy_accepted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    tier_override: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
     @property
     def age_tier(self) -> str:
-        """Live age tier derived from dob (never stored)."""
+        """Live age tier: parent override if valid, else derived from dob."""
+        if self.tier_override in ("explorer", "investor"):
+            return self.tier_override
         return _age_tier(self.dob, date.today())
 
     progress: Mapped["UserProgress"] = relationship(

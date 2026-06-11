@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr
 
@@ -66,11 +67,22 @@ class ChildOut(BaseModel):
     consent_declined_at: datetime | None
     deleted_at: datetime | None
     deletion_requested_at: datetime | None
+    age_tier: str
+    tier_override: str | None = None
     analytics: ChildAnalyticsOut | None = None
 
 
 class FreezeRequest(BaseModel):
     frozen: bool
+
+
+class TierOverrideRequest(BaseModel):
+    tier_override: Literal["explorer", "investor"] | None
+
+
+class TierOverrideOut(BaseModel):
+    tier_override: str | None
+    age_tier: str
 
 
 class PremiumToggleRequest(BaseModel):

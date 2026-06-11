@@ -49,3 +49,20 @@ def test_home_greeting_prompt_includes_tier_directive():
     sys_i, _ = _build_messages(name="A", mode="start", lesson_label="L", streak_count=0, due_count=0, tier="investor")
     assert AGE_REGISTER_DIRECTIVE["explorer"] in sys_e
     assert AGE_REGISTER_DIRECTIVE["investor"] in sys_i
+
+
+def test_user_tier_override_precedence():
+    from app.models.user import User
+    kw = dict(username="x", password_hash="x", country_code="GB", currency_code="GBP")
+    teen = User(dob=date(2010, 1, 1), **kw)  # ~16yo -> investor by dob
+    teen.tier_override = "explorer"
+    assert teen.age_tier == "explorer"
+    teen.tier_override = None
+    assert teen.age_tier == "investor"
+
+    kid = User(dob=date(2015, 1, 1), **kw)  # ~11yo -> explorer by dob
+    kid.tier_override = "investor"
+    assert kid.age_tier == "investor"
+
+    kid.tier_override = "wizard"  # junk stored value -> fall back to derived
+    assert kid.age_tier == "explorer"

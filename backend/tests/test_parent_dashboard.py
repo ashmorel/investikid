@@ -190,3 +190,71 @@ async def test_parent_premium_toggle_not_owned_404(client, db_session):
         f"/parent/children/{uuid.uuid4()}/premium", json={"premium": True},
         headers=_csrf_headers(client))
     assert resp.status_code == 404
+
+
+async def test_parent_sets_and_clears_tier_override(client, db_session):
+    await _setup(client, db_session, parent_email="tier1@example.com",
+                 child_email="tierkid1@example.com", child_username="tierkid1")
+    children = (await client.get("/parent/children")).json()
+    cid = children[0]["user_id"]
+
+    # dob 2015 -> derived explorer; override to investor
+    r = await client.post(
+        f"/parent/children/{cid}/tier",
+        json={"tier_override": "investor"},
+        headers=_csrf_headers(client),
+    )
+    assert r.status_code == 200
+    assert r.json() == {"tier_override": "investor", "age_tier": "investor"}
+    user = await db_session.scalar(
+        select(User).where(User.id == uuid.UUID(cid))
+        .execution_options(include_deleted=True)
+    )
+    await db_session.refresh(user)
+    assert user.tier_override == "investor"
+
+    # children payload carries both fields
+    children = (await client.get("/parent/children")).json()
+    assert children[0]["tier_override"] == "investor"
+    assert children[0]["age_tier"] == "investor"
+
+    # clear -> back to derived
+    r = await client.post(
+        f"/parent/children/{cid}/tier",
+        json={"tier_override": None},
+        headers=_csrf_headers(client),
+    )
+    assert r.status_code == 200
+    assert r.json() == {"tier_override": None, "age_tier": "explorer"}
+    await db_session.refresh(user)
+    assert user.tier_override is None
+
+
+async def test_parent_tier_override_invalid_value_422(client, db_session):
+    await _setup(client, db_session, parent_email="tier2@example.com",
+                 child_email="tierkid2@example.com", child_username="tierkid2")
+    children = (await client.get("/parent/children")).json()
+    cid = children[0]["user_id"]
+    r = await client.post(
+        f"/parent/children/{cid}/tier",
+        json={"tier_override": "wizard"},
+        headers=_csrf_headers(client),
+    )
+    assert r.status_code == 422
+
+
+async def test_parent_tier_override_not_owned_404(client, db_session):
+    await client.post("/auth/register", json={
+        "email": "tstranger@example.com", "username": "tstranger", "password": "SecurePass123!",
+        "dob": "2015-01-01", "country_code": "GB", "currency_code": "GBP",
+        "parent_email": "tother@example.com",
+    })
+    other = await db_session.scalar(select(User).where(User.email == "tstranger@example.com"))
+    await _setup(client, db_session, parent_email="tier3@example.com",
+                 child_email="tierkid3@example.com", child_username="tierkid3")
+    r = await client.post(
+        f"/parent/children/{other.id}/tier",
+        json={"tier_override": "explorer"},
+        headers=_csrf_headers(client),
+    )
+    assert r.status_code == 404
