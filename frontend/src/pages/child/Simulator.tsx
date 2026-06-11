@@ -9,6 +9,8 @@ import { HoldingsTable } from '@/components/child/simulator/HoldingsTable';
 import { TradeHistoryTab } from '@/components/child/simulator/TradeHistoryTab';
 import { PortfolioHero } from '@/components/child/simulator/PortfolioHero';
 import { MissionBanner } from '@/components/child/simulator/MissionBanner';
+import { DiversificationCard } from '@/components/child/simulator/DiversificationCard';
+import { GrowthProjectionCard } from '@/components/child/simulator/GrowthProjectionCard';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 
@@ -62,6 +64,16 @@ export default function Simulator() {
           currencyCode={portfolio.currency_code}
           hasMultiCurrency={hasMultiCurrency}
           weekChange={weekChange}
+        />
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <DiversificationCard
+          holdingsCount={new Set(holdings.map((h) => `${h.exchange}:${h.ticker}`)).size}
+        />
+        <GrowthProjectionCard
+          totalValue={portfolio.total_value}
+          currencyCode={portfolio.currency_code}
         />
       </div>
 

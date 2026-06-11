@@ -149,6 +149,7 @@ export default function Stock() {
           currency={quote.currency}
           availableCash={portfolio.virtual_cash}
           ownedShares={existingHolding?.shares ?? '0'}
+          avgBuyPrice={existingHolding?.avg_buy_price ?? null}
           onSubmit={async (req) => {
             setSubmitError(null);
             // Errors are surfaced via the mutation's onError (toast or paywall);
