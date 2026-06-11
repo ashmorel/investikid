@@ -305,8 +305,8 @@ async def test_seed_applies_metadata_on_update_path(db_session, monkeypatch):
 
 
 def test_every_module_has_conversation_prompt():
-    """All 12 authored modules carry a non-empty conversation_prompt <= 300 chars."""
-    assert len(_MODULES) == 12
+    """Every authored module carries a non-empty conversation_prompt <= 300 chars."""
+    assert len(_MODULES) >= 12
     for spec in _MODULES:
         prompt = spec.get("conversation_prompt")
         assert isinstance(prompt, str) and prompt.strip(), (

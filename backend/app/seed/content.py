@@ -2080,6 +2080,482 @@ _MODULES = [
             ]},
         ],
     },
+    {
+        "topic": "budgeting", "title": "Student Money: University & Beyond",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "How to manage money"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "II", "label": "Spending"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "V", "label": "Managing Credit"},
+        ],
+        "sources": [
+            {"title": "GOV.UK — Student finance", "url": "https://www.gov.uk/student-finance"},
+            {"title": "MoneyHelper — Student and graduate money", "url": "https://www.moneyhelper.org.uk/en/family-and-care/student-and-graduate-money"},
+        ],
+        "learning_objectives": [
+            "Explain how tuition and maintenance loans work, and why repayments behave more like a graduate tax than a normal debt",
+            "Work out what a graduate actually repays at a given salary",
+            "Explain what deposits, guarantors and bills mean when renting a first student home",
+        ],
+        "conversation_prompt": "Try this together: a graduate earns £29,000 and repays 9% of everything above £25,000. Work out the yearly and monthly repayment — then talk about why student loans behave more like a graduate tax than a debt that must be cleared.",
+        "country_codes": [], "is_premium": False, "order_index": 12, "icon": "🎓",
+        "min_age": 14,
+        "lessons": [
+            {"type": "card", "xp_reward": 10, "content_json": {
+                "title": "Two loans, two different jobs",
+                "body": "UK student finance is really two loans. The tuition fee loan covers your course fees and is paid straight to the university — you never see that money. The maintenance loan is for living costs (rent, food, transport) and is paid into your bank account in instalments, usually one per term. How much maintenance loan you get depends mainly on your household income and where you live and study. In the US, federal student aid works similarly via FAFSA.",
+            }},
+            {"type": "card", "xp_reward": 10, "content_json": {
+                "title": "More like a graduate tax than a debt",
+                "body": "Student loan repayments don't work like a credit card. You repay 9% of what you earn above a threshold (around £25,000 a year on the newest English plan) — earn less, and you pay nothing that month. Repayments come out of your pay automatically, and whatever is left is written off after a set term (40 years on the newest plan). That's why many people say it behaves more like a graduate tax: it scales with income, then ends.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Where does the maintenance loan actually go?",
+                "choices": ["Straight to the university, like the tuition fee loan", "To your parents, who pass it on", "Into your own bank account, in instalments — usually one per term", "It's held back until you graduate"],
+                "answer_index": 2,
+                "explanation": "The tuition fee loan goes directly to the university; the maintenance loan lands in YOUR account, typically at the start of each term. Making one instalment last a whole term is the core student budgeting challenge.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "A graduate earns £29,000 a year and repays 9% of everything above a £25,000 threshold. What do they repay per year?",
+                "choices": ["£2,610 — 9% of the whole salary", "£360 — 9% of the £4,000 above the threshold", "£900 — a flat rate", "Nothing until the loan is 10 years old"],
+                "answer_index": 1,
+                "explanation": "You only repay on income ABOVE the threshold: £29,000 − £25,000 = £4,000, and 9% of £4,000 is £360 a year — £30 a month. Notice how little the size of the loan itself matters to the monthly cost.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "A graduate loses their job and their income drops below the repayment threshold. What happens to their student loan repayments?",
+                "choices": ["They stop automatically until income rises above the threshold again", "They keep going — debt collectors get involved if you miss one", "The whole loan becomes due immediately", "They must sell assets to keep paying"],
+                "answer_index": 0,
+                "explanation": "Repayments are taken through the pay system and only on income above the threshold, so they pause automatically when earnings fall. This built-in safety valve is a key way student loans differ from ordinary debt.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Your first student house asks for a guarantor. What is that?",
+                "choices": ["A friend who witnesses you signing the contract", "An insurance policy that covers broken furniture", "A council officer who inspects the property", "Someone (often a parent) who legally agrees to pay the rent if you can't"],
+                "answer_index": 3,
+                "explanation": "Landlords often ask students for a guarantor because students rarely have an income or renting history. The guarantor signs a legal promise to cover rent you don't pay — a serious commitment for them, so discuss it properly.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You're about to sign for your first student house: £120 a week, a five-week deposit, and 'bills not included'. What do you do before signing?",
+                "choices": [
+                    {"label": "Sign now — good houses go fast and the landlord is pressuring you", "outcome": "Pressure to sign instantly is itself a warning sign. Once you sign, you're legally committed for the year — including the rent of housemates who drop out, if it's a joint tenancy."},
+                    {"label": "Ask the landlord to skip the deposit in exchange for three months' rent up front", "outcome": "That's worse: you'd hand over more cash with less protection. A deposit in a government-approved protection scheme is safer than a large upfront payment with nothing safeguarding it."},
+                    {"label": "Read the contract, confirm the deposit will go into a government-backed protection scheme, add up rent plus estimated bills, and have someone you trust look it over", "outcome": "Exactly right. In England deposits must be protected in an approved scheme, 'bills not included' can add £15-25 a week each, and a second pair of eyes on your first ever contract catches what you'll miss."},
+                ],
+                "correct_index": 2,
+            }},
+        ],
+        "extra_levels": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Stretch a termly loan instalment across all the weeks it has to cover",
+                 "Balance part-time work with study, and tell real savings from false economies",
+                 "Explain why a 0% student overdraft is still borrowed money, not income",
+             ], "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Three big drops, a year of spending",
+                    "body": "Student money arrives in a strange rhythm: the maintenance loan usually lands in three termly instalments, but your costs run week after week. The classic trap is week one — the loan hits your account, it's the most money you've ever held, and freshers' events are everywhere. The fix is simple arithmetic before anything else: divide the instalment by the number of weeks it must cover, and that's your real weekly budget. Everything above that number is borrowed from a future week.",
+                }},
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "An overdraft is not income",
+                    "body": "Most student bank accounts offer a 0% arranged overdraft — often £1,500 or more. Used as a buffer for a genuinely tight week, it's a useful tool. Treated as extra spending money, it's a slow leak: every pound of overdraft is borrowing that must be repaid, and after you graduate the 0% deal ends and interest starts. A balance that sits at minus £1,500 all year isn't a budget working — it's a debt growing quietly.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Your maintenance loan instalment is £2,400 and it has to last a 12-week term. What's your weekly budget?",
+                    "choices": ["£300 — you can always cut back later", "£200 a week", "£240 a week", "There's no way to work it out in advance"],
+                    "answer_index": 1,
+                    "explanation": "£2,400 ÷ 12 = £200 a week — and that has to cover rent, food, transport and fun. Spend £300 in week one and you've already taken £100 from a later week. Do this division the day the loan lands.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "You're offered extra shifts at your part-time job during term. What's the sensible way to think about it?",
+                    "choices": ["Always say yes — more money is always better", "Never work during term — jobs and study can't mix", "Weigh it against study and rest: many universities suggest keeping term-time work to roughly 15 hours a week", "Only the pay rate matters; hours are irrelevant"],
+                    "answer_index": 2,
+                    "explanation": "A part-time job can fund your budget and build your CV, but your degree is the bigger investment. Many universities recommend around 15 hours a week or less in term time — past that, grades tend to pay the price.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "A 16-25 Railcard costs about £30 a year and cuts a third off most rail fares. You expect to spend £180 on train tickets this year. What's the maths?",
+                    "choices": ["You'd lose money — the card costs more than it saves", "You'd save £180 — travel becomes free", "It saves nothing unless you travel first class", "You'd save £60 on fares, so you're about £30 better off after the card's cost"],
+                    "answer_index": 3,
+                    "explanation": "A third off £180 is £60 saved; subtract the £30 card and you're £30 ahead — and further ahead the more you travel. Always run this sum: discount schemes only pay off if you'd genuinely spend enough.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Which of these is a FALSE economy — something that looks like saving but costs more overall?",
+                    "choices": ["Skipping the weekly food shop, then buying every meal at the campus café because the fridge is empty", "Batch-cooking with flatmates and freezing portions", "Walking the 15 minutes to campus instead of taking the bus", "Buying second-hand textbooks or using the library copy"],
+                    "answer_index": 0,
+                    "explanation": "Skipping a £25 shop feels like saving until five £6 café meals replace it. Batch-cooking, walking and second-hand books are real savings: same outcome, lower cost. A false economy cuts the upfront price but raises the total.",
+                }},
+                {"type": "scenario", "xp_reward": 20, "content_json": {
+                    "prompt": "It's the first day of term and £2,800 of maintenance loan just landed — the most money you've ever had. Freshers' week starts tonight. What's your move?",
+                    "choices": [
+                        {"label": "Enjoy week one properly — you'll budget whatever is left afterwards", "outcome": "This is the week-1 splurge trap. Spend £400 in seven days and the remaining 11 weeks drop from £233 to £218 each — and that's before rent. Budgeting 'what's left' means the splurge sets your budget, not you."},
+                        {"label": "Pay rent for the term first, divide the rest by the weeks it must cover, and set a weekly number — with a modest amount ring-fenced for freshers' week", "outcome": "Exactly right. Securing rent removes the biggest risk, the division gives you a real weekly figure, and planning fun money means you join in without quietly spending next month's food budget."},
+                        {"label": "Leave it all untouched and live off your 0% overdraft instead — it's interest-free anyway", "outcome": "Backwards, sadly. The overdraft is borrowing with a deadline: the 0% deal ends after graduation. Spending borrowed money while your own sits idle just builds a debt you'll repay later."},
+                    ],
+                    "correct_index": 1,
+                }},
+            ]},
+            {"title": "Level 3", "learning_objectives": [
+                 "Spot housing and job scams that target students — and explain why money muling is a crime, not a job",
+                 "Budget on an irregular income by planning around the lean months",
+                 "Compare university, apprenticeships and gap years as financial decisions using a simple framework",
+             ], "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "0% isn't 0% forever",
+                    "body": "Student overdrafts and 0% credit card deals share a trick: the zero has an expiry date. A student overdraft typically stays interest-free for a while after graduation, then converts to a standard overdraft — often at very high rates. A 0% purchase card flips to its full APR (which you met in Debt & Credit Explained) the day the promotional period ends. Before using any 0% deal, find the end date and write down your plan for clearing the balance before it arrives.",
+                }},
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "If a 'job' pays you to receive money, it isn't a job",
+                    "body": "A common scam targets students: someone offers easy cash to receive money into your bank account and forward it on. This is money muling — moving stolen or criminal money — and it's money laundering, a serious crime even if you didn't know the source. Consequences can include your account being closed, a fraud marker that blocks you from bank accounts and loans for years, and prosecution. No legitimate employer ever needs your account to move their money.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "A flat listing is suspiciously cheap. The 'landlord' is abroad, can't do viewings, but will post you the keys once you transfer a £400 deposit. What's the right move?",
+                    "choices": ["Walk away and verify independently: insist on a real viewing, check the landlord or agent is genuine, and ask someone you trust before sending anything", "Send the £400 quickly — at that price it'll be gone by tomorrow", "Send half now as a compromise and the rest after you get the keys", "It's fine as long as they email you a contract first"],
+                    "answer_index": 0,
+                    "explanation": "Cheap price, no viewing, urgency and bank transfer is the classic fake-listing pattern — the flat usually doesn't exist or isn't theirs. Scammers can fake contracts easily. Never pay a deposit for a property no one you trust has seen.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Why is money muling so dangerous for the 'mule', even if they never stole anything themselves?",
+                    "choices": ["It isn't — only the original thief commits a crime", "The only risk is losing the commission you were promised", "Moving criminal money through your account is money laundering: you can face a closed account, a fraud marker lasting years, and prosecution", "Banks always refund mules, so there's no lasting harm"],
+                    "answer_index": 2,
+                    "explanation": "Letting criminal money pass through your account is itself a crime. A fraud marker can block you from accounts, loans, phone contracts and even some jobs for years. 'I didn't know' is hard to argue when you were paid to do it.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Your income is lumpy: a termly loan drop, occasional shifts, the odd gift. Some months you get £600, others £150. How do you budget?",
+                    "choices": ["Budget for the £600 months — be optimistic", "Build the plan around the lean months, and move the surplus from good months into a buffer", "Don't budget at all until your income is steady", "Spend freely in good months; the lean ones will average out"],
+                    "answer_index": 1,
+                    "explanation": "Plan around what you can rely on, not what you hope for. A budget built on £150-200 months always works; the extra from £600 months becomes a buffer that smooths the gaps instead of vanishing.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "You're weighing university, a degree apprenticeship and a gap year. What's the soundest way to compare them financially?",
+                    "choices": ["University always wins — graduates earn more, end of story", "An apprenticeship always wins — no tuition fees, end of story", "Money shouldn't enter the decision at all", "Compare each path's costs, likely earnings, and what you give up meanwhile — then weigh that against what you actually want to do"],
+                    "answer_index": 3,
+                    "explanation": "Each route has a different shape: uni has fees and living costs but may raise long-term earnings; an apprenticeship pays you to train; a gap year delays both. There's no universal winner — the framework is costs vs likely earnings vs what you give up, applied to YOUR plans. Talk it through with a parent or adviser.",
+                }},
+                {"type": "scenario", "xp_reward": 20, "content_json": {
+                    "prompt": "A flatmate's contact offers you £200 to 'process a payment': £2,000 will arrive in your account and you forward £1,800 to another account, keeping the rest. You could really use £200. What do you do?",
+                    "choices": [
+                        {"label": "Do it once — it's your account and £200 is £200", "outcome": "That single transfer is money laundering. The £2,000 is almost certainly stolen, and when the bank traces it — they usually do — you face an account closure, a fraud marker that can follow you for years, and possible prosecution. No £200 is worth that."},
+                        {"label": "Ask the contact more questions about where the money comes from first", "outcome": "Scammers have smooth answers ready — 'it's a business workaround', 'it's from selling abroad'. You can't verify any of it through them, and the act itself would still be illegal. The question to ask isn't theirs to answer: a real job never routes money through your personal account."},
+                        {"label": "Refuse, and talk it over with someone you trust — and report the approach to your bank or Action Fraud", "outcome": "Exactly right. Refusing protects you; telling a parent or adviser sense-checks anything you're unsure about; reporting it helps protect other students the recruiter approaches. Be wary too of 'friends of friends' — that's exactly how mule recruiters spread."},
+                    ],
+                    "correct_index": 2,
+                }},
+            ]},
+        ],
+    },
+    {
+        "topic": "stocks", "title": "Investing for the Long Term",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "Understanding the important role money plays in our lives"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "IV", "label": "Investing"},
+        ],
+        "sources": [
+            {"title": "FCA InvestSmart", "url": "https://www.fca.org.uk/investsmart"},
+            {"title": "GOV.UK — Individual Savings Accounts (ISAs)", "url": "https://www.gov.uk/individual-savings-accounts"},
+            {"title": "Investor.gov (US SEC) — Mutual funds and ETFs", "url": "https://www.investor.gov/introduction-investing/investing-basics/investment-products/mutual-funds-and-exchange-traded-funds-etfs"},
+        ],
+        "learning_objectives": [
+            "Explain what a fund is and why most long-term investors hold funds rather than individual stocks",
+            "Compare index funds and active funds on cost and typical results",
+            "Show with a worked example how a small annual fee compounds into a large difference over decades",
+        ],
+        "conversation_prompt": "Ask them why a 1.5% fee costs so much more than it sounds over 30 years, and what an employer pension match is actually worth. Work one example out together — the numbers make the argument.",
+        "country_codes": [], "is_premium": False, "order_index": 13, "icon": "🌱",
+        "min_age": 14,
+        "lessons": [
+            {"type": "card", "xp_reward": 10, "content_json": {
+                "title": "What a fund actually is",
+                "body": "A fund pools money from thousands of investors and buys a wide basket of investments — often hundreds of companies in one go. You buy units of the fund, and a manager (or a computer following rules) handles the rest. One purchase can spread your money across an entire market. That is why most long-term investors hold funds rather than trying to pick a handful of winning stocks themselves.",
+            }},
+            {"type": "card", "xp_reward": 10, "content_json": {
+                "title": "Fees compound too",
+                "body": "An index fund simply copies an index like the FTSE 100 and might charge 0.2% a year. An active fund pays managers to try to beat the market and often charges 1.5% or more. That gap compounds. £1,000 growing at 7% a year becomes about £7,200 after 30 years on a 0.2% fee, but only about £4,980 on 1.5%. Same money, same market — the fee quietly ate the rest. Most active funds fail to beat the index after fees.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "What does an index fund do?",
+                "choices": ["Pays managers to hunt for the next big winner", "Guarantees your money can never fall in value", "Buys every company in an index, like the FTSE 100, so you own a slice of the whole market", "Lends your money to the government"],
+                "answer_index": 2,
+                "explanation": "An index fund copies an index rather than trying to beat it. One purchase gives you a small slice of every company on that scoreboard — instant, cheap diversification.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "You hold £10,000 in a fund. Roughly what does a 1.5% annual fee cost you this year, compared with a 0.2% fee?",
+                "choices": ["£150 vs £20 — a £130 gap, taken every single year", "£15 vs £2 — too small to matter", "£1,500 vs £200", "Nothing, because fees only apply when you sell"],
+                "answer_index": 0,
+                "explanation": "1.5% of £10,000 is £150; 0.2% is £20. The fee comes out every year whether the fund does well or badly — and the money it removes can never compound for you.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Over long periods, how do most active funds compare with a cheap index fund tracking the same market?",
+                "choices": ["Active funds nearly always win — that's what the managers are paid for", "Active funds win in good years and index funds win in bad years", "It's exactly 50/50 over any period", "Most active funds end up behind the index once their higher fees are taken out"],
+                "answer_index": 3,
+                "explanation": "Studies repeatedly find that after fees, the majority of active funds underperform their index over long periods. A few beat it — but picking which ones in advance is the hard part.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Why does holding a fund with hundreds of companies usually carry less risk than holding three stocks you picked?",
+                "choices": ["Funds are protected from ever losing money", "If one company in the fund fails, it's a tiny slice of the basket — with three stocks, it's a third of everything", "Fund managers can see the future", "Three stocks are illegal to hold in the UK"],
+                "answer_index": 1,
+                "explanation": "This builds on diversification: a fund spreads each pound across so many companies that no single failure can sink you. With three stocks, one disaster takes out a third of your money.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "You're choosing a first long-term investment in the practice Simulator: a single stock everyone at school is talking about, a global index fund charging 0.2%, or an active fund charging 1.6% whose advert says 'expert managers working for you'. Which fits a decades-long plan best?",
+                "choices": [
+                    {"label": "The single stock — it's clearly popular", "outcome": "Popularity isn't a plan. One company is one set of risks, and hot stocks are often already expensive. For money you'll hold for decades, concentration is the enemy."},
+                    {"label": "The global index fund at 0.2%", "outcome": "Strong reasoning. You own thousands of companies worldwide, and the low fee means almost all the growth stays compounding in your pot. This is what many long-term investors actually hold."},
+                    {"label": "The 1.6% active fund — experts must be worth it", "outcome": "The advert is selling the fee. Most active funds trail the index after costs, and over 30 years that 1.4% gap can eat thousands of pounds of growth. Experts have to beat the market by more than they charge — most don't."},
+                ],
+                "correct_index": 1,
+            }},
+        ],
+        "extra_levels": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Explain how an ISA wrapper makes investment growth tax-free and what happens to a Junior ISA at 18",
+                 "Calculate what an employer pension match is worth and explain the locked-away trade-off",
+                 "Show how starting ten years earlier changes a final pot far more than the extra contributions alone",
+             ], "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "The wrapper matters as much as the investment",
+                    "body": "An ISA isn't an investment — it's a wrapper around one. Inside a stocks and shares ISA, the same index fund grows free of UK tax, and withdrawals are tax-free too. Adults can add up to £20,000 a year. You may already know the Junior ISA: at 18 it becomes yours and turns into an adult ISA. Outside a wrapper, tax can skim your gains every year — and anything skimmed can never compound for you.",
+                }},
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Pensions: the match is free money",
+                    "body": "A workplace pension takes money from your pay before you see it — and your employer adds more. On a £24,000 salary, putting in 5% (£1,200 a year) might be matched with 3% from your employer: £720 of free money, a 60% boost before any market growth. The trade-off: pensions are locked until your late fifties. The US versions: a 401(k) is the workplace pension with a match; a Roth IRA works much like an ISA.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "What is the main advantage of holding an index fund inside a stocks and shares ISA rather than in a plain account?",
+                    "choices": ["The fund inside an ISA is guaranteed to grow faster", "Growth and withdrawals are free of UK tax, so everything the fund earns stays compounding", "ISAs remove all investment risk", "ISAs pay a bonus interest rate on top of the fund"],
+                    "answer_index": 1,
+                    "explanation": "The investment is identical — the wrapper changes the tax. No tax on growth or withdrawals means more stays in the pot, and that extra keeps compounding year after year.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "On a £24,000 salary you put 5% (£1,200 a year) into a workplace pension and your employer matches with 3%. How much goes in per year in total?",
+                    "choices": ["£1,200 — the match is taken from your pay too", "£720", "£1,440", "£1,920 — your £1,200 plus £720 of employer money"],
+                    "answer_index": 3,
+                    "explanation": "3% of £24,000 is £720, added on top of your £1,200 — £1,920 in total. That £720 is money you simply don't get if you opt out, which is why the match is called free money.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Two people each invest £100 a month at 6% a year until age 60. One starts at 18, the other at 28. Roughly how do their pots compare?",
+                    "choices": ["About £227,000 vs £116,000 — ten extra years nearly doubles the pot", "About the same, because the rate is equal", "£50,400 vs £38,400 — pots simply equal what you paid in", "The 28-year-old ends ahead because they're earning more by then"],
+                    "answer_index": 0,
+                    "explanation": "The 18-year-old pays in £50,400 and ends with about £227,000; the 28-year-old pays in £38,400 and ends with about £116,000. Only £12,000 more went in, but the pot is about £111,000 bigger — the early money compounded for an extra decade.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Which US account works most like a UK ISA — pay in from taxed money, then growth and withdrawals are tax-free?",
+                    "choices": ["A 401(k)", "A current account", "A Roth IRA", "A FTSE 100 tracker"],
+                    "answer_index": 2,
+                    "explanation": "A Roth IRA is the closest US cousin of the ISA: taxed money in, tax-free growth and withdrawals out. A 401(k) is closer to a UK workplace pension — pre-tax money, often matched, locked until later life.",
+                }},
+                {"type": "scenario", "xp_reward": 20, "content_json": {
+                    "prompt": "You're 18, starting a first job at £20,000. The employer offers a pension matching your contributions up to 4%. You also want savings you can actually reach. What's the soundest setup?",
+                    "choices": [
+                        {"label": "Join the pension up to the full match, and build accessible savings (such as an ISA) alongside it", "outcome": "Sound framework. Contributing 4% (£800) gets another £800 of employer money — a 100% instant return you can't get anywhere else — while the ISA keeps some money reachable. Many people use exactly this split."},
+                        {"label": "Opt out of the pension — retirement is 40+ years away and the money is locked", "outcome": "Opting out turns down £800 a year of free money, and those early pounds are the ones with four decades to compound. The lock-up is real, but it's the reason to balance a pension with accessible savings — not to refuse the match."},
+                        {"label": "Put every spare pound into the pension to maximise the tax break", "outcome": "The maths of pensions is strong, but money for emergencies, study or a first home can't wait until your late fifties. Locking up everything forces expensive borrowing later. Capture the match, keep some accessible."},
+                    ],
+                    "correct_index": 0,
+                }},
+            ]},
+            {"title": "Level 3", "learning_objectives": [
+                 "Choose a shares/bonds mix that fits a time horizon and explain what rebalancing does",
+                 "Explain why large market falls are historically normal and why selling in a crash locks in the loss",
+                 "Show how pound-cost averaging lowers the average price paid when markets are volatile",
+             ], "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Match the mix to the horizon",
+                    "body": "Shares grow more over decades but swing hard; bonds grow less and swing less. The mix is the dial. In a year where shares fall 30% and bonds hold flat, an all-shares portfolio is down 30% — a 60/40 shares-bonds mix is down about 18%. With 40 years ahead, many long-term investors hold mostly shares and ride the swings; with five years left, they shift towards bonds because there's no time to recover from a crash.",
+                }},
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Falls are normal — selling makes them permanent",
+                    "body": "Markets have fallen 30–50% several times — 2000, 2008, 2020 — and historically recovered and gone on to new highs, though it sometimes took years. The maths of losses is asymmetric: £10,000 falling 40% leaves £6,000, which then needs a 67% gain just to get back. Selling during the crash converts a paper loss into a real one and means missing the recovery. The plan, not the panic, decides when to sell.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Your £10,000 portfolio falls 40% to £6,000. What gain does it now need to get back to £10,000?",
+                    "choices": ["40% — the same as the fall", "50%", "60%", "About 67%"],
+                    "answer_index": 3,
+                    "explanation": "£6,000 needs to grow by £4,000, and £4,000 ÷ £6,000 ≈ 67%. Losses need bigger gains to undo than most people expect — one reason avoiding panic-selling at the bottom matters so much.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "You invest £50 a month for five months while a fund's price goes £10, £8, £5, £8, £10. What did pound-cost averaging do for you?",
+                    "choices": ["Nothing — you paid the average price of £8.20", "Your £250 bought 32.5 units at an average of £7.69 each — below the £8.20 average price — and is worth £325 at the end", "You lost money because the price fell mid-way", "You bought fewer units when the price was low"],
+                    "answer_index": 1,
+                    "explanation": "A fixed £50 buys more units when the price is low (10 units at £5) and fewer when high (5 at £10). Total: 32.5 units for £250 — £7.69 average versus the £8.20 average price. At £10 a unit, that's £325.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "A year of strong share growth drifts your portfolio from its 60/40 shares-bonds target to 75/25. What does rebalancing mean here?",
+                    "choices": ["Selling everything and waiting in cash for a better moment", "Buying more shares, since they're clearly the winners", "Selling some shares and buying bonds to return to 60/40 — trimming what's expensive, topping up what's cheap, by rule not by feeling", "Switching to a fund with a higher fee"],
+                    "answer_index": 2,
+                    "explanation": "Rebalancing restores the risk level you chose. As a side effect it systematically sells what has risen and buys what has lagged — a disciplined version of selling high and buying low, with no forecasting required.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "£1,000 left invested at 7% a year for 40 years grows to roughly how much?",
+                    "choices": ["About £15,000 — nearly fifteen times the original", "About £3,800", "About £7,000", "About £28,000"],
+                    "answer_index": 0,
+                    "explanation": "1.07 to the power 40 is about 15, so £1,000 becomes roughly £14,970. The last decade adds more than the first three combined — which is why time in the market is the asset that's hardest to replace.",
+                }},
+                {"type": "scenario", "xp_reward": 20, "content_json": {
+                    "prompt": "Two years into a 30-year plan — a global index fund inside an ISA, £100 added monthly — markets fall 35% in six months. The news is grim and your pot shows a large red number. What do you do?",
+                    "choices": [
+                        {"label": "Sell everything before it falls further", "outcome": "This converts the paper loss into a permanent one and parks you in cash for the recovery — and recoveries often start before the news improves. Investors who sold in 2008 or 2020 and waited to feel safe missed the sharpest rebound days."},
+                        {"label": "Keep what you hold, but pause contributions until things look safer", "outcome": "Better than selling, but notice what you'd be doing: refusing to buy units at the cheapest prices in years. 'Looking safe' usually returns only after prices already have — you'd resume buying high."},
+                        {"label": "Keep contributing on schedule, and rebalance if the mix has drifted from target", "outcome": "This is the plan working under pressure. With 28 years left there is historically ample recovery time, your £100 now buys roughly half as many units more each month, and rebalancing quietly buys low. Falls like this are why the plan was written calm."},
+                    ],
+                    "correct_index": 2,
+                }},
+            ]},
+        ],
+    },
+    {
+        "topic": "risk", "title": "Your Brain on Money",
+        "standards_alignment": [
+            {"framework": "UK MaPS/YE Financial Education Planning Framework", "code": "11-19", "label": "Managing risks and emotions associated with money"},
+            {"framework": "US National Standards for Personal Financial Education (CEE/Jump$tart 2021)", "code": "VI", "label": "Managing Risk"},
+        ],
+        "sources": [
+            {"title": "MoneyHelper — Money and emotional wellbeing", "url": "https://www.moneyhelper.org.uk/en/money-troubles/way-forward/money-and-mental-health"},
+            {"title": "FCA InvestSmart — Avoiding hype and scams", "url": "https://www.fca.org.uk/investsmart"},
+        ],
+        "learning_objectives": [
+            "Distinguish fast, automatic System 1 reactions from slow, deliberate System 2 thinking in money decisions",
+            "Explain loss aversion — losses feel roughly twice as strong as equal gains — and how it drives poor choices",
+            "Recognise FOMO as a wired-in group response, not a signal that an opportunity is real",
+        ],
+        "conversation_prompt": "Each name one bias the family fell for this month — an anchor ('was £80'), FOMO, or sunk cost ('we've already paid for it'). No blame: everyone's brain does this. Then agree one shared money rule to try for a month.",
+        "country_codes": [], "is_premium": False, "order_index": 14, "icon": "🧠",
+        "min_age": 14,
+        "lessons": [
+            {"type": "card", "xp_reward": 10, "content_json": {
+                "title": "Your brain is running 200,000-year-old software",
+                "body": "Your brain has two systems. System 1 is fast and automatic — it decides in milliseconds whether something feels good or dangerous. System 2 is slow and deliberate — it does the maths, weighs options, reads the small print. System 1 evolved for spotting predators and grabbing food before someone else did. It did not evolve for in-app purchases or trading apps. Most money mistakes happen when System 1 answers a question that System 2 should have got.",
+            }},
+            {"type": "card", "xp_reward": 10, "content_json": {
+                "title": "Losses hurt twice as much",
+                "body": "Losing £10 hurts roughly twice as much as winning £10 feels good. Psychologists call this loss aversion, and it's measurable, not a metaphor. It explains a lot: why people hold a falling investment for years rather than admit a loss, why 'don't miss out' works better in adverts than 'here's a gain', and why a refund feels like a win. Your brain isn't weighing money fairly — it's weighing pain. Knowing the scale is rigged is step one.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "You see 'FLASH SALE — 1 hour left' and feel a jolt of urgency. Which part of your thinking just fired?",
+                "choices": ["System 2 — careful, deliberate analysis", "Your long-term planning", "System 1 — the fast, automatic reaction", "Nothing — urgency is always a free, conscious choice"],
+                "answer_index": 2,
+                "explanation": "That jolt arrives before you've consciously decided anything — pure System 1. Countdown timers are aimed straight at it, because System 2 needs time, and time is exactly what they remove.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Research on loss aversion suggests that losing £10 feels about as intense as…",
+                "choices": ["Winning £20 feels good", "Winning £10 feels good", "Winning £5 feels good", "Nothing — small losses don't register"],
+                "answer_index": 0,
+                "explanation": "Losses weigh roughly twice as much as equal gains. That 2:1 asymmetry is why the fear of losing drives more decisions — good and bad — than the hope of winning.",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "A coin you bought for £40 is now worth £25. What does loss aversion push most people to do?",
+                "choices": ["Check the project's actual prospects before deciding", "Sell instantly, whatever the facts", "Work out the exact loss in a spreadsheet", "Hold it indefinitely rather than 'make the loss real' — even when selling is the rational move"],
+                "answer_index": 3,
+                "explanation": "Selling turns a paper loss into a felt one, and brains will do almost anything to dodge that pain. The sharper question is 'would I buy this today at £25?' — not 'how do I avoid feeling the loss?'",
+            }},
+            {"type": "quiz", "xp_reward": 25, "content_json": {
+                "question": "Why does FOMO feel so physical — that genuine pull when everyone seems to be buying something?",
+                "choices": ["It's a personal weakness that only some people have", "It's an ancient survival response — being left out of what the group was doing used to be genuinely dangerous", "It's proof the opportunity is real", "It's caused by too much screen time"],
+                "answer_index": 1,
+                "explanation": "For most of human history, missing what the group was doing could cost you food or safety. The wiring is still there — it just fires at trainers drops and coins now. Feeling it is normal; obeying it is optional.",
+            }},
+            {"type": "scenario", "xp_reward": 20, "content_json": {
+                "prompt": "It's 11pm. A limited skin bundle just dropped in your favourite game — 'exclusive, gone in 24 hours'. Your heart rate actually goes up. You have the money. What do you do?",
+                "choices": [
+                    {"label": "Buy it — the strength of the feeling proves you really want it", "outcome": "The feeling proves System 1 fired, nothing more. Urgency plus exclusivity is engineered to produce exactly that jolt. A real preference survives until morning; a manufactured one usually doesn't."},
+                    {"label": "Name the jolt as System 1, and decide in the morning with System 2", "outcome": "That's the core skill of this whole module. Naming the reaction takes its power away — and a 24-hour window means the bundle will still be there after you've slept on it."},
+                    {"label": "Ask the group chat whether you should buy it", "outcome": "Risky — your friends' System 1s are firing too. A group of excited brains isn't a second opinion; it's social proof, which you'll meet properly in the next level."},
+                ],
+                "correct_index": 1,
+            }},
+        ],
+        "extra_levels": [
+            {"title": "Level 2", "learning_objectives": [
+                 "Spot anchoring, social proof, sunk-cost thinking and present bias in real purchases and investments",
+                 "Explain why 'everyone is buying it' is usually a warning rather than a signal",
+                 "Treat money already spent as irrelevant to the next decision",
+             ], "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Anchoring: the first number wins",
+                    "body": "'Was £80, now £40' isn't really information about the jacket — it's information about your brain. The first number you see becomes an anchor, and every other number gets judged against it. £40 feels cheap next to £80, even if the jacket was never worth £80 to anyone. Resale sites run it too: list trainers at a silly price, then 'accept offers'. The fix is blunt and effective: ignore the first number and ask what it's worth to you, starting from zero.",
+                }},
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "Future-you keeps losing to now-you",
+                    "body": "It isn't a fair fight. Your brain treats a reward today as far more valuable than a bigger reward later — that's present bias. It's why £15 of food delivery beats £15 towards something you genuinely want more, and why 'I'll start saving next month' repeats forever. To your brain, future-you is basically a stranger, and it doesn't hand strangers money. The trick isn't caring harder — it's making the decision before now-you shows up.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Trainers are listed for resale at £300, then the seller 'accepts your offer' of £180. £180 suddenly feels like a win. What actually happened?",
+                    "choices": ["£180 is objectively a great price for any trainers", "The £300 anchor reset your sense of what they're worth — the seller likely wanted around £180 all along", "The seller made a mistake in your favour", "Resale prices are fixed by the manufacturer"],
+                    "answer_index": 1,
+                    "explanation": "The £300 was never the price — it was the anchor. Judged against it, £180 feels like a bargain; judged from zero, it might not. Anchoring works even when you know the first number is inflated.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "A coin is rocketing and everyone on your feed is buying it. Why is that closer to a warning than a signal?",
+                    "choices": ["Crowds are always wrong about everything", "Social media posts about money are illegal", "Popular things never make money", "By the time everyone is buying, the price already contains their excitement — you'd be paying for the hype, often near the top"],
+                    "answer_index": 3,
+                    "explanation": "Herd behaviour means the crowd's optimism is already in the price. The people who profited bought before it was everywhere. 'Everyone's in' usually means the easy gains are gone and the risk is at its highest.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "You've spent £120 on a game you no longer enjoy. 'I've put too much in to stop playing now' is a textbook example of…",
+                    "choices": ["The sunk-cost fallacy — money already spent shouldn't steer what you do next", "Sensible loyalty to a purchase", "Compound interest", "Anchoring"],
+                    "answer_index": 0,
+                    "explanation": "The £120 is gone whether you play or not — it's a sunk cost. Spending more time (or money) to 'justify' it just adds new losses to old ones. The only question that matters: is the next hour or pound worth it on its own?",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Offered £20 today or £30 in a month, plenty of people grab the £20 — even though waiting pays a 50% return. Which bias is doing the grabbing?",
+                    "choices": ["Anchoring", "Social proof", "Present bias — rewards now feel oversized compared with rewards later", "Loss aversion"],
+                    "answer_index": 2,
+                    "explanation": "Present bias inflates the value of 'right now'. Almost no investment reliably pays 50% in a month, yet brains routinely turn it down to avoid waiting. Spotting that gap is the start of beating it.",
+                }},
+                {"type": "scenario", "xp_reward": 20, "content_json": {
+                    "prompt": "You bought a hyped coin at £60. It's now at £25, and you're tempted to put in another £40 to 'win the loss back'. What's the sharpest way to think about it?",
+                    "choices": [
+                        {"label": "Buy more — you can't quit while you're down", "outcome": "That's sunk cost and loss aversion driving together. The £35 drop has happened whether you buy or not, and chasing it is exactly how small losses become big ones."},
+                        {"label": "Ask: 'If I had £40 fresh and didn't own this coin, would I buy it at £25 today?'", "outcome": "That question deletes the sunk cost from the maths. If the honest answer is no, the only reason to buy is to soothe the loss — and the market doesn't care how you feel."},
+                        {"label": "Sell everything instantly and swear off investing forever", "outcome": "Swinging to the opposite extreme is still System 1 in charge — just running on fear instead of hope. The lesson isn't 'never invest'; it's 'decide on today's facts, not yesterday's spend'."},
+                    ],
+                    "correct_index": 1,
+                }},
+            ]},
+            {"title": "Level 3", "learning_objectives": [
+                 "Design personal money rules, automation and pre-commitments that work even when willpower fails",
+                 "Apply a decision checklist and the 'friend test' before any big purchase or investment",
+                 "Recognise when hype or a scam is deliberately stacking biases against you",
+             ], "lessons": [
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "You can't patch the brain — build guardrails instead",
+                    "body": "Here's the uncomfortable truth: knowing about biases barely protects you from them. Even the researchers who discovered loss aversion still feel it. So don't rely on willpower in the hot moment — design the moment out. Personal rules ('anything over £30 waits 48 hours') make the decision before the temptation arrives. Automation goes further: a standing transfer into savings the day money lands means future-you gets paid first, with zero willpower spent. You're not fixing the bug — you're routing around it.",
+                }},
+                {"type": "card", "xp_reward": 10, "content_json": {
+                    "title": "The scammer's toolkit is this module",
+                    "body": "Read a scam pitch closely and you'll find this module inside it. 'Guaranteed returns' target loss aversion. 'Spots close tonight' weaponises urgency against System 2. Screenshots of strangers' profits are social proof. A 'normally £500, today free' course is an anchor. Scammers don't hack your phone — they hack your biases, several at once. So before any big decision, run a checklist: What am I being rushed past? Who profits if I say yes? What would I tell a friend who showed me this?",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Why does an automatic transfer into savings beat 'saving whatever's left at the end of the month'?",
+                    "choices": ["It removes the decision entirely, so present bias never gets a vote", "Banks pay extra interest on automatic transfers", "It's the only way savings are protected", "It stops you ever spending money on anything"],
+                    "answer_index": 0,
+                    "explanation": "Willpower is a rematch you have to win every single month; automation is winning once, permanently. By the time now-you wants to spend, the money has already gone where calm-you sent it.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "A rule like 'I wait 48 hours on anything over £30' works mainly because…",
+                    "choices": ["48 is a scientifically magic number", "It guarantees you never buy anything again", "You set it while calm, so the hot, impulsive moment is no longer the one making the decision", "Retailers are required to honour it"],
+                    "answer_index": 2,
+                    "explanation": "This is pre-commitment: calm-you writes the rule, so excited-you doesn't have to win an argument at the checkout. The exact numbers are yours to tune — the point is deciding before the urge arrives.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "Before a big buy or investment, asking 'what would I tell a friend who showed me this?' helps because…",
+                    "choices": ["Friends always know more about money than you do", "Distance switches off the emotional pull, so you judge the deal instead of your feelings about it", "It delays the purchase until the sale ends", "It legally transfers the risk to the friend"],
+                    "answer_index": 1,
+                    "explanation": "Advice for a friend runs on System 2; decisions for yourself run hot. The same brain that whispers 'go on, it's fine' to you will calmly tell a friend 'that's an obvious trap'. Borrow that voice.",
+                }},
+                {"type": "quiz", "xp_reward": 25, "content_json": {
+                    "question": "A pitch stacks 'guaranteed 10x returns', a countdown timer, screenshots of winners, and 'normally £500 — today free'. What's the most reliable conclusion?",
+                    "choices": ["At least one of the claims is probably true", "The free price means there's nothing to lose", "It's worth testing with a small amount", "It's pressing four separate biases at once — the signature of a scam, not an opportunity"],
+                    "answer_index": 3,
+                    "explanation": "Greed, urgency, social proof and an anchor, all in one pitch. Real opportunities don't need to stack psychological pressure — manufactured ones can't work without it. The stacking itself is the red flag.",
+                }},
+                {"type": "scenario", "xp_reward": 20, "content_json": {
+                    "prompt": "A TikTok 'mentor' shows a method for turning £100 into £1,000, flashes screenshots of followers' wins, and says the free group closes at midnight. You have £100 saved. What do you do?",
+                    "choices": [
+                        {"label": "Join now — it's free, so there's nothing to lose", "outcome": "'Free' is the anchor that gets you through the door; the cost arrives later, inside the group. A midnight deadline on something free exists to stop you doing the one thing that defeats it: thinking."},
+                        {"label": "Run the checklist — rushed? who profits? would I tell a friend to do this? — then walk away and report the account", "outcome": "The checklist catches it instantly: urgency, social proof and impossible returns stacked together. Real opportunities survive being slept on; this one is built so you won't try. Walking away and reporting protects the next person too."},
+                        {"label": "Put in the £100 but promise yourself you'll stop if it starts going wrong", "outcome": "That promise is made by calm-you but must be kept by losing-you — the version with loss aversion shouting to win it back. Pre-commitment is powerful, but it can't operate inside a setup designed to fleece you."},
+                    ],
+                    "correct_index": 1,
+                }},
+            ]},
+        ],
+    },
 ]
 
 
