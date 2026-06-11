@@ -385,3 +385,53 @@ async def test_seed_without_keys_leaves_manual_values_untouched(db_session, monk
     assert module.sources == [{"title": "Manual source", "url": "https://example.com/m"}]
     assert level1.learning_objectives == ["Manual objective"]
     assert level2.learning_objectives == ["Manual L2 objective"]
+
+
+async def test_seed_applies_age_bounds_on_create(db_session, monkeypatch):
+    """On create, min_age/max_age from the spec land on the module."""
+    spec = _fake_spec(min_age=14, max_age=18)
+    monkeypatch.setattr("app.seed.content._MODULES", [spec])
+
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, spec)
+    assert module.min_age == 14
+    assert module.max_age == 18
+
+
+async def test_seed_applies_age_bounds_on_update(db_session, monkeypatch):
+    """An existing module gains age bounds when the spec adds the keys."""
+    bare = _fake_spec()
+    monkeypatch.setattr("app.seed.content._MODULES", [bare])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, bare)
+    assert module.min_age is None
+    assert module.max_age is None
+
+    enriched = _fake_spec(min_age=14)
+    monkeypatch.setattr("app.seed.content._MODULES", [enriched])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, enriched)
+    assert module.min_age == 14
+
+
+async def test_seed_without_age_keys_leaves_manual_values(db_session, monkeypatch):
+    """A spec with no min_age/max_age keys never clobbers manually-set bounds."""
+    bare = _fake_spec()
+    monkeypatch.setattr("app.seed.content._MODULES", [bare])
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+
+    module, _, _ = await _fetch_module_and_levels(db_session, bare)
+    module.min_age = 16  # manual admin edit
+    await db_session.flush()
+
+    await seed_modules_and_lessons(db_session)
+    await db_session.flush()
+    module, _, _ = await _fetch_module_and_levels(db_session, bare)
+    assert module.min_age == 16

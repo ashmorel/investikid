@@ -2165,6 +2165,12 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
             module.sources = spec["sources"]
         if "conversation_prompt" in spec:
             module.conversation_prompt = spec["conversation_prompt"]
+        # Age bounds: same only-when-present rule, so specs without the keys
+        # never null out manually-set values.
+        if "min_age" in spec:
+            module.min_age = spec["min_age"]
+        if "max_age" in spec:
+            module.max_age = spec["max_age"]
 
         level = await session.scalar(
             select(Level).where(Level.module_id == module.id, Level.order_index == 0)

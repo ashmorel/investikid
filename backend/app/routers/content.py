@@ -19,12 +19,14 @@ from app.schemas.content import (
     ModuleOut,
     NextLessonEnvelope,
 )
+from app.services.age_tier import age_in_years
 from app.services.content_service import (
     compute_level,
     content_region_for,
     derive_lesson_title,
     grant_module_completion_cash,
     is_module_accessible,
+    is_module_age_ok,
     record_daily_activity,
 )
 from app.services.entitlements import is_premium
@@ -56,6 +58,11 @@ async def _get_accessible_module(
     country_ok = not module.country_codes or content_region_for(current_user) in module.country_codes
     if not country_ok:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
+    # Age gate uses the actual age from dob (NEVER the parent tier_override) and
+    # mirrors the inaccessible-country behaviour: a plain 404, no content tease.
+    user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
+    if not is_module_age_ok(user_age, module.min_age, module.max_age):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     if not is_module_accessible(
         content_region_for(current_user), is_premium(current_user),
         module.country_codes, module.is_premium,
@@ -79,10 +86,15 @@ async def list_modules(
 ):
     result = await session.scalars(select(Module).order_by(Module.order_index))
     modules = result.all()
+    user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
     out: list[ModuleOut] = []
     for m in modules:
         country_ok = not m.country_codes or content_region_for(current_user) in m.country_codes
         if not country_ok:
+            continue
+        # Hidden, not teased: out-of-age modules never appear in the list
+        # (actual age from dob — the parent tier_override must not unlock these).
+        if not is_module_age_ok(user_age, m.min_age, m.max_age):
             continue
         accessible = is_module_accessible(
             content_region_for(current_user), is_premium(current_user),

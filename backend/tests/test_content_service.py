@@ -5,6 +5,7 @@ import pytest
 from app.services.content_service import (
     compute_level,
     is_module_accessible,
+    is_module_age_ok,
     streak_after_activity,
 )
 
@@ -38,6 +39,20 @@ def test_is_module_accessible_premium_gating():
     assert is_module_accessible("GB", False, ["GB"], True) is False
     assert is_module_accessible("GB", True, ["GB"], True) is True
     assert is_module_accessible("GB", False, ["GB"], False) is True
+
+
+@pytest.mark.parametrize("user_age,min_age,max_age,expected", [
+    (13, 14, None, False),   # under min → hidden
+    (14, 14, None, True),    # equal to min → ok
+    (15, 14, None, True),    # over min → ok
+    (19, None, 18, False),   # over max → hidden
+    (18, None, 18, True),    # equal to max → ok
+    (10, None, None, True),  # no bounds → ok
+    (13, 14, 18, False),     # both bounds, under min
+    (16, 14, 18, True),      # both bounds, inside
+])
+def test_is_module_age_ok(user_age, min_age, max_age, expected):
+    assert is_module_age_ok(user_age, min_age, max_age) is expected
 
 
 def test_streak_same_day_no_change():

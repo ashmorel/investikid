@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.content import Lesson, LessonCompletion, Level, Module
 from app.models.skill_profile import TopicMastery
 from app.models.user import User
+from app.services.age_tier import age_in_years
 from app.services.content_service import content_region_for
 from app.services.entitlements import is_premium
 from app.services.level_service import LevelStateInput, first_actionable_lesson
@@ -24,11 +25,10 @@ _MAX_ORDER_INDEX = 100  # normalisation ceiling for order_index
 
 
 def _calculate_age(dob: date, today: date | None = None) -> int:
-    """Calculate age from date of birth."""
+    """Calculate age from date of birth (delegates to the shared age_tier helper)."""
     if today is None:
         today = datetime.now(UTC).date()
-    age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-    return age
+    return age_in_years(dob, today)
 
 
 def _apply_hard_filters(
