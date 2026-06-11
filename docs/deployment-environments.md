@@ -73,7 +73,12 @@ after a manual snapshot; login verified end-to-end.
     (`invest-ed/backend`, from the old monorepo) → every prod backend deploy failed at build
     (`directory … does not exist`) until it was changed to `backend`.
 - **Repoint prod backend domain** (optional): backend is `investikid.up.railway.app`. If ever renamed, also update the cron workflow `BACKEND_URL` (repo Actions variable `vars.BACKEND_URL`) and any client referencing it.
-- **Rotate prod secrets** (were exposed in old git history): `JWT_SECRET`, `SECRET_KEY`, `ADMIN_TOKEN`, `CRON_SECRET`, `RESEND_API_KEY` — give prod its own values, distinct from testing/staging.
+- ✅ **Prod secret rotation — RESOLVED 2026-06-11.** `JWT_SECRET` rotated (fresh value per
+  environment — prod/staging/testing each have their own, so non-prod tokens can never replay
+  against prod); `RESEND_API_KEY` rotated (new key created, verified sending, old key revoked);
+  `CRON_SECRET` was already rotated 2026-06-08. `ADMIN_TOKEN` and `SECRET_KEY` env vars deleted —
+  the app no longer reads either (admin is account-based; `SECRET_KEY` was never a Settings field).
+  Note: rotating `JWT_SECRET` invalidated all sessions (one-time forced re-login).
 - ✅ **`CRON_SECRET` — RESOLVED 2026-06-08.** `CRON_SECRET` is set and **matched** on production Railway (`Invest-Ed` → production → InvestiKid) **and** the GitHub Actions secret. The `Video health cron` workflow is **enabled** and a manual run against production (`https://investikid.up.railway.app`) returned **HTTP 200** `{"ok":2,"dead":0,"unknown":0}`. The daily 06:00 UTC schedule now runs cleanly.
   - The cron workflow on **both `main` and `testing`** reads `BACKEND_URL` from the **repo Actions variable** (`${{ vars.BACKEND_URL || '<hardcoded fallback>' }}`; main `d8bef57`, testing `8622920`). The scheduled run executes from `main`.
   - **`vars.BACKEND_URL` = `https://investikid.up.railway.app`** (the prod backend). If the prod host ever changes (custom domain / rename): `gh variable set BACKEND_URL --body <prod-url>`.
