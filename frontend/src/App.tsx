@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { Shell } from '@/components/child/Shell';
@@ -25,19 +26,20 @@ import VerifyEmail from '@/pages/VerifyEmail';
 import ParentLogin from '@/pages/ParentLogin';
 import ParentAuthCallback from '@/pages/ParentAuthCallback';
 import ParentDashboard from '@/pages/ParentDashboard';
-import AdminLayout from '@/components/admin/AdminLayout';
-import AdminDashboard from '@/components/admin/AdminDashboard';
-import ModuleList from '@/components/admin/ModuleList';
-import ModuleForm from '@/components/admin/ModuleForm';
-import LevelList from '@/components/admin/LevelList';
-import LevelLessonList from '@/components/admin/LevelLessonList';
-import BadgeList from '@/components/admin/BadgeList';
-import BadgeForm from '@/components/admin/BadgeForm';
-import ChallengeList from '@/components/admin/ChallengeList';
-import ChallengeForm from '@/components/admin/ChallengeForm';
-import FeedbackList from '@/components/admin/FeedbackList';
-import VideoHealthList from '@/components/admin/VideoHealthList';
-import AdminSettings from '@/components/admin/AdminSettings';
+// Admin tree is lazy-loaded so it stays out of the child-facing main bundle.
+const AdminLayout = lazy(() => import('@/components/admin/AdminLayout'));
+const AdminDashboard = lazy(() => import('@/components/admin/AdminDashboard'));
+const ModuleList = lazy(() => import('@/components/admin/ModuleList'));
+const ModuleForm = lazy(() => import('@/components/admin/ModuleForm'));
+const LevelList = lazy(() => import('@/components/admin/LevelList'));
+const LevelLessonList = lazy(() => import('@/components/admin/LevelLessonList'));
+const BadgeList = lazy(() => import('@/components/admin/BadgeList'));
+const BadgeForm = lazy(() => import('@/components/admin/BadgeForm'));
+const ChallengeList = lazy(() => import('@/components/admin/ChallengeList'));
+const ChallengeForm = lazy(() => import('@/components/admin/ChallengeForm'));
+const FeedbackList = lazy(() => import('@/components/admin/FeedbackList'));
+const VideoHealthList = lazy(() => import('@/components/admin/VideoHealthList'));
+const AdminSettings = lazy(() => import('@/components/admin/AdminSettings'));
 
 function RootRedirect() {
   // Redirect / to /home; if unauthed, /home's Shell will redirect to /login.
@@ -82,7 +84,20 @@ export default function App() {
         <Route path="/parent" element={<ParentDashboard />} />
 
         {/* Admin routes */}
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route
+          path="/admin"
+          element={
+            <Suspense
+              fallback={
+                <div className="flex min-h-screen items-center justify-center bg-background">
+                  <span className="text-muted-foreground">Loading…</span>
+                </div>
+              }
+            >
+              <AdminLayout />
+            </Suspense>
+          }
+        >
           <Route index element={<AdminDashboard />} />
           <Route path="modules" element={<ModuleList />} />
           <Route path="modules/new" element={<ModuleForm />} />

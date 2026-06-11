@@ -10,8 +10,10 @@ import { MarketMovers } from '@/components/child/simulator/MarketMovers';
 import { MarketNews } from '@/components/child/simulator/MarketNews';
 import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { BackButton } from '@/components/child/BackButton';
+import { OfflineNotice } from '@/components/child/OfflineNotice';
 import { SectionCard } from '@/components/child/simulator/SectionCard';
 import { formatCurrency } from '@/lib/currency';
+import { useOnline } from '@/hooks/useOnline';
 
 const EXCHANGE_BADGE_COLORS: Record<string, string> = {
   NASDAQ: 'bg-info-100 text-info-600',
@@ -107,6 +109,7 @@ export default function Market() {
   const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const online = useOnline();
 
   const { data: me } = useQuery<Me | null>({
     queryKey: ['me'],
@@ -162,7 +165,11 @@ export default function Market() {
     return (
       <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
         <BackButton to="/simulator" label="Simulator" />
-        <p className="mt-2 text-sm text-muted-foreground">Loading stocks…</p>
+        {online ? (
+          <p className="mt-2 text-sm text-muted-foreground">Loading stocks…</p>
+        ) : (
+          <OfflineNotice className="mt-3" />
+        )}
       </div>
     );
   }
@@ -182,6 +189,7 @@ export default function Market() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
       <BackButton to="/simulator" label="Simulator" />
+      {!online && <OfflineNotice className="mt-3" />}
       <div className="mb-1 mt-2 flex items-center gap-2">
         <h1 className="text-2xl font-semibold">Browse Stocks</h1>
         <RegionSelector value={region} onChange={setSelectedRegion} />

@@ -5,8 +5,10 @@ import { formatCurrency } from '@/lib/currency';
 import { simulatorApi, type TradeRequest, type TradeType } from '@/api/simulator';
 import { Button } from '@/components/ui/button';
 import { BottomSheet } from '@/components/mobile/BottomSheet';
+import { OfflineNotice } from '@/components/child/OfflineNotice';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useHaptic } from '@/hooks/useHaptic';
+import { useOnline } from '@/hooks/useOnline';
 
 type TradeFormProps = {
   ticker: string;
@@ -48,6 +50,7 @@ export function TradeForm({
 }: TradeFormProps) {
   const isMobile = !useMediaQuery('(min-width: 768px)');
   const haptic = useHaptic();
+  const online = useOnline();
   const [side, setSide] = useState<TradeType>('buy');
   const [shares, setShares] = useState('');
   const [step, setStep] = useState<Step>('input');
@@ -153,7 +156,7 @@ export function TradeForm({
         )}
         <div className="mt-4 flex gap-2">
           {chosen && (
-            <Button onClick={executeSubmit} disabled={isSubmitting}>
+            <Button onClick={executeSubmit} disabled={isSubmitting || !online}>
               {isSubmitting ? 'Submitting…' : 'Confirm sell'}
             </Button>
           )}
@@ -199,8 +202,9 @@ export function TradeForm({
         {submitError && (
           <p className="mt-2 text-sm text-danger-600">{submitError}</p>
         )}
+        {!online && <OfflineNotice className="mt-2" />}
         <div className="mt-4 flex gap-2">
-          <Button onClick={handleConfirm} disabled={isSubmitting}>
+          <Button onClick={handleConfirm} disabled={isSubmitting || !online}>
             {isSubmitting ? 'Submitting…' : `Confirm ${side} of ${sharesNum} shares`}
           </Button>
           <Button variant="outline" onClick={handleBack} disabled={isSubmitting}>Go back</Button>
@@ -342,8 +346,9 @@ export function TradeForm({
       {submitError && (
         <p className="mb-2 text-sm text-danger-600">{submitError}</p>
       )}
+      {!online && <OfflineNotice className="mb-2" />}
 
-      <Button onClick={handleReview}>Review trade</Button>
+      <Button onClick={handleReview} disabled={!online}>Review trade</Button>
     </div>
   );
 }

@@ -12,7 +12,9 @@ import { InvestmentTimeMachine } from '@/components/child/simulator/InvestmentTi
 import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { ChartCoachPanel } from '@/components/child/simulator/ChartCoachPanel';
 import { BackButton } from '@/components/child/BackButton';
+import { OfflineNotice } from '@/components/child/OfflineNotice';
 import { useToast } from '@/hooks/use-toast';
+import { useOnline } from '@/hooks/useOnline';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 export default function Stock() {
@@ -24,11 +26,13 @@ export default function Stock() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [chartPeriod, setChartPeriod] = useState('1mo');
   const [showCoachPenny, setShowCoachPenny] = useState(false);
+  const online = useOnline();
 
   const quoteQ = useQuery<QuoteOut | null, ApiError>({
     queryKey: ['quote', exchange, ticker],
     queryFn: () => simulatorApi.getQuote(exchange!, ticker!),
     retry: false,
+    staleTime: 60_000,
     refetchOnWindowFocus: true,
   });
 
@@ -97,7 +101,17 @@ export default function Stock() {
 
   const quote = quoteQ.data;
   const portfolio = portfolioQ.data;
-  if (!quote || !portfolio) return null;
+  if (!quote || !portfolio) {
+    if (!online) {
+      return (
+        <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
+          <BackButton to="/simulator/market" label="Market" />
+          <OfflineNotice className="mt-3" />
+        </div>
+      );
+    }
+    return null;
+  }
 
   const existingHolding = portfolio.holdings.find(
     (h) => h.ticker === ticker && h.exchange === exchange,
@@ -106,6 +120,8 @@ export default function Stock() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
       <BackButton to="/simulator/market" label="Market" className="mb-4" />
+
+      {!online && <OfflineNotice className="mb-4" />}
 
       <StockHeader
         name={quote.name}
