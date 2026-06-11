@@ -66,7 +66,13 @@ class RewardsOut(BaseModel):
 
 
 class TradeResultOut(TradeOut):
+    fee: Decimal
+    commission_pct: Decimal
     rewards: RewardsOut
+
+
+class TradeConfigOut(BaseModel):
+    commission_pct: Decimal
 
 
 class PortfolioSnapshot(BaseModel):

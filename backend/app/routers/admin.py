@@ -58,8 +58,10 @@ from app.services.admin_content_generation_service import (
 from app.services.app_settings import (
     get_alert_emails,
     get_starting_cash,
+    get_trade_commission_pct,
     set_alert_emails,
     set_starting_cash,
+    set_trade_commission_pct,
 )
 from app.services.engagement_service import get_module_engagement
 from app.services.level_service import premium_for_position
@@ -624,8 +626,11 @@ async def list_countries(session: AsyncSession = Depends(get_session)):
 async def get_settings(session: AsyncSession = Depends(get_session)):
     emails = await get_alert_emails(session)
     cash = await get_starting_cash(session)
+    pct = await get_trade_commission_pct(session)
     return AdminSettingsOut(
-        alert_emails=emails, starting_cash={k: str(v) for k, v in cash.items()}
+        alert_emails=emails,
+        starting_cash={k: str(v) for k, v in cash.items()},
+        trade_commission_pct=str(pct),
     )
 
 
@@ -636,10 +641,15 @@ async def update_settings(
     await set_alert_emails(session, body.alert_emails)
     if body.starting_cash is not None:
         await set_starting_cash(session, {k: Decimal(v) for k, v in body.starting_cash.items()})
+    if body.trade_commission_pct is not None:
+        await set_trade_commission_pct(session, Decimal(body.trade_commission_pct))
     await session.commit()
     cash = await get_starting_cash(session)
+    pct = await get_trade_commission_pct(session)
     return AdminSettingsOut(
-        alert_emails=body.alert_emails, starting_cash={k: str(v) for k, v in cash.items()}
+        alert_emails=body.alert_emails,
+        starting_cash={k: str(v) for k, v in cash.items()},
+        trade_commission_pct=str(pct),
     )
 
 

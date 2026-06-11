@@ -33,10 +33,12 @@ from app.schemas.simulator import (
     StockNewsOut,
     TimeMachineOut,
     TimeMachinePeriod,
+    TradeConfigOut,
     TradeOut,
     TradeRequest,
     TradeResultOut,
 )
+from app.services.app_settings import get_trade_commission_pct
 from app.services.chart_coach_service import (
     ChartCoachInputTooLong,
     ChartCoachLimitReached,
@@ -614,6 +616,15 @@ async def get_portfolio(
     )
 
 
+@router.get("/market/trade-config", response_model=TradeConfigOut)
+async def get_trade_config(
+    _current: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    pct = await get_trade_commission_pct(session)
+    return TradeConfigOut(commission_pct=pct)
+
+
 @router.post("/portfolio/trades", response_model=TradeResultOut, status_code=201)
 async def place_trade(
     payload: TradeRequest,
@@ -631,7 +642,7 @@ async def place_trade(
     portfolio = await get_or_create_portfolio(session, current_user)
 
     try:
-        trade = await execute_trade(session, portfolio, quote, payload.type, payload.shares)
+        execution = await execute_trade(session, portfolio, quote, payload.type, payload.shares)
     except InsufficientFundsError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Insufficient virtual cash")
     except InsufficientSharesError:
@@ -658,10 +669,12 @@ async def place_trade(
     new_badges = await evaluate_and_award_badges(session, current_user.id, progress)
 
     await session.commit()
+    trade = execution.trade
     await session.refresh(trade)
     return TradeResultOut(
         id=trade.id, ticker=trade.ticker, type=trade.type, shares=trade.shares,
         price=trade.price, executed_at=trade.executed_at,
+        fee=execution.fee, commission_pct=execution.commission_pct,
         rewards=RewardsOut(
             xp_awarded=xp_awarded,
             streak_extended=streak_extended,

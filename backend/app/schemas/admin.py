@@ -329,11 +329,26 @@ class AdminLevelOut(BaseModel):
 class AdminSettingsOut(BaseModel):
     alert_emails: list[str]
     starting_cash: dict[str, str] = {}
+    trade_commission_pct: str = "1.0"
 
 
 class AdminSettingsUpdate(BaseModel):
     alert_emails: list[EmailStr]
     starting_cash: dict[str, str] | None = None
+    trade_commission_pct: str | None = None
+
+    @field_validator("trade_commission_pct")
+    @classmethod
+    def _valid_pct(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        try:
+            pct = Decimal(v)
+        except ArithmeticError:
+            raise ValueError("trade_commission_pct must be a number")
+        if not Decimal("0") <= pct <= Decimal("10"):
+            raise ValueError("trade_commission_pct must be between 0 and 10")
+        return v
 
     @field_validator("alert_emails")
     @classmethod

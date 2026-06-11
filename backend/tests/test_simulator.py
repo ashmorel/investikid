@@ -51,8 +51,8 @@ async def test_buy_trade_decreases_cash_adds_holding(client):
     r = await client.post("/portfolio/trades", json=payload)
     assert r.status_code == 201
     pf = (await client.get("/portfolio")).json()
-    # VOD at 0.72 x 10 = 7.20
-    assert Decimal(pf["virtual_cash"]) == Decimal("1000.00") - Decimal("7.20")
+    # VOD at 0.72 x 10 = 7.20, plus 1% commission fee 0.07
+    assert Decimal(pf["virtual_cash"]) == Decimal("1000.00") - Decimal("7.20") - Decimal("0.07")
     assert len(pf["holdings"]) == 1
     assert pf["holdings"][0]["ticker"] == "VOD"
     assert Decimal(pf["holdings"][0]["shares"]) == Decimal("10")
@@ -66,7 +66,8 @@ async def test_sell_trade_increases_cash_removes_holding(client):
     )
     assert r.status_code == 201
     pf = (await client.get("/portfolio")).json()
-    assert Decimal(pf["virtual_cash"]) == Decimal("1000.00")
+    # buy: -7.20 - 0.07 fee; sell: +7.20 - 0.07 fee -> 999.86
+    assert Decimal(pf["virtual_cash"]) == Decimal("999.86")
     assert pf["holdings"] == []
 
 
