@@ -5,7 +5,7 @@ import {
   useLessons, useDeleteLesson, useReorderLessons,
   useCountries, lessonLabel,
 } from '@/api/admin';
-import type { AdminModule, AdminLesson } from '@/api/admin';
+import type { AdminModule, AdminLesson, StandardRef, SourceRef } from '@/api/admin';
 import OrderArrows from './OrderArrows';
 import LessonForm from './LessonForm';
 import ConfirmDialog from './ConfirmDialog';
@@ -51,6 +51,8 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
   const [minAge, setMinAge] = useState<string>(existing?.min_age?.toString() ?? '');
   const [maxAge, setMaxAge] = useState<string>(existing?.max_age?.toString() ?? '');
   const [completionCashReward, setCompletionCashReward] = useState<string>(existing?.completion_cash_reward ?? '');
+  const [standards, setStandards] = useState<StandardRef[]>(existing?.standards_alignment ?? []);
+  const [sources, setSources] = useState<SourceRef[]>(existing?.sources ?? []);
   const [editingLesson, setEditingLesson] = useState<AdminLesson | null>(null);
   const [showNewLesson, setShowNewLesson] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdminLesson | null>(null);
@@ -65,6 +67,14 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
       min_age: minAge ? Number(minAge) : null,
       max_age: maxAge ? Number(maxAge) : null,
       completion_cash_reward: completionCashReward ? completionCashReward : null,
+      standards_alignment: (() => {
+        const filled = standards.filter((s) => s.framework.trim() && s.code.trim() && s.label.trim());
+        return filled.length > 0 ? filled : null;
+      })(),
+      sources: (() => {
+        const filled = sources.filter((s) => s.title.trim() && s.url.trim());
+        return filled.length > 0 ? filled : null;
+      })(),
     };
     if (isEdit && moduleId) {
       await updateMod.mutateAsync({ id: moduleId, ...moduleData });
@@ -195,6 +205,94 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
           <input id="mod-cash" type="number" min="0" step="0.01" value={completionCashReward}
             onChange={(e) => setCompletionCashReward(e.target.value)} placeholder="None"
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
+        </div>
+
+        {/* Standards alignment */}
+        <div>
+          <span className="mb-1 block text-sm text-ink">Standards alignment (optional)</span>
+          <div className="flex flex-col gap-2">
+            {standards.map((s, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <input
+                  aria-label={`Standard ${i + 1} framework`}
+                  value={s.framework}
+                  placeholder="Framework"
+                  onChange={(e) => setStandards((prev) => prev.map((row, idx) => idx === i ? { ...row, framework: e.target.value } : row))}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
+                />
+                <input
+                  aria-label={`Standard ${i + 1} code`}
+                  value={s.code}
+                  placeholder="Code"
+                  onChange={(e) => setStandards((prev) => prev.map((row, idx) => idx === i ? { ...row, code: e.target.value } : row))}
+                  className="w-24 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
+                />
+                <input
+                  aria-label={`Standard ${i + 1} label`}
+                  value={s.label}
+                  placeholder="Label"
+                  onChange={(e) => setStandards((prev) => prev.map((row, idx) => idx === i ? { ...row, label: e.target.value } : row))}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
+                />
+                <button
+                  type="button"
+                  aria-label={`Remove standard ${i + 1}`}
+                  onClick={() => setStandards((prev) => prev.filter((_, idx) => idx !== i))}
+                  className="self-center text-xs text-danger-500"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setStandards((prev) => [...prev, { framework: '', code: '', label: '' }])}
+            className="mt-2 text-sm text-brand-600 hover:text-brand-700"
+          >
+            + Add standard
+          </button>
+        </div>
+
+        {/* Sources */}
+        <div>
+          <span className="mb-1 block text-sm text-ink">Sources (optional)</span>
+          <div className="flex flex-col gap-2">
+            {sources.map((s, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <input
+                  aria-label={`Source ${i + 1} title`}
+                  value={s.title}
+                  placeholder="Title"
+                  onChange={(e) => setSources((prev) => prev.map((row, idx) => idx === i ? { ...row, title: e.target.value } : row))}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
+                />
+                <input
+                  aria-label={`Source ${i + 1} url`}
+                  value={s.url}
+                  type="url"
+                  placeholder="https://…"
+                  onChange={(e) => setSources((prev) => prev.map((row, idx) => idx === i ? { ...row, url: e.target.value } : row))}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
+                />
+                <button
+                  type="button"
+                  aria-label={`Remove source ${i + 1}`}
+                  onClick={() => setSources((prev) => prev.filter((_, idx) => idx !== i))}
+                  className="self-center text-xs text-danger-500"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setSources((prev) => [...prev, { title: '', url: '' }])}
+            className="mt-2 text-sm text-brand-600 hover:text-brand-700"
+          >
+            + Add source
+          </button>
         </div>
 
         {/* Lessons section — only in edit mode */}

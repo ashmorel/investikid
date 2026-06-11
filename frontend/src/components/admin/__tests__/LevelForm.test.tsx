@@ -45,4 +45,58 @@ describe('LevelForm', () => {
     });
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('renders existing learning objectives in edit mode', () => {
+    const existing = {
+      id: 'lvl-1', module_id: 'mod-1', title: 'Beginner', order_index: 0,
+      is_premium: false, pass_threshold: 0.7, content_source: 'authored', icon: '🔰',
+      lesson_count: 3, learning_objectives: ['Spot a stock', 'Read a price chart'],
+    };
+    render(<LevelForm moduleId="mod-1" existing={existing} nextOrderIndex={1} onClose={vi.fn()} />, { wrapper });
+    expect(screen.getByDisplayValue('Spot a stock')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Read a price chart')).toBeInTheDocument();
+  });
+
+  it('round-trips objectives rows into the save payload', async () => {
+    mockUpdate.mockClear();
+    const existing = {
+      id: 'lvl-1', module_id: 'mod-1', title: 'Beginner', order_index: 0,
+      is_premium: false, pass_threshold: 0.7, content_source: 'authored', icon: '🔰',
+      lesson_count: 3, learning_objectives: ['Spot a stock'],
+    };
+    render(<LevelForm moduleId="mod-1" existing={existing} nextOrderIndex={1} onClose={vi.fn()} />, { wrapper });
+
+    fireEvent.click(screen.getByRole('button', { name: /add objective/i }));
+    fireEvent.change(screen.getByLabelText(/^objective 2$/i), { target: { value: 'Understand risk' } });
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'lvl-1',
+          learning_objectives: ['Spot a stock', 'Understand risk'],
+        })
+      );
+    });
+  });
+
+  it('removes an objective row and sends null when none remain', async () => {
+    mockUpdate.mockClear();
+    const existing = {
+      id: 'lvl-1', module_id: 'mod-1', title: 'Beginner', order_index: 0,
+      is_premium: false, pass_threshold: 0.7, content_source: 'authored', icon: '🔰',
+      lesson_count: 3, learning_objectives: ['Spot a stock'],
+    };
+    render(<LevelForm moduleId="mod-1" existing={existing} nextOrderIndex={1} onClose={vi.fn()} />, { wrapper });
+
+    fireEvent.click(screen.getByRole('button', { name: /remove objective 1/i }));
+    expect(screen.queryByDisplayValue('Spot a stock')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ learning_objectives: null })
+      );
+    });
+  });
 });

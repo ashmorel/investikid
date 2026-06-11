@@ -13,6 +13,12 @@ export type BadgeInfo = {
   earned_at: string;
 };
 
+export type StandardRef = {
+  framework: string;
+  code: string;
+  label: string;
+};
+
 export type LevelProgress = {
   level_id: string;
   title: string;
@@ -21,6 +27,7 @@ export type LevelProgress = {
   passed: boolean;
   lessons_completed: number;
   lessons_total: number;
+  mastered_at: string | null;
 };
 
 export type ModuleProgress = {
@@ -29,6 +36,7 @@ export type ModuleProgress = {
   icon: string;
   lessons_completed: number;
   lessons_total: number;
+  standards_alignment: StandardRef[] | null;
   levels: LevelProgress[];
 };
 

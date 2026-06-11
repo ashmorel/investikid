@@ -9,6 +9,17 @@ export interface AdminStats {
   challenges: number;
 }
 
+export interface StandardRef {
+  framework: string;
+  code: string;
+  label: string;
+}
+
+export interface SourceRef {
+  title: string;
+  url: string;
+}
+
 export interface AdminModule {
   id: string;
   topic: string;
@@ -22,6 +33,8 @@ export interface AdminModule {
   min_age: number | null;
   max_age: number | null;
   completion_cash_reward?: string | null;
+  standards_alignment?: StandardRef[] | null;
+  sources?: SourceRef[] | null;
 }
 
 export type MissionType = 'first_buy' | 'first_sell' | 'diversify' | 'invest_amount';
@@ -67,6 +80,7 @@ export interface AdminLevel {
   content_source: string;
   icon: string;
   lesson_count: number;
+  learning_objectives?: string[] | null;
 }
 
 export interface AdminBadge {

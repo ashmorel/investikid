@@ -19,12 +19,19 @@ export default function LevelForm({ moduleId, existing, nextOrderIndex, onClose 
   const [isPremium, setIsPremium] = useState(existing?.is_premium ?? false);
   const [passThreshold, setPassThreshold] = useState(existing?.pass_threshold ?? 0.7);
   const [icon, setIcon] = useState(existing?.icon ?? '📊');
+  const [objectives, setObjectives] = useState<string[]>(existing?.learning_objectives ?? []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const payload = { title, order_index: orderIndex, is_premium: isPremium, pass_threshold: passThreshold, icon };
     if (isEdit && existing) {
-      await updateLevel.mutateAsync({ id: existing.id, ...payload });
+      // learning_objectives is only accepted on update (AdminLevelUpdate), not create.
+      const filledObjectives = objectives.map((o) => o.trim()).filter((o) => o.length > 0);
+      await updateLevel.mutateAsync({
+        id: existing.id,
+        ...payload,
+        learning_objectives: filledObjectives.length > 0 ? filledObjectives : null,
+      });
     } else {
       await createLevel.mutateAsync(payload);
     }
@@ -95,6 +102,41 @@ export default function LevelForm({ moduleId, existing, nextOrderIndex, onClose 
             />
             <label htmlFor="level-is-premium" className="text-sm text-ink">Premium</label>
           </div>
+
+          {isEdit && (
+          <div>
+            <span className="mb-1 block text-sm text-ink">Learning objectives (optional)</span>
+            <div className="flex flex-col gap-2">
+              {objectives.map((obj, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    aria-label={`Objective ${i + 1}`}
+                    type="text"
+                    value={obj}
+                    placeholder="e.g. Understand what a stock is"
+                    onChange={(e) => setObjectives((prev) => prev.map((o, idx) => (idx === i ? e.target.value : o)))}
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Remove objective ${i + 1}`}
+                    onClick={() => setObjectives((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="text-xs text-danger-500"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setObjectives((prev) => [...prev, ''])}
+              className="mt-2 text-sm text-brand-600 hover:text-brand-700"
+            >
+              + Add objective
+            </button>
+          </div>
+          )}
 
           <div>
             <p className="text-xs text-muted-foreground">Content source: <span className="text-muted-foreground">authored</span></p>
