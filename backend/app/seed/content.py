@@ -1900,6 +1900,12 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
             )
             session.add(module)
             await session.flush()
+        # Curriculum-credibility metadata: only apply when the spec carries the
+        # key, so specs without it never null out manually-set values.
+        if "standards_alignment" in spec:
+            module.standards_alignment = spec["standards_alignment"]
+        if "sources" in spec:
+            module.sources = spec["sources"]
 
         level = await session.scalar(
             select(Level).where(Level.module_id == module.id, Level.order_index == 0)
@@ -1911,6 +1917,8 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
             )
             session.add(level)
             await session.flush()
+        if "learning_objectives" in spec:
+            level.learning_objectives = spec["learning_objectives"]
 
         # Only insert lessons missing from the curriculum, slotting each into
         # its difficulty band by type. Lessons already placed keep their
@@ -1932,4 +1940,6 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
             else:
                 lv.title = extra["title"]
                 lv.is_premium = premium_for_position(i)
+            if "learning_objectives" in extra:
+                lv.learning_objectives = extra["learning_objectives"]
             await _ensure_level_lessons(session, module, lv, extra["lessons"])
