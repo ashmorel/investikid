@@ -81,10 +81,30 @@ router = APIRouter(tags=["simulator"])
 
 _price_provider = LivePriceProvider()
 
+_QUOTE_CONCURRENCY = 8
+
 
 def get_price_provider():
     """Dependency so tests can override with a fake provider."""
     return _price_provider
+
+
+async def _gather_quotes(provider, pairs: list[tuple[str, str]]) -> list:
+    """Fetch quotes for (ticker, exchange) pairs with bounded parallelism.
+
+    Returns a list aligned with `pairs`; failed lookups are the raised
+    exception instance (callers decide the fallback).
+    """
+    sem = asyncio.Semaphore(_QUOTE_CONCURRENCY)
+
+    async def _one(ticker: str, exchange: str):
+        async with sem:
+            try:
+                return await asyncio.to_thread(provider.get_quote, ticker, exchange)
+            except Exception as exc:  # caller picks fallback per item
+                return exc
+
+    return await asyncio.gather(*(_one(t, e) for t, e in pairs))
 
 
 @router.get("/market/search", response_model=list[QuoteOut])
@@ -595,12 +615,14 @@ async def get_portfolio(
 
     holding_out: list[HoldingOut] = []
     total_market_value = Decimal("0.00")
-    for h in holdings:
-        try:
-            q = await asyncio.to_thread(provider.get_quote, h.ticker, h.exchange)
-            current_price = q.price
-        except TickerNotAvailableError:
+    quotes = await _gather_quotes(provider, [(h.ticker, h.exchange) for h in holdings])
+    for h, q in zip(holdings, quotes, strict=True):
+        if isinstance(q, TickerNotAvailableError):
             current_price = h.avg_buy_price  # fall back
+        elif isinstance(q, Exception):
+            raise q
+        else:
+            current_price = q.price
         market_value = (current_price * h.shares).quantize(Decimal("0.01"))
         unrealized = (market_value - (h.avg_buy_price * h.shares)).quantize(Decimal("0.01"))
         total_market_value += market_value
@@ -768,6 +790,17 @@ async def portfolio_history(
         else:
             cash -= cost
 
+    # Prefetch current quotes for every traded ticker in bounded parallel
+    # (cached quotes are identical across snapshots; failures fall back per item).
+    traded = sorted({t.ticker for t in trades})
+    quote_results = await _gather_quotes(
+        provider, [(tk, ticker_exchange.get(tk, "")) for tk in traded]
+    )
+    quote_price: dict[str, Decimal] = {
+        tk: q.price for tk, q in zip(traded, quote_results, strict=True)
+        if not isinstance(q, Exception)
+    }
+
     snapshots: list[PortfolioSnapshot] = []
     seen_dates: set[str] = set()
 
@@ -785,11 +818,10 @@ async def portfolio_history(
         for ticker, qty in shares_held.items():
             if qty <= 0:
                 continue
-            exchange = ticker_exchange.get(ticker, "")
-            try:
-                q = await asyncio.to_thread(provider.get_quote, ticker, exchange)
-                holding_value += q.price * qty
-            except Exception:
+            price = quote_price.get(ticker)
+            if price is not None:
+                holding_value += price * qty
+            else:
                 holding_value += t.price * qty
 
         snapshot = PortfolioSnapshot(

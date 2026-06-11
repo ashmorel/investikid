@@ -1,6 +1,8 @@
 
 import asyncio
 import logging
+import threading
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -122,8 +124,32 @@ async def _llm_error_handler(request: Request, exc: LLMError) -> JSONResponse:
     )
 
 
+def warm_price_cache(provider=None) -> None:
+    """Prime the market-movers cache (and featured quotes) for all regions.
+
+    Best-effort: every failure is logged and swallowed so a Yahoo outage can
+    never affect startup.
+    """
+    if provider is None:
+        from app.routers.simulator import _price_provider
+
+        provider = _price_provider
+    for region in ("US", "GB", "HK"):
+        try:
+            provider.get_market_movers(region)
+        except Exception:
+            logger.warning("price cache warm failed for region %s", region)
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    # Fire-and-forget cache warm; daemon thread so it never delays startup.
+    threading.Thread(target=warm_price_cache, name="price-warm", daemon=True).start()
+    yield
+
+
 def create_app() -> FastAPI:
-    application = FastAPI(title="InvestiKid API", version="1.0.0")
+    application = FastAPI(title="InvestiKid API", version="1.0.0", lifespan=lifespan)
     application.state.limiter = limiter
     application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     application.add_exception_handler(LLMError, _llm_error_handler)
