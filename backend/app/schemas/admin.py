@@ -329,16 +329,34 @@ class AdminLevelOut(BaseModel):
 
 
 # ── Settings ────────────────────────────────────────────────────────
+class SeasonalEventIn(BaseModel):
+    title: str = Field(min_length=1, max_length=60)
+    emoji: str = Field(default="", max_length=8)
+    starts_at: datetime
+    ends_at: datetime
+    xp_bonus_pct: int = Field(default=0, ge=0, le=100)
+
+    @model_validator(mode="after")
+    def _window_valid(self):
+        if self.ends_at <= self.starts_at:
+            raise ValueError("ends_at must be after starts_at")
+        return self
+
+
 class AdminSettingsOut(BaseModel):
     alert_emails: list[str]
     starting_cash: dict[str, str] = {}
     trade_commission_pct: str = "1.0"
+    seasonal_event: dict | None = None
 
 
 class AdminSettingsUpdate(BaseModel):
     alert_emails: list[EmailStr]
     starting_cash: dict[str, str] | None = None
     trade_commission_pct: str | None = None
+    # None = leave unchanged; explicit clear via clear_seasonal_event flag.
+    seasonal_event: SeasonalEventIn | None = None
+    clear_seasonal_event: bool = False
 
     @field_validator("trade_commission_pct")
     @classmethod

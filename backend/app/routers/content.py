@@ -30,6 +30,7 @@ from app.services.content_service import (
     record_daily_activity,
 )
 from app.services.entitlements import is_premium
+from app.services.event_service import boosted_xp, get_active_event
 from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
@@ -327,8 +328,10 @@ async def complete_lesson(
         await session.flush()
 
     today = datetime.now(UTC).date()
+    event = await get_active_event(session)
     xp_awarded, already, daily_goal_met = await _award_completion(
-        session, current_user.id, progress, lesson, payload.score, today
+        session, current_user.id, progress, lesson, payload.score, today,
+        amount=boosted_xp(lesson.xp_reward, event),
     )
 
     await product_analytics_service.record(
@@ -399,7 +402,9 @@ async def _award_completion(
     lesson: Lesson,
     score: float | None,
     today_local,
-) -> tuple[int, bool]:
+    *,
+    amount: int | None = None,
+) -> tuple[int, bool, bool]:
     """Insert a LessonCompletion + award XP once. On repeat, keep the best score."""
     existing = await session.scalar(
         select(LessonCompletion).where(
@@ -438,6 +443,16 @@ async def _award_completion(
             existing.completed_at = datetime.now(UTC)
         return 0, True, False
 
-    goal = record_xp(progress, lesson.xp_reward, today=today_local)
+    awarded = amount if amount is not None else lesson.xp_reward
+    goal = record_xp(progress, awarded, today=today_local)
     record_daily_activity(progress, today_local)
-    return lesson.xp_reward, False, goal.goal_met_now
+    return awarded, False, goal.goal_met_now
+
+
+@router.get("/events/active")
+async def active_event(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """The currently running seasonal event, if any (M9)."""
+    return {"event": await get_active_event(session)}

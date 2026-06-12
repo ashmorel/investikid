@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -57,6 +58,7 @@ from app.services.admin_content_generation_service import (
 )
 from app.services.app_settings import (
     get_alert_emails,
+    get_setting,
     get_starting_cash,
     get_trade_commission_pct,
     set_alert_emails,
@@ -64,6 +66,7 @@ from app.services.app_settings import (
     set_trade_commission_pct,
 )
 from app.services.engagement_service import get_module_engagement
+from app.services.event_service import EVENT_KEY, set_event
 from app.services.level_service import premium_for_position
 from app.services.moderation import moderate_output
 
@@ -627,10 +630,12 @@ async def get_settings(session: AsyncSession = Depends(get_session)):
     emails = await get_alert_emails(session)
     cash = await get_starting_cash(session)
     pct = await get_trade_commission_pct(session)
+    raw_event = await get_setting(session, EVENT_KEY)
     return AdminSettingsOut(
         alert_emails=emails,
         starting_cash={k: str(v) for k, v in cash.items()},
         trade_commission_pct=str(pct),
+        seasonal_event=json.loads(raw_event) if raw_event else None,
     )
 
 
@@ -643,13 +648,25 @@ async def update_settings(
         await set_starting_cash(session, {k: Decimal(v) for k, v in body.starting_cash.items()})
     if body.trade_commission_pct is not None:
         await set_trade_commission_pct(session, Decimal(body.trade_commission_pct))
+    if body.clear_seasonal_event:
+        await set_event(session, None)
+    elif body.seasonal_event is not None:
+        await set_event(session, {
+            "title": body.seasonal_event.title,
+            "emoji": body.seasonal_event.emoji,
+            "starts_at": body.seasonal_event.starts_at.isoformat(),
+            "ends_at": body.seasonal_event.ends_at.isoformat(),
+            "xp_bonus_pct": body.seasonal_event.xp_bonus_pct,
+        })
     await session.commit()
     cash = await get_starting_cash(session)
     pct = await get_trade_commission_pct(session)
+    raw_event = await get_setting(session, EVENT_KEY)
     return AdminSettingsOut(
         alert_emails=body.alert_emails,
         starting_cash={k: str(v) for k, v in cash.items()},
         trade_commission_pct=str(pct),
+        seasonal_event=json.loads(raw_event) if raw_event else None,
     )
 
 
