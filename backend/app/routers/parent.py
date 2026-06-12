@@ -1,19 +1,22 @@
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_session
 from app.models.group import GroupMembership, LeaderboardGroup
 from app.models.parent_preferences import ParentPreferences
 from app.models.premium_request import PremiumRequest
 from app.models.user import User
-from app.routers.parent_auth import get_current_parent
+from app.routers.auth import _cookie_samesite
+from app.routers.parent_auth import _PARENT_COOKIE, get_current_parent
 from app.schemas.group import GroupCreateRequest, GroupJoinRequest, GroupMemberOut, GroupOut
 from app.schemas.parent import (
+    AccountDeleteRequest,
     ChildOut,
     FreezeRequest,
     PremiumRequestOut,
@@ -23,6 +26,7 @@ from app.schemas.parent import (
 )
 from app.schemas.parent_preferences import ParentPreferencesOut, ParentPreferencesUpdate
 from app.services import group_service
+from app.services.account_deletion_service import delete_parent_account
 from app.services.analytics_service import build_child_analytics
 from app.services.content_service import content_region_for
 from app.services.entitlements import set_premium
@@ -207,6 +211,36 @@ async def erase_child(
     child.is_active = False
     await session.commit()
     return {"status": "ok"}
+
+
+@router.post("/account/delete")
+async def delete_account(
+    payload: AccountDeleteRequest,
+    response: Response,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    """Irreversibly delete the parent account (Apple Guideline 5.1.1(v)).
+
+    Parent auth is passwordless, so the destructive gate is a typed-email
+    confirmation: the body must echo the authenticated parent's own email.
+    """
+    if payload.confirm_email.strip().lower() != parent_email.lower():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Confirmation email does not match",
+        )
+    result = await delete_parent_account(session, parent_email)
+    # Clear the parent session cookie exactly like logout does.
+    secure = settings.environment != "development"
+    response.delete_cookie(
+        _PARENT_COOKIE,
+        samesite=_cookie_samesite(),
+        secure=secure,
+        httponly=True,
+        path="/",
+    )
+    return result
 
 
 @router.get("/children/{user_id}/export")
