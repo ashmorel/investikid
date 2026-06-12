@@ -26,38 +26,47 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_firebase_app = None
+class UnregisteredTokenError(Exception):
+    """The FCM token is dead — prune the device."""
 
 
 def is_configured() -> bool:
     return bool(settings.firebase_service_account_json)
 
 
-def _ensure_firebase():
-    """Lazy firebase-admin init; import deferred so the dependency stays optional."""
-    global _firebase_app
-    if _firebase_app is None:
-        import firebase_admin
-        from firebase_admin import credentials
+def _fcm_credentials():
+    """Service-account credentials via google-auth (already a dependency of the
+    Play-billing client) — deliberately NOT firebase-admin, whose httpx pin
+    conflicts with this repo's."""
+    from google.oauth2 import service_account
 
-        cred = credentials.Certificate(
-            json.loads(settings.firebase_service_account_json)
-        )
-        _firebase_app = firebase_admin.initialize_app(cred)
-    return _firebase_app
+    return service_account.Credentials.from_service_account_info(
+        json.loads(settings.firebase_service_account_json),
+        scopes=["https://www.googleapis.com/auth/firebase.messaging"],
+    )
 
 
 def _send_fcm(token: str, title: str, body: str) -> None:
-    """Raises messaging.UnregisteredError for dead tokens."""
-    from firebase_admin import messaging
+    """One FCM HTTP v1 send. Raises UnregisteredTokenError for dead tokens."""
+    import google.auth.transport.requests
+    import httpx
 
-    _ensure_firebase()
-    messaging.send(
-        messaging.Message(
-            notification=messaging.Notification(title=title, body=body),
-            token=token,
-        )
+    creds = _fcm_credentials()
+    creds.refresh(google.auth.transport.requests.Request())
+    response = httpx.post(
+        f"https://fcm.googleapis.com/v1/projects/{creds.project_id}/messages:send",
+        headers={"Authorization": f"Bearer {creds.token}"},
+        json={
+            "message": {
+                "token": token,
+                "notification": {"title": title, "body": body},
+            }
+        },
+        timeout=10,
     )
+    if response.status_code == 404 or "UNREGISTERED" in response.text:
+        raise UnregisteredTokenError(token[:12])
+    response.raise_for_status()
 
 
 async def send_to_user(
