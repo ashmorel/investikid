@@ -16,6 +16,7 @@ from app.core.csrf import CSRFMiddleware
 from app.core.rate_limit import limiter
 from app.routers import admin as admin_router
 from app.routers import ai as ai_router
+from app.routers import analytics as analytics_router
 from app.routers import auth as auth_router
 from app.routers import billing as billing_router
 from app.routers import consent as consent_router
@@ -203,6 +204,7 @@ def create_app() -> FastAPI:
     application.include_router(feedback_router.router)
     application.include_router(feedback_router.admin_router)
     application.include_router(feedback_router.parent_feedback_router)
+    application.include_router(analytics_router.router)
     application.include_router(internal_router.router)
 
     return application
