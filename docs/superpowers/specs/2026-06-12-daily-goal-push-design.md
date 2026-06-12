@@ -4,7 +4,7 @@
 Two sub-parts: **7a Daily goal loop** (pure code, ships complete) and **7b server-push
 foundation** (backend + JS complete; native entitlement + Firebase project are
 operator/Xcode steps, flagged). Push provider decision: **FCM for both platforms**
-(one integration; FCM relays APNs for iOS) via `firebase-admin`.
+(one integration; FCM relays APNs for iOS) via the FCM HTTP v1 API with `google-auth` credentials (already a dependency; firebase-admin was rejected — its httpx pin conflicts with the repo's).
 
 ## 7a — Daily goal loop
 
@@ -47,7 +47,7 @@ token (unique), created_at, last_seen_at. Registered via `POST /users/me/push-de
 (`DELETE /users/me/push-devices/{token}`).
 
 **Send service** `app/services/push_service.py`: `send_to_user(session, user_id, *,
-kind, title, body)` via firebase-admin (`FIREBASE_SERVICE_ACCOUNT_JSON` env; service is
+kind, title, body)` via the FCM HTTP v1 API + google-auth (`FIREBASE_SERVICE_ACCOUNT_JSON` env; service is
 a no-op with a log line when unconfigured — same pattern as Stripe/Apple guards).
 **Frequency cap**: at most 1 push per user per UTC day — stored as
 `user_progress.last_push_sent_date` (date, nullable; same migration as 7a's columns).
