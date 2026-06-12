@@ -37,6 +37,8 @@ def record_xp(progress: UserProgress, amount: int, *, today: date | None = None)
     xp_today = progress.xp_today or 0
     met_before = xp_today >= goal
     progress.xp += amount
+    # Learning coins: 1 coin per XP (M8) — the cosmetic currency, never money.
+    progress.virtual_coins = (progress.virtual_coins or 0) + amount
     progress.xp_today = xp_today + amount
     progress.level = compute_level(progress.xp)
     met_after = progress.xp_today >= goal

@@ -12,7 +12,9 @@ class CosmeticItem(Base):
     __tablename__ = "cosmetic_items"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slug: Mapped[str] = mapped_column(String(40), nullable=False, unique=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    emoji: Mapped[str] = mapped_column(String(8), nullable=False, server_default="🎁", default="🎁")
     type: Mapped[str] = mapped_column(String(20), nullable=False)
     coin_cost: Mapped[int] = mapped_column(Integer, nullable=False)
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

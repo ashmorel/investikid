@@ -84,6 +84,7 @@ async def get_progress(
         daily_goal_xp=progress.daily_goal_xp,
         xp_today=xp_today,
         goal_met=xp_today >= progress.daily_goal_xp,
+        virtual_coins=progress.virtual_coins or 0,
     )
 
 

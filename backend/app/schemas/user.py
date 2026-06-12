@@ -98,6 +98,7 @@ class UserProgressOut(BaseModel):
     daily_goal_xp: int = 30
     xp_today: int = 0
     goal_met: bool = False
+    virtual_coins: int = 0
 
 
 class DailyGoalUpdate(BaseModel):
