@@ -18,7 +18,7 @@ from app.models.parent_preferences import ParentPreferences
 from app.models.subscription import Subscription
 from app.models.user import User, UserProgress
 from app.services import product_analytics_service
-from app.services.email import get_email_sender
+from app.services.email import get_email_sender, premium_variant
 from app.services.entitlements import ACTIVE_SUBSCRIPTION_STATUSES
 from app.services.gap_detection_service import get_strengths_and_gaps
 from app.services.recommendation_service import get_recommendations
@@ -214,7 +214,7 @@ async def run_weekly_digests(
             "digest_sent",
             user=None,
             role="parent",
-            props={"surface": "weekly_digest"},
+            props={"surface": "weekly_digest", "variant": premium_variant(parent_email)},
         )
 
     await session.commit()

@@ -38,7 +38,7 @@ ALL_EVENTS: frozenset[str] = CLIENT_EVENTS | SERVER_EVENTS
 
 # Content-free prop keys. Values are coerced to short strings/bools on ingest.
 ALLOWED_PROP_KEYS: frozenset[str] = frozenset(
-    {"module_id", "level_id", "lesson_id", "surface", "repeat", "plan", "source"}
+    {"module_id", "level_id", "lesson_id", "surface", "repeat", "plan", "source", "variant"}
 )
 _MAX_PROP_VALUE_LEN = 64
 
