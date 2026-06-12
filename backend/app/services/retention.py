@@ -44,5 +44,11 @@ async def purge_expired_accounts(session: AsyncSession, today: date) -> int:
         u.parent_email = None
         u.topic_path = None
         u.purged_at = now
+    if rows:
+        # Sever the pseudonymous analytics join key at the same moment the
+        # direct identifiers go (events stay as anonymous counts).
+        from app.services import product_analytics_service
+
+        await product_analytics_service.detach_user(session, [u.id for u in rows])
     await session.commit()
     return len(rows)

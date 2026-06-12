@@ -95,6 +95,18 @@ async def record(
         logger.exception("analytics: failed to record %r", name)
 
 
+async def detach_user(session: AsyncSession, user_ids: list) -> int:
+    """Null the pseudonymous join key on a purged account's events."""
+    from sqlalchemy import update
+
+    result = await session.execute(
+        update(AnalyticsEvent)
+        .where(AnalyticsEvent.user_id.in_(user_ids))
+        .values(user_id=None)
+    )
+    return result.rowcount or 0
+
+
 async def purge_old_events(session: AsyncSession, *, now: datetime) -> int:
     """Delete raw events older than the retention window. Returns rows deleted."""
     cutoff = now - timedelta(days=settings.analytics_retention_days)
