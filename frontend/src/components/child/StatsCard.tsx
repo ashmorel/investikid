@@ -25,29 +25,30 @@ export function StatsCard({ xp, level, streakCount, streakFreezes, lastActivityD
     <div className="rounded-2xl border border-brand-200 bg-card p-4 shadow-sm" role="group" aria-label="Your progress">
       <div className="flex items-center justify-between gap-2">
         {/* Level chip */}
-        <span className="text-sm font-extrabold text-ink">
+        <span className="flex items-center gap-1 text-sm font-extrabold text-ink">
           {emoji && <span aria-hidden="true">⭐</span>}Level {level}
         </span>
 
-        {/* Streak cluster */}
-        <span className={cn('flex items-center gap-1.5 text-sm font-bold text-gray-700', !active && 'opacity-50')}>
-          {emoji && <span aria-hidden="true">🔥</span>}
-          <span aria-label={active ? 'streak active' : 'streak inactive'}>
-            {streakCount}-day streak
+        {/* Right cluster: streak + freeze chip */}
+        <span className="flex items-center gap-1.5">
+          <span className={cn('flex items-center gap-1.5 text-sm font-bold text-gray-700', !active && 'opacity-50')}>
+            {emoji && <span aria-hidden="true">🔥</span>}
+            <span aria-label={active ? 'streak active' : 'streak inactive'}>
+              {streakCount}-day streak
+            </span>
           </span>
+          {streakFreezes > 0 && (
+            <span
+              role="img"
+              className="text-sm font-bold text-gray-700"
+              aria-label={`${streakFreezes} streak freeze${streakFreezes === 1 ? '' : 's'} — saves your streak if you miss a day`}
+            >
+              {emoji
+                ? <span aria-hidden="true">🛡️ ×{streakFreezes}</span>
+                : `${streakFreezes} freeze${streakFreezes === 1 ? '' : 's'}`}
+            </span>
+          )}
         </span>
-
-        {/* Freeze chip — sibling of streak cluster */}
-        {streakFreezes > 0 && (
-          <span
-            role="img"
-            aria-label={`${streakFreezes} streak freeze${streakFreezes === 1 ? '' : 's'} — saves your streak if you miss a day`}
-          >
-            {emoji
-              ? <span aria-hidden="true">🛡️ ×{streakFreezes}</span>
-              : `${streakFreezes} freeze${streakFreezes === 1 ? '' : 's'}`}
-          </span>
-        )}
       </div>
 
       {/* XP progress bar */}
