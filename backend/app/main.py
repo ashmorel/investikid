@@ -22,6 +22,7 @@ from app.routers import auth as auth_router
 from app.routers import billing as billing_router
 from app.routers import consent as consent_router
 from app.routers import content as content_router
+from app.routers import cosmetics as cosmetics_router
 from app.routers import feedback as feedback_router
 from app.routers import gamification as gamification_router
 from app.routers import groups as groups_router
@@ -191,6 +192,7 @@ def create_app() -> FastAPI:
     application.include_router(auth_router.router)
     application.include_router(users_router.router)
     application.include_router(content_router.router)
+    application.include_router(cosmetics_router.router)
     application.include_router(consent_router.router)
     application.include_router(gamification_router.router)
     application.include_router(groups_router.router)
