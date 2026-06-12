@@ -8,18 +8,34 @@ const MOOD_GRADIENT: Record<Mood, [string, string]> = {
   excited: ['#f59e0b', '#f43f5e'],   // amber-500 → rose-500
 };
 
+// Accessory overlays (M8 Penny's Shop) — emoji anchored above/on the head.
+// Keyed by CosmeticItem.slug; unknown slugs render nothing (forward-compatible).
+const ACCESSORY: Record<string, { glyph: string; x: number; y: number; size: number }> = {
+  party_hat: { glyph: '🥳', x: 28, y: 12, size: 18 },
+  sunglasses: { glyph: '🕶️', x: 28, y: 30, size: 16 },
+  bow: { glyph: '🎀', x: 40, y: 14, size: 14 },
+  headphones: { glyph: '🎧', x: 28, y: 14, size: 16 },
+  grad_cap: { glyph: '🎓', x: 28, y: 10, size: 18 },
+  crown: { glyph: '👑', x: 28, y: 9, size: 18 },
+  monocle: { glyph: '🧐', x: 36, y: 30, size: 14 },
+  top_hat: { glyph: '🎩', x: 28, y: 8, size: 18 },
+};
+
 export function Penny({
   size = 48,
   mood = 'happy',
+  accessory,
   className,
 }: {
   size?: number;
   mood?: Mood;
+  accessory?: string | null;
   className?: string;
 }) {
   const uid = useId();
   const gradId = `penny-${uid}`;
   const [from, to] = MOOD_GRADIENT[mood];
+  const acc = accessory ? ACCESSORY[accessory] : undefined;
   return (
     <svg
       width={size}
@@ -67,6 +83,17 @@ export function Penny({
         strokeLinecap="round"
         fill="none"
       />
+      {acc && (
+        <text
+          x={acc.x}
+          y={acc.y}
+          fontSize={acc.size}
+          textAnchor="middle"
+          dominantBaseline="middle"
+        >
+          {acc.glyph}
+        </text>
+      )}
     </svg>
   );
 }

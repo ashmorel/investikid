@@ -85,6 +85,7 @@ export type Progress = {
   daily_goal_xp: number;
   xp_today: number;
   goal_met: boolean;
+  virtual_coins: number;
 };
 
 export type DailyGoalSize = 10 | 30 | 50;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { authApi, type Me } from '@/api/auth';
 import { useChildSession } from '@/hooks/useChildSession';
 import { TOPIC_OPTIONS } from '@/api/content';
@@ -202,6 +202,15 @@ export function ProfileMenu({ username }: { username: string }) {
           </div>
           <p className="text-xs text-muted-foreground">How much XP you aim for each day.</p>
         </fieldset>
+        <Link
+          to="/shop"
+          className="flex min-h-[44px] w-full items-center justify-between rounded-md border border-line px-3 text-sm font-medium text-brand-700 hover:bg-brand-50"
+        >
+          <span>Penny's Shop</span>
+          <span className="font-bold" aria-label={`${progressData?.virtual_coins ?? 0} coins`}>
+            <span aria-hidden="true">🪙 </span>{progressData?.virtual_coins ?? 0}
+          </span>
+        </Link>
         <button
           type="button"
           onClick={() => setConfirmReset(true)}
