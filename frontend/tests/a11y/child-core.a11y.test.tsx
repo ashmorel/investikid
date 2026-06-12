@@ -81,8 +81,9 @@ vi.mock('@/hooks/useLeaderboard', () => ({
     isLoading: false,
   }),
 }));
+let mockAgeTier: 'explorer' | 'investor' = 'explorer';
 vi.mock('@/hooks/useChildSession', () => ({
-  useChildSession: () => ({ data: { username: 'kid42' } }),
+  useChildSession: () => ({ data: { username: 'kid42', age_tier: mockAgeTier } }),
 }));
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('@/components/child/HomeHero', () => ({ default: () => <p>HomeHero</p> }));
@@ -108,6 +109,23 @@ describe('a11y: child core surfaces', () => {
     await waitFor(() => expect(screen.getByText(/HomeHero/i)).toBeInTheDocument());
     await waitFor(() => expect(screen.getByRole('group', { name: /your progress/i })).toBeInTheDocument());
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('Home (investor tier) has no axe violations and no emoji', async () => {
+    mockAgeTier = 'investor';
+    try {
+      mockJsonRoute({
+        '/users/me': ME,
+        '/users/me/progress': { xp: 320, level: 4, streak_count: 5, last_activity_date: '2026-05-02' },
+      });
+      const { default: Home } = await import('@/pages/child/Home');
+      const { container } = renderAt('/home', <Home />, '/home');
+      await waitFor(() => expect(screen.getByRole('group', { name: /your progress/i })).toBeInTheDocument());
+      expect(container.textContent).not.toMatch(/[⭐🔥🛡📊🔁🏅]/u);
+      expect(await axe(container)).toHaveNoViolations();
+    } finally {
+      mockAgeTier = 'explorer';
+    }
   });
 
   it('Lessons has no axe violations', async () => {
