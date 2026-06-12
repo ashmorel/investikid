@@ -1,5 +1,5 @@
-from app.models.app_setting import AppSetting  # noqa: F401
 from app.models.analytics import AnalyticsEvent  # noqa: F401
+from app.models.app_setting import AppSetting  # noqa: F401
 from app.models.apply_mission import ApplyMission, ApplyMissionCompletion  # noqa: F401
 from app.models.audit import AuditLog  # noqa: F401
 from app.models.cash_grant import CashGrant  # noqa: F401
