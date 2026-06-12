@@ -8,9 +8,27 @@ export type SubscriptionStatus = {
   cancel_at_period_end: boolean;
 };
 
+export type Plan = 'annual' | 'monthly';
+
+export type PlanOut = {
+  plan: Plan;
+  interval: 'year' | 'month';
+  display_price: string;
+  savings_pct: number | null;
+  apple_product_id: string;
+  google_product_id: string;
+};
+
+export type PlansResponse = { currency: string; plans: PlanOut[] };
+
 export const billingApi = {
-  createCheckout: () =>
-    apiFetch<{ url: string }>('/billing/checkout', { method: 'POST' }),
+  createCheckout: (plan: Plan = 'annual') =>
+    apiFetch<{ url: string }>('/billing/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ plan }),
+    }),
+
+  getPlans: () => apiFetch<PlansResponse>('/billing/plans'),
 
   createPortal: () =>
     apiFetch<{ url: string }>('/billing/portal', { method: 'POST' }),
