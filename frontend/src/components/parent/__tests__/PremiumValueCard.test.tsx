@@ -21,6 +21,13 @@ vi.mock('@/api/premium', () => ({
   },
 }));
 
+const getMasteryReport = vi.fn();
+vi.mock('@/api/parent', () => ({
+  parentApi: {
+    getMasteryReport: () => getMasteryReport(),
+  },
+}));
+
 const NOT_SUBSCRIBED = {
   has_subscription: false,
   status: null,
@@ -45,6 +52,7 @@ function wrap(ui: React.ReactNode) {
 describe('PremiumValueCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getMasteryReport.mockResolvedValue({ window_days: 30, household_mastered_count: 0, children: [] });
     parentRequests.mockResolvedValue([]);
   });
 
@@ -99,5 +107,31 @@ describe('PremiumValueCard', () => {
     render(wrap(<PremiumValueCard onSubscribe={onSubscribe} />));
     await user.click(await screen.findByRole('button', { name: /subscribe/i }));
     expect(onSubscribe).toHaveBeenCalled();
+  });
+});
+
+
+describe('PremiumValueCard evidence headline (m6)', () => {
+  it('leads with the top child\'s mastery count when there is evidence', async () => {
+    getStatus.mockResolvedValue(NOT_SUBSCRIBED);
+    parentRequests.mockResolvedValue([]);
+    getMasteryReport.mockResolvedValue({
+      window_days: 30,
+      household_mastered_count: 4,
+      children: [
+        { user_id: 'c1', username: 'maya', mastered_count: 3, mastered_total: 6, objectives: [], standards: [], weak_topic: null, next_recommendation: null },
+        { user_id: 'c2', username: 'tom', mastered_count: 1, mastered_total: 1, objectives: [], standards: [], weak_topic: null, next_recommendation: null },
+      ],
+    });
+    render(wrap(<PremiumValueCard />));
+    expect(await screen.findByText(/maya mastered 3 skills this month/i)).toBeInTheDocument();
+    expect(screen.getByText(/keep the momentum/i)).toBeInTheDocument();
+  });
+
+  it('falls back to the generic evidence line without masteries', async () => {
+    getStatus.mockResolvedValue(NOT_SUBSCRIBED);
+    parentRequests.mockResolvedValue([]);
+    render(wrap(<PremiumValueCard />));
+    expect(await screen.findByText(/real financial skills, with the evidence/i)).toBeInTheDocument();
   });
 });
