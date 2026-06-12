@@ -120,6 +120,7 @@ export interface AdminChallenge {
   starts_at: string;
   ends_at: string;
   is_premium: boolean;
+  scope?: 'personal' | 'group';
 }
 
 // ── Fetch helper ───────────────────────────────────────────────────

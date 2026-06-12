@@ -253,6 +253,7 @@ class ChallengeCreate(BaseModel):
     starts_at: datetime
     ends_at: datetime
     is_premium: bool = False
+    scope: Literal["personal", "group"] = "personal"
 
 
 class ChallengeUpdate(BaseModel):
@@ -265,6 +266,7 @@ class ChallengeUpdate(BaseModel):
     starts_at: datetime | None = None
     ends_at: datetime | None = None
     is_premium: bool | None = None
+    scope: Literal["personal", "group"] | None = None
 
 
 class ChallengeOut(BaseModel):
@@ -278,6 +280,7 @@ class ChallengeOut(BaseModel):
     starts_at: datetime
     ends_at: datetime
     is_premium: bool
+    scope: str = "personal"
 
     model_config = ConfigDict(from_attributes=True)
 

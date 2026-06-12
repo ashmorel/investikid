@@ -10,6 +10,7 @@ import { ChallengeList } from '@/components/child/stats/ChallengeList';
 import { LeaderboardTable } from '@/components/child/stats/LeaderboardTable';
 import { useGroupLeaderboard } from '@/hooks/useGroupLeaderboard';
 import { GroupLeaderboard } from '@/components/child/stats/GroupLeaderboard';
+import { GroupGoals } from '@/components/child/stats/GroupGoals';
 
 function SectionSkeleton() {
   return <div className="h-32 animate-pulse rounded-2xl bg-muted" />;
@@ -66,6 +67,7 @@ export default function Stats() {
       <section className="mt-5" aria-label="Your groups">
         <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Your groups</h2>
         <GroupLeaderboard boards={groupBoards.data ?? []} />
+      <GroupGoals />
       </section>
 
       {/* Weekly Leaderboard */}

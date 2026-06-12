@@ -39,6 +39,7 @@ function ChallengeFormInner({ existing, badges, isEdit, challengeId }: {
   const [startsAt, setStartsAt] = useState(existing?.starts_at.slice(0, 16) ?? '');
   const [endsAt, setEndsAt] = useState(existing?.ends_at.slice(0, 16) ?? '');
   const [isPremium, setIsPremium] = useState(existing?.is_premium ?? false);
+  const [scope, setScope] = useState<'personal' | 'group'>(existing?.scope ?? 'personal');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,6 +51,7 @@ function ChallengeFormInner({ existing, badges, isEdit, challengeId }: {
       starts_at: new Date(startsAt).toISOString(),
       ends_at: new Date(endsAt).toISOString(),
       is_premium: isPremium,
+      scope,
     };
     if (isEdit && challengeId) {
       await updateChallenge.mutateAsync({ id: challengeId, ...data });
@@ -79,6 +81,14 @@ function ChallengeFormInner({ existing, badges, isEdit, challengeId }: {
             <select id="ch-type" value={type} onChange={(e) => setType(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300">
               {CHALLENGE_TYPES.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+            </select>
+          </div>
+          <div className="w-36">
+            <label htmlFor="ch-scope" className="mb-1 block text-sm text-ink">Scope</label>
+            <select id="ch-scope" value={scope} onChange={(e) => setScope(e.target.value as 'personal' | 'group')}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink focus:ring-2 focus:ring-brand-300">
+              <option value="personal">Personal</option>
+              <option value="group">Group co-op</option>
             </select>
           </div>
           <div className="w-28">

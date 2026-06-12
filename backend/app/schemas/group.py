@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -35,3 +36,19 @@ class GroupLeaderboardOut(BaseModel):
     group_id: uuid.UUID
     group_name: str
     entries: list[GroupLeaderboardEntry]
+
+
+class GroupChallengeOut(BaseModel):
+    id: uuid.UUID
+    title: str
+    description: str
+    target_value: int
+    group_progress: int
+    completed: bool
+    ends_at: datetime
+
+
+class GroupChallengesOut(BaseModel):
+    group_id: uuid.UUID
+    group_name: str
+    challenges: list[GroupChallengeOut]

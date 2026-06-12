@@ -131,3 +131,33 @@ async def test_child_in_two_groups_counts_in_both(db_session):
     # B and C each rewarded via their group
     assert (await db_session.get(UserProgress, b.id)).xp == 10
     assert (await db_session.get(UserProgress, c.id)).xp == 10
+
+
+async def test_groups_challenges_endpoint(client, db_session):
+    from tests.test_content import _register_and_login
+
+    suffix = uuid.uuid4().hex[:8]
+    email = f"gce{suffix}@example.com"
+    await _register_and_login(client, email=email, username=f"gce{suffix}")
+    child = await db_session.scalar(select(User).where(User.email == email))
+    group = await _group(db_session, child)
+    ch = _challenge(target=10, xp=25)
+    db_session.add(ch)
+    await db_session.commit()
+
+    await update_challenge_progress(db_session, child.id, "lessons_completed", increment=4)
+    await db_session.commit()
+
+    r = await client.get("/groups/challenges")
+    assert r.status_code == 200
+    body = r.json()
+    block = next(b for b in body if b["group_id"] == str(group.id))
+    assert block["group_name"] == "Test Group"
+    entry = next(c for c in block["challenges"] if c["id"] == str(ch.id))
+    assert entry["group_progress"] == 4
+    assert entry["target_value"] == 10
+    assert entry["completed"] is False
+
+
+async def test_groups_challenges_requires_auth(client):
+    assert (await client.get("/groups/challenges")).status_code == 401

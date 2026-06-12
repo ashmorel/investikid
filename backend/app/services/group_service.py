@@ -141,3 +141,62 @@ async def group_leaderboard_for_child(session: AsyncSession, child_user_id: uuid
             ],
         })
     return boards
+
+
+async def group_challenges_for_child(
+    session: AsyncSession, child_user_id: uuid.UUID
+) -> list[dict]:
+    """Active group-scope challenges per group the child belongs to, with the
+    co-op progress (sum of members' rows) and settled state (M9)."""
+    from app.models.gamification import Challenge, GroupChallengeCompletion, UserChallenge
+
+    now = datetime.now(UTC)
+    group_ids = (await session.scalars(
+        select(GroupMembership.group_id).where(GroupMembership.user_id == child_user_id)
+    )).all()
+    if not group_ids:
+        return []
+    active = (await session.scalars(
+        select(Challenge).where(
+            Challenge.scope == "group",
+            Challenge.starts_at <= now,
+            Challenge.ends_at > now,
+        ).order_by(Challenge.ends_at)
+    )).all()
+    blocks: list[dict] = []
+    for group_id in group_ids:
+        group = await session.get(LeaderboardGroup, group_id)
+        if group is None:
+            continue
+        member_ids = (await session.scalars(
+            select(GroupMembership.user_id).where(GroupMembership.group_id == group_id)
+        )).all()
+        challenges = []
+        for ch in active:
+            total = (await session.scalar(
+                select(func.coalesce(func.sum(UserChallenge.progress), 0)).where(
+                    UserChallenge.challenge_id == ch.id,
+                    UserChallenge.user_id.in_(member_ids),
+                )
+            )) or 0
+            settled = await session.scalar(
+                select(GroupChallengeCompletion).where(
+                    GroupChallengeCompletion.group_id == group_id,
+                    GroupChallengeCompletion.challenge_id == ch.id,
+                )
+            )
+            challenges.append({
+                "id": ch.id,
+                "title": ch.title,
+                "description": ch.description,
+                "target_value": ch.target_value,
+                "group_progress": min(int(total), ch.target_value),
+                "completed": settled is not None,
+                "ends_at": ch.ends_at,
+            })
+        blocks.append({
+            "group_id": group_id,
+            "group_name": group.name,
+            "challenges": challenges,
+        })
+    return blocks
