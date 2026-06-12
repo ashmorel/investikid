@@ -131,6 +131,7 @@ describe('PremiumValueCard evidence headline (m6)', () => {
   it('falls back to the generic evidence line without masteries', async () => {
     getStatus.mockResolvedValue(NOT_SUBSCRIBED);
     parentRequests.mockResolvedValue([]);
+    getMasteryReport.mockResolvedValue({ window_days: 30, household_mastered_count: 0, children: [] });
     render(wrap(<PremiumValueCard />));
     expect(await screen.findByText(/real financial skills, with the evidence/i)).toBeInTheDocument();
   });
