@@ -97,6 +97,10 @@ class PremiumRequestOut(BaseModel):
     created_at: datetime
 
 
+class AccountDeleteRequest(BaseModel):
+    confirm_email: str
+
+
 class OAuthSignInRequest(BaseModel):
     id_token: str
     nonce: str

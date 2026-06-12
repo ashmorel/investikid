@@ -14,6 +14,7 @@ import { GroupsCard } from '@/components/parent/GroupsCard';
 import { NotificationPreferencesCard } from '@/components/parent/NotificationPreferencesCard';
 import { PremiumRequestsCard } from '@/components/parent/PremiumRequestsCard';
 import { PremiumValueCard } from '@/components/parent/PremiumValueCard';
+import { DeleteAccountCard } from '@/components/parent/DeleteAccountCard';
 import { Penny } from '@/components/child/ui/Penny';
 
 export default function ParentDashboard() {
@@ -108,6 +109,7 @@ export default function ParentDashboard() {
         childrenList={(q.data ?? []).map((c: Child) => ({ user_id: c.user_id, username: c.username }))}
       />
       <SignInMethods />
+      <DeleteAccountCard />
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} audience="parent" />
     </main>
   );

@@ -119,6 +119,11 @@ export const parentApi = {
     apiFetch<{ status: string }>(`/parent/groups/${groupId}/members/${childUserId}`, { method: 'DELETE' }),
   deleteGroup: (groupId: string) =>
     apiFetch<{ status: string }>(`/parent/groups/${groupId}`, { method: 'DELETE' }),
+  deleteAccount: (confirmEmail: string) =>
+    apiFetch<{ status: string; children_deleted: number }>('/parent/account/delete', {
+      method: 'POST',
+      body: JSON.stringify({ confirm_email: confirmEmail }),
+    }),
   getPreferences: () => apiFetch<ParentPreferences>('/parent/preferences'),
   updatePreferences: (update: Partial<ParentPreferences>) =>
     apiFetch<ParentPreferences>('/parent/preferences', {
