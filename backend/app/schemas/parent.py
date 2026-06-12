@@ -50,6 +50,8 @@ class ChildAnalyticsOut(BaseModel):
     xp: int
     xp_to_next_level: int
     streak_count: int
+    daily_goal_xp: int = 30
+    xp_today: int = 0
     lessons_completed: int
     lessons_total: int
     recent_lessons: list[RecentLessonOut]

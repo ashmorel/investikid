@@ -1,6 +1,7 @@
 import re
 import uuid
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -93,3 +94,10 @@ class UserProgressOut(BaseModel):
     streak_count: int
     streak_freezes: int = 0
     last_activity_date: date | None
+    daily_goal_xp: int = 30
+    xp_today: int = 0
+    goal_met: bool = False
+
+
+class DailyGoalUpdate(BaseModel):
+    daily_goal_xp: Literal[10, 30, 50]

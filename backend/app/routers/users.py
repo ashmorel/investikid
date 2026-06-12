@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -7,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_session
 from app.core.security import decode_token, get_token_from_cookie
 from app.models.user import User, UserProgress
-from app.schemas.user import UpdatePreferencesRequest, UserProfile, UserProgressOut
+from app.schemas.user import DailyGoalUpdate, UpdatePreferencesRequest, UserProfile, UserProgressOut
 from app.services.export_service import build_user_export
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -68,13 +69,34 @@ async def get_progress(
     progress = await session.get(UserProgress, current_user.id)
     if progress is None:
         return UserProgressOut(xp=0, level=1, streak_count=0, streak_freezes=0, last_activity_date=None)
+    today = datetime.now(UTC).date()
+    xp_today = progress.xp_today if progress.xp_today_date == today else 0
     return UserProgressOut(
         xp=progress.xp,
         level=progress.level,
         streak_count=progress.streak_count,
         streak_freezes=progress.streak_freezes,
         last_activity_date=progress.last_activity_date,
+        daily_goal_xp=progress.daily_goal_xp,
+        xp_today=xp_today,
+        goal_met=xp_today >= progress.daily_goal_xp,
     )
+
+
+@router.patch("/me/goal", response_model=UserProgressOut)
+async def set_daily_goal(
+    payload: DailyGoalUpdate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    progress = await session.get(UserProgress, current_user.id)
+    if progress is None:
+        progress = UserProgress(user_id=current_user.id)
+        session.add(progress)
+        await session.flush()
+    progress.daily_goal_xp = payload.daily_goal_xp
+    await session.commit()
+    return await get_progress(current_user, session)
 
 
 @router.get("/me/export")

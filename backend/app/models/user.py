@@ -25,6 +25,7 @@ class User(Base):
     content_region: Mapped[str | None] = mapped_column(String(2), nullable=True)
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", default=False)
+    push_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", default=False)
     parent_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     parent_consent_given_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -104,6 +105,10 @@ class UserProgress(Base):
     last_activity_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     virtual_coins: Mapped[int] = mapped_column(default=0, nullable=False)
     streak_freezes: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
+    daily_goal_xp: Mapped[int] = mapped_column(default=30, server_default="30", nullable=False)
+    xp_today: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
+    xp_today_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    last_push_sent_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     sim_xp_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     sim_xp_today: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
 

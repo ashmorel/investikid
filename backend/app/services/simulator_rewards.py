@@ -11,7 +11,6 @@ from app.models.apply_mission import ApplyMission, ApplyMissionCompletion
 from app.models.cash_grant import CashGrant
 from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import UserProgress
-from app.services.content_service import compute_level
 from app.services.simulator_rewards_config import (
     DEFAULT_MISSION_XP,
     SIM_XP_DAILY_CAP,
@@ -19,6 +18,7 @@ from app.services.simulator_rewards_config import (
     MissionState,
     evaluate_mission,
 )
+from app.services.xp_service import record_xp
 
 
 def award_trade_xp(progress: UserProgress, today_local: date) -> int:
@@ -34,8 +34,7 @@ def award_trade_xp(progress: UserProgress, today_local: date) -> int:
         return 0
     awarded = min(SIM_XP_PER_TRADE, remaining)
     progress.sim_xp_today += awarded
-    progress.xp += awarded
-    progress.level = compute_level(progress.xp)
+    record_xp(progress, awarded)
     return awarded
 
 
@@ -126,8 +125,7 @@ async def evaluate_apply_missions(
             # Raced on the unique constraint; SAVEPOINT rollback keeps the outer txn usable.
             continue
         xp = mission.xp_reward or DEFAULT_MISSION_XP
-        progress.xp += xp
-        progress.level = compute_level(progress.xp)
+        record_xp(progress, xp)
         if mission.cash_reward:
             await grant_cash(session, user_id, portfolio, "mission", mission.id, mission.cash_reward)
         newly.append(mission)

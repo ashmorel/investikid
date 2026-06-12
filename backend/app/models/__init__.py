@@ -22,6 +22,7 @@ from app.models.parent_identity import ParentIdentity  # noqa: F401
 from app.models.parent_preferences import ParentPreferences  # noqa: F401
 from app.models.parent_session import ParentSession  # noqa: F401
 from app.models.premium_request import PremiumRequest  # noqa: F401
+from app.models.push_device import PushDevice  # noqa: F401
 from app.models.simulator import Holding, Portfolio, Trade  # noqa: F401
 from app.models.skill_profile import TopicMastery, WeakConcept  # noqa: F401
 from app.models.subscription import Subscription  # noqa: F401
