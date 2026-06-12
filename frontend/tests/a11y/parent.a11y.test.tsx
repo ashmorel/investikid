@@ -49,9 +49,13 @@ beforeEach(() => vi.restoreAllMocks());
 describe('a11y: parent surfaces', () => {
   it('ParentDashboard empty state has no axe violations', async () => {
     // Fresh Response per call: body is single-use, and several queries fetch.
-    vi.spyOn(globalThis, 'fetch').mockImplementation(
-      async () => new Response(JSON.stringify([]), { status: 200 }) as never,
-    );
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      const body = url.includes('/parent/mastery-report')
+        ? { window_days: 30, children: [], household_mastered_count: 0 }
+        : [];
+      return new Response(JSON.stringify(body), { status: 200 }) as never;
+    });
     const { container } = wrap(<ParentDashboard />);
     await waitFor(() => expect(screen.getByText(/No children linked/i)).toBeInTheDocument());
     expect(await axe(container)).toHaveNoViolations();
@@ -90,7 +94,20 @@ describe('a11y: parent surfaces', () => {
     ];
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
-      const body = url.includes('/parent/groups') ? [] : children;
+      const body = url.includes('/parent/groups')
+        ? []
+        : url.includes('/parent/mastery-report')
+          ? {
+              window_days: 30,
+              household_mastered_count: 1,
+              children: [{
+                user_id: 'u1', username: 'kid1', mastered_count: 1, mastered_total: 2,
+                objectives: ['explain what a stock is'], standards: [{ framework: 'MaPS', code: 'MM-1' }],
+                weak_topic: 'budgeting',
+                next_recommendation: { module_title: 'Budgeting Basics', level_title: 'Level 1' },
+              }],
+            }
+          : children;
       return new Response(JSON.stringify(body), { status: 200 }) as never;
     });
     const { container } = wrap(<ParentDashboard />);

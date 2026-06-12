@@ -20,7 +20,7 @@ export function MasteryReportCard() {
       </section>
     );
   }
-  if (isError || !data) return null;
+  if (isError || !data || !Array.isArray(data.children)) return null;
 
   const kids = data.children;
   if (kids.length === 0) return null;
