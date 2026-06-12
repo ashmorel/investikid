@@ -22,6 +22,14 @@ import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { simulatorApi } from '@/api/simulator';
 import type { RegionCode } from '@/lib/region';
 import { isNativeApp } from '@/lib/platform';
+import { contentApi, type DailyGoalSize } from '@/api/content';
+import { useProgress } from '@/hooks/useProgress';
+
+const GOAL_SIZES: { value: DailyGoalSize; label: string }[] = [
+  { value: 10, label: 'Chill' },
+  { value: 30, label: 'Steady' },
+  { value: 50, label: 'Super' },
+];
 import { isSoundEnabled, playSound, setSoundEnabled } from '@/lib/sound';
 import { REMINDER } from '@/lib/reminderConfig';
 import { requestReminderPermission, syncStreakReminder } from '@/lib/streakReminder';
@@ -38,6 +46,13 @@ export function ProfileMenu({ username }: { username: string }) {
   const [reminderDenied, setReminderDenied] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
+
+  const { data: progressData } = useProgress();
+  const goalXp = progressData?.daily_goal_xp ?? 30;
+  const setGoal = useMutation({
+    mutationFn: (size: DailyGoalSize) => contentApi.setDailyGoal(size),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['progress'] }),
+  });
 
   function toggleSound(next: boolean) {
     setSoundEnabled(next);
@@ -143,6 +158,30 @@ export function ProfileMenu({ username }: { username: string }) {
             Fun little sound effects when you learn and trade. On by default.
           </p>
         </div>
+        <fieldset className="space-y-1.5">
+          <legend className="text-sm font-medium">Daily goal</legend>
+          <div role="radiogroup" aria-label="Daily goal size" className="flex gap-2">
+            {GOAL_SIZES.map((g) => (
+              <label
+                key={g.value}
+                className={`flex min-h-[44px] flex-1 cursor-pointer items-center justify-center rounded-md border px-2 text-xs font-bold ${
+                  goalXp === g.value ? 'border-brand-600 bg-brand-50 text-brand-800' : 'border-line text-gray-700'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="daily-goal"
+                  value={g.value}
+                  checked={goalXp === g.value}
+                  onChange={() => setGoal.mutate(g.value)}
+                  className="sr-only"
+                />
+                {g.label} · {g.value} XP
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">How much XP you aim for each day.</p>
+        </fieldset>
         <button
           type="button"
           onClick={() => setConfirmReset(true)}

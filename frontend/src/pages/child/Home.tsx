@@ -48,6 +48,8 @@ export default function Home() {
           streakCount={progress?.streak_count ?? 0}
           streakFreezes={progress?.streak_freezes ?? 0}
           lastActivityDate={progress?.last_activity_date ?? null}
+          dailyGoalXp={progress?.daily_goal_xp ?? 30}
+          xpToday={progress?.xp_today ?? 0}
         />
       </div>
 

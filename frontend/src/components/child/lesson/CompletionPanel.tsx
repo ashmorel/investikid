@@ -46,6 +46,12 @@ export function CompletionPanel({ result, onContinue }: Props) {
 
       <h2 className="text-2xl font-extrabold text-gray-900">{heading}</h2>
 
+      {result.daily_goal_met && (
+        <p role="status" className="rounded-full bg-success-50 px-4 py-1.5 text-sm font-extrabold text-success-700">
+          <span aria-hidden="true">🎯 </span>Daily goal met — nice one!
+        </p>
+      )}
+
       <div className="text-2xl" aria-hidden="true">⭐ ⭐ ⭐</div>
 
       <div className="flex w-full gap-3">
