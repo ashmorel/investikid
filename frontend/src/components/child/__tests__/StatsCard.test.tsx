@@ -19,9 +19,9 @@ describe('StatsCard', () => {
     expect(screen.getByText(/Level 4/)).toBeInTheDocument();
     expect(screen.getByText(/5-day streak/)).toBeInTheDocument();
     expect(screen.getByLabelText(/streak freeze/)).toBeInTheDocument();
-    const bar = screen.getByRole('progressbar');
-    expect(bar).toHaveAttribute('aria-valuenow', '50');
-    expect(bar).toHaveAttribute('aria-valuemax', '100');
+    // The progressbar is now the DAILY GOAL bar (m7); level progress lives in the caption.
+    const bar = screen.getByRole('progressbar', { name: /daily goal/i });
+    expect(bar).toHaveAttribute('aria-valuemax', '30');
     expect(screen.getByText(/50 XP to Level 5/)).toBeInTheDocument();
   });
   it('marks streak inactive when last activity is stale', () => {
