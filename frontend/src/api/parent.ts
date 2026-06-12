@@ -58,6 +58,7 @@ export type Child = {
   country_code: string;
   is_active: boolean;
   is_premium: boolean;
+  push_enabled?: boolean;
   parent_consent_given_at: string | null;
   consent_declined_at: string | null;
   deleted_at: string | null;
@@ -89,6 +90,11 @@ export const parentApi = {
   logout: () => apiFetch<{ status: string }>('/parent/auth/logout', { method: 'POST' }),
   listChildren: () => apiFetch<Child[]>('/parent/children'),
   getMasteryReport: () => apiFetch<MasteryReport>('/parent/mastery-report'),
+  setChildPush: (userId: string, enabled: boolean) =>
+    apiFetch<{ status: string; push_enabled: boolean }>(
+      `/parent/children/${userId}/push`,
+      { method: 'POST', body: JSON.stringify({ enabled }) },
+    ),
   freezeChild: (userId: string, frozen: boolean) =>
     apiFetch<{ status: string; frozen: boolean }>(
       `/parent/children/${userId}/freeze`,

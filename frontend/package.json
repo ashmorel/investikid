@@ -20,6 +20,7 @@
     "@capacitor/core": "^8.3.4",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/local-notifications": "^8.2.0",
+    "@capacitor/push-notifications": "^8.1.1",
     "@capacitor/status-bar": "^8.0.2",
     "@capgo/capacitor-social-login": "^8.3.22",
     "@radix-ui/react-dialog": "^1.1.4",

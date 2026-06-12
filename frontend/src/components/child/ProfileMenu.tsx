@@ -24,6 +24,7 @@ import type { RegionCode } from '@/lib/region';
 import { isNativeApp } from '@/lib/platform';
 import { contentApi, type DailyGoalSize } from '@/api/content';
 import { useProgress } from '@/hooks/useProgress';
+import { disablePush, enablePush, isPushRegistered } from '@/lib/push';
 
 const GOAL_SIZES: { value: DailyGoalSize; label: string }[] = [
   { value: 10, label: 'Chill' },
@@ -53,6 +54,25 @@ export function ProfileMenu({ username }: { username: string }) {
     mutationFn: (size: DailyGoalSize) => contentApi.setDailyGoal(size),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['progress'] }),
   });
+
+  const parentPushEnabled = session?.push_enabled ?? false;
+  const [pushOn, setPushOn] = useState(() => isPushRegistered());
+  const [pushDenied, setPushDenied] = useState(false);
+  async function togglePush(next: boolean) {
+    setPushDenied(false);
+    if (next) {
+      const result = await enablePush(parentPushEnabled);
+      if (result === 'registered') {
+        setPushOn(true);
+      } else {
+        setPushOn(false);
+        if (result === 'permission-denied') setPushDenied(true);
+      }
+    } else {
+      await disablePush();
+      setPushOn(false);
+    }
+  }
 
   function toggleSound(next: boolean) {
     setSoundEnabled(next);
@@ -215,6 +235,28 @@ export function ProfileMenu({ username }: { username: string }) {
               <p id="reminder-denied" className="text-xs text-accent-700">
                 Turn on notifications for InvestiKid in your device Settings to use reminders.
               </p>
+            )}
+            {parentPushEnabled && (
+              <>
+                <label className="flex items-center justify-between gap-3 text-sm font-medium">
+                  <span>Streak alerts from InvestiKid</span>
+                  <input
+                    type="checkbox"
+                    checked={pushOn}
+                    onChange={(e) => void togglePush(e.target.checked)}
+                    className="h-5 w-5"
+                    aria-describedby={pushDenied ? 'push-help push-denied' : 'push-help'}
+                  />
+                </label>
+                <p id="push-help" className="text-xs text-muted-foreground">
+                  One short heads-up if your streak is about to end. Your grown-up turned this option on. Off by default.
+                </p>
+                {pushDenied && (
+                  <p id="push-denied" className="text-xs text-accent-700">
+                    Turn on notifications for InvestiKid in your device Settings to use alerts.
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
