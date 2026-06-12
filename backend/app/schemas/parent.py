@@ -109,3 +109,20 @@ class OAuthSignInRequest(BaseModel):
 class IdentityOut(BaseModel):
     provider: str
     parent_email: str
+
+
+class MasteryReportChildOut(BaseModel):
+    user_id: str
+    username: str
+    mastered_count: int
+    mastered_total: int
+    objectives: list[str]
+    standards: list[dict]
+    weak_topic: str | None = None
+    next_recommendation: dict | None = None
+
+
+class MasteryReportOut(BaseModel):
+    window_days: int
+    children: list[MasteryReportChildOut]
+    household_mastered_count: int

@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +19,7 @@ from app.schemas.parent import (
     AccountDeleteRequest,
     ChildOut,
     FreezeRequest,
+    MasteryReportOut,
     PremiumRequestOut,
     PremiumToggleRequest,
     TierOverrideOut,
@@ -31,6 +32,7 @@ from app.services.analytics_service import build_child_analytics
 from app.services.content_service import content_region_for
 from app.services.entitlements import set_premium
 from app.services.export_service import build_user_export
+from app.services.mastery_report_service import build_mastery_report
 
 router = APIRouter(prefix="/parent", tags=["parent"])
 
@@ -79,6 +81,15 @@ async def list_children(
             )
         )
     return children
+
+
+@router.get("/mastery-report", response_model=MasteryReportOut)
+async def mastery_report(
+    days: int = Query(default=30, ge=1, le=180),
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    return await build_mastery_report(session, parent_email, days=days)
 
 
 @router.get("/preferences", response_model=ParentPreferencesOut)
