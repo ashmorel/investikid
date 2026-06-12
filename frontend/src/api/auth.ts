@@ -14,6 +14,7 @@ export type Me = {
   topic_path: string | null;
   content_region: string | null;
   is_premium: boolean;
+  push_enabled?: boolean;
   is_admin: boolean;
   age_tier: 'explorer' | 'investor';
   parent_email: string | null;

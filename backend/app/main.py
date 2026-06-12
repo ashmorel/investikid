@@ -15,11 +15,14 @@ from app.core.config import settings
 from app.core.csrf import CSRFMiddleware
 from app.core.rate_limit import limiter
 from app.routers import admin as admin_router
+from app.routers import admin_analytics as admin_analytics_router
 from app.routers import ai as ai_router
+from app.routers import analytics as analytics_router
 from app.routers import auth as auth_router
 from app.routers import billing as billing_router
 from app.routers import consent as consent_router
 from app.routers import content as content_router
+from app.routers import cosmetics as cosmetics_router
 from app.routers import feedback as feedback_router
 from app.routers import gamification as gamification_router
 from app.routers import groups as groups_router
@@ -189,6 +192,7 @@ def create_app() -> FastAPI:
     application.include_router(auth_router.router)
     application.include_router(users_router.router)
     application.include_router(content_router.router)
+    application.include_router(cosmetics_router.router)
     application.include_router(consent_router.router)
     application.include_router(gamification_router.router)
     application.include_router(groups_router.router)
@@ -200,9 +204,11 @@ def create_app() -> FastAPI:
     application.include_router(premium_router.router)
     application.include_router(billing_router.router)
     application.include_router(admin_router.router)
+    application.include_router(admin_analytics_router.router)
     application.include_router(feedback_router.router)
     application.include_router(feedback_router.admin_router)
     application.include_router(feedback_router.parent_feedback_router)
+    application.include_router(analytics_router.router)
     application.include_router(internal_router.router)
 
     return application

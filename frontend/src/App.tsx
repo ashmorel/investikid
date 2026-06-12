@@ -7,6 +7,7 @@ import Login from '@/pages/child/Login';
 import Signup from '@/pages/child/Signup';
 import PendingConsent from '@/pages/child/PendingConsent';
 import Home from '@/pages/child/Home';
+const Shop = lazy(() => import('@/pages/child/Shop'));
 import Lessons from '@/pages/child/Lessons';
 import Module from '@/pages/child/Module';
 import Level from '@/pages/child/Level';
@@ -40,6 +41,7 @@ const ChallengeForm = lazy(() => import('@/components/admin/ChallengeForm'));
 const FeedbackList = lazy(() => import('@/components/admin/FeedbackList'));
 const VideoHealthList = lazy(() => import('@/components/admin/VideoHealthList'));
 const AdminSettings = lazy(() => import('@/components/admin/AdminSettings'));
+const AdminAnalytics = lazy(() => import('@/components/admin/AdminAnalytics'));
 
 function RootRedirect() {
   // Redirect / to /home; if unauthed, /home's Shell will redirect to /login.
@@ -65,6 +67,7 @@ export default function App() {
         {/* Authed child routes inside Shell */}
         <Route element={<Shell />}>
           <Route path="/home" element={<Home />} />
+          <Route path="/shop" element={<Shop />} />
           <Route path="/lessons" element={<Lessons />} />
           <Route path="/lessons/:moduleId" element={<Module />} />
           <Route path="/lessons/:moduleId/:levelId" element={<Level />} />
@@ -113,6 +116,7 @@ export default function App() {
           <Route path="feedback" element={<FeedbackList />} />
           <Route path="video-health" element={<VideoHealthList />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
         </Route>
 
         <Route path="*" element={<div className="p-6">Not found</div>} />

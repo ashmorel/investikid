@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { authApi, type Me } from '@/api/auth';
 import { useChildSession } from '@/hooks/useChildSession';
 import { TOPIC_OPTIONS } from '@/api/content';
@@ -22,6 +22,15 @@ import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { simulatorApi } from '@/api/simulator';
 import type { RegionCode } from '@/lib/region';
 import { isNativeApp } from '@/lib/platform';
+import { contentApi, type DailyGoalSize } from '@/api/content';
+import { useProgress } from '@/hooks/useProgress';
+import { disablePush, enablePush, isPushRegistered } from '@/lib/push';
+
+const GOAL_SIZES: { value: DailyGoalSize; label: string }[] = [
+  { value: 10, label: 'Chill' },
+  { value: 30, label: 'Steady' },
+  { value: 50, label: 'Super' },
+];
 import { isSoundEnabled, playSound, setSoundEnabled } from '@/lib/sound';
 import { REMINDER } from '@/lib/reminderConfig';
 import { requestReminderPermission, syncStreakReminder } from '@/lib/streakReminder';
@@ -38,6 +47,32 @@ export function ProfileMenu({ username }: { username: string }) {
   const [reminderDenied, setReminderDenied] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
+
+  const { data: progressData } = useProgress();
+  const goalXp = progressData?.daily_goal_xp ?? 30;
+  const setGoal = useMutation({
+    mutationFn: (size: DailyGoalSize) => contentApi.setDailyGoal(size),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['progress'] }),
+  });
+
+  const parentPushEnabled = session?.push_enabled ?? false;
+  const [pushOn, setPushOn] = useState(() => isPushRegistered());
+  const [pushDenied, setPushDenied] = useState(false);
+  async function togglePush(next: boolean) {
+    setPushDenied(false);
+    if (next) {
+      const result = await enablePush(parentPushEnabled);
+      if (result === 'registered') {
+        setPushOn(true);
+      } else {
+        setPushOn(false);
+        if (result === 'permission-denied') setPushDenied(true);
+      }
+    } else {
+      await disablePush();
+      setPushOn(false);
+    }
+  }
 
   function toggleSound(next: boolean) {
     setSoundEnabled(next);
@@ -143,6 +178,39 @@ export function ProfileMenu({ username }: { username: string }) {
             Fun little sound effects when you learn and trade. On by default.
           </p>
         </div>
+        <fieldset className="space-y-1.5">
+          <legend className="text-sm font-medium">Daily goal</legend>
+          <div role="radiogroup" aria-label="Daily goal size" className="flex gap-2">
+            {GOAL_SIZES.map((g) => (
+              <label
+                key={g.value}
+                className={`flex min-h-[44px] flex-1 cursor-pointer items-center justify-center rounded-md border px-2 text-xs font-bold ${
+                  goalXp === g.value ? 'border-brand-600 bg-brand-50 text-brand-800' : 'border-line text-gray-700'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="daily-goal"
+                  value={g.value}
+                  checked={goalXp === g.value}
+                  onChange={() => setGoal.mutate(g.value)}
+                  className="sr-only"
+                />
+                {g.label} · {g.value} XP
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">How much XP you aim for each day.</p>
+        </fieldset>
+        <Link
+          to="/shop"
+          className="flex min-h-[44px] w-full items-center justify-between rounded-md border border-line px-3 text-sm font-medium text-brand-700 hover:bg-brand-50"
+        >
+          <span>Penny's Shop</span>
+          <span className="font-bold" aria-label={`${progressData?.virtual_coins ?? 0} coins`}>
+            <span aria-hidden="true">🪙 </span>{progressData?.virtual_coins ?? 0}
+          </span>
+        </Link>
         <button
           type="button"
           onClick={() => setConfirmReset(true)}
@@ -176,6 +244,28 @@ export function ProfileMenu({ username }: { username: string }) {
               <p id="reminder-denied" className="text-xs text-accent-700">
                 Turn on notifications for InvestiKid in your device Settings to use reminders.
               </p>
+            )}
+            {parentPushEnabled && (
+              <>
+                <label className="flex items-center justify-between gap-3 text-sm font-medium">
+                  <span>Streak alerts from InvestiKid</span>
+                  <input
+                    type="checkbox"
+                    checked={pushOn}
+                    onChange={(e) => void togglePush(e.target.checked)}
+                    className="h-5 w-5"
+                    aria-describedby={pushDenied ? 'push-help push-denied' : 'push-help'}
+                  />
+                </label>
+                <p id="push-help" className="text-xs text-muted-foreground">
+                  One short heads-up if your streak is about to end. Your grown-up turned this option on. Off by default.
+                </p>
+                {pushDenied && (
+                  <p id="push-denied" className="text-xs text-accent-700">
+                    Turn on notifications for InvestiKid in your device Settings to use alerts.
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}

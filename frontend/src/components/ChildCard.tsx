@@ -55,6 +55,15 @@ export function ChildCard({ child }: { child: Child }) {
     onSettled: () => qc.invalidateQueries({ queryKey: ['children'] }),
   });
 
+  const pushToggle = useMutation({
+    mutationFn: (enabled: boolean) => parentApi.setChildPush(child.user_id, enabled),
+    onSuccess: (_d, enabled) => {
+      qc.setQueryData<Child[]>(['children'], (old) =>
+        old?.map((c) => c.user_id === child.user_id ? { ...c, push_enabled: enabled } : c),
+      );
+    },
+  });
+
   const premium = useMutation({
     mutationFn: (value: boolean) => parentApi.setChildPremium(child.user_id, value),
     onMutate: async (value) => {
@@ -138,6 +147,18 @@ export function ChildCard({ child }: { child: Child }) {
           />
           <Label htmlFor={`freeze-${child.user_id}`} className="text-sm">
             Freeze account
+          </Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            id={`push-${child.user_id}`}
+            checked={child.push_enabled ?? false}
+            disabled={isDeleted || pushToggle.isPending}
+            onCheckedChange={(value) => pushToggle.mutate(value)}
+          />
+          <Label htmlFor={`push-${child.user_id}`} className="text-sm">
+            Notifications
           </Label>
         </div>
 

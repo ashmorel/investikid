@@ -101,7 +101,15 @@ def test_weekly_digest_html_full_context():
     assert "Worth practising" in html and "Compound interest" in html
     assert "Up next" in html and "Shares 101" in html
     assert "Talk about it" in html
-    assert "Premium unlocks the next levels" in html
+    # Premium line is one of the M6 copy variants, chosen by parent_email hash.
+    from app.services.email import premium_variant
+    variant = premium_variant(FULL_CTX["parent_email"])
+    expected = {
+        "a": "Premium unlocks the next levels",
+        "b": "Premium unlocks the full curriculum" if any(c.get("masteries") for c in FULL_CTX["children"]) else "Premium unlocks the next levels",
+        "c": "full picture",
+    }[variant]
+    assert expected in html
     assert "/parent" in html
     assert "Manage email preferences in your dashboard settings." in html
 

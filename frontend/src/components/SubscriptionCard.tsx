@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { billingApi, type SubscriptionStatus } from '@/api/billing';
+import { billingApi, type Plan, type PlanOut, type SubscriptionStatus } from '@/api/billing';
 import { Button } from '@/components/ui/button';
 import { isAndroid, isNativeApp } from '@/lib/platform';
 import { StoreKit } from '@/lib/storekit';
 import { PlayBilling } from '@/lib/playBilling';
 
-const PREMIUM_PRODUCT_ID = 'premium_monthly';
-const PLAY_PRODUCT_ID = 'premium_monthly';
 const APPLE_MANAGE_URL = 'https://apps.apple.com/account/subscriptions';
 const PLAY_MANAGE_URL = 'https://play.google.com/store/account/subscriptions';
 const STATUS_QUERY_KEY = ['subscription-status'] as const;
@@ -32,9 +30,74 @@ function isUserCancelled(err: unknown): boolean {
   );
 }
 
+function PlanPicker({
+  plans,
+  value,
+  onChange,
+}: {
+  plans: PlanOut[] | undefined;
+  value: Plan;
+  onChange: (p: Plan) => void;
+}) {
+  if (!plans || plans.length === 0) return null;
+  return (
+    <fieldset className="mt-3">
+      <legend className="sr-only">Choose a plan</legend>
+      <div role="radiogroup" aria-label="Choose a plan" className="flex flex-col gap-2">
+        {plans.map((p) => {
+          const checked = p.plan === value;
+          const per = p.interval === 'year' ? '/yr' : '/mo';
+          return (
+            <label
+              key={p.plan}
+              className={`flex min-h-[44px] cursor-pointer items-center justify-between rounded-lg border-2 px-3 py-2.5 ${
+                checked ? 'border-brand-600 bg-white' : 'border-brand-200 bg-white/60'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="plan"
+                  value={p.plan}
+                  checked={checked}
+                  onChange={() => onChange(p.plan)}
+                  className="h-4 w-4 accent-brand-600"
+                />
+                <span className="text-sm font-bold capitalize text-brand-900">{p.plan}</span>
+                {p.savings_pct != null && (
+                  <span className="rounded-full bg-success-100 px-2 py-0.5 text-[11px] font-bold text-success-700">
+                    Save {p.savings_pct}%
+                  </span>
+                )}
+              </span>
+              <span className="text-sm font-extrabold text-brand-900">
+                {p.display_price}
+                <span className="font-medium text-gray-500">{per}</span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-xs font-medium text-brand-800">
+        One subscription unlocks Premium for <strong>all</strong> your children.
+      </p>
+    </fieldset>
+  );
+}
+
 export function SubscriptionCard() {
   const qc = useQueryClient();
   const [note, setNote] = useState<string | null>(null);
+  const [plan, setPlan] = useState<Plan>('annual');
+
+  const { data: plansData } = useQuery({
+    queryKey: ['billing-plans'],
+    queryFn: billingApi.getPlans,
+    staleTime: 5 * 60_000,
+  });
+  const selected = plansData?.plans.find((p) => p.plan === plan);
+  const appleProductId = selected?.apple_product_id ?? 'premium_monthly';
+  const playProductId = selected?.google_product_id ?? 'premium_monthly';
 
   const { data: sub, isLoading } = useQuery<SubscriptionStatus | null>({
     queryKey: STATUS_QUERY_KEY,
@@ -43,7 +106,7 @@ export function SubscriptionCard() {
 
   // --- Web (Stripe) ---
   const checkout = useMutation({
-    mutationFn: billingApi.createCheckout,
+    mutationFn: () => billingApi.createCheckout(plan),
     onSuccess: (data) => {
       if (data?.url) window.location.href = data.url;
     },
@@ -64,7 +127,7 @@ export function SubscriptionCard() {
       const account = await billingApi.appleAccountToken();
       if (!account) throw new Error('Could not start purchase.');
       const result = await StoreKit.purchase({
-        productId: PREMIUM_PRODUCT_ID,
+        productId: appleProductId,
         appAccountToken: account.token,
       });
       if (result.jws) {
@@ -115,13 +178,13 @@ export function SubscriptionCard() {
       const account = await billingApi.accountToken();
       if (!account) throw new Error('Could not start purchase.');
       const result = await PlayBilling.purchase({
-        productId: PLAY_PRODUCT_ID,
+        productId: playProductId,
         obfuscatedAccountId: account.token,
       });
       if (result.purchaseToken) {
         await billingApi.googleVerify({
           purchaseToken: result.purchaseToken,
-          productId: PLAY_PRODUCT_ID,
+          productId: playProductId,
         });
         return { verified: true as const };
       }
@@ -147,7 +210,7 @@ export function SubscriptionCard() {
       for (const token of purchaseTokens) {
         await billingApi.googleVerify({
           purchaseToken: token,
-          productId: PLAY_PRODUCT_ID,
+          productId: playProductId,
         });
       }
       return { count: purchaseTokens.length };
@@ -213,6 +276,8 @@ export function SubscriptionCard() {
             Manage subscription
           </Button>
         ) : (
+          <>
+          <PlanPicker plans={plansData?.plans} value={plan} onChange={setPlan} />
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
               className="bg-brand-600 text-white hover:bg-brand-700"
@@ -229,6 +294,7 @@ export function SubscriptionCard() {
               {restoreMutation.isPending ? 'Restoring…' : 'Restore Purchases'}
             </Button>
           </div>
+          </>
         )}
 
         {note && (
@@ -250,6 +316,7 @@ export function SubscriptionCard() {
         <p className="text-sm font-medium text-brand-900">
           Free plan — upgrade for AI coach, advanced scenarios, and more
         </p>
+        <PlanPicker plans={plansData?.plans} value={plan} onChange={setPlan} />
         <Button
           className="mt-3 bg-brand-600 text-white hover:bg-brand-700"
           onClick={() => checkout.mutate()}

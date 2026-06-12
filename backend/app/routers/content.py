@@ -19,9 +19,9 @@ from app.schemas.content import (
     ModuleOut,
     NextLessonEnvelope,
 )
+from app.services import product_analytics_service
 from app.services.age_tier import age_in_years
 from app.services.content_service import (
-    compute_level,
     content_region_for,
     derive_lesson_title,
     grant_module_completion_cash,
@@ -43,6 +43,7 @@ from app.services.skill_profile_service import (
     reinforce_concept,
     update_mastery_on_completion,
 )
+from app.services.xp_service import record_xp
 
 router = APIRouter(tags=["content"])
 
@@ -313,6 +314,7 @@ async def complete_lesson(
     module = await _get_accessible_module(lesson.module_id, current_user, session)
     # Capture scalar attributes early before session expires ORM objects
     topic = module.topic
+    module_id = module.id
     lesson_type = lesson.type
     lesson_level_id = lesson.level_id
     lesson_content = lesson.content_json or {}
@@ -325,8 +327,21 @@ async def complete_lesson(
         await session.flush()
 
     today = datetime.now(UTC).date()
-    xp_awarded, already = await _award_completion(
+    xp_awarded, already, daily_goal_met = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today
+    )
+
+    await product_analytics_service.record(
+        session,
+        "lesson_completed",
+        user=current_user,
+        role="child",
+        props={
+            "module_id": str(module_id),
+            "level_id": str(lesson_level_id) if lesson_level_id else None,
+            "lesson_id": str(lesson_id),
+            "repeat": already,
+        },
     )
 
     if lesson_level_id is not None:
@@ -373,6 +388,7 @@ async def complete_lesson(
         total_xp=progress.xp, level=progress.level, streak_count=progress.streak_count,
         streak_freezes=progress.streak_freezes,
         practice_available=practice_available,
+        daily_goal_met=daily_goal_met,
     )
 
 
@@ -396,7 +412,7 @@ async def _award_completion(
         if score is not None and (existing.score is None or score > existing.score):
             existing.score = score
             existing.completed_at = datetime.now(UTC)
-        return 0, True
+        return 0, True, False
 
     try:
         async with session.begin_nested():
@@ -420,9 +436,8 @@ async def _award_completion(
         ):
             existing.score = score
             existing.completed_at = datetime.now(UTC)
-        return 0, True
+        return 0, True, False
 
-    progress.xp += lesson.xp_reward
-    progress.level = compute_level(progress.xp)
+    goal = record_xp(progress, lesson.xp_reward, today=today_local)
     record_daily_activity(progress, today_local)
-    return lesson.xp_reward, False
+    return lesson.xp_reward, False, goal.goal_met_now

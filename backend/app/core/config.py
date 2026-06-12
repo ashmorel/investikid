@@ -29,7 +29,9 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
-    stripe_price_id: str = ""
+    stripe_price_id: str = ""  # legacy single price (monthly) — see plan_catalog
+    stripe_price_id_monthly: str = ""
+    stripe_price_id_annual: str = ""
     stripe_portal_config_id: str = ""
     email_backend: str = "logging"  # "logging" | "resend"
     email_from: str = "noreply@invest-ed.app"
@@ -41,6 +43,8 @@ class Settings(BaseSettings):
     llm_alert_cooldown_seconds: int = 21600  # 6h — min gap between repeat alerts of the same kind
     app_base_url: str = "http://localhost:5173"
     data_retention_days: int = 30
+    analytics_retention_days: int = 400  # raw product-analytics events (~13 months)
+    firebase_service_account_json: str = ""  # FCM service-account JSON contents; blank = push disabled
     privacy_notice_version: str = "2026-05-16"
 
     # LLM / AI — lite + standard tiers (open-source models)
@@ -69,9 +73,11 @@ class Settings(BaseSettings):
     apple_iap_app_apple_id: int | None = None
     apple_iap_environment: str = "Sandbox"
     apple_iap_product_id: str = ""
+    apple_iap_product_id_annual: str = ""
     google_play_package_name: str = ""
     google_play_service_account_json: str = ""  # service-account JSON key contents
     google_play_product_id: str = ""
+    google_play_product_id_annual: str = ""
 
     # Cloudflare R2 — self-hosted curated video uploads (admin)
     r2_account_id: str = ""

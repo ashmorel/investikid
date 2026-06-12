@@ -42,6 +42,18 @@ async def set_premium(
         event_type="premium_grant" if value else "premium_revoke",
         metadata_json={"actor": actor, "old": old, "new": value},
     ))
+    if value:
+        # Local import: entitlements is imported by content paths, and the
+        # analytics module must stay out of personalization import graphs.
+        from app.services import product_analytics_service
+
+        await product_analytics_service.record(
+            session,
+            "subscription_activated",
+            user=child,
+            role="child",
+            props={"source": actor},
+        )
     await session.flush()
     return True
 

@@ -13,6 +13,9 @@ vi.mock('@/api/billing', () => ({
   },
 }));
 
+// MasteryReportCard has its own focused tests; stub it so its fetch doesn't race the per-URL mock
+vi.mock('@/components/parent/MasteryReportCard', () => ({ MasteryReportCard: () => null }));
+
 // Prevent SignInMethods from interfering with fetch mock
 vi.mock('@/api/parentAuth', () => ({
   parentAuthApi: {

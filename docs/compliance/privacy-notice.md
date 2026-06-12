@@ -69,6 +69,20 @@ Some lessons include educational videos embedded from YouTube. When a video load
 
 ---
 
+## How we measure what works (product analytics)
+
+To make InvestiKid better, we count how features are used — for example how many
+children finish a lesson, or tap the "Continue" button on the home screen. These
+counts are collected **by us only** (no third-party analytics companies, no
+advertising trackers) and contain no names, messages, or anything your child
+types. While an account is open, the counts are linked only by an internal
+account number so we can see patterns like "do children come back after a week?";
+they are **never** used to build a profile of your child or to change what your
+child sees. If the account is deleted, that link is removed, and in any case we
+delete the raw counting records after 13 months.
+
+---
+
 ## How long do we keep your information?
 
 We keep your information for as long as you have an account with us.

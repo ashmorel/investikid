@@ -13,6 +13,7 @@ import { SignInMethods } from '@/components/parent/SignInMethods';
 import { GroupsCard } from '@/components/parent/GroupsCard';
 import { NotificationPreferencesCard } from '@/components/parent/NotificationPreferencesCard';
 import { PremiumRequestsCard } from '@/components/parent/PremiumRequestsCard';
+import { MasteryReportCard } from '@/components/parent/MasteryReportCard';
 import { PremiumValueCard } from '@/components/parent/PremiumValueCard';
 import { DeleteAccountCard } from '@/components/parent/DeleteAccountCard';
 import { Penny } from '@/components/child/ui/Penny';
@@ -70,6 +71,7 @@ export default function ParentDashboard() {
         </div>
       </header>
 
+      <MasteryReportCard />
       <PremiumRequestsCard
         onApprove={() =>
           document.getElementById('subscription-card')?.scrollIntoView({ behavior: 'smooth' })

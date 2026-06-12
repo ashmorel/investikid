@@ -84,6 +84,44 @@ def _join_names(names: list[str]) -> str:
     return ", ".join(names[:-1]) + f" and {names[-1]}"
 
 
+def premium_variant(parent_email: str) -> str:
+    """Stable copy-variant assignment for the digest premium line ('a'|'b'|'c').
+
+    Deterministic on the email (no storage); tagged onto the digest_sent
+    analytics event so variants can be compared against trial starts.
+    """
+    import hashlib
+
+    digest = hashlib.sha256(parent_email.lower().encode()).digest()
+    return "abc"[digest[0] % 3]
+
+
+def _premium_line_html(context: dict, dashboard_url: str, variant: str) -> str:
+    name = _premium_child_name(context)
+    mastered = sum(len(c.get("masteries") or []) for c in context.get("children", []))
+    link = f'<a href="{dashboard_url}" style="color:#2563eb;">See your options</a>'
+    if variant == "b" and mastered > 0:
+        body = (
+            f"{name} mastered {mastered} skill{'s' if mastered != 1 else ''} this week. "
+            f"Premium unlocks the full curriculum + AI coach. {link}."
+        )
+    elif variant == "c":
+        body = (
+            f"Want the full picture of what {name} can do with money? "
+            f"Premium adds the complete curriculum + AI coach. {link}."
+        )
+    else:  # 'a' (and 'b' fallback on a no-mastery week)
+        body = (
+            f"Premium unlocks the next levels — deeper skills like the ones "
+            f"{name} just mastered. {link}."
+        )
+    return (
+        '<p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#374151;">'
+        + body
+        + "</p>"
+    )
+
+
 def _premium_child_name(context: dict) -> str:
     """Name to personalise the premium nudge: first child with a mastery, else first child."""
     children = context.get("children", [])
@@ -333,12 +371,8 @@ def _render_weekly_digest_html(context: dict) -> str:
 
     premium_html = ""
     if not context.get("parent_subscribed"):
-        premium_html = (
-            f'<p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#374151;">'
-            f"Premium unlocks the next levels — deeper skills like the ones "
-            f"{_premium_child_name(context)} just mastered. "
-            f'<a href="{dashboard_url}" style="color:#2563eb;">See your options</a>.</p>'
-        )
+        variant = premium_variant(context.get("parent_email", ""))
+        premium_html = _premium_line_html(context, dashboard_url, variant)
 
     return (
         '<!DOCTYPE html>'

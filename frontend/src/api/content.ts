@@ -73,6 +73,7 @@ export type LessonCompletionResult = {
   streak_count: number;
   streak_freezes: number;
   practice_available: boolean;
+  daily_goal_met?: boolean;
 };
 
 export type Progress = {
@@ -81,7 +82,13 @@ export type Progress = {
   streak_count: number;
   streak_freezes: number;
   last_activity_date: string | null; // YYYY-MM-DD
+  daily_goal_xp: number;
+  xp_today: number;
+  goal_met: boolean;
+  virtual_coins: number;
 };
+
+export type DailyGoalSize = 10 | 30 | 50;
 
 export type NextLesson = {
   module_id: string;
@@ -110,4 +117,6 @@ export const contentApi = {
   listLevelLessons: (levelId: string) =>
     apiFetch<LessonSummary[]>(`/levels/${levelId}/lessons`),
   getProgress: () => apiFetch<Progress>('/users/me/progress'),
+  setDailyGoal: (daily_goal_xp: DailyGoalSize) =>
+    apiFetch<Progress>('/users/me/goal', { method: 'PATCH', body: JSON.stringify({ daily_goal_xp }) }),
 };

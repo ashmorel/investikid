@@ -50,6 +50,8 @@ class ChildAnalyticsOut(BaseModel):
     xp: int
     xp_to_next_level: int
     streak_count: int
+    daily_goal_xp: int = 30
+    xp_today: int = 0
     lessons_completed: int
     lessons_total: int
     recent_lessons: list[RecentLessonOut]
@@ -63,6 +65,7 @@ class ChildOut(BaseModel):
     country_code: str
     is_active: bool
     is_premium: bool
+    push_enabled: bool = False
     parent_consent_given_at: datetime | None
     consent_declined_at: datetime | None
     deleted_at: datetime | None
@@ -109,3 +112,24 @@ class OAuthSignInRequest(BaseModel):
 class IdentityOut(BaseModel):
     provider: str
     parent_email: str
+
+
+class MasteryReportChildOut(BaseModel):
+    user_id: str
+    username: str
+    mastered_count: int
+    mastered_total: int
+    objectives: list[str]
+    standards: list[dict]
+    weak_topic: str | None = None
+    next_recommendation: dict | None = None
+
+
+class MasteryReportOut(BaseModel):
+    window_days: int
+    children: list[MasteryReportChildOut]
+    household_mastered_count: int
+
+
+class PushToggleRequest(BaseModel):
+    enabled: bool

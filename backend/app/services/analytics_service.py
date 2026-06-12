@@ -163,11 +163,19 @@ async def build_child_analytics(
             standards_alignment=m.standards_alignment,
         ))
 
+    today = date.today()
+    xp_today = (
+        progress.xp_today
+        if progress is not None and progress.xp_today_date == today
+        else 0
+    )
     return ChildAnalyticsOut(
         level=level,
         xp=xp,
         xp_to_next_level=_xp_to_next_level(level, xp),
         streak_count=streak_count,
+        daily_goal_xp=progress.daily_goal_xp if progress is not None else 30,
+        xp_today=xp_today,
         lessons_completed=lessons_completed,
         lessons_total=lessons_total,
         recent_lessons=recent_lessons,

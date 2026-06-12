@@ -550,3 +550,33 @@ export function useCheckVideoHealth() {
     onSuccess: (data) => qc.setQueryData(['admin', 'video-health'], data.items),
   });
 }
+
+// ── Product analytics (M4) ─────────────────────────────────────────
+export interface AnalyticsCohort {
+  week_start: string;
+  signups: number;
+  d7_pct: number | null;
+  d30_pct: number | null;
+}
+
+export interface AnalyticsSummary {
+  window_days: number;
+  activation: { signups: number; activated: number; rate_pct: number | null };
+  cohorts: AnalyticsCohort[];
+  funnel: { paywall_view: number; trial_started: number; subscription_activated: number };
+  engagement: {
+    home_view: number;
+    home_cta_tap: number;
+    cta_through_pct: number | null;
+    quicklink_taps: Record<string, number>;
+    lesson_completed: number;
+    digest_sent: number;
+  };
+}
+
+export function useAnalyticsSummary(days: number) {
+  return useQuery({
+    queryKey: ['admin', 'analytics-summary', days],
+    queryFn: () => adminFetch<AnalyticsSummary>(`/admin/analytics/summary?days=${days}`),
+  });
+}

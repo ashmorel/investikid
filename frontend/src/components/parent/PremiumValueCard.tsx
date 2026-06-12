@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { billingApi, type SubscriptionStatus } from '@/api/billing';
+import { parentApi } from '@/api/parent';
 import { premiumApi } from '@/api/premium';
 import { PREMIUM_BENEFITS } from '@/lib/premiumConfig';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,11 @@ export function PremiumValueCard({ onSubscribe }: { onSubscribe?: () => void }) 
     queryFn: premiumApi.parentRequests,
     retry: false,
   });
+  const reportQuery = useQuery({
+    queryKey: ['mastery-report'],
+    queryFn: parentApi.getMasteryReport,
+    retry: false,
+  });
 
   if (isLoading || !sub) return null;
 
@@ -33,16 +39,32 @@ export function PremiumValueCard({ onSubscribe }: { onSubscribe?: () => void }) 
   const reqs = requestsQuery.data ?? [];
   const pendingNames = Array.from(new Set(reqs.map((r) => r.child_username)));
 
+  // Evidence-led headline (M6): lead with what the child actually mastered.
+  const report = reportQuery.data;
+  const topChild = report?.children
+    .slice()
+    .sort((a, b) => b.mastered_count - a.mastered_count)[0];
+  const evidence = topChild && topChild.mastered_count > 0
+    ? { name: topChild.username, count: topChild.mastered_count }
+    : null;
+
   return (
     <section
       aria-label="Premium upgrade"
       className="mb-4 rounded-2xl border-2 border-brand-200 bg-brand-50 p-4 sm:p-6"
     >
       <h2 className="text-base font-extrabold text-brand-900">
-        Premium gives your child…
+        {evidence
+          ? `${evidence.name} mastered ${evidence.count} skill${evidence.count === 1 ? '' : 's'} this month.`
+          : 'Real financial skills, with the evidence to prove it.'}
       </h2>
+      <p className="mt-1 text-sm text-gray-700">
+        {evidence
+          ? 'Unlock the full curriculum + AI coach to keep the momentum.'
+          : 'Premium gives your child the full curriculum and a safe AI coach.'}
+      </p>
       <ul className="mt-3 space-y-2">
-        {PREMIUM_BENEFITS.map((benefit) => (
+        {PREMIUM_BENEFITS.slice(0, 3).map((benefit) => (
           <li key={benefit} className="flex items-start gap-2 text-sm text-ink">
             <span aria-hidden="true" className="text-brand-600">✓</span>
             <span>{benefit}</span>

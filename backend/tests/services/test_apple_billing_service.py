@@ -185,3 +185,43 @@ def test_household_token_is_stable_uuid5():
     assert t == abs_.household_token("A@Example.com ")
     uuid.UUID(t)  # parses as a valid UUID
     assert t != abs_.household_token("b@example.com")
+
+
+async def test_verify_accepts_annual_product(db_session, monkeypatch):
+    email = "annual@example.com"
+    child = await _child(db_session, email)
+    monkeypatch.setattr(abs_, "_require_apple", lambda: None)
+    monkeypatch.setattr(abs_.settings, "apple_iap_product_id", "premium_monthly")
+    monkeypatch.setattr(abs_.settings, "apple_iap_product_id_annual", "premium_annual")
+    monkeypatch.setattr(
+        abs_, "_build_verifier",
+        lambda: _FakeVerifier(
+            _payload(
+                productId="premium_annual",
+                originalTransactionId="OT-ANNUAL",
+                appAccountToken=abs_.household_token(email),
+            )
+        ),
+    )
+    monkeypatch.setattr(abs_, "_fetch_status", lambda tx_id: "active")
+    await abs_.verify_transaction(db_session, parent_email=email, jws="signed-jws")
+    row = await db_session.scalar(
+        select(Subscription).where(
+            Subscription.provider == "apple", Subscription.external_id == "OT-ANNUAL"
+        )
+    )
+    assert row is not None and row.status == "active"
+    assert is_premium(child) is True
+
+
+async def test_verify_still_rejects_foreign_product_with_annual_configured(db_session, monkeypatch):
+    monkeypatch.setattr(abs_, "_require_apple", lambda: None)
+    monkeypatch.setattr(abs_.settings, "apple_iap_product_id", "premium_monthly")
+    monkeypatch.setattr(abs_.settings, "apple_iap_product_id_annual", "premium_annual")
+    monkeypatch.setattr(
+        abs_, "_build_verifier",
+        lambda: _FakeVerifier(_payload(productId="premium_lifetime_scam")),
+    )
+    monkeypatch.setattr(abs_, "_fetch_status", lambda tx_id: "active")
+    with pytest.raises(abs_.AppleBillingError):
+        await abs_.verify_transaction(db_session, parent_email="a@example.com", jws="x")

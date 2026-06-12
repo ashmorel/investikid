@@ -83,6 +83,7 @@ class LessonCompletionResult(BaseModel):
     streak_count: int
     streak_freezes: int = 0
     practice_available: bool = False
+    daily_goal_met: bool = False  # True only when THIS completion crossed the daily goal
 
 
 class LevelOut(BaseModel):

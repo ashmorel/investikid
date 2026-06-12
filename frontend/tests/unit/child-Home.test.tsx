@@ -30,141 +30,61 @@ function renderHome() {
   );
 }
 
+const EMPTY_RECS = {
+  continue_learning: [],
+  practise_again: [],
+  something_new: [],
+  review_summary: { due_count: 0, next_due_at: null },
+};
+
 beforeEach(() => vi.restoreAllMocks());
 
 describe('Home', () => {
-  it('shows StatsBar values and renders module tiles', async () => {
+  it('shows the combined stats card with progress values and no modules grid', async () => {
     mockJsonRoute({
-      '/users/me/progress': { xp: 320, level: 4, streak_count: 5, last_activity_date: '2026-05-02' },
-      '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'Stocks 101', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
-        { id: 'mod-2', topic: 'savings', title: 'Savings Basics', country_codes: [], is_premium: false, order_index: 1, locked: false, icon: '💰' },
-      ],
-      '/recommendations': {
-        continue_learning: [
-          { module_id: 'mod-1', lesson_id: 'L2', score: 0.8, reason: 'Keep going!', review_prompt: null, weak_concepts: [] },
-        ],
-        practise_again: [],
-        something_new: [],
-        review_summary: { due_count: 0, next_due_at: null },
-      },
+      '/users/me/progress': { xp: 320, level: 4, streak_count: 5, streak_freezes: 0, last_activity_date: '2026-05-02' },
+      '/recommendations': EMPTY_RECS,
     });
     renderHome();
-    expect((await screen.findAllByText(/Level 4/i)).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/320 XP/i).length).toBeGreaterThanOrEqual(1);
-    await waitFor(() =>
-      expect(screen.getByText(/Stocks 101/i)).toBeInTheDocument(),
-    );
-    expect(screen.getByText(/Savings Basics/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Level 4/i)).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /your progress/i })).toBeInTheDocument();
+    expect(screen.getByText(/5-day streak/i)).toBeInTheDocument();
+    // 320 XP → 20 into the current level
+    expect(screen.getByText(/20 \/ 100 XP/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Your modules/i)).toBeNull();
+    expect(screen.getByRole('link', { name: /browse all modules/i })).toBeInTheDocument();
   });
 
-  it('renders the module grid when modules are returned', async () => {
+  it('shows a review shortcut chip when concepts are due', async () => {
     mockJsonRoute({
-      '/users/me/progress': { xp: 0, level: 1, streak_count: 0, last_activity_date: null },
-      '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'Stocks', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
-      ],
+      '/users/me/progress': { xp: 100, level: 2, streak_count: 1, streak_freezes: 0, last_activity_date: '2026-05-02' },
       '/recommendations': {
-        continue_learning: [],
-        practise_again: [],
-        something_new: [],
-        review_summary: { due_count: 0, next_due_at: null },
-      },
-    });
-    renderHome();
-    await waitFor(() =>
-      expect(screen.getByText(/Stocks/i)).toBeInTheDocument(),
-    );
-    expect(screen.getByText(/Your modules/i)).toBeInTheDocument();
-  });
-
-  it('shows review banner when concepts are due', async () => {
-    mockJsonRoute({
-      '/users/me/progress': { xp: 100, level: 2, streak_count: 1, last_activity_date: '2026-05-02' },
-      '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'M1', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
-      ],
-      '/recommendations': {
-        continue_learning: [],
-        practise_again: [
-          { module_id: 'mod-1', lesson_id: null, score: 0.6, reason: 'Review time!', review_prompt: '2 concepts to review', weak_concepts: ['APR', 'compound interest'] },
-        ],
-        something_new: [],
+        ...EMPTY_RECS,
         review_summary: { due_count: 2, next_due_at: '2026-05-02T10:00:00Z' },
       },
     });
     renderHome();
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/2 concepts/i)).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /2 to review/i })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: /shortcuts/i })).toBeInTheDocument();
   });
 
-  it('uses the cozy module-grid gap for explorers (default tier)', async () => {
+  it('shows portfolio and badge shortcut chips from loaded data', async () => {
     mockJsonRoute({
-      '/users/me/progress': { xp: 0, level: 1, streak_count: 0, last_activity_date: null },
-      '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'Stocks', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
+      '/users/me/progress': { xp: 0, level: 1, streak_count: 0, streak_freezes: 0, last_activity_date: null },
+      '/recommendations': EMPTY_RECS,
+      '/portfolio': { cash: '25.00', total_value: '125.00', currency_code: 'USD', holdings: [] },
+      '/badges': [
+        { id: 'b1', name: 'First Step', description: '', condition_type: 'lesson_count', condition_value: 1 },
+        { id: 'b2', name: 'Streak Star', description: '', condition_type: 'streak', condition_value: 3 },
       ],
-      '/recommendations': {
-        continue_learning: [], practise_again: [], something_new: [],
-        review_summary: { due_count: 0, next_due_at: null },
-      },
-    });
-    const { container } = renderHome();
-    await waitFor(() => expect(screen.getByText(/Stocks/i)).toBeInTheDocument());
-    const grid = container.querySelector('section[aria-label="Your modules"] .grid');
-    expect(grid).toHaveClass('gap-3');
-    expect(grid).not.toHaveClass('gap-2');
-  });
-
-  it('uses the compact module-grid gap for investors', async () => {
-    mockJsonRoute({
-      '/users/me': { id: 'u1', username: 'sam', is_premium: false, age_tier: 'investor' },
-      '/users/me/progress': { xp: 0, level: 1, streak_count: 0, last_activity_date: null },
-      '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'Stocks', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
+      '/users/me/badges': [
+        { id: 'b1', name: 'First Step', description: '', earned_at: '2026-05-01T10:00:00Z' },
       ],
-      '/recommendations': {
-        continue_learning: [], practise_again: [], something_new: [],
-        review_summary: { due_count: 0, next_due_at: null },
-      },
-    });
-    const { container } = renderHome();
-    await waitFor(() => expect(screen.getByText(/Stocks/i)).toBeInTheDocument());
-    await waitFor(() => {
-      const grid = container.querySelector('section[aria-label="Your modules"] .grid');
-      expect(grid).toHaveClass('gap-2');
-    });
-  });
-
-  it('marks the next-lesson module tile', async () => {
-    mockJsonRoute({
-      '/users/me/progress': { xp: 50, level: 1, streak_count: 0, last_activity_date: null },
-      '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'Stocks', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
-        { id: 'mod-2', topic: 'savings', title: 'Savings', country_codes: [], is_premium: false, order_index: 1, locked: false, icon: '💰' },
-      ],
-      '/recommendations': {
-        continue_learning: [],
-        practise_again: [],
-        something_new: [],
-        review_summary: { due_count: 0, next_due_at: null },
-      },
-      // The grid highlight now follows the next-lesson resolver, not recommendations.
-      '/next-lesson': {
-        next: {
-          mode: 'continue',
-          module_id: 'mod-1',
-          level_id: 'L1',
-          lesson_id: 'Q1',
-          module_title: 'Stocks',
-          module_icon: '📈',
-          lesson_title: 'Intro',
-        },
-      },
     });
     renderHome();
-    await waitFor(() => expect(screen.getByText(/Stocks/i)).toBeInTheDocument());
-    // The next-lesson tile shows the "Next" badge
-    expect(await screen.findByText(/Next/i)).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /portfolio \$125\.00/i })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: /badges 1 of 2/i })).toBeInTheDocument(),
+    );
   });
 });
