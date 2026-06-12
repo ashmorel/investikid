@@ -1,12 +1,31 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
 
+class CheckoutRequest(BaseModel):
+    plan: Literal["annual", "monthly"] = "annual"
+
+
 class CheckoutResponse(BaseModel):
     url: str
+
+
+class PlanOut(BaseModel):
+    plan: str
+    interval: str
+    display_price: str
+    savings_pct: int | None = None
+    apple_product_id: str
+    google_product_id: str
+
+
+class PlansResponse(BaseModel):
+    currency: str
+    plans: list[PlanOut]
 
 
 class PortalResponse(BaseModel):

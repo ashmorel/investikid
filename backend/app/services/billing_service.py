@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.subscription import Subscription
+from app.services.plan_catalog import resolve_stripe_price
 
 
 def _require_stripe() -> None:
@@ -54,7 +55,7 @@ async def get_or_create_subscription(
 
 
 async def create_checkout_session(
-    session: AsyncSession, parent_email: str
+    session: AsyncSession, parent_email: str, plan: str = "annual"
 ) -> str:
     """Create a Stripe Checkout Session and return its URL."""
     _require_stripe()
@@ -69,11 +70,11 @@ async def create_checkout_session(
     checkout = stripe.checkout.Session.create(
         mode="subscription",
         customer=sub.stripe_customer_id,
-        line_items=[{"price": settings.stripe_price_id, "quantity": 1}],
+        line_items=[{"price": resolve_stripe_price(plan), "quantity": 1}],
         subscription_data=subscription_data if subscription_data else None,
         success_url=f"{settings.app_base_url}/parent?checkout=success",
         cancel_url=f"{settings.app_base_url}/parent?checkout=canceled",
-        metadata={"parent_email": parent_email},
+        metadata={"parent_email": parent_email, "plan": plan},
     )
     await session.commit()
     return checkout.url

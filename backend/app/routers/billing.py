@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from stripe import SignatureVerificationError
 
 from app.core.config import settings
 from app.core.database import get_session
+from app.models.user import User
 from app.routers.parent_auth import get_current_parent
 from app.schemas.apple_billing import (
     AppleAccountTokenResponse,
@@ -14,7 +16,10 @@ from app.schemas.apple_billing import (
     AppleVerifyResponse,
 )
 from app.schemas.billing import (
+    CheckoutRequest,
     CheckoutResponse,
+    PlanOut,
+    PlansResponse,
     PortalResponse,
     SubscriptionStatusResponse,
 )
@@ -29,6 +34,7 @@ from app.services.billing_service import (
     create_portal_session,
     get_subscription_status,
 )
+from app.services.plan_catalog import PLANS, apple_product_id, google_product_id
 from app.services.webhook_service import dispatch_webhook_event
 
 router = APIRouter(prefix="/billing", tags=["billing"])
@@ -36,11 +42,47 @@ router = APIRouter(prefix="/billing", tags=["billing"])
 
 @router.post("/checkout", response_model=CheckoutResponse)
 async def checkout(
+    payload: CheckoutRequest | None = None,
     parent_email: str = Depends(get_current_parent),
     session: AsyncSession = Depends(get_session),
 ):
-    url = await create_checkout_session(session, parent_email)
+    plan = payload.plan if payload else "annual"
+    url = await create_checkout_session(session, parent_email, plan)
     return CheckoutResponse(url=url)
+
+
+@router.get("/plans", response_model=PlansResponse)
+async def list_plans(
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    """Plan catalog with the household's display currency (first child's
+    currency_code, default USD). Display strings only — real charge amounts
+    live in the stores/Stripe."""
+    currency = (
+        await session.scalar(
+            select(User.currency_code)
+            .where(User.parent_email == parent_email)
+            .order_by(User.created_at)
+            .limit(1)
+        )
+    ) or "USD"
+    if currency not in next(iter(PLANS.values()))["display"]:
+        currency = "USD"
+    return PlansResponse(
+        currency=currency,
+        plans=[
+            PlanOut(
+                plan=name,
+                interval=spec["interval"],
+                display_price=spec["display"][currency],
+                savings_pct=spec["savings_pct"],
+                apple_product_id=apple_product_id(name),
+                google_product_id=google_product_id(name),
+            )
+            for name, spec in PLANS.items()
+        ],
+    )
 
 
 @router.post("/portal", response_model=PortalResponse)
