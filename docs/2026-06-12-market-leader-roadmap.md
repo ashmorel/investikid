@@ -49,7 +49,7 @@ Targets are starting hypotheses (kids-edtech benchmarks), revised once real data
 
 ### Phase 1 — One thing to do next (Weeks 1–3)
 
-**M3 · Home hierarchy redesign.** The review's sharpest UX critique: Home has next-lesson, stats, level progress, premium, portfolio, review, badges, and modules competing. Redesign around **one primary action** — a dominant "Continue" hero (the next-lesson resolver is already the strongest asset) — with everything else demoted to clearly secondary tiers (collapsed, smaller, or moved to Stats/Profile). Apply `tierConfig` density so the Investor-Mode variant reads even cleaner. Run vitest-axe on the new layout.
+**M3 · Home hierarchy redesign.** The review's sharpest UX critique: Home has next-lesson, stats, level progress, premium, portfolio, review, badges, and modules competing. **Step 1 is Figma variant exploration**: generate 2–3 Home hierarchy variants (hero-dominant, collapsed-tiers, teen-density) from the existing design-system tokens file (see `docs/figma-handoff.md`), pick one, *then* spec and build. Redesign around **one primary action** — a dominant "Continue" hero (the next-lesson resolver is already the strongest asset) — with everything else demoted to clearly secondary tiers (collapsed, smaller, or moved to Stats/Profile). Apply `tierConfig` density so the Investor-Mode variant reads even cleaner. Run vitest-axe on the new layout.
 **Success:** a child landing on Home can state the one thing to do next; primary-CTA tap-through measurable via M4 (target: most Home sessions start the next lesson).
 
 **M4 · Privacy-safe product analytics.** First-party event capture (backend table + lightweight client events: activation, lesson completion, Home CTA taps, paywall views, trial starts, digest opens) with admin funnel/retention dashboards. **No third-party trackers on child surfaces** (COPPA/AADC); counts and funnels, not behavioural profiles; respect the existing `profiling_enabled` AADC gate; retention-purge integration.
@@ -76,7 +76,7 @@ Targets are starting hypotheses (kids-edtech benchmarks), revised once real data
 
 ### Phase 4 — Teen validation (Weeks 5–9)
 
-**M10 · Structured 15–18 testing → Investor Mode iteration.** The review's #1 priority and the cheapest de-risk: 5–8 real 15–18-year-olds from the M2 cohort, structured script (tone, mascot presence, density, simulator credibility, "would you open this at school?"), then one iteration pass on Investor Mode's visual maturity from findings (likely candidates: flatter/darker theme option, further mascot dial-back, sharper data-dense simulator default).
+**M10 · Structured 15–18 testing → Investor Mode iteration.** The review's #1 priority and the cheapest de-risk: 5–8 real 15–18-year-olds from the M2 cohort, structured script (tone, mascot presence, density, simulator credibility, "would you open this at school?"). **Prepare Figma visual-direction mockups for the sessions** (darker/flatter theme, dialled-back mascot, denser simulator) so testers react to candidate directions *before* any code is committed; then one iteration pass on Investor Mode's visual maturity from the findings.
 **Success:** documented findings + one shipped iteration; teens describe it as "an investing app for me," not "a kids' app with a teen skin."
 
 ### Phase 5 — Public launch (Weeks 9–12)
