@@ -29,12 +29,15 @@ def record_xp(progress: UserProgress, amount: int, *, today: date | None = None)
     existing award-site convention).
     """
     today = today or datetime.now(UTC).date()
+    # Column defaults only materialise on flush; tolerate fresh in-memory rows.
+    goal = progress.daily_goal_xp or 30
     if progress.xp_today_date != today:
         progress.xp_today_date = today
         progress.xp_today = 0
-    met_before = progress.xp_today >= progress.daily_goal_xp
+    xp_today = progress.xp_today or 0
+    met_before = xp_today >= goal
     progress.xp += amount
-    progress.xp_today += amount
+    progress.xp_today = xp_today + amount
     progress.level = compute_level(progress.xp)
-    met_after = progress.xp_today >= progress.daily_goal_xp
+    met_after = progress.xp_today >= goal
     return XpResult(amount, met_after and not met_before, met_after)
