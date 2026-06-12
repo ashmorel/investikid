@@ -37,9 +37,10 @@ density flip via `tierConfig`.
      `/progress`. Hidden when due_count = 0.
    - **Badges** chip — earned/total counts from `useBadges`/`useAllBadges` → `/stats`.
    Chips are `<Link>`s with ≥44px tap height (iOS golden rule), text ≥ 12px.
-5. **Premium upsell (slim)** — non-premium children only: `PremiumUpsellCard` gains a
-   `variant="slim"` (single-line row: "✨ Unlock all levels & the AI coach →"), used on Home.
-   The existing full card remains for other surfaces (it is used by the paywall flow).
+5. **Premium upsell (slim)** — non-premium children only: `PremiumUpsellCard` is rewritten
+   in place as a single-line row ("✨ Unlock all levels & the AI coach" + CTA + dismiss) —
+   verified Home-only, so no second variant is needed. Dismissal + paywall-open behaviour
+   unchanged.
 6. **Browse all modules** — the existing gradient button → `/lessons`. **The modules grid
    leaves Home entirely** (the Learn tab is the browsing surface; the next-lesson resolver
    already drives "what's next").
@@ -79,8 +80,9 @@ it. Net effect: Home drops two card-render queries' worth of DOM, no new endpoin
 
 ## Edge cases
 
-- **Loading:** hero keeps its pulse skeleton; StatsCard and QuickLinksRow render skeleton
-  rows (no layout shift).
+- **Loading:** hero keeps its pulse skeleton; StatsCard renders its zero-state (Level 1,
+  0 XP) until progress loads; QuickLinksRow appears as data arrives (below the fold —
+  minor shift acceptable, chips are conditional anyway).
 - **caught_up:** hero shows the existing "All caught up" celebration; Review chip likely
   visible → natural next action.
 - **New account (no progress, no portfolio):** Home = greeting + hero ("Start your first
