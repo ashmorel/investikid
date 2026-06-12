@@ -37,7 +37,7 @@ export function QuickLinksRow({ portfolioValue, currencyCode, reviewDue, badgesE
       to: '/progress',
       label: `${reviewDue} to review`,
       text: '',
-      className: 'bg-accent-100 text-accent-800',
+      className: 'bg-accent-100 text-accent-700',
       icon: '🔁',
     });
   }
