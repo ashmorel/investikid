@@ -16,7 +16,7 @@ export function PremiumUpsellCard({ isPremium }: { isPremium: boolean }) {
       <button
         type="button"
         onClick={() => open({ kind: 'home', label: 'Premium' })}
-        className="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+        className="shrink-0 min-h-[44px] rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
       >
         Ask my grown-up
       </button>
