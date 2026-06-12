@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.models.subscription import Subscription
 from app.services.apple_billing_service import household_token
 from app.services.entitlements import recompute_household_premium
+from app.services.plan_catalog import allowed_google_products
 
 _SCOPE = "https://www.googleapis.com/auth/androidpublisher"
 
@@ -102,10 +103,10 @@ async def verify_purchase(session: AsyncSession, *, parent_email: str,
     if obfuscated and obfuscated != household_token(parent_email):
         raise GoogleBillingError("obfuscatedAccountId does not match the authenticated parent")
 
-    expected_product = settings.google_play_product_id
+    allowed = allowed_google_products()
     line_product = _line_item(resp).get("productId") or product_id
-    if expected_product and (line_product != expected_product or product_id != expected_product):
-        raise GoogleBillingError("Purchase product does not match the configured subscription product")
+    if allowed and (line_product not in allowed or product_id not in allowed):
+        raise GoogleBillingError("Purchase product does not match a configured subscription product")
 
     if resp.get("acknowledgementState") == "ACKNOWLEDGEMENT_STATE_PENDING":
         try:

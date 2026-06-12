@@ -47,3 +47,38 @@ def test_store_product_ids_and_allowed_sets(monkeypatch):
     assert plan_catalog.google_product_id("annual") == "premium_annual"
     assert plan_catalog.allowed_apple_products() == {"premium_monthly", "premium_annual"}
     assert plan_catalog.allowed_google_products() == set()
+
+
+async def test_google_verify_accepts_annual_product(db_session, monkeypatch):
+    """Membership check in google_billing_service uses the allowed set."""
+    from unittest.mock import MagicMock
+
+    from app.services import google_billing_service as gbs
+
+    monkeypatch.setattr(settings, "google_play_product_id", "premium_monthly")
+    monkeypatch.setattr(settings, "google_play_product_id_annual", "premium_annual")
+    monkeypatch.setattr(gbs, "_require_google", lambda: None)
+    resp = {
+        "subscriptionState": "SUBSCRIPTION_STATE_ACTIVE",
+        "lineItems": [{"productId": "premium_annual", "expiryTime": "2027-01-01T00:00:00Z"}],
+        "externalAccountIdentifiers": {},
+        "acknowledgementState": "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED",
+    }
+    monkeypatch.setattr(gbs, "_fetch_subscription", lambda token: resp)
+    monkeypatch.setattr(gbs, "_acknowledge", MagicMock())
+    await gbs.verify_purchase(
+        db_session,
+        parent_email="gannual@example.com",
+        purchase_token="tok-annual",
+        product_id="premium_annual",
+    )
+
+    import pytest as _pytest
+
+    with _pytest.raises(gbs.GoogleBillingError):
+        await gbs.verify_purchase(
+            db_session,
+            parent_email="gannual@example.com",
+            purchase_token="tok-bad",
+            product_id="premium_lifetime_scam",
+        )

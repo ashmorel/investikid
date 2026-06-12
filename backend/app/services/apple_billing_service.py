@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.subscription import Subscription
 from app.services.entitlements import recompute_household_premium
+from app.services.plan_catalog import allowed_apple_products
 
 # Fixed namespace for deriving an opaque, deterministic household token from a
 # parent email. This token is sent to Apple as the StoreKit appAccountToken
@@ -128,10 +129,10 @@ async def verify_transaction(session: AsyncSession, *, parent_email: str, jws: s
     token = (getattr(payload, "appAccountToken", "") or "").lower()
     if token and token != household_token(parent_email):
         raise AppleBillingError("appAccountToken does not match the authenticated parent")
-    expected_product = settings.apple_iap_product_id
+    allowed = allowed_apple_products()
     product = getattr(payload, "productId", None)
-    if expected_product and product and product != expected_product:
-        raise AppleBillingError("Transaction product does not match the configured subscription product")
+    if allowed and product and product not in allowed:
+        raise AppleBillingError("Transaction product does not match a configured subscription product")
     otid = payload.originalTransactionId
     try:
         status = _fetch_status(otid)
