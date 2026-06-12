@@ -22,11 +22,15 @@ export default function AdminSettings() {
     if (data && !seeded.current) {
       setEmails(data.alert_emails);
       if (data.seasonal_event) {
+        /* eslint-disable react-hooks/set-state-in-effect -- one-shot, ref-guarded
+           seeding of form fields from the fetched settings; mirrors the
+           established alert_emails seeding pattern above. */
         setEventTitle(data.seasonal_event.title);
         setEventEmoji(data.seasonal_event.emoji);
         setEventStart(data.seasonal_event.starts_at.slice(0, 10));
         setEventEnd(data.seasonal_event.ends_at.slice(0, 10));
         setEventBonus(data.seasonal_event.xp_bonus_pct);
+        /* eslint-enable react-hooks/set-state-in-effect */
       }
       seeded.current = true;
     }
