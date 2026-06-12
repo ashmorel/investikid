@@ -65,6 +65,7 @@ class ChildOut(BaseModel):
     country_code: str
     is_active: bool
     is_premium: bool
+    push_enabled: bool = False
     parent_consent_given_at: datetime | None
     consent_declined_at: datetime | None
     deleted_at: datetime | None
@@ -128,3 +129,7 @@ class MasteryReportOut(BaseModel):
     window_days: int
     children: list[MasteryReportChildOut]
     household_mastered_count: int
+
+
+class PushToggleRequest(BaseModel):
+    enabled: bool

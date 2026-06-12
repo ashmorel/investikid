@@ -22,6 +22,7 @@ class UserProfile(BaseModel):
     topic_path: str | None
     content_region: str | None = None
     is_premium: bool
+    push_enabled: bool = False
     is_admin: bool
     parent_email: str | None
     created_at: datetime

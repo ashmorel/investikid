@@ -1,12 +1,16 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.security import decode_token, get_token_from_cookie
+from app.models.push_device import PushDevice
 from app.models.user import User, UserProgress
 from app.schemas.user import DailyGoalUpdate, UpdatePreferencesRequest, UserProfile, UserProgressOut
 from app.services.export_service import build_user_export
@@ -109,3 +113,50 @@ async def export_my_data(
         content=data,
         headers={"Content-Disposition": 'attachment; filename="invest-ed-export.json"'},
     )
+
+
+class PushDeviceRequest(BaseModel):
+    platform: Literal["ios", "android"]
+    token: str = Field(min_length=8, max_length=255)
+
+
+@router.post("/me/push-devices", status_code=201)
+async def register_push_device(
+    payload: PushDeviceRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Register (upsert) a device token. Server-side consent enforcement: the
+    parent master switch must be on regardless of what the client does."""
+    if not current_user.push_enabled:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Push is not enabled by your parent")
+    device = await session.scalar(
+        select(PushDevice).where(PushDevice.token == payload.token)
+    )
+    now = datetime.now(UTC)
+    if device is None:
+        device = PushDevice(
+            user_id=current_user.id, platform=payload.platform, token=payload.token
+        )
+        session.add(device)
+    else:
+        device.user_id = current_user.id
+        device.platform = payload.platform
+        device.last_seen_at = now
+    await session.commit()
+    return {"status": "ok"}
+
+
+@router.delete("/me/push-devices/{token}")
+async def unregister_push_device(
+    token: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    await session.execute(
+        delete(PushDevice).where(
+            PushDevice.token == token, PushDevice.user_id == current_user.id
+        )
+    )
+    await session.commit()
+    return {"status": "ok"}

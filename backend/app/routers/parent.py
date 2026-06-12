@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_session
+from app.models.audit import AuditLog
 from app.models.group import GroupMembership, LeaderboardGroup
 from app.models.parent_preferences import ParentPreferences
 from app.models.premium_request import PremiumRequest
@@ -22,6 +23,7 @@ from app.schemas.parent import (
     MasteryReportOut,
     PremiumRequestOut,
     PremiumToggleRequest,
+    PushToggleRequest,
     TierOverrideOut,
     TierOverrideRequest,
 )
@@ -71,6 +73,7 @@ async def list_children(
             ChildOut(
                 user_id=r.id, username=r.username, country_code=r.country_code,
                 is_active=r.is_active, is_premium=r.is_premium,
+                push_enabled=r.push_enabled,
                 parent_consent_given_at=r.parent_consent_given_at,
                 consent_declined_at=r.consent_declined_at,
                 deleted_at=r.deleted_at,
@@ -175,6 +178,28 @@ async def freeze_child(
     child.is_active = not payload.frozen
     await session.commit()
     return {"status": "ok", "frozen": payload.frozen}
+
+
+@router.post("/children/{user_id}/push")
+async def set_child_push(
+    user_id: uuid.UUID,
+    payload: PushToggleRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    """Parent master switch for server push (M7). Both this AND the child's
+    in-app toggle must be on before any device token is registered."""
+    child = await _get_owned_child(session, parent_email, user_id)
+    if child.deleted_at is not None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account deleted")
+    child.push_enabled = payload.enabled
+    session.add(AuditLog(
+        user_id=child.id,
+        event_type="push_enabled" if payload.enabled else "push_disabled",
+        metadata_json={"actor": f"parent:{parent_email}"},
+    ))
+    await session.commit()
+    return {"status": "ok", "push_enabled": payload.enabled}
 
 
 @router.post("/children/{user_id}/premium")
