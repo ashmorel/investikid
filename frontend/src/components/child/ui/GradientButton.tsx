@@ -8,6 +8,17 @@ const BASE =
 
 export function GradientButton({ to, full, className, children, disabled, ...rest }: Props) {
   const cls = cn(BASE, full && 'w-full', disabled ? 'opacity-50 pointer-events-none active:scale-100' : '', className);
-  if (to) return <Link to={to} className={cls} aria-disabled={disabled || undefined}>{children}</Link>;
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className={cls}
+        aria-disabled={disabled || undefined}
+        onClick={rest.onClick as React.MouseEventHandler | undefined}
+      >
+        {children}
+      </Link>
+    );
+  }
   return <button className={cls} disabled={disabled} {...rest}>{children}</button>;
 }

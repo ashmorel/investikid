@@ -9,6 +9,7 @@ import { HeroCard } from '@/components/child/ui/HeroCard';
 import { Penny } from '@/components/child/ui/Penny';
 import { GradientButton } from '@/components/child/ui/GradientButton';
 import { TierChip } from '@/components/child/TierChip';
+import { track } from '@/lib/analytics';
 
 export default function HomeHero() {
   const next = useNextLesson();
@@ -94,6 +95,7 @@ export default function HomeHero() {
           )
         ) : (
           <HeroCard
+            onCtaClick={() => track('home_cta_tap', { surface: 'hero' })}
             eyebrow={next.mode === 'continue' ? (cfg.heroVariant === 'flat' ? 'Continue' : 'Continue learning') : 'Start here'}
             icon={next.moduleIcon ?? '📈'}
             title={next.lessonLabel ?? 'Your next lesson'}

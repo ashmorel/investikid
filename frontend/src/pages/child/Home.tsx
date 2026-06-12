@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useProgress } from '@/hooks/useProgress';
@@ -11,8 +12,10 @@ import { usePortfolio } from '@/hooks/usePortfolio';
 import { useAllBadges } from '@/hooks/useAllBadges';
 import { useBadges } from '@/hooks/useBadges';
 import { authApi, type Me } from '@/api/auth';
+import { trackOncePerSession } from '@/lib/analytics';
 
 export default function Home() {
+  useEffect(() => trackOncePerSession('home_view'), []);
   const { data: progress } = useProgress();
   const { data: recs } = useRecommendations();
   const allBadges = useAllBadges();

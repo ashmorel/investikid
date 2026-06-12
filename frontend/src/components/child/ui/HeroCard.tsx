@@ -9,9 +9,10 @@ type Props = {
   cta: string;
   to: string;
   variant?: 'playful' | 'flat';
+  onCtaClick?: () => void;
 };
 
-export function HeroCard({ eyebrow, icon, title, subtitle, cta, to, variant = 'playful' }: Props) {
+export function HeroCard({ eyebrow, icon, title, subtitle, cta, to, variant = 'playful', onCtaClick }: Props) {
   const flat = variant === 'flat';
   return (
     <motion.div
@@ -35,6 +36,7 @@ export function HeroCard({ eyebrow, icon, title, subtitle, cta, to, variant = 'p
       <GradientButton
         to={to}
         full
+        onClick={onCtaClick}
         className={
           flat
             ? 'mt-4 !bg-none bg-brand-700 text-white shadow-none hover:bg-brand-800'

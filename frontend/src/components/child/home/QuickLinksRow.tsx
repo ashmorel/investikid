@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '@/lib/currency';
 import { tierConfig, useAgeTier } from '@/lib/ageTier';
+import { track } from '@/lib/analytics';
 
 type Props = {
   portfolioValue: string | number | null;
@@ -60,7 +61,13 @@ export function QuickLinksRow({ portfolioValue, currencyCode, reviewDue, badgesE
       <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">While you're here</p>
       <div className="mt-2 flex flex-wrap gap-2">
         {chips.map((c) => (
-          <Link key={c.key} to={c.to} aria-label={c.text ? `${c.label} ${c.text}` : c.label} className={`${chipBase} ${c.className}`}>
+          <Link
+            key={c.key}
+            to={c.to}
+            aria-label={c.text ? `${c.label} ${c.text}` : c.label}
+            className={`${chipBase} ${c.className}`}
+            onClick={() => track('quicklink_tap', { surface: c.key })}
+          >
             {emoji && <span aria-hidden="true">{c.icon}</span>}
             <span>{c.label}</span>
             {c.text && <span className="font-extrabold">{c.text}</span>}
