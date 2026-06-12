@@ -17,6 +17,7 @@ from app.models.content import LessonCompletion, Level, LevelMastery, Module
 from app.models.parent_preferences import ParentPreferences
 from app.models.subscription import Subscription
 from app.models.user import User, UserProgress
+from app.services import product_analytics_service
 from app.services.email import get_email_sender
 from app.services.entitlements import ACTIVE_SUBSCRIPTION_STATUSES
 from app.services.gap_detection_service import get_strengths_and_gaps
@@ -208,6 +209,13 @@ async def run_weekly_digests(
             session.add(prefs)
         prefs.last_digest_sent_at = now
         summary["sent"] += 1
+        await product_analytics_service.record(
+            session,
+            "digest_sent",
+            user=None,
+            role="parent",
+            props={"surface": "weekly_digest"},
+        )
 
     await session.commit()
     return summary

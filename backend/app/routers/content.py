@@ -19,6 +19,7 @@ from app.schemas.content import (
     ModuleOut,
     NextLessonEnvelope,
 )
+from app.services import product_analytics_service
 from app.services.age_tier import age_in_years
 from app.services.content_service import (
     compute_level,
@@ -313,6 +314,7 @@ async def complete_lesson(
     module = await _get_accessible_module(lesson.module_id, current_user, session)
     # Capture scalar attributes early before session expires ORM objects
     topic = module.topic
+    module_id = module.id
     lesson_type = lesson.type
     lesson_level_id = lesson.level_id
     lesson_content = lesson.content_json or {}
@@ -327,6 +329,19 @@ async def complete_lesson(
     today = datetime.now(UTC).date()
     xp_awarded, already = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today
+    )
+
+    await product_analytics_service.record(
+        session,
+        "lesson_completed",
+        user=current_user,
+        role="child",
+        props={
+            "module_id": str(module_id),
+            "level_id": str(lesson_level_id) if lesson_level_id else None,
+            "lesson_id": str(lesson_id),
+            "repeat": already,
+        },
     )
 
     if lesson_level_id is not None:

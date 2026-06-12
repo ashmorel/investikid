@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.premium_request import PremiumRequest
 from app.models.subscription import Subscription
+from app.services import product_analytics_service
 from app.services.entitlements import recompute_household_premium
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,7 @@ async def handle_subscription_updated(
         logger.warning("subscription.updated: unknown subscription %s", subscription_id)
         return
 
+    old_status = sub.status
     sub.external_id = sub.external_id or subscription_id
     sub.status = data["status"]
     sub.current_period_end = datetime.fromtimestamp(
@@ -93,6 +95,15 @@ async def handle_subscription_updated(
     )
     sub.cancel_at_period_end = data.get("cancel_at_period_end", False)
     sub.updated_at = datetime.now(UTC)
+
+    if data["status"] == "trialing" and old_status != "trialing":
+        await product_analytics_service.record(
+            session,
+            "trial_started",
+            user=None,
+            role="parent",
+            props={"source": "stripe"},
+        )
 
     await recompute_household_premium(session, sub.parent_email)
     await session.commit()
