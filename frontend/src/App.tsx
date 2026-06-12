@@ -40,6 +40,7 @@ const ChallengeForm = lazy(() => import('@/components/admin/ChallengeForm'));
 const FeedbackList = lazy(() => import('@/components/admin/FeedbackList'));
 const VideoHealthList = lazy(() => import('@/components/admin/VideoHealthList'));
 const AdminSettings = lazy(() => import('@/components/admin/AdminSettings'));
+const AdminAnalytics = lazy(() => import('@/components/admin/AdminAnalytics'));
 
 function RootRedirect() {
   // Redirect / to /home; if unauthed, /home's Shell will redirect to /login.
@@ -113,6 +114,7 @@ export default function App() {
           <Route path="feedback" element={<FeedbackList />} />
           <Route path="video-health" element={<VideoHealthList />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
         </Route>
 
         <Route path="*" element={<div className="p-6">Not found</div>} />
