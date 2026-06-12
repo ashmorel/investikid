@@ -5,6 +5,7 @@ export const DEFAULT_TIER: AgeTier = 'explorer';
 
 export type TierDensity = 'cozy' | 'compact';
 export type TierCelebration = 'big' | 'subtle';
+export type HeroVariant = 'playful' | 'flat';
 
 // Presentation knobs per tier — the single place to retune tone, density and prominence.
 export const tierConfig: Record<
@@ -14,10 +15,13 @@ export const tierConfig: Record<
     density: TierDensity;
     celebration: TierCelebration;
     showTierChip: boolean;
+    heroVariant: HeroVariant;
+    showPennyAvatar: boolean;
+    chipEmoji: boolean;
   }
 > = {
-  explorer: { pennyHeroSize: 44, density: 'cozy', celebration: 'big', showTierChip: false },
-  investor: { pennyHeroSize: 32, density: 'compact', celebration: 'subtle', showTierChip: true },
+  explorer: { pennyHeroSize: 44, density: 'cozy', celebration: 'big', showTierChip: false, heroVariant: 'playful', showPennyAvatar: true, chipEmoji: true },
+  investor: { pennyHeroSize: 32, density: 'compact', celebration: 'subtle', showTierChip: true, heroVariant: 'flat', showPennyAvatar: false, chipEmoji: false },
 };
 
 // Card-grid gap per density (full class literals so Tailwind keeps them).
