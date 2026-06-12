@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     app_base_url: str = "http://localhost:5173"
     data_retention_days: int = 30
     analytics_retention_days: int = 400  # raw product-analytics events (~13 months)
+    firebase_service_account_json: str = ""  # FCM service-account JSON contents; blank = push disabled
     privacy_notice_version: str = "2026-05-16"
 
     # LLM / AI — lite + standard tiers (open-source models)

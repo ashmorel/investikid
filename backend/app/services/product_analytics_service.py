@@ -32,7 +32,7 @@ CLIENT_EVENTS: frozenset[str] = frozenset(
     {"home_view", "home_cta_tap", "quicklink_tap", "paywall_view"}
 )
 SERVER_EVENTS: frozenset[str] = frozenset(
-    {"lesson_completed", "subscription_activated", "trial_started", "digest_sent"}
+    {"lesson_completed", "subscription_activated", "trial_started", "digest_sent", "push_sent"}
 )
 ALL_EVENTS: frozenset[str] = CLIENT_EVENTS | SERVER_EVENTS
 
