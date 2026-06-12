@@ -102,15 +102,11 @@ describe('a11y: child core surfaces', () => {
     mockJsonRoute({
       '/users/me': ME,
       '/users/me/progress': { xp: 320, level: 4, streak_count: 5, last_activity_date: '2026-05-02' },
-      '/modules': [
-        { id: 'mod-1', topic: 'stocks', title: 'Stocks 101', country_codes: [], is_premium: false, order_index: 0, locked: false, icon: '📈' },
-        { id: 'mod-2', topic: 'savings', title: 'Savings Basics', country_codes: [], is_premium: false, order_index: 1, locked: false, icon: '💰' },
-      ],
     });
     const { default: Home } = await import('@/pages/child/Home');
     const { container } = renderAt('/home', <Home />, '/home');
     await waitFor(() => expect(screen.getByText(/HomeHero/i)).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByText(/Stocks 101/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('group', { name: /your progress/i })).toBeInTheDocument());
     expect(await axe(container)).toHaveNoViolations();
   });
 
