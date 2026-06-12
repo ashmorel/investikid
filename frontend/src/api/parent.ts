@@ -88,6 +88,7 @@ export const parentApi = {
     ),
   logout: () => apiFetch<{ status: string }>('/parent/auth/logout', { method: 'POST' }),
   listChildren: () => apiFetch<Child[]>('/parent/children'),
+  getMasteryReport: () => apiFetch<MasteryReport>('/parent/mastery-report'),
   freezeChild: (userId: string, frozen: boolean) =>
     apiFetch<{ status: string; frozen: boolean }>(
       `/parent/children/${userId}/freeze`,
@@ -130,4 +131,23 @@ export const parentApi = {
       method: 'PATCH',
       body: JSON.stringify(update),
     }),
+};
+
+
+// ── Mastery report (M6) ────────────────────────────────────────────
+export type MasteryReportChild = {
+  user_id: string;
+  username: string;
+  mastered_count: number;
+  mastered_total: number;
+  objectives: string[];
+  standards: { framework?: string; code?: string }[];
+  weak_topic: string | null;
+  next_recommendation: { module_title?: string; level_title?: string | null; reason?: string | null } | null;
+};
+
+export type MasteryReport = {
+  window_days: number;
+  children: MasteryReportChild[];
+  household_mastered_count: number;
 };
