@@ -28,7 +28,7 @@ Deliberately **no** IP address, no user-agent, no free text (tighter than `Audit
 
 ## Event allowlist (v1)
 
-**Server-recorded** (in `app/services/analytics_service.py: record(session, name, *, user=None, role, props=None)` — fire-and-forget semantics, never raises into the caller; flush rides the caller's transaction):
+**Server-recorded** (in `app/services/product_analytics_service.py: record(session, name, *, user=None, role, props=None)` — fire-and-forget semantics, never raises into the caller; flush rides the caller's transaction):
 - `lesson_completed` — in `content.py complete_lesson` after `_award_completion` (props: module_id, level_id, lesson_id, repeat=already)
 - `subscription_activated` — in `entitlements.set_premium` when value becomes True (props: source if available)
 - `trial_started` — in `webhook_service.handle_subscription_updated` when status transitions to `trialing` (Stripe only in v1; Apple/Google trials deferred — note in dashboard footer)
@@ -60,7 +60,7 @@ unauthenticated pages.
 
 - Events are service-improvement counts; they are **never read by personalization
   paths**, so the `profiling_enabled` AADC gate is structurally untouched. Enforced
-  structurally: the model is imported only by `analytics_service.py` and the admin
+  structurally: the model is imported only by `product_analytics_service.py` and the admin
   analytics router — a unit test greps the app package to pin this invariant.
 - **Account deletion**: FK `ON DELETE SET NULL` covers hard deletes; `retention.purge_expired_accounts`
   additionally nulls `user_id` on events of purged accounts (soft-deleted users keep rows

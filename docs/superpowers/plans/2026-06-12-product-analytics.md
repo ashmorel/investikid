@@ -4,7 +4,7 @@
 
 **Goal:** First-party COPPA-safe analytics per `docs/superpowers/specs/2026-06-12-product-analytics-design.md` — event table, server/client capture, retention integration, admin dashboard.
 
-**Architecture:** New `AnalyticsEvent` model + `analytics_service.record()` seam; hooks in complete_lesson / set_premium / webhook trialing / digest send; batched authenticated ingest endpoint for 4 client events; SQL-aggregate admin summary endpoint + AdminAnalytics page; retention via FK SET NULL + purge hook + cron-driven raw-event deletion.
+**Architecture:** New `AnalyticsEvent` model + `product_analytics_service.record()` seam; hooks in complete_lesson / set_premium / webhook trialing / digest send; batched authenticated ingest endpoint for 4 client events; SQL-aggregate admin summary endpoint + AdminAnalytics page; retention via FK SET NULL + purge hook + cron-driven raw-event deletion.
 
 **Tech Stack:** FastAPI + SQLAlchemy 2.0 async + Alembic; React 18 + TS + TanStack Query. Backend tests: `/Users/leeashmore/Local Repo/.venv/bin/pytest` from `backend/` with `pytestmark = pytest.mark.asyncio(loop_scope="session")` + `client`/`admin_client`/`db_session` fixtures. Branch `testing`. Commits end with `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
 
@@ -14,7 +14,7 @@
 - [ ] `app/models/analytics.py` — `AnalyticsEvent` per spec table (allowlist constants `CLIENT_EVENTS`, `SERVER_EVENTS`, `ALLOWED_PROP_KEYS` live in the service).
 - [ ] Register in `app/models/__init__.py`.
 - [ ] Migration `chained off 9c3d5e2f0a7b` (hand-written, indexes on event_name/occurred_at/user_id).
-- [ ] `app/services/analytics_service.py` — `async def record(session, name, *, user=None, role, props=None)`: snapshots age_tier (from user dob via existing age-tier helper) + is_premium, filters props to allowlist, adds row; wraps everything in try/except + log (never raises). Tests: row written with snapshots; bad prop keys dropped; exception swallowed (e.g. session mock that raises).
+- [ ] `app/services/product_analytics_service.py` — `async def record(session, name, *, user=None, role, props=None)`: snapshots age_tier (from user dob via existing age-tier helper) + is_premium, filters props to allowlist, adds row; wraps everything in try/except + log (never raises). Tests: row written with snapshots; bad prop keys dropped; exception swallowed (e.g. session mock that raises).
 - [ ] Commit `feat(m4): AnalyticsEvent model + record() seam`.
 
 ### Task 2: Server-side hooks
@@ -30,7 +30,7 @@
 
 ### Task 4: Retention
 - [ ] `settings.analytics_retention_days = 400`.
-- [ ] `analytics_service.purge_old_events(session, now) -> int` (delete < now - retention days).
+- [ ] `product_analytics_service.purge_old_events(session, now) -> int` (delete < now - retention days).
 - [ ] `POST /internal/analytics-retention/run` (CRON_SECRET pattern copied from trial-reminders).
 - [ ] `retention.purge_expired_accounts`: null `user_id` on events of purged users.
 - [ ] Cron step added to `.github/workflows/video-health-cron.yml` (rides to main with this promotion).

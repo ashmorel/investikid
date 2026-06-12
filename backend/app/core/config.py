@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     llm_alert_cooldown_seconds: int = 21600  # 6h — min gap between repeat alerts of the same kind
     app_base_url: str = "http://localhost:5173"
     data_retention_days: int = 30
+    analytics_retention_days: int = 400  # raw product-analytics events (~13 months)
     privacy_notice_version: str = "2026-05-16"
 
     # LLM / AI — lite + standard tiers (open-source models)
