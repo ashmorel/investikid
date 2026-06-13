@@ -44,7 +44,10 @@ export const authApi = {
   biometricEnroll: (device_id: string, label: string) =>
     apiFetch<{ secret: string }>('/auth/biometric/enroll', { method: 'POST', body: JSON.stringify({ device_id, label }) }),
   biometricExchange: (device_id: string, secret: string) =>
-    apiFetch<{ secret: string }>('/auth/biometric/exchange', { method: 'POST', body: JSON.stringify({ device_id, secret }) }),
+    apiFetch<{ secret: string }>('/auth/biometric/exchange', {
+      method: 'POST', body: JSON.stringify({ device_id, secret }),
+      headers: { 'X-Device-Id': device_id }, // per-device rate-limit bucket (cookieless route)
+    }),
   biometricUnenroll: (device_id: string) =>
     apiFetch(`/auth/biometric/devices/${device_id}`, { method: 'DELETE' }),
   updatePreferences: (body: {

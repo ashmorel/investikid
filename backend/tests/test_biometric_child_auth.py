@@ -4,6 +4,7 @@ import uuid
 import pytest
 from sqlalchemy import select
 
+from app.models.audit import AuditLog
 from app.models.user import User
 from tests.test_content import _register_and_login
 
@@ -49,6 +50,18 @@ async def test_enroll_then_exchange_roundtrip(client, db_session):
     assert (await client.post("/auth/biometric/exchange", json={"device_id": "device-bbbb", "secret": secret})).status_code == 401
     # rotated secret does
     assert (await client.post("/auth/biometric/exchange", json={"device_id": "device-bbbb", "secret": rotated})).status_code == 200
+
+    # each successful exchange writes an audit row for forensic parity with login
+    logins = await db_session.scalars(
+        select(AuditLog).where(AuditLog.event_type == "biometric_login")
+    )
+    assert len(logins.all()) >= 1
+
+
+async def test_exchange_rejects_implausibly_short_secret(client, db_session):
+    await _login_allowed(client, db_session, allowed=True)
+    r = await client.post("/auth/biometric/exchange", json={"device_id": "device-shrt", "secret": "tooshort"})
+    assert r.status_code == 422  # rejected by schema before any hash comparison
 
 
 async def test_exchange_rejected_when_frozen(client, db_session):

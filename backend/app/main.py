@@ -182,7 +182,7 @@ def create_app() -> FastAPI:
         allow_origins=sorted(_baseline_origins | _env_origins),
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
-        allow_headers=["Content-Type", "X-CSRF-Token", "Authorization"],
+        allow_headers=["Content-Type", "X-CSRF-Token", "Authorization", "X-Device-Id"],
     )
 
     @application.get("/health")

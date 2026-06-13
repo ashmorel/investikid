@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_session
-from app.core.rate_limit import limiter
+from app.core.rate_limit import biometric_exchange_key, limiter
 from app.core.security import (
     TOKEN_TYPE_ACCESS,
     TOKEN_TYPE_REFRESH,
@@ -445,7 +445,9 @@ async def reset_password(
 
 
 @router.post("/biometric/enroll")
+@limiter.limit("20/hour")
 async def biometric_enroll(
+    request: Request,
     payload: BiometricEnrollRequest,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -461,7 +463,7 @@ async def biometric_enroll(
 
 
 @router.post("/biometric/exchange")
-@limiter.limit("10/hour")
+@limiter.limit("10/hour", key_func=biometric_exchange_key)
 async def biometric_exchange(
     request: Request,
     payload: BiometricExchangeRequest,
@@ -481,6 +483,11 @@ async def biometric_exchange(
     _set_access_cookie(response, str(user.id), secure)
     await _issue_refresh_token(session, response, user.id, secure)
     _set_csrf_cookie(response, secure)
+    session.add(AuditLog(
+        user_id=user.id,
+        event_type="biometric_login",
+        ip_address=request.client.host if request.client else None,
+    ))
     await session.commit()
     return {"secret": new_secret}
 

@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_session
-from app.core.rate_limit import limiter
+from app.core.rate_limit import biometric_exchange_key, limiter
+from app.models.audit import AuditLog
 from app.models.parent_identity import ParentIdentity
 from app.models.parent_session import ParentSession
 from app.models.user import User
@@ -251,7 +252,9 @@ async def list_identities(
 
 
 @router.post("/biometric/enroll")
+@limiter.limit("20/hour")
 async def parent_biometric_enroll(
+    request: Request,
     payload: BiometricEnrollRequest,
     parent_email: str = Depends(get_current_parent),
     session: AsyncSession = Depends(get_session),
@@ -265,7 +268,7 @@ async def parent_biometric_enroll(
 
 
 @router.post("/biometric/exchange")
-@limiter.limit("10/hour")
+@limiter.limit("10/hour", key_func=biometric_exchange_key)
 async def parent_biometric_exchange(
     request: Request,
     payload: BiometricExchangeRequest,
@@ -284,6 +287,12 @@ async def parent_biometric_exchange(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid_biometric")
     new_secret = row.last_secret
     parent_session_token = await issue_parent_session(session, row.parent_email)
+    session.add(AuditLog(
+        user_id=None,
+        event_type="parent_biometric_login",
+        ip_address=request.client.host if request.client else None,
+        metadata_json={"parent_email": row.parent_email},
+    ))
     await session.commit()
     secure = settings.environment != "development"
     response.set_cookie(

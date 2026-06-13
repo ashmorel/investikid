@@ -5,8 +5,9 @@ vi.mock('@/lib/platform', () => ({ isNativeApp: () => native, isAndroid: () => f
 
 const auth = { checkBiometry: vi.fn(), authenticate: vi.fn() };
 const storage = { set: vi.fn(), get: vi.fn(), remove: vi.fn() };
+const KeychainAccess = { whenPasscodeSetThisDeviceOnly: 4 };
 vi.mock('@aparajita/capacitor-biometric-auth', () => ({ BiometricAuth: auth }));
-vi.mock('@aparajita/capacitor-secure-storage', () => ({ SecureStorage: storage }));
+vi.mock('@aparajita/capacitor-secure-storage', () => ({ SecureStorage: storage, KeychainAccess }));
 
 import { biometric, getDeviceId } from '../biometric';
 
@@ -42,10 +43,11 @@ describe('biometric wrapper (SP-Bio)', () => {
     expect(await biometric.verify('Unlock')).toBe(false);
   });
 
-  it('enroll stores the secret under a namespaced key', async () => {
+  it('enroll stores the secret under a namespaced, device-only key', async () => {
     storage.set.mockResolvedValue(undefined);
     await biometric.enroll('child:1', 'Maya', 'secret-xyz');
-    expect(storage.set).toHaveBeenCalledWith('bio_child_1', 'secret-xyz');
+    // (key, data, convertDate=false, sync=false, access=whenPasscodeSetThisDeviceOnly)
+    expect(storage.set).toHaveBeenCalledWith('bio_child_1', 'secret-xyz', false, false, 4);
   });
 
   it('read returns the secret, null when biometric read fails', async () => {

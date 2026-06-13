@@ -26,6 +26,22 @@ def rate_limit_key(request) -> str:
     return get_remote_address(request)
 
 
+def biometric_exchange_key(request) -> str:
+    """Per-device key for the cookieless biometric exchange routes.
+
+    The exchange carries no auth cookie, so the default key collapses to the
+    proxy IP and shares one bucket across every user behind Railway's edge.
+    Keying on the client-sent `X-Device-Id` gives each device its own bucket
+    (the feature's natural unit). The 256-bit secret makes brute force
+    infeasible regardless, so device-controlled keying only affects DoS
+    isolation, not credential strength. Falls back to IP when absent.
+    """
+    device_id = request.headers.get("X-Device-Id")
+    if device_id:
+        return f"biodev:{device_id}"
+    return get_remote_address(request)
+
+
 # In development the limiter is disabled so test suites and rapid local iteration
 # don't trip per-IP thresholds that exist for production abuse protection.
 limiter = Limiter(

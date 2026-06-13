@@ -156,4 +156,6 @@ class BiometricEnrollRequest(BaseModel):
 
 class BiometricExchangeRequest(BaseModel):
     device_id: str = Field(min_length=8, max_length=64)
-    secret: str = Field(min_length=8, max_length=128)
+    # Server-issued secrets are token_urlsafe(32) ≈ 43 chars; reject anything
+    # implausibly short before it ever reaches a hash comparison.
+    secret: str = Field(min_length=32, max_length=128)

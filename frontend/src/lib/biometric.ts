@@ -16,10 +16,16 @@ export function getDeviceId(): string {
   return id;
 }
 
+// Capacitor plugin proxies report a callable for EVERY property (the native
+// method shim), so an unawaited proxy looks "thenable" — returning one as the
+// resolved value of an async function makes the runtime probe `.then` on it and
+// the web proxy rejects with UNIMPLEMENTED. Wrap the proxy in a plain object so
+// the resolved value is never itself thenable.
 async function authPlugin() {
   if (!isNativeApp()) return null;
   try {
-    return (await import('@aparajita/capacitor-biometric-auth')).BiometricAuth;
+    const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+    return { auth: BiometricAuth };
   } catch {
     return null;
   }
@@ -28,7 +34,8 @@ async function authPlugin() {
 async function storagePlugin() {
   if (!isNativeApp()) return null;
   try {
-    return (await import('@aparajita/capacitor-secure-storage')).SecureStorage;
+    const { SecureStorage, KeychainAccess } = await import('@aparajita/capacitor-secure-storage');
+    return { storage: SecureStorage, access: KeychainAccess };
   } catch {
     return null;
   }
@@ -40,7 +47,7 @@ export const biometric = {
     const a = await authPlugin();
     if (!a) return false;
     try {
-      const info = await a.checkBiometry();
+      const info = await a.auth.checkBiometry();
       return Boolean(info.isAvailable);
     } catch {
       return false;
@@ -52,18 +59,24 @@ export const biometric = {
     const a = await authPlugin();
     if (!a) return false;
     try {
-      await a.authenticate({ reason, cancelTitle: 'Cancel', allowDeviceCredential: false });
+      await a.auth.authenticate({ reason, cancelTitle: 'Cancel', allowDeviceCredential: false });
       return true;
     } catch {
       return false;
     }
   },
 
-  /** Store the opaque secret in the secure keychain under a namespaced key. */
+  /**
+   * Store the opaque secret in the secure keychain under a namespaced key.
+   * `whenPasscodeSetThisDeviceOnly` keeps the item off iCloud backups and out of
+   * device-to-device migration, and ties its existence to a device passcode; the
+   * caller-side `verify()` gate supplies the biometric check (this plugin does
+   * not expose `BiometryCurrentSet` binding — see the security note in the spec).
+   */
   async enroll(key: string, _label: string, secret: string): Promise<void> {
     const s = await storagePlugin();
     if (!s) return;
-    await s.set(ns(key), secret);
+    await s.storage.set(ns(key), secret, false, false, s.access?.whenPasscodeSetThisDeviceOnly);
   },
 
   /** Read the stored secret (caller must have just verified()). Null if absent. */
@@ -71,7 +84,7 @@ export const biometric = {
     const s = await storagePlugin();
     if (!s) return null;
     try {
-      const v = await s.get(ns(key));
+      const v = await s.storage.get(ns(key));
       return typeof v === 'string' ? v : null;
     } catch {
       return null;
@@ -82,7 +95,7 @@ export const biometric = {
     const s = await storagePlugin();
     if (!s) return;
     try {
-      await s.remove(ns(key));
+      await s.storage.remove(ns(key));
     } catch {
       /* already gone */
     }
