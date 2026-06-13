@@ -23,3 +23,5 @@ frontend/ios/App/Pods/
 frontend/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 .superpowers/
+.vercel
+.env*
