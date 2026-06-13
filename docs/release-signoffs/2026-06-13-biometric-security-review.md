@@ -29,3 +29,10 @@
 1. On a real device, enable Face ID sign-in (child and parent), force-quit, relaunch → confirm Face ID unlocks and re-mints the session.
 2. In iOS Settings, **add a new face to Face ID** (or reset Face ID), reopen the app → confirm the app does **not** silently unlock and instead forces a password sign-in (proves `.biometryCurrentSet` invalidation).
 3. Confirm cancelling the Face ID prompt leaves the app locked (does not forget the credential).
+
+**Android — VERIFIED on emulator (Pixel API 35, 2026-06-13).** The debug APK was built, installed, and the native `BiometricVault` plugin driven directly via the WebView JS bridge (Chrome DevTools over adb). Results:
+- App loads cleanly (login screen renders; no blank-screen issue — the crossorigin fix holds on Android too).
+- `isAvailable()` → `false` with no fingerprint, `true` after enrolling one (correct `BiometricManager` dispatch).
+- `set({key,value})` → resolves with **no prompt** (RSA public-key encrypt).
+- `get({key,reason})` → showed the system `BiometricPrompt`; after a simulated fingerprint touch, returned the **exact** stored secret (validates `BiometricPrompt` + `CryptoObject` + the OAEP/MGF1-SHA1 decrypt path).
+- **Invalidation:** after enrolling a *second* fingerprint, `get()` returned `{}` (**gone**) with no prompt and no secret leak — `KeyPermanentlyInvalidatedException` at cipher-init, exactly the H1 guarantee. The iOS equivalent (steps 1–3 above) still needs a real-device pass at the archive.
