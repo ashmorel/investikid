@@ -3,8 +3,27 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
 
+/**
+ * Vite stamps the bundled entry tags as `<script type="module" crossorigin>`
+ * (and the stylesheet link likewise). Under the iOS `capacitor://localhost`
+ * custom scheme, WKWebView applies a CORS check to that crossorigin module
+ * fetch and rejects it, so the entry module never executes — the app shows a
+ * blank white screen with no login and no JS error. At an https origin (the
+ * web build and Android's `androidScheme: 'https'`) the attribute is harmless,
+ * which is why the bug is iOS-only. Strip it so the native WKWebView loads the
+ * bundle. Build-only; the dev server is unaffected.
+ */
+function stripCrossorigin() {
+  return {
+    name: 'strip-crossorigin',
+    transformIndexHtml(html: string) {
+      return html.replace(/\s+crossorigin(?:=["'][^"']*["'])?/g, '');
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), stripCrossorigin()],
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
   },
