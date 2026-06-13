@@ -15,7 +15,13 @@ export default function AdminSidebar() {
   return (
     // Mobile: a full-width top bar with a horizontally scrollable nav row.
     // md+: a fixed-width vertical sidebar beside the content.
-    <aside className="flex w-full shrink-0 flex-col border-b border-line bg-card p-3 md:w-52 md:border-b-0 md:border-r md:p-4">
+    // paddingTop carries the safe-area inset so the title clears the iOS
+    // status bar / notch when this is the top bar (native app); --safe-top is
+    // 0 on the desktop sidebar and in browser tabs.
+    <aside
+      className="flex w-full shrink-0 flex-col border-b border-line bg-card px-3 pb-3 md:w-52 md:border-b-0 md:border-r md:px-4 md:pb-4"
+      style={{ paddingTop: 'calc(var(--safe-top) + 0.75rem)' }}
+    >
       <div className="mb-3 text-base font-extrabold text-ink md:mb-6 md:text-lg">📚 InvestiKid Admin</div>
       <nav
         className="flex flex-row gap-1 overflow-x-auto pb-1 md:flex-col md:overflow-x-visible md:pb-0"
