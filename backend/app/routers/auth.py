@@ -20,7 +20,10 @@ from app.core.security import (
 )
 from app.models.audit import AuditLog
 from app.models.user import RefreshToken, User, UserProgress
+from app.routers.users import get_current_user
 from app.schemas.auth import (
+    BiometricEnrollRequest,
+    BiometricExchangeRequest,
     ForgotPasswordRequest,
     LoginRequest,
     PendingConsentResponse,
@@ -29,6 +32,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.schemas.user import UserProfile
+from app.services import biometric_service
 from app.services.compliance import resolve_policy
 from app.services.consent_service import age_in_years
 from app.services.email import get_email_sender
@@ -436,5 +440,61 @@ async def reset_password(
     )
     for t in tokens:
         t.revoked_at = now
+    await session.commit()
+    return {"status": "ok"}
+
+
+@router.post("/biometric/enroll")
+async def biometric_enroll(
+    payload: BiometricEnrollRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not current_user.biometric_allowed:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "biometric_not_allowed")
+    secret = await biometric_service.issue(
+        session, subject_kind="child", user_id=current_user.id, parent_email=None,
+        device_id=payload.device_id, label=payload.label,
+    )
+    await session.commit()
+    return {"secret": secret}
+
+
+@router.post("/biometric/exchange")
+@limiter.limit("10/hour")
+async def biometric_exchange(
+    request: Request,
+    payload: BiometricExchangeRequest,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
+):
+    row = await biometric_service.verify_and_rotate(
+        session, device_id=payload.device_id, secret=payload.secret
+    )
+    if row is None or row.subject_kind != "child" or row.user_id is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid_biometric")
+    user = await session.get(User, row.user_id)
+    if user is None or not user.is_active or not user.biometric_allowed:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid_biometric")
+    new_secret = row.last_secret
+    secure = settings.environment != "development"
+    _set_access_cookie(response, str(user.id), secure)
+    await _issue_refresh_token(session, response, user.id, secure)
+    _set_csrf_cookie(response, secure)
+    await session.commit()
+    return {"secret": new_secret}
+
+
+@router.delete("/biometric/devices/{device_id}")
+async def biometric_unenroll(
+    device_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    await biometric_service.revoke_device(
+        session,
+        subject_key=biometric_service.subject_key_for_child(current_user.id),
+        device_id=device_id,
+    )
     await session.commit()
     return {"status": "ok"}

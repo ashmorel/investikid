@@ -24,7 +24,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 _DEFAULT_EXEMPT_PATHS = frozenset({
-    "/auth/login", "/auth/register", "/health",
+    "/auth/login", "/auth/register", "/auth/biometric/exchange", "/health",
     "/auth/forgot-password", "/auth/reset-password",
     "/consent/decide",
     "/parent/auth/request",
