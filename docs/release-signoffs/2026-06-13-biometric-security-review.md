@@ -14,15 +14,16 @@
 - **L1 (Low):** enroll endpoints now rate-limited (20/hour).
 - **N1 (Nit):** exchange `secret` min_length 8 → 32.
 
-## H1 — RESOLVED on iOS (`907f819`)
+## H1 — RESOLVED on both platforms (iOS `907f819`, Android follow-up)
 
 **Finding:** the secret was not bound to the current biometric set, so a re-enrolled face/fingerprint would not invalidate it — the biometric check was only an app-level gate.
 
-**Fix (proper):** a custom in-repo Capacitor plugin, **BiometricVault** (`ios/App/App/BiometricVaultPlugin.swift` + `.m`, registered in `project.pbxproj`), stores the secret in the iOS Keychain with `SecAccessControlCreateWithFlags(kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, .biometryCurrentSet)`. `get()` triggers the OS Face ID / Touch ID prompt and releases the secret **only** for the biometric set enrolled at write time; adding or removing a biometric invalidates the item (next `get` → `errSecItemNotFound`, surfaced to the app as `gone` → the credential is forgotten and the user must sign in with a password and re-enrol). This makes the re-enrolment guarantee **OS-enforced**, not app-enforced, and removes the separate `verify()` step on unlock (the vault read is itself the prompt).
+**Fix (proper):** a custom in-repo Capacitor plugin, **BiometricVault**, binds the secret to the *current* biometric set natively on both platforms; `get()` runs the OS prompt itself (one prompt, no separate `verify()`) and a re-enrolment surfaces as `gone` → the credential is forgotten and the user must sign in with a password and re-enrol. The re-enrolment guarantee is **OS-enforced**, not app-enforced.
 
-`capacitor-native-biometric` (the only third-party plugin that exposes this) hard-declares `@capacitor/core@^3.4.3` and is unmaintained for Capacitor 8 — hence the small, dependency-free custom plugin.
+- **iOS** (`ios/App/App/BiometricVaultPlugin.swift` + `.m`, registered in `project.pbxproj`): Keychain item with `SecAccessControlCreateWithFlags(kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, .biometryCurrentSet)`; invalidation → `errSecItemNotFound`.
+- **Android** (`android/.../BiometricVaultPlugin.kt`, registered in `MainActivity`): an AndroidKeyStore RSA keypair with `setUserAuthenticationRequired(true)` + `setInvalidatedByBiometricEnrollment(true)`. The secret is encrypted with the public key (no prompt on write) and decrypted with the private key via `BiometricPrompt` + `CryptoObject` (`BIOMETRIC_STRONG`); a new enrolment throws `KeyPermanentlyInvalidatedException` → `gone`. (OAEP is pinned to MGF1-SHA1 to avoid the AndroidKeyStore digest-mismatch; `USE_BIOMETRIC` permission added; `androidx.biometric:biometric:1.1.0`.)
 
-**Android:** still uses `@aparajita/capacitor-secure-storage` with `whenPasscodeSetThisDeviceOnly` + `sync=false` (device-only, no backup migration) and the app-level `verify()` gate. Keystore binding (`setUserAuthenticationRequired` + `setInvalidatedByBiometricEnrollment`) is a tracked follow-up; not blocking, since the iOS TestFlight build is the only one shipping now.
+`capacitor-native-biometric` (the only third-party plugin exposing iOS `BiometryCurrentSet`) hard-declares `@capacitor/core@^3.4.3` and is unmaintained for Capacitor 8 — hence the small, dependency-free custom plugin. The now-unused `@aparajita/capacitor-secure-storage` was removed.
 
 **Device-QA (required at the build-4 archive):**
 1. On a real device, enable Face ID sign-in (child and parent), force-quit, relaunch → confirm Face ID unlocks and re-mints the session.

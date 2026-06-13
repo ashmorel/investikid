@@ -1,8 +1,12 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
     namespace = "leeashmore.investikid.ai.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    kotlinOptions {
+        jvmTarget = '21' // match capacitor.build.gradle's Java 21 source/target
+    }
     defaultConfig {
         applicationId "leeashmore.investikid.ai.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -41,6 +45,7 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
     implementation "com.android.billingclient:billing-ktx:7.1.1"
+    implementation "androidx.biometric:biometric:1.1.0"
 }
 
 apply from: 'capacitor.build.gradle'
