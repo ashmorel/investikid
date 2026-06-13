@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { Shell } from '@/components/child/Shell';
+import { BiometricGate } from '@/components/auth/BiometricGate';
 import { LiveRegion } from '@/components/a11y/LiveRegion';
 import Login from '@/pages/child/Login';
 import Signup from '@/pages/child/Signup';
@@ -51,6 +52,7 @@ function RootRedirect() {
 export default function App() {
   return (
     <LiveRegion>
+      <BiometricGate>
       <Routes>
         <Route path="/" element={<RootRedirect />} />
 
@@ -121,6 +123,7 @@ export default function App() {
 
         <Route path="*" element={<div className="p-6">Not found</div>} />
       </Routes>
+      </BiometricGate>
       <Toaster />
     </LiveRegion>
   );

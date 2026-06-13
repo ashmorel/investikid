@@ -88,3 +88,27 @@ export const biometric = {
     }
   },
 };
+
+
+// ── Enrolled-account registry (lock-screen list) ───────────────────
+export type BioAccount = { key: string; label: string; kind: 'child' | 'parent' };
+const ACCOUNTS_KEY = 'bio-accounts';
+
+export function getBioAccounts(): BioAccount[] {
+  try {
+    const raw = localStorage.getItem(ACCOUNTS_KEY);
+    return raw ? (JSON.parse(raw) as BioAccount[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addBioAccount(acc: BioAccount): void {
+  const list = getBioAccounts().filter((a) => a.key !== acc.key);
+  list.push(acc);
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
+}
+
+export function removeBioAccount(key: string): void {
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(getBioAccounts().filter((a) => a.key !== key)));
+}
