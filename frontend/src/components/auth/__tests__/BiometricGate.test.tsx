@@ -5,8 +5,7 @@ import { axe } from 'vitest-axe';
 
 const bio = vi.hoisted(() => ({
   isAvailable: vi.fn(),
-  verify: vi.fn(),
-  read: vi.fn(),
+  unlockRead: vi.fn(),
   enroll: vi.fn(),
   clear: vi.fn(),
   getDeviceId: vi.fn(() => 'dev-1'),
@@ -14,7 +13,7 @@ const bio = vi.hoisted(() => ({
   removeBioAccount: vi.fn(),
 }));
 vi.mock('@/lib/biometric', () => ({
-  biometric: { isAvailable: bio.isAvailable, verify: bio.verify, read: bio.read, enroll: bio.enroll, clear: bio.clear },
+  biometric: { isAvailable: bio.isAvailable, unlockRead: bio.unlockRead, enroll: bio.enroll, clear: bio.clear },
   getDeviceId: () => bio.getDeviceId(),
   getBioAccounts: () => bio.getBioAccounts(),
   removeBioAccount: (k: string) => bio.removeBioAccount(k),
@@ -58,22 +57,21 @@ describe('BiometricGate (SP-Bio)', () => {
     expect(await screen.findByText('APP CONTENT')).toBeInTheDocument();
   });
 
-  it('locks on launch and unlocks via verify+read+exchange', async () => {
-    bio.verify.mockResolvedValue(true);
-    bio.read.mockResolvedValue('secret-1');
+  it('locks on launch and unlocks via unlockRead+exchange', async () => {
+    bio.unlockRead.mockResolvedValue({ status: 'ok', secret: 'secret-1' });
     exchange.mockResolvedValue({ secret: 'rotated-1' });
     renderGate();
     const btn = await screen.findByRole('button', { name: /maya/i });
     expect(screen.queryByText('APP CONTENT')).toBeNull();
     fireEvent.click(btn);
     await waitFor(() => expect(screen.getByText('APP CONTENT')).toBeInTheDocument());
+    expect(bio.unlockRead).toHaveBeenCalledWith('child:1', 'Unlock InvestiKid');
     expect(exchange).toHaveBeenCalledWith('dev-1', 'secret-1');
     expect(bio.enroll).toHaveBeenCalledWith('child:1', 'Maya', 'rotated-1');
   });
 
   it('forgets a dead credential on 401 and shows sign-in', async () => {
-    bio.verify.mockResolvedValue(true);
-    bio.read.mockResolvedValue('secret-1');
+    bio.unlockRead.mockResolvedValue({ status: 'ok', secret: 'secret-1' });
     exchange.mockRejectedValue(new Error('401'));
     bio.getBioAccounts.mockReturnValueOnce([{ key: 'child:1', label: 'Maya', kind: 'child' }]).mockReturnValue([]);
     renderGate();
@@ -82,12 +80,23 @@ describe('BiometricGate (SP-Bio)', () => {
     expect(bio.removeBioAccount).toHaveBeenCalledWith('child:1');
   });
 
-  it('stays locked when biometric verify is cancelled', async () => {
-    bio.verify.mockResolvedValue(false);
+  it('forgets the credential when the secret is gone (biometrics re-enrolled)', async () => {
+    bio.unlockRead.mockResolvedValue({ status: 'gone' });
+    bio.getBioAccounts.mockReturnValueOnce([{ key: 'child:1', label: 'Maya', kind: 'child' }]).mockReturnValue([]);
     renderGate();
     fireEvent.click(await screen.findByRole('button', { name: /maya/i }));
-    await waitFor(() => expect(bio.verify).toHaveBeenCalled());
+    await waitFor(() => expect(bio.clear).toHaveBeenCalledWith('child:1'));
+    expect(bio.removeBioAccount).toHaveBeenCalledWith('child:1');
+    expect(exchange).not.toHaveBeenCalled();
+  });
+
+  it('stays locked when biometric is cancelled', async () => {
+    bio.unlockRead.mockResolvedValue({ status: 'cancelled' });
+    renderGate();
+    fireEvent.click(await screen.findByRole('button', { name: /maya/i }));
+    await waitFor(() => expect(bio.unlockRead).toHaveBeenCalled());
     expect(screen.queryByText('APP CONTENT')).toBeNull();
+    expect(exchange).not.toHaveBeenCalled();
   });
 
   it('has no axe violations when locked', async () => {

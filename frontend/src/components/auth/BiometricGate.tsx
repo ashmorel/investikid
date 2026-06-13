@@ -61,29 +61,37 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
     return () => { void sub.then((s) => s.remove()); };
   }, [state]);
 
+  function forget(key: string, message: string) {
+    removeBioAccount(key);
+    const remaining = getBioAccounts();
+    setAccounts(remaining);
+    if (remaining.length === 0) { setState('disabled'); return; }
+    setError(message);
+    setState('locked');
+  }
+
   async function unlock(acc: BioAccount) {
     setError(null);
     setState('unlocking');
-    const ok = await biometric.verify('Unlock InvestiKid');
-    if (!ok) { setState('locked'); return; }
-    const secret = await biometric.read(acc.key);
-    if (!secret) { setState('locked'); return; }
+    const r = await biometric.unlockRead(acc.key, 'Unlock InvestiKid');
+    if (r.status === 'cancelled') { setState('locked'); return; }
+    if (r.status === 'gone') {
+      // secret invalidated locally (e.g. a new face/fingerprint was enrolled) → forget + password
+      await biometric.clear(acc.key);
+      forget(acc.key, 'Please sign in to set up Face ID again.');
+      return;
+    }
     try {
       const deviceId = getDeviceId();
       const res = acc.kind === 'parent'
-        ? await parentApi.biometricExchange(deviceId, secret)
-        : await authApi.biometricExchange(deviceId, secret);
+        ? await parentApi.biometricExchange(deviceId, r.secret)
+        : await authApi.biometricExchange(deviceId, r.secret);
       if (res?.secret) await biometric.enroll(acc.key, acc.label, res.secret);
       setState('unlocked');
     } catch {
-      // dead credential (revoked/expired/account gone) → forget it locally
+      // dead server credential (revoked/expired/account gone) → forget it locally
       await biometric.clear(acc.key);
-      removeBioAccount(acc.key);
-      const remaining = getBioAccounts();
-      setAccounts(remaining);
-      if (remaining.length === 0) { setState('disabled'); return; }
-      setError("That didn't work — please sign in.");
-      setState('locked');
+      forget(acc.key, "That didn't work — please sign in.");
     }
   }
 
