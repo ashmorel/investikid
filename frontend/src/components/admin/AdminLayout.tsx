@@ -18,9 +18,13 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    // Stack the nav on top on mobile, sidebar beside content on md+.
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
       <AdminSidebar />
-      <main className="flex-1 p-6">
+      {/* min-w-0 lets this flex child shrink below its content's intrinsic width;
+          overflow-x-auto keeps wide tables scrolling inside the page instead of
+          spilling off the right edge on narrow screens. */}
+      <main className="min-w-0 flex-1 overflow-x-auto p-4 md:p-6">
         <Outlet />
       </main>
     </div>

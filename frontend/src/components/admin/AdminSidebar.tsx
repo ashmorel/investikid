@@ -13,16 +13,21 @@ const NAV_ITEMS = [
 
 export default function AdminSidebar() {
   return (
-    <aside className="flex w-52 flex-col border-r border-line bg-card p-4">
-      <div className="mb-6 text-lg font-extrabold text-ink">📚 InvestiKid Admin</div>
-      <nav className="flex flex-col gap-1" aria-label="Admin navigation">
+    // Mobile: a full-width top bar with a horizontally scrollable nav row.
+    // md+: a fixed-width vertical sidebar beside the content.
+    <aside className="flex w-full shrink-0 flex-col border-b border-line bg-card p-3 md:w-52 md:border-b-0 md:border-r md:p-4">
+      <div className="mb-3 text-base font-extrabold text-ink md:mb-6 md:text-lg">📚 InvestiKid Admin</div>
+      <nav
+        className="flex flex-row gap-1 overflow-x-auto pb-1 md:flex-col md:overflow-x-visible md:pb-0"
+        aria-label="Admin navigation"
+      >
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              `rounded-md px-3 py-2 text-sm font-medium ${
+              `shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium ${
                 isActive
                   ? 'bg-brand-600 text-white'
                   : 'text-muted-foreground hover:bg-brand-50 hover:text-ink'
@@ -33,7 +38,7 @@ export default function AdminSidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto border-t border-line pt-4">
+      <div className="mt-3 border-t border-line pt-3 md:mt-auto md:pt-4">
         <a href="/" className="text-sm text-muted-foreground hover:text-ink">← Back to App</a>
       </div>
     </aside>
