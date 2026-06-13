@@ -1,6 +1,6 @@
 # Biometric Quick-Login (SP-Bio) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax. (This run: executed inline by the controller, TDD + commit per task.)
+> **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development or superpowers:executing-plans. Steps use checkbox (`- [x]`) syntax. (This run: executed inline by the controller, TDD + commit per task.)
 
 **Goal:** Face ID / Touch ID / Android-biometric quick-login for parents and children per `docs/superpowers/specs/2026-06-13-biometric-login-design.md` — lock-screen on launch + silent session re-mint, opaque revocable credential, hybrid parent-gated consent for kids.
 
@@ -28,7 +28,7 @@
 - Modify: `backend/app/models/user.py`, `backend/app/models/__init__.py`
 - Test: `backend/tests/test_biometric_service.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # backend/tests/test_biometric_service.py
@@ -109,9 +109,9 @@ async def test_parent_subject(db_session):
     assert row is not None and row.parent_email == "p@example.com" and row.subject_kind == "parent"
 ```
 
-- [ ] **Step 2: Run to verify it fails** — `/Users/leeashmore/Local Repo/.venv/bin/pytest backend/tests/test_biometric_service.py -q` (module not found).
+- [x] **Step 2: Run to verify it fails** — `/Users/leeashmore/Local Repo/.venv/bin/pytest backend/tests/test_biometric_service.py -q` (module not found).
 
-- [ ] **Step 3: Model** — `backend/app/models/biometric.py`:
+- [x] **Step 3: Model** — `backend/app/models/biometric.py`:
 
 ```python
 import uuid
@@ -160,7 +160,7 @@ Add to `app/models/user.py` `User` (next to `push_enabled`):
     biometric_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", default=False)
 ```
 
-- [ ] **Step 4: Service** — `backend/app/services/biometric_service.py`:
+- [x] **Step 4: Service** — `backend/app/services/biometric_service.py`:
 
 ```python
 """Opaque biometric credential issuance/verification (SP-Bio).
@@ -284,16 +284,16 @@ def subject_key_for_parent(email: str) -> str:
 
 Note: `last_secret` is a transient Python attribute set on the ORM instance — the test reads `row.last_secret`. Declare it in the model as a non-mapped default to satisfy linters: add `last_secret: str | None = None` is NOT valid on a Mapped model; instead set it dynamically (already done) and in the test access works. If ruff/mypy complains, the endpoint reads it via `getattr(row, "last_secret")`.
 
-- [ ] **Step 5: Migration** — `e2f3a4b5c6d7_biometric_credentials.py` (down_revision `d1e2f3a4b5c6`): `op.add_column("users", sa.Column("biometric_allowed", sa.Boolean(), nullable=False, server_default="false"))` + `op.create_table("biometric_credentials", ...)` with all columns above, the unique constraint, and indexes on user_id/parent_email/subject_key/secret_hash. Downgrade drops table + column.
+- [x] **Step 5: Migration** — `e2f3a4b5c6d7_biometric_credentials.py` (down_revision `d1e2f3a4b5c6`): `op.add_column("users", sa.Column("biometric_allowed", sa.Boolean(), nullable=False, server_default="false"))` + `op.create_table("biometric_credentials", ...)` with all columns above, the unique constraint, and indexes on user_id/parent_email/subject_key/secret_hash. Downgrade drops table + column.
 
-- [ ] **Step 6: Validate migration** — single head + scratch replay:
+- [x] **Step 6: Validate migration** — single head + scratch replay:
 ```bash
 cd backend && /Users/leeashmore/Local\ Repo/.venv/bin/alembic heads   # one head
 /Users/leeashmore/Local\ Repo/.venv/bin/python -c "import asyncio,asyncpg; asyncio.run((lambda: None)())"  # (use the M8/M9 scratch-replay recipe)
 ```
 Replay the full chain on a scratch DB exactly as in the M9 task (create db → `DATABASE_URL=... alembic upgrade head` → expect exit 0 → drop). MUST pass before commit.
 
-- [ ] **Step 7: Run tests + commit** — `pytest backend/tests/test_biometric_service.py -q` PASS; ruff clean. Commit `feat(bio): biometric_credentials model + service + migration`.
+- [x] **Step 7: Run tests + commit** — `pytest backend/tests/test_biometric_service.py -q` PASS; ruff clean. Commit `feat(bio): biometric_credentials model + service + migration`.
 
 ---
 
@@ -303,7 +303,7 @@ Replay the full chain on a scratch DB exactly as in the M9 task (create db → `
 - Modify: `backend/app/routers/auth.py`, `backend/app/schemas/user.py` (`UserProfile.biometric_allowed`)
 - Test: `backend/tests/test_biometric_child_auth.py`
 
-- [ ] **Step 1: Failing test** — covering: enroll 403 without `biometric_allowed`; enroll 200 returns a secret when allowed; exchange with that secret sets a session (subsequent `/users/me` 200) and returns a rotated secret; exchange re-rejects the old secret; exchange 401 after the child is frozen (`is_active=False`); exchange 401 after parent revokes (`biometric_allowed`→False triggers revoke). Use `_register_and_login` from `tests/test_content.py`; set `user.biometric_allowed=True` via db_session.
+- [x] **Step 1: Failing test** — covering: enroll 403 without `biometric_allowed`; enroll 200 returns a secret when allowed; exchange with that secret sets a session (subsequent `/users/me` 200) and returns a rotated secret; exchange re-rejects the old secret; exchange 401 after the child is frozen (`is_active=False`); exchange 401 after parent revokes (`biometric_allowed`→False triggers revoke). Use `_register_and_login` from `tests/test_content.py`; set `user.biometric_allowed=True` via db_session.
 
 ```python
 # backend/tests/test_biometric_child_auth.py  (key cases)
@@ -329,9 +329,9 @@ async def test_enroll_then_exchange_roundtrip(client, db_session):
 
 (Write the frozen + revoked cases concretely against the seeded child.)
 
-- [ ] **Step 2: Run → fail.**
+- [x] **Step 2: Run → fail.**
 
-- [ ] **Step 3: Implement** in `auth.py` (after `refresh`):
+- [x] **Step 3: Implement** in `auth.py` (after `refresh`):
 
 ```python
 class BiometricEnrollRequest(BaseModel):
@@ -400,8 +400,8 @@ async def biometric_unenroll(
 
 Add imports: `from app.services import biometric_service`; `from pydantic import Field` (if missing); ensure `Request`, `limiter` imported (they are for login). Add `/auth/biometric/exchange` to the CSRF exempt path list in `app/core/csrf.py` (`_DEFAULT_EXEMPT_PATHS`, beside `/auth/login`). `UserProfile` schema (`app/schemas/user.py`) += `biometric_allowed: bool = False`.
 
-- [ ] **Step 4: Run → pass.** Run `tests/test_biometric_child_auth.py` + `tests/test_auth*.py` (no regressions).
-- [ ] **Step 5: Commit** `feat(bio): child enroll/exchange/unenroll endpoints`.
+- [x] **Step 4: Run → pass.** Run `tests/test_biometric_child_auth.py` + `tests/test_auth*.py` (no regressions).
+- [x] **Step 5: Commit** `feat(bio): child enroll/exchange/unenroll endpoints`.
 
 ---
 
@@ -411,11 +411,11 @@ Add imports: `from app.services import biometric_service`; `from pydantic import
 - Modify: `backend/app/routers/parent_auth.py` (enroll/exchange/unenroll), `backend/app/routers/parent.py` (master toggle), `backend/app/schemas/parent.py` (`ChildOut.biometric_allowed`, `BiometricToggleRequest`), `backend/app/services/account_deletion_service.py`
 - Test: `backend/tests/test_biometric_parent.py`
 
-- [ ] **Step 1: Failing test** — parent enroll (authed parent) returns secret; exchange sets a parent session (a subsequent `/parent/children` 200) + rotates; exchange 401 if the parent_email owns no non-deleted child; `POST /parent/children/{id}/biometric {enabled:true}` flips `biometric_allowed` and returns ok (audited); disabling revokes the child's creds (a prior child exchange now 401); account deletion revokes parent + child creds. Use `_setup_parent` from `tests/test_billing.py`.
+- [x] **Step 1: Failing test** — parent enroll (authed parent) returns secret; exchange sets a parent session (a subsequent `/parent/children` 200) + rotates; exchange 401 if the parent_email owns no non-deleted child; `POST /parent/children/{id}/biometric {enabled:true}` flips `biometric_allowed` and returns ok (audited); disabling revokes the child's creds (a prior child exchange now 401); account deletion revokes parent + child creds. Use `_setup_parent` from `tests/test_billing.py`.
 
-- [ ] **Step 2: Run → fail.**
+- [x] **Step 2: Run → fail.**
 
-- [ ] **Step 3: Implement.**
+- [x] **Step 3: Implement.**
 
 Parent enroll/exchange/unenroll in `parent_auth.py` (mirror Task 2 but issue/consume a parent session). Exchange:
 ```python
@@ -461,8 +461,8 @@ async def set_child_biometric(user_id: uuid.UUID, payload: BiometricToggleReques
 
 Account deletion: in `account_deletion_service`, when deleting a child revoke `subject_key_for_child(child.id)`; when deleting a parent account revoke `subject_key_for_parent(parent_email)`.
 
-- [ ] **Step 4: Run → pass** + `tests/test_parent*.py`, `tests/test_billing.py`, `tests/test_parent_account_deletion.py` regressions.
-- [ ] **Step 5: Commit** `feat(bio): parent endpoints + master toggle + deletion revocation`.
+- [x] **Step 4: Run → pass** + `tests/test_parent*.py`, `tests/test_billing.py`, `tests/test_parent_account_deletion.py` regressions.
+- [x] **Step 5: Commit** `feat(bio): parent endpoints + master toggle + deletion revocation`.
 
 ---
 
@@ -472,9 +472,9 @@ Account deletion: in `account_deletion_service`, when deleting a child revoke `s
 - Create: `frontend/src/lib/biometric.ts`, `frontend/src/lib/__tests__/biometric.test.ts`
 - Modify: `frontend/package.json` (`npm i capacitor-native-biometric`)
 
-- [ ] **Step 0 (plan-time check):** `npm i capacitor-native-biometric` then verify it resolves for Capacitor 8 (`npm ls @capacitor/core capacitor-native-biometric`). If it pins an incompatible core, fall back to `@aparajita/capacitor-biometric-auth` + `@aparajita/capacitor-secure-storage` and adapt only the plugin calls inside `biometric.ts` (interface below stays identical).
+- [x] **Step 0 (plan-time check):** `npm i capacitor-native-biometric` then verify it resolves for Capacitor 8 (`npm ls @capacitor/core capacitor-native-biometric`). If it pins an incompatible core, fall back to `@aparajita/capacitor-biometric-auth` + `@aparajita/capacitor-secure-storage` and adapt only the plugin calls inside `biometric.ts` (interface below stays identical).
 
-- [ ] **Step 1: Failing test** — gating + device id + typed results:
+- [x] **Step 1: Failing test** — gating + device id + typed results:
 ```ts
 // frontend/src/lib/__tests__/biometric.test.ts
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -503,9 +503,9 @@ it('read returns null when biometric cancels', async () => {
 });
 ```
 
-- [ ] **Step 2: Run → fail.**
+- [x] **Step 2: Run → fail.**
 
-- [ ] **Step 3: Implement** `frontend/src/lib/biometric.ts`:
+- [x] **Step 3: Implement** `frontend/src/lib/biometric.ts`:
 ```ts
 import { isNativeApp } from '@/lib/platform';
 
@@ -552,7 +552,7 @@ export const biometric = {
 };
 ```
 
-- [ ] **Step 4: Run → pass.** **Step 5: Commit** `feat(bio): client biometric plugin wrapper`.
+- [x] **Step 4: Run → pass.** **Step 5: Commit** `feat(bio): client biometric plugin wrapper`.
 
 ---
 
@@ -562,7 +562,7 @@ export const biometric = {
 - Create: `frontend/src/components/auth/BiometricGate.tsx`, `frontend/src/components/auth/__tests__/BiometricGate.test.tsx`
 - Modify: `frontend/src/api/auth.ts` (biometric API), `frontend/src/App.tsx` (mount the gate)
 
-- [ ] **Step 1: Failing test** — drive the machine with mocked `biometric` + `@capacitor/app`:
+- [x] **Step 1: Failing test** — drive the machine with mocked `biometric` + `@capacitor/app`:
   - web/no-availability/no-enrolled-key → renders children, no lock.
   - enrolled + cold mount → locked; tap account → verify+read → exchange 200 → unlocked (children visible).
   - exchange 401 → shows "Sign in" escape.
@@ -570,9 +570,9 @@ export const biometric = {
   - axe clean on the locked screen.
   (Mock `@/lib/biometric`, `@/api/auth` exchange, and `@capacitor/app` `addListener`.)
 
-- [ ] **Step 2: Run → fail.**
+- [x] **Step 2: Run → fail.**
 
-- [ ] **Step 3: Implement.** `api/auth.ts` adds:
+- [x] **Step 3: Implement.** `api/auth.ts` adds:
 ```ts
 biometricExchange: (device_id: string, secret: string) =>
   apiFetch<{ secret: string }>('/auth/biometric/exchange', { method: 'POST', body: JSON.stringify({ device_id, secret }) }),
@@ -583,7 +583,7 @@ biometricUnenroll: (device_id: string) =>
 ```
 `BiometricGate.tsx`: enrolled-accounts come from a local registry persisted at enroll time (localStorage `bio-accounts` = `[{key,label,kind}]`, written by the enroll toggles in Task 6). On mount: if web || !available || registry empty → `disabled` (render children). Else `locked`. `@capacitor/app addListener('appStateChange', ...)`: on `!isActive` stamp `Date.now()`; on `isActive` if `Date.now()-stamp > LOCK_TIMEOUT_MS` (120000) → `locked`. Tap account → `unlocking` → `biometric.verify()` then `biometric.read(key)` → if secret: call the matching exchange (child vs parent by `kind`) → 200 → store rotated secret via `biometric.enroll(key,label,rotated)` → `unlocked`; 401 → `biometric.clear(key)` + remove from registry + escape. Lock screen: Penny + account buttons (≥44px) + "Sign in differently" → navigate to `/login` (clears gate via `unlocked` while unauthenticated, real login takes over). `aria-live` on status.
 
-- [ ] **Step 4: Run → pass.** Mount `<BiometricGate>` in `App.tsx` wrapping the authed routes (inside Router, around the child/parent shells). **Step 5: Commit** `feat(bio): biometric lock-screen gate`.
+- [x] **Step 4: Run → pass.** Mount `<BiometricGate>` in `App.tsx` wrapping the authed routes (inside Router, around the child/parent shells). **Step 5: Commit** `feat(bio): biometric lock-screen gate`.
 
 ---
 
@@ -593,13 +593,13 @@ biometricUnenroll: (device_id: string) =>
 - Modify: `frontend/src/components/child/ProfileMenu.tsx` (child enroll toggle), `frontend/src/components/ChildCard.tsx` (parent master switch), parent settings surface (parent self-enroll), `frontend/src/api/parent.ts` (`setChildBiometric`, `Child.biometric_allowed`), `frontend/src/api/auth.ts` (`Me.biometric_allowed`)
 - Test: extend ChildCard + ProfileMenu test files
 
-- [ ] **Step 1: Failing tests** — parent `ChildCard`: a "Face ID sign-in" switch calls `setChildBiometric(id, enabled)` (mirror push switch test). Child `ProfileMenu`: the "Sign in with Face ID" toggle is hidden unless `me.biometric_allowed && available`; toggling on calls `biometric.verify()` + `authApi.biometricEnroll` + `biometric.enroll` + registry add; off calls `biometricUnenroll` + `biometric.clear` + registry remove.
+- [x] **Step 1: Failing tests** — parent `ChildCard`: a "Face ID sign-in" switch calls `setChildBiometric(id, enabled)` (mirror push switch test). Child `ProfileMenu`: the "Sign in with Face ID" toggle is hidden unless `me.biometric_allowed && available`; toggling on calls `biometric.verify()` + `authApi.biometricEnroll` + `biometric.enroll` + registry add; off calls `biometricUnenroll` + `biometric.clear` + registry remove.
 
-- [ ] **Step 2: Run → fail.**
+- [x] **Step 2: Run → fail.**
 
-- [ ] **Step 3: Implement.** `api/parent.ts`: `setChildBiometric: (userId, enabled) => apiFetch('/parent/children/'+userId+'/biometric', {method:'POST', body: JSON.stringify({enabled})})` + `Child.biometric_allowed?: boolean`. `api/auth.ts`: `Me.biometric_allowed?: boolean`. ChildCard: add a Switch next to push (optimistic, same pattern). ParentDashboard/parent settings: a self-enroll toggle calling parent enroll endpoints (add `parentApi.biometricEnroll/Exchange/Unenroll` to `api/parent.ts`). ProfileMenu: gated toggle as specced, writing the `bio-accounts` registry.
+- [x] **Step 3: Implement.** `api/parent.ts`: `setChildBiometric: (userId, enabled) => apiFetch('/parent/children/'+userId+'/biometric', {method:'POST', body: JSON.stringify({enabled})})` + `Child.biometric_allowed?: boolean`. `api/auth.ts`: `Me.biometric_allowed?: boolean`. ChildCard: add a Switch next to push (optimistic, same pattern). ParentDashboard/parent settings: a self-enroll toggle calling parent enroll endpoints (add `parentApi.biometricEnroll/Exchange/Unenroll` to `api/parent.ts`). ProfileMenu: gated toggle as specced, writing the `bio-accounts` registry.
 
-- [ ] **Step 4: Run → pass.** **Step 5: Commit** `feat(bio): consent toggles (parent master + child/parent enroll)`.
+- [x] **Step 4: Run → pass.** **Step 5: Commit** `feat(bio): consent toggles (parent master + child/parent enroll)`.
 
 ---
 
@@ -608,14 +608,14 @@ biometricUnenroll: (device_id: string) =>
 **Files:**
 - Modify: `frontend/ios/App/App/Info.plist`, `docs/compliance/privacy-notice.md`
 
-- [ ] **Step 1:** Add to `Info.plist`: `<key>NSFaceIDUsageDescription</key><string>Use Face ID to unlock InvestiKid and sign in faster.</string>`.
-- [ ] **Step 2:** Privacy notice: a short "Face ID / biometric sign-in" paragraph — optional, parent-controlled for children, processed on-device by your phone (we never receive biometric data), revocable.
-- [ ] **Step 3:** `cd frontend && npm run build && npx cap sync ios` (folds the new plugin + web into build 4; verify the plugin count includes `capacitor-native-biometric`). Commit `feat(bio): Info.plist Face ID usage string + privacy notice`.
+- [x] **Step 1:** Add to `Info.plist`: `<key>NSFaceIDUsageDescription</key><string>Use Face ID to unlock InvestiKid and sign in faster.</string>`.
+- [x] **Step 2:** Privacy notice: a short "Face ID / biometric sign-in" paragraph — optional, parent-controlled for children, processed on-device by your phone (we never receive biometric data), revocable.
+- [x] **Step 3:** `cd frontend && npm run build && npx cap sync ios` (folds the new plugin + web into build 4; verify the plugin count includes `capacitor-native-biometric`). Commit `feat(bio): Info.plist Face ID usage string + privacy notice`.
 
 ---
 
 ### Task 8: Security review + full verification
 
-- [ ] **Step 1:** Dispatch a security-review pass (per `superpowers:requesting-code-review`, security lens) over the diff: secret entropy/hashing, rotation defeats replay, exchange rate-limit + active/consent re-check (no privilege gain), CSRF parity with `/auth/login`, revocation completeness (delete/disable/unenroll), no PII in stored creds, keychain `BiometryCurrentSet` usage. Address findings.
-- [ ] **Step 2:** Backend ruff + full pytest (check exit code). Frontend tsc + lint + vitest + build (check exit code). `npx cap sync ios`.
-- [ ] **Step 3:** Push `testing`; CI green; **confirm Railway testing deploy SUCCESS + health 200** (the standing post-push check). Mark SP-Bio in a tracking note + memory. (Do NOT promote — this rides the held build 4; promotion happens with the build-4 archive + device QA.)
+- [x] **Step 1:** Dispatch a security-review pass (per `superpowers:requesting-code-review`, security lens) over the diff: secret entropy/hashing, rotation defeats replay, exchange rate-limit + active/consent re-check (no privilege gain), CSRF parity with `/auth/login`, revocation completeness (delete/disable/unenroll), no PII in stored creds, keychain `BiometryCurrentSet` usage. Address findings.
+- [x] **Step 2:** Backend ruff + full pytest (check exit code). Frontend tsc + lint + vitest + build (check exit code). `npx cap sync ios`.
+- [x] **Step 3:** Push `testing`; CI green; **confirm Railway testing deploy SUCCESS + health 200** (the standing post-push check). Mark SP-Bio in a tracking note + memory. (Do NOT promote — this rides the held build 4; promotion happens with the build-4 archive + device QA.)
