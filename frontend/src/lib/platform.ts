@@ -20,3 +20,8 @@ export function getPlatform(): string {
 export function isAndroid(): boolean {
   return Capacitor.getPlatform() === 'android';
 }
+
+/** True when running in the native iOS shell. */
+export function isIOS(): boolean {
+  return Capacitor.getPlatform() === 'ios';
+}

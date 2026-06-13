@@ -26,6 +26,7 @@ class User(Base):
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", default=False)
     push_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", default=False)
+    biometric_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", default=False)
     parent_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     parent_consent_given_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

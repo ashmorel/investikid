@@ -101,6 +101,7 @@ You are in control of some things on Invest-Ed:
 
 - **Personalised recommendations** — we can suggest lessons based on what you have already done. This is switched **off** by default. You (or your parent or guardian) can switch it on in your account settings if you would like it.
 - **Marketing messages** — we do not send marketing emails unless you ask us to. This is switched **off** by default. You can change this in account settings.
+- **Face ID / biometric sign-in** — on a phone or tablet, you can choose to unlock the app and sign in with Face ID, Touch ID, or your device's biometric unlock instead of typing your password. This is **off** by default and is optional. For children, a parent or guardian turns it on first. Your face or fingerprint is checked **on your device by your phone** — we never see or receive any biometric data; we only store a random sign-in key in your device's secure storage, which you can remove at any time by switching this off.
 - **Delete your account** — you or your parent or guardian can ask us to delete your account at any time. We will do this as described above.
 - **See your data** — you can ask for a copy of all the information we hold about you. For younger learners, a parent or guardian can do this on your behalf.
 - **Fix your information** — if something is wrong, you can update it in your profile settings.

@@ -10,6 +10,10 @@ import { initNativeChrome } from './lib/nativeChrome';
 import { ensureAndroidChannel } from './lib/notifications';
 import './index.css';
 
+// Marker read by the boot watchdog in index.html: confirms the entry module
+// actually executed (vs. being blocked from loading). See index.html.
+(window as unknown as { __bootStarted?: boolean }).__bootStarted = true;
+
 const queryClient = new QueryClient({
   defaultOptions: {
     // refetchOnWindowFocus: refresh stale data when the app returns to the

@@ -44,6 +44,7 @@ async def delete_parent_account(session: AsyncSession, parent_email: str) -> dic
         .where(User.parent_email == parent_email)
         .execution_options(include_deleted=True)
     )).all()
+    from app.services import biometric_service
     children_deleted = 0
     for child in children:
         if child.deleted_at is not None:
@@ -52,6 +53,9 @@ async def delete_parent_account(session: AsyncSession, parent_email: str) -> dic
         child.deleted_at = now
         child.is_active = False
         children_deleted += 1
+        await biometric_service.revoke_subject(session, subject_key=biometric_service.subject_key_for_child(child.id))
+
+    await biometric_service.revoke_subject(session, subject_key=biometric_service.subject_key_for_parent(parent_email))
 
     # 2. Hard-delete parent-owned groups. GroupMembership.group_id carries an
     #    ondelete="CASCADE" FK, so deleting the group removes its memberships

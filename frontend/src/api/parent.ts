@@ -59,6 +59,7 @@ export type Child = {
   is_active: boolean;
   is_premium: boolean;
   push_enabled?: boolean;
+  biometric_allowed?: boolean;
   parent_consent_given_at: string | null;
   consent_declined_at: string | null;
   deleted_at: string | null;
@@ -90,6 +91,17 @@ export const parentApi = {
   logout: () => apiFetch<{ status: string }>('/parent/auth/logout', { method: 'POST' }),
   listChildren: () => apiFetch<Child[]>('/parent/children'),
   getMasteryReport: () => apiFetch<MasteryReport>('/parent/mastery-report'),
+  biometricEnroll: (device_id: string, label: string) =>
+    apiFetch<{ secret: string }>('/parent/auth/biometric/enroll', { method: 'POST', body: JSON.stringify({ device_id, label }) }),
+  biometricExchange: (device_id: string, secret: string) =>
+    apiFetch<{ secret: string }>('/parent/auth/biometric/exchange', {
+      method: 'POST', body: JSON.stringify({ device_id, secret }),
+      headers: { 'X-Device-Id': device_id }, // per-device rate-limit bucket (cookieless route)
+    }),
+  biometricUnenroll: (device_id: string) =>
+    apiFetch(`/parent/auth/biometric/devices/${device_id}`, { method: 'DELETE' }),
+  setChildBiometric: (userId: string, enabled: boolean) =>
+    apiFetch<{ status: string; biometric_allowed: boolean }>(`/parent/children/${userId}/biometric`, { method: 'POST', body: JSON.stringify({ enabled }) }),
   setChildPush: (userId: string, enabled: boolean) =>
     apiFetch<{ status: string; push_enabled: boolean }>(
       `/parent/children/${userId}/push`,

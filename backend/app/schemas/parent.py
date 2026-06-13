@@ -66,6 +66,7 @@ class ChildOut(BaseModel):
     is_active: bool
     is_premium: bool
     push_enabled: bool = False
+    biometric_allowed: bool = False
     parent_consent_given_at: datetime | None
     consent_declined_at: datetime | None
     deleted_at: datetime | None
@@ -132,4 +133,8 @@ class MasteryReportOut(BaseModel):
 
 
 class PushToggleRequest(BaseModel):
+    enabled: bool
+
+
+class BiometricToggleRequest(BaseModel):
     enabled: bool

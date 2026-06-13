@@ -23,6 +23,7 @@ class UserProfile(BaseModel):
     content_region: str | None = None
     is_premium: bool
     push_enabled: bool = False
+    biometric_allowed: bool = False
     is_admin: bool
     parent_email: str | None
     created_at: datetime

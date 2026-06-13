@@ -7,12 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_session
-from app.core.rate_limit import limiter
+from app.core.rate_limit import biometric_exchange_key, limiter
+from app.models.audit import AuditLog
 from app.models.parent_identity import ParentIdentity
 from app.models.parent_session import ParentSession
 from app.models.user import User
 from app.routers.auth import _cookie_samesite, _set_csrf_cookie
+from app.schemas.auth import BiometricEnrollRequest, BiometricExchangeRequest
 from app.schemas.parent import IdentityOut, OAuthSignInRequest, ParentMagicLinkRequest
+from app.services import biometric_service
 from app.services.email import get_email_sender
 from app.services.oidc import OidcError, OidcNotConfigured, verify_id_token
 from app.services.tokens import (
@@ -248,3 +251,68 @@ async def list_identities(
     return [IdentityOut(provider=r.provider, parent_email=r.parent_email) for r in rows]
 
 
+@router.post("/biometric/enroll")
+@limiter.limit("20/hour")
+async def parent_biometric_enroll(
+    request: Request,
+    payload: BiometricEnrollRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    secret = await biometric_service.issue(
+        session, subject_kind="parent", user_id=None, parent_email=parent_email,
+        device_id=payload.device_id, label=payload.label,
+    )
+    await session.commit()
+    return {"secret": secret}
+
+
+@router.post("/biometric/exchange")
+@limiter.limit("10/hour", key_func=biometric_exchange_key)
+async def parent_biometric_exchange(
+    request: Request,
+    payload: BiometricExchangeRequest,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
+):
+    row = await biometric_service.verify_and_rotate(
+        session, device_id=payload.device_id, secret=payload.secret
+    )
+    if row is None or row.subject_kind != "parent" or not row.parent_email:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid_biometric")
+    has_child = await session.scalar(
+        select(User.id).where(User.parent_email == row.parent_email, User.deleted_at.is_(None)).limit(1)
+    )
+    if has_child is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid_biometric")
+    new_secret = row.last_secret
+    parent_session_token = await issue_parent_session(session, row.parent_email)
+    session.add(AuditLog(
+        user_id=None,
+        event_type="parent_biometric_login",
+        ip_address=request.client.host if request.client else None,
+        metadata_json={"parent_email": row.parent_email},
+    ))
+    await session.commit()
+    secure = settings.environment != "development"
+    response.set_cookie(
+        _PARENT_COOKIE, parent_session_token,
+        max_age=7 * 86400, httponly=True, samesite=_cookie_samesite(), secure=secure, path="/",
+    )
+    _set_csrf_cookie(response, secure)
+    return {"secret": new_secret}
+
+
+@router.delete("/biometric/devices/{device_id}")
+async def parent_biometric_unenroll(
+    device_id: str,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    await biometric_service.revoke_device(
+        session,
+        subject_key=biometric_service.subject_key_for_parent(parent_email),
+        device_id=device_id,
+    )
+    await session.commit()
+    return {"status": "ok"}

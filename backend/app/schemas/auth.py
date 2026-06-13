@@ -147,3 +147,15 @@ class ResetPasswordRequest(BaseModel):
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one digit")
         return v
+
+
+class BiometricEnrollRequest(BaseModel):
+    device_id: str = Field(min_length=8, max_length=64)
+    label: str = Field(min_length=1, max_length=60)
+
+
+class BiometricExchangeRequest(BaseModel):
+    device_id: str = Field(min_length=8, max_length=64)
+    # Server-issued secrets are token_urlsafe(32) ≈ 43 chars; reject anything
+    # implausibly short before it ever reaches a hash comparison.
+    secret: str = Field(min_length=32, max_length=128)

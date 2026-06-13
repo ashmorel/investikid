@@ -45,6 +45,44 @@
         if (window.visualViewport) window.visualViewport.addEventListener('resize', nudge);
       })();
     </script>
+    <script>
+      // Boot watchdog (diagnostic). The app normally mounts into #root within a
+      // second. If it hasn't after a grace period, paint the actual cause on
+      // screen instead of a blank white view — so startup failures are
+      // diagnosable on devices where the JS console isn't reachable (e.g. a
+      // TestFlight build). This inline script always runs, even if the bundled
+      // entry module is blocked from loading, so it can report that case too.
+      (function () {
+        var errs = [];
+        window.addEventListener('error', function (e) {
+          errs.push('error: ' + (e && e.message ? e.message : 'unknown') +
+            (e && e.filename ? ' @ ' + e.filename + ':' + e.lineno + ':' + e.colno : ''));
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          var r = e && e.reason;
+          errs.push('unhandledrejection: ' + ((r && (r.stack || r.message)) || String(r)));
+        });
+        setTimeout(function () {
+          var root = document.getElementById('root');
+          if (!root || root.childElementCount > 0) return; // mounted fine
+          var booted = !!window.__bootStarted;
+          var detail = errs.length
+            ? errs.join('\n\n')
+            : booted
+              ? 'The bundle executed but the UI never rendered.'
+              : 'The app bundle did not execute (no JavaScript error was raised) — ' +
+                'the entry script was blocked from loading.';
+          root.innerHTML =
+            '<div style="padding:20px;font:13px -apple-system,system-ui,monospace;' +
+            'white-space:pre-wrap;word-break:break-word;color:#7f1d1d;">' +
+            '<strong style="font-size:15px;">InvestiKid failed to start</strong>\n\n' +
+            detail + '\n\nbootStarted: ' + booted +
+            '\nplatform: ' +
+            (window.Capacitor && window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : 'web') +
+            '\nurl: ' + location.href + '</div>';
+        }, 6000);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

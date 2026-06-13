@@ -18,6 +18,7 @@ from app.routers.parent_auth import _PARENT_COOKIE, get_current_parent
 from app.schemas.group import GroupCreateRequest, GroupJoinRequest, GroupMemberOut, GroupOut
 from app.schemas.parent import (
     AccountDeleteRequest,
+    BiometricToggleRequest,
     ChildOut,
     FreezeRequest,
     MasteryReportOut,
@@ -28,7 +29,7 @@ from app.schemas.parent import (
     TierOverrideRequest,
 )
 from app.schemas.parent_preferences import ParentPreferencesOut, ParentPreferencesUpdate
-from app.services import group_service
+from app.services import biometric_service, group_service
 from app.services.account_deletion_service import delete_parent_account
 from app.services.analytics_service import build_child_analytics
 from app.services.content_service import content_region_for
@@ -74,6 +75,7 @@ async def list_children(
                 user_id=r.id, username=r.username, country_code=r.country_code,
                 is_active=r.is_active, is_premium=r.is_premium,
                 push_enabled=r.push_enabled,
+                biometric_allowed=r.biometric_allowed,
                 parent_consent_given_at=r.parent_consent_given_at,
                 consent_declined_at=r.consent_declined_at,
                 deleted_at=r.deleted_at,
@@ -200,6 +202,32 @@ async def set_child_push(
     ))
     await session.commit()
     return {"status": "ok", "push_enabled": payload.enabled}
+
+
+@router.post("/children/{user_id}/biometric")
+async def set_child_biometric(
+    user_id: uuid.UUID,
+    payload: BiometricToggleRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    """Parent master switch for Face ID sign-in (SP-Bio). Disabling also revokes
+    any stored biometric credentials for the child."""
+    child = await _get_owned_child(session, parent_email, user_id)
+    if child.deleted_at is not None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account deleted")
+    child.biometric_allowed = payload.enabled
+    if not payload.enabled:
+        await biometric_service.revoke_subject(
+            session, subject_key=biometric_service.subject_key_for_child(child.id)
+        )
+    session.add(AuditLog(
+        user_id=child.id,
+        event_type="biometric_enabled" if payload.enabled else "biometric_disabled",
+        metadata_json={"actor": f"parent:{parent_email}"},
+    ))
+    await session.commit()
+    return {"status": "ok", "biometric_allowed": payload.enabled}
 
 
 @router.post("/children/{user_id}/premium")

@@ -15,6 +15,7 @@ export type Me = {
   content_region: string | null;
   is_premium: boolean;
   push_enabled?: boolean;
+  biometric_allowed?: boolean;
   is_admin: boolean;
   age_tier: 'explorer' | 'investor';
   parent_email: string | null;
@@ -40,6 +41,15 @@ export type RegisterResponse =
 
 export const authApi = {
   me: () => apiFetch<Me>('/users/me'),
+  biometricEnroll: (device_id: string, label: string) =>
+    apiFetch<{ secret: string }>('/auth/biometric/enroll', { method: 'POST', body: JSON.stringify({ device_id, label }) }),
+  biometricExchange: (device_id: string, secret: string) =>
+    apiFetch<{ secret: string }>('/auth/biometric/exchange', {
+      method: 'POST', body: JSON.stringify({ device_id, secret }),
+      headers: { 'X-Device-Id': device_id }, // per-device rate-limit bucket (cookieless route)
+    }),
+  biometricUnenroll: (device_id: string) =>
+    apiFetch(`/auth/biometric/devices/${device_id}`, { method: 'DELETE' }),
   updatePreferences: (body: {
     topic_path?: string | null;
     content_region?: string | null;
