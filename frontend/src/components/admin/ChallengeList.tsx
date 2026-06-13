@@ -30,6 +30,9 @@ export default function ChallengeList() {
                 <div className="text-xs text-muted-foreground">
                   {c.type} · target: {c.target_value} · {c.xp_reward} XP
                   {c.is_premium && <span className="ml-1 text-accent-500">⭐</span>}
+                  {c.scope === 'group' && (
+                    <span className="ml-1 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-800">Group</span>
+                  )}
                 </div>
               </div>
               <span className={`rounded-full px-2 py-0.5 text-xs ${isActive ? 'bg-success-500/20 text-success-600' : 'bg-brand-50 text-muted-foreground'}`}>

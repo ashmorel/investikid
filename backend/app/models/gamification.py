@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -48,6 +48,9 @@ class Challenge(Base):
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # 'personal' (default) or 'group' — group challenges are co-op: members'
+    # progress sums toward one shared target (M9).
+    scope: Mapped[str] = mapped_column(String(10), nullable=False, default="personal", server_default="personal")
 
 
 class UserChallenge(Base):
@@ -61,3 +64,21 @@ class UserChallenge(Base):
     )
     progress: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class GroupChallengeCompletion(Base):
+    """One row per (group, challenge) crossing — the once-only reward guard (M9)."""
+
+    __tablename__ = "group_challenge_completions"
+    __table_args__ = (
+        UniqueConstraint("group_id", "challenge_id", name="uq_group_challenge_completion"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    group_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("leaderboard_groups.id", ondelete="CASCADE"), nullable=False
+    )
+    challenge_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("challenges.id", ondelete="CASCADE"), nullable=False
+    )
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

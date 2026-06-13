@@ -10,12 +10,28 @@ export default function AdminSettings() {
   const [emails, setEmails] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [inputError, setInputError] = useState('');
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventEmoji, setEventEmoji] = useState('');
+  const [eventStart, setEventStart] = useState('');
+  const [eventEnd, setEventEnd] = useState('');
+  const [eventBonus, setEventBonus] = useState(0);
   // Seed local state once data arrives; seeded ref avoids re-seeding on invalidate/refetch
   const seeded = useRef(false);
 
   useEffect(() => {
     if (data && !seeded.current) {
       setEmails(data.alert_emails);
+      if (data.seasonal_event) {
+        /* eslint-disable react-hooks/set-state-in-effect -- one-shot, ref-guarded
+           seeding of form fields from the fetched settings; mirrors the
+           established alert_emails seeding pattern above. */
+        setEventTitle(data.seasonal_event.title);
+        setEventEmoji(data.seasonal_event.emoji);
+        setEventStart(data.seasonal_event.starts_at.slice(0, 10));
+        setEventEnd(data.seasonal_event.ends_at.slice(0, 10));
+        setEventBonus(data.seasonal_event.xp_bonus_pct);
+        /* eslint-enable react-hooks/set-state-in-effect */
+      }
       seeded.current = true;
     }
   }, [data]);
@@ -47,7 +63,20 @@ export default function AdminSettings() {
   }
 
   function handleSave() {
-    update.mutate({ alert_emails: emails });
+    update.mutate({
+      alert_emails: emails,
+      ...(eventTitle && eventStart && eventEnd
+        ? {
+            seasonal_event: {
+              title: eventTitle,
+              emoji: eventEmoji,
+              starts_at: new Date(eventStart).toISOString(),
+              ends_at: new Date(`${eventEnd}T23:59:59Z`).toISOString(),
+              xp_bonus_pct: eventBonus,
+            },
+          }
+        : {}),
+    });
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -135,6 +164,53 @@ export default function AdminSettings() {
             ))}
           </ul>
         )}
+
+        {/* Seasonal event (M9) — deploy-free, lives in AppSetting */}
+        <fieldset className="mb-4 rounded-md border border-line bg-card px-4 py-3">
+          <legend className="px-1 text-sm font-semibold text-ink">Seasonal event</legend>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 sm:col-span-1">
+              <label htmlFor="ev-title" className="mb-1 block text-sm text-ink">Title</label>
+              <input id="ev-title" value={eventTitle} maxLength={60} onChange={(e) => setEventTitle(e.target.value)}
+                placeholder="Spooky Savings Week"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-ink" />
+            </div>
+            <div>
+              <label htmlFor="ev-emoji" className="mb-1 block text-sm text-ink">Emoji</label>
+              <input id="ev-emoji" value={eventEmoji} maxLength={8} onChange={(e) => setEventEmoji(e.target.value)}
+                placeholder="🎃" className="w-24 rounded-md border border-input bg-background px-3 py-2 text-sm text-ink" />
+            </div>
+            <div>
+              <label htmlFor="ev-bonus" className="mb-1 block text-sm text-ink">Bonus XP %</label>
+              <input id="ev-bonus" type="number" min={0} max={100} value={eventBonus}
+                onChange={(e) => setEventBonus(Number(e.target.value))}
+                className="w-24 rounded-md border border-input bg-background px-3 py-2 text-sm text-ink" />
+            </div>
+            <div>
+              <label htmlFor="ev-start" className="mb-1 block text-sm text-ink">Starts</label>
+              <input id="ev-start" type="date" value={eventStart} onChange={(e) => setEventStart(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-ink" />
+            </div>
+            <div>
+              <label htmlFor="ev-end" className="mb-1 block text-sm text-ink">Ends</label>
+              <input id="ev-end" type="date" value={eventEnd} onChange={(e) => setEventEnd(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-ink" />
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Children see a banner on Home and lesson XP gets the bonus while the event is live. Save applies it; Clear removes it.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setEventTitle(''); setEventEmoji(''); setEventStart(''); setEventEnd(''); setEventBonus(0);
+              update.mutate({ alert_emails: emails, clear_seasonal_event: true });
+            }}
+            className="mt-2 rounded-md border border-line px-3 py-1.5 text-xs text-muted-foreground hover:bg-brand-50"
+          >
+            Clear event
+          </button>
+        </fieldset>
 
         {/* Save button + feedback */}
         <div className="flex items-center gap-4">

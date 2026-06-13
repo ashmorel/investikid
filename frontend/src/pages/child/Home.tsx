@@ -13,6 +13,7 @@ import { useAllBadges } from '@/hooks/useAllBadges';
 import { useBadges } from '@/hooks/useBadges';
 import { authApi, type Me } from '@/api/auth';
 import { trackOncePerSession } from '@/lib/analytics';
+import { EventStrip } from '@/components/child/home/EventStrip';
 
 export default function Home() {
   useEffect(() => trackOncePerSession('home_view'), []);
@@ -39,6 +40,7 @@ export default function Home() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
       <h1 className="sr-only">Your learning home</h1>
+      <EventStrip />
       <HomeHero />
 
       <div className="mt-4">

@@ -120,6 +120,7 @@ export interface AdminChallenge {
   starts_at: string;
   ends_at: string;
   is_premium: boolean;
+  scope?: 'personal' | 'group';
 }
 
 // ── Fetch helper ───────────────────────────────────────────────────
@@ -447,9 +448,22 @@ export function useCountries() {
 }
 
 // ── Settings ───────────────────────────────────────────────────────
+export type SeasonalEvent = {
+  title: string;
+  emoji: string;
+  starts_at: string;
+  ends_at: string;
+  xp_bonus_pct: number;
+};
+
 export interface AdminSettings {
   alert_emails: string[];
+  seasonal_event?: SeasonalEvent | null;
 }
+
+export type AdminSettingsUpdate = AdminSettings & {
+  clear_seasonal_event?: boolean;
+};
 
 export function useAdminSettings() {
   return useQuery({ queryKey: ['admin', 'settings'], queryFn: () => adminFetch<AdminSettings>('/admin/settings') });
@@ -458,7 +472,7 @@ export function useAdminSettings() {
 export function useUpdateAdminSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: AdminSettings) =>
+    mutationFn: (data: AdminSettingsUpdate) =>
       adminFetch<AdminSettings>('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'settings'] }),
   });

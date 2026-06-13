@@ -2,10 +2,18 @@ from datetime import UTC, datetime
 from typing import TypedDict
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import LessonCompletion
-from app.models.gamification import Badge, Challenge, UserBadge, UserChallenge
+from app.models.gamification import (
+    Badge,
+    Challenge,
+    GroupChallengeCompletion,
+    UserBadge,
+    UserChallenge,
+)
+from app.models.group import GroupMembership
 from app.models.simulator import Portfolio, Trade
 from app.models.user import UserProgress
 
@@ -100,9 +108,68 @@ async def update_challenge_progress(
         if uc.completed_at is not None:
             continue
         uc.progress = uc.progress + increment
+        if challenge.scope == "group":
+            # Co-op: completion is decided by the GROUP sum, not this row.
+            await session.flush()
+            await _settle_group_challenge(session, user_id, challenge, now)
+            continue
         if uc.progress >= challenge.target_value:
             uc.completed_at = now
             newly_completed.append(challenge)
     if active:
         await session.flush()
     return newly_completed
+
+
+async def _settle_group_challenge(
+    session: AsyncSession, user_id, challenge: Challenge, now: datetime
+) -> None:
+    """For each of the child's groups: if the members' summed progress crossed
+    the shared target and the group hasn't been settled, record the completion
+    (race-safe) and reward every member exactly once (their UserChallenge
+    completed_at is the per-member guard)."""
+    from app.services.xp_service import record_xp
+
+    group_ids = (await session.scalars(
+        select(GroupMembership.group_id).where(GroupMembership.user_id == user_id)
+    )).all()
+    for group_id in group_ids:
+        settled = await session.scalar(
+            select(GroupChallengeCompletion).where(
+                GroupChallengeCompletion.group_id == group_id,
+                GroupChallengeCompletion.challenge_id == challenge.id,
+            )
+        )
+        if settled is not None:
+            continue
+        member_ids = (await session.scalars(
+            select(GroupMembership.user_id).where(GroupMembership.group_id == group_id)
+        )).all()
+        total = (await session.scalar(
+            select(func.coalesce(func.sum(UserChallenge.progress), 0)).where(
+                UserChallenge.challenge_id == challenge.id,
+                UserChallenge.user_id.in_(member_ids),
+            )
+        )) or 0
+        if total < challenge.target_value:
+            continue
+        try:
+            async with session.begin_nested():
+                session.add(GroupChallengeCompletion(
+                    group_id=group_id, challenge_id=challenge.id, completed_at=now
+                ))
+                await session.flush()
+        except IntegrityError:
+            continue  # raced: another member's event settled this group first
+        for member_id in member_ids:
+            muc = await session.get(UserChallenge, (member_id, challenge.id))
+            if muc is None:
+                muc = UserChallenge(user_id=member_id, challenge_id=challenge.id, progress=0)
+                session.add(muc)
+            if muc.completed_at is not None:
+                continue  # already rewarded (e.g. via another group)
+            muc.completed_at = now
+            progress = await session.get(UserProgress, member_id)
+            if progress is not None:
+                record_xp(progress, challenge.xp_reward)
+        await session.flush()
