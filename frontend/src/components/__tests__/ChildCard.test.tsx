@@ -99,3 +99,30 @@ describe('ChildCard experience mode', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 });
+
+describe('ChildCard Face ID master switch', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('renders an unchecked Face ID switch by default', () => {
+    renderCard();
+    const sw = screen.getByLabelText('Face ID sign-in');
+    expect(sw).toBeInTheDocument();
+    expect(sw).not.toBeChecked();
+  });
+
+  it('renders a checked Face ID switch when allowed', () => {
+    renderCard({ ...BASE_CHILD, biometric_allowed: true });
+    expect(screen.getByLabelText('Face ID sign-in')).toBeChecked();
+  });
+
+  it('allows Face ID when toggled on', async () => {
+    const spy = vi
+      .spyOn(parentApi, 'setChildBiometric')
+      .mockResolvedValue({ status: 'ok', biometric_allowed: true });
+    renderCard();
+    fireEvent.click(screen.getByLabelText('Face ID sign-in'));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith('child-1', true));
+  });
+});

@@ -64,6 +64,15 @@ export function ChildCard({ child }: { child: Child }) {
     },
   });
 
+  const biometricToggle = useMutation({
+    mutationFn: (enabled: boolean) => parentApi.setChildBiometric(child.user_id, enabled),
+    onSuccess: (_d, enabled) => {
+      qc.setQueryData<Child[]>(['children'], (old) =>
+        old?.map((c) => c.user_id === child.user_id ? { ...c, biometric_allowed: enabled } : c),
+      );
+    },
+  });
+
   const premium = useMutation({
     mutationFn: (value: boolean) => parentApi.setChildPremium(child.user_id, value),
     onMutate: async (value) => {
@@ -159,6 +168,18 @@ export function ChildCard({ child }: { child: Child }) {
           />
           <Label htmlFor={`push-${child.user_id}`} className="text-sm">
             Notifications
+          </Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            id={`biometric-${child.user_id}`}
+            checked={child.biometric_allowed ?? false}
+            disabled={isDeleted || biometricToggle.isPending}
+            onCheckedChange={(value) => biometricToggle.mutate(value)}
+          />
+          <Label htmlFor={`biometric-${child.user_id}`} className="text-sm">
+            Face ID sign-in
           </Label>
         </div>
 

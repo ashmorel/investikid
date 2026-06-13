@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi, type Me } from '@/api/auth';
@@ -25,6 +25,7 @@ import { isNativeApp } from '@/lib/platform';
 import { contentApi, type DailyGoalSize } from '@/api/content';
 import { useProgress } from '@/hooks/useProgress';
 import { disablePush, enablePush, isPushRegistered } from '@/lib/push';
+import { addBioAccount, biometric, getBioAccounts, getDeviceId, removeBioAccount } from '@/lib/biometric';
 
 const GOAL_SIZES: { value: DailyGoalSize; label: string }[] = [
   { value: 10, label: 'Chill' },
@@ -56,6 +57,29 @@ export function ProfileMenu({ username }: { username: string }) {
   });
 
   const parentPushEnabled = session?.push_enabled ?? false;
+  const bioAllowed = session?.biometric_allowed ?? false;
+  const bioKey = session?.id ? `child:${session.id}` : '';
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioOn, setBioOn] = useState(() => getBioAccounts().some((a) => a.key === bioKey));
+  useEffect(() => { void biometric.isAvailable().then(setBioAvailable); }, []);
+  async function toggleBiometric(next: boolean) {
+    if (!session?.id) return;
+    const label = session.username ?? 'Me';
+    if (next) {
+      if (!(await biometric.verify('Set up Face ID sign-in'))) return;
+      const res = await authApi.biometricEnroll(getDeviceId(), label);
+      if (res?.secret) {
+        await biometric.enroll(bioKey, label, res.secret);
+        addBioAccount({ key: bioKey, label, kind: 'child' });
+        setBioOn(true);
+      }
+    } else {
+      await authApi.biometricUnenroll(getDeviceId());
+      await biometric.clear(bioKey);
+      removeBioAccount(bioKey);
+      setBioOn(false);
+    }
+  }
   const [pushOn, setPushOn] = useState(() => isPushRegistered());
   const [pushDenied, setPushDenied] = useState(false);
   async function togglePush(next: boolean) {
@@ -265,6 +289,23 @@ export function ProfileMenu({ username }: { username: string }) {
                     Turn on notifications for InvestiKid in your device Settings to use alerts.
                   </p>
                 )}
+              </>
+            )}
+            {bioAllowed && bioAvailable && (
+              <>
+                <label className="flex items-center justify-between gap-3 text-sm font-medium">
+                  <span>Sign in with Face ID</span>
+                  <input
+                    type="checkbox"
+                    checked={bioOn}
+                    onChange={(e) => void toggleBiometric(e.target.checked)}
+                    className="h-5 w-5"
+                    aria-describedby="bio-help"
+                  />
+                </label>
+                <p id="bio-help" className="text-xs text-muted-foreground">
+                  Unlock InvestiKid with Face ID instead of your password. Your grown-up turned this on.
+                </p>
               </>
             )}
           </div>
