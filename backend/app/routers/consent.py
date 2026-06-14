@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +9,8 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.core.rate_limit import limiter
 from app.models.user import User
+from app.routers.auth import _cookie_samesite, _set_csrf_cookie
+from app.routers.parent_auth import _PARENT_COOKIE
 from app.schemas.consent import ChildSummary, ConsentDecision
 from app.services.consent_service import age_in_years
 from app.services.email import get_email_sender
@@ -20,6 +22,7 @@ from app.services.tokens import (
     TokenInvalid,
     consume_one_time_token,
     issue_one_time_token,
+    issue_parent_session,
 )
 
 router = APIRouter(tags=["consent"])
@@ -59,6 +62,7 @@ async def verify_consent_token(
 async def decide_consent(
     token: str,
     payload: ConsentDecision,
+    response: Response,
     session: AsyncSession = Depends(get_session),
 ):
     if payload.decision == "approve" and payload.attest_guardian is not True:
@@ -82,15 +86,26 @@ async def decide_consent(
         raise _gone("User no longer exists")
 
     now = datetime.now(UTC)
+    parent_token = None
     if payload.decision == "approve":
         user.parent_consent_given_at = now
         user.guardian_attested_at = now
         user.is_active = True
+        if user.parent_email:
+            parent_token = await issue_parent_session(session, user.parent_email)
     else:
         user.consent_declined_at = now
         user.is_active = False
 
     await session.commit()
+
+    if parent_token:
+        secure = settings.environment != "development"
+        response.set_cookie(
+            _PARENT_COOKIE, parent_token, max_age=7 * 86400, httponly=True,
+            samesite=_cookie_samesite(), secure=secure, path="/",
+        )
+        _set_csrf_cookie(response, secure)
     return {"status": "ok", "decision": payload.decision}
 
 
