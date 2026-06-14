@@ -117,11 +117,6 @@ export const parentApi = {
       `/parent/children/${userId}/erasure`,
       { method: 'POST' },
     ),
-  setChildPremium: (userId: string, premium: boolean) =>
-    apiFetch<{ status: string; premium: boolean }>(
-      `/parent/children/${userId}/premium`,
-      { method: 'POST', body: JSON.stringify({ premium }) },
-    ),
   setChildTier: (userId: string, tierOverride: TierOverride) =>
     apiFetch<{ tier_override: TierOverride; age_tier: 'explorer' | 'investor' }>(
       `/parent/children/${userId}/tier`,
