@@ -130,6 +130,11 @@ export function ProfileMenu({ username }: { username: string }) {
     },
   });
 
+  async function goToParentArea() {
+    try { await authApi.parentFromSession(); } catch { /* dashboard guard will redirect if needed */ }
+    navigate('/parent');
+  }
+
   async function toggleReminder(next: boolean) {
     if (next) {
       let granted: boolean;
@@ -342,6 +347,11 @@ export function ProfileMenu({ username }: { username: string }) {
           {session?.is_admin && (
             <DropdownMenuItem onSelect={() => navigate('/admin')}>
               Admin
+            </DropdownMenuItem>
+          )}
+          {session?.is_parent && (
+            <DropdownMenuItem onSelect={() => void goToParentArea()}>
+              Parent area
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
