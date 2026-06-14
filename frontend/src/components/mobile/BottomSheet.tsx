@@ -1,4 +1,5 @@
 import { useRef, useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
@@ -39,7 +40,11 @@ export function BottomSheet({ open, onOpenChange, title, children, desktopFallba
     return desktopFallback ? <>{desktopFallback}</> : open ? <>{children}</> : null;
   }
 
-  return (
+  // Portal to <body> so the fixed-position sheet anchors to the viewport. Any
+  // ancestor with `transform`/`filter`/`backdrop-filter` (e.g. TopNav's
+  // `backdrop-blur` header, which hosts this via ProfileMenu) would otherwise
+  // become the containing block and pin the sheet to the top of the screen.
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -93,6 +98,7 @@ export function BottomSheet({ open, onOpenChange, title, children, desktopFallba
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
