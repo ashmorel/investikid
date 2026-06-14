@@ -47,3 +47,34 @@ async def test_me_is_parent_false_for_non_parent(client, db_session):
     await _register_and_login(client, email=f"np{suffix}@example.com", username=f"np{suffix}")
     r = await client.get("/users/me")
     assert r.json()["is_parent"] is False
+
+
+# ---------------------------------------------------------------------------
+# Task 2: POST /parent/auth/from-session
+# ---------------------------------------------------------------------------
+from tests.test_billing import _csrf_headers  # noqa: E402
+
+
+async def test_from_session_mints_parent_session(client, db_session):
+    await _make_parent_user(client, db_session, verified=True)
+    r = await client.post("/parent/auth/from-session", headers=_csrf_headers(client))
+    assert r.status_code == 200
+    # the minted parent_session now authorizes the dashboard
+    assert (await client.get("/parent/children")).status_code == 200
+
+
+async def test_from_session_403_when_unverified(client, db_session):
+    await _make_parent_user(client, db_session, verified=False)
+    r = await client.post("/parent/auth/from-session", headers=_csrf_headers(client))
+    assert r.status_code == 403
+
+
+async def test_from_session_403_for_non_parent(client, db_session):
+    suffix = uuid.uuid4().hex[:8]
+    await _register_and_login(client, email=f"np{suffix}@example.com", username=f"np{suffix}")
+    # mark verified so we isolate the "no child" branch
+    u = await db_session.scalar(select(User).where(User.email == f"np{suffix}@example.com"))
+    u.email_verified_at = datetime.now(UTC)
+    await db_session.commit()
+    r = await client.post("/parent/auth/from-session", headers=_csrf_headers(client))
+    assert r.status_code == 403

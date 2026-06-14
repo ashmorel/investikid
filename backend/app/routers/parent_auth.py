@@ -13,6 +13,7 @@ from app.models.parent_identity import ParentIdentity
 from app.models.parent_session import ParentSession
 from app.models.user import User
 from app.routers.auth import _cookie_samesite, _set_csrf_cookie
+from app.routers.users import get_current_user
 from app.schemas.auth import BiometricEnrollRequest, BiometricExchangeRequest
 from app.schemas.parent import IdentityOut, OAuthSignInRequest, ParentMagicLinkRequest
 from app.services import biometric_service
@@ -108,6 +109,34 @@ async def logout(
         httponly=True,
         path="/",
     )
+    return {"status": "ok"}
+
+
+@router.post("/from-session")
+async def parent_from_session(
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Mint a parent_session for a logged-in user whose VERIFIED email is some
+    child's parent_email — the no-extra-login bridge (Door 1)."""
+    if current_user.email_verified_at is None or not current_user.email:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "email_not_verified")
+    has_child = await session.scalar(
+        select(User.id).where(
+            User.parent_email == current_user.email, User.deleted_at.is_(None)
+        ).limit(1)
+    )
+    if has_child is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "not_a_parent")
+    token = await issue_parent_session(session, current_user.email)
+    await session.commit()
+    secure = settings.environment != "development"
+    response.set_cookie(
+        _PARENT_COOKIE, token, max_age=7 * 86400, httponly=True,
+        samesite=_cookie_samesite(), secure=secure, path="/",
+    )
+    _set_csrf_cookie(response, secure)
     return {"status": "ok"}
 
 
