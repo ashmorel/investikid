@@ -68,6 +68,9 @@ export default function Login() {
       <p className="mt-2 text-sm text-muted-foreground">
         Curious? <Link to="/try" className="underline">Try a lesson first</Link> — no account needed.
       </p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Are you a parent? <Link to="/parent/login" className="font-medium text-brand-700 underline">Manage your child</Link>
+      </p>
     </AuthPage>
   );
 }
