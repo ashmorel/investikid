@@ -33,14 +33,39 @@ describe('Login', () => {
   });
 
   it('redirects to /home on success', async () => {
-    (globalThis.fetch as any).mockResolvedValue(
-      new Response(JSON.stringify({ token_type: 'bearer' }), { status: 200 }),
-    );
+    (globalThis.fetch as any).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/users/me')) {
+        return new Response(JSON.stringify({ id: 'u1', username: 'kid' }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ token_type: 'bearer' }), { status: 200 });
+    });
     renderPage();
     await userEvent.type(screen.getByLabelText(/email/i), 'a@x.com');
     await userEvent.type(screen.getByLabelText(/password/i), 'pw');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
     await waitFor(() => expect(screen.getByText('Home Page')).toBeInTheDocument());
+  });
+
+  it('absorbs a transient first /me 401 by polling, then redirects to /home', async () => {
+    let meCalls = 0;
+    (globalThis.fetch as any).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/users/me')) {
+        meCalls += 1;
+        if (meCalls < 2) {
+          return new Response(JSON.stringify({ detail: 'no session' }), { status: 401 });
+        }
+        return new Response(JSON.stringify({ id: 'u1', username: 'kid' }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ token_type: 'bearer' }), { status: 200 });
+    });
+    renderPage();
+    await userEvent.type(screen.getByLabelText(/email/i), 'a@x.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'pw');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    await waitFor(() => expect(screen.getByText('Home Page')).toBeInTheDocument(), { timeout: 3000 });
+    expect(meCalls).toBeGreaterThanOrEqual(2);
   });
 
   it('redirects to /pending-consent on 403 consent error', async () => {
