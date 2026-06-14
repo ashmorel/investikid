@@ -23,7 +23,6 @@ from app.schemas.parent import (
     FreezeRequest,
     MasteryReportOut,
     PremiumRequestOut,
-    PremiumToggleRequest,
     PushToggleRequest,
     TierOverrideOut,
     TierOverrideRequest,
@@ -33,7 +32,6 @@ from app.services import biometric_service, group_service
 from app.services.account_deletion_service import delete_parent_account
 from app.services.analytics_service import build_child_analytics
 from app.services.content_service import content_region_for
-from app.services.entitlements import set_premium
 from app.services.export_service import build_user_export
 from app.services.mastery_report_service import build_mastery_report
 
@@ -228,21 +226,6 @@ async def set_child_biometric(
     ))
     await session.commit()
     return {"status": "ok", "biometric_allowed": payload.enabled}
-
-
-@router.post("/children/{user_id}/premium")
-async def set_child_premium(
-    user_id: uuid.UUID,
-    payload: PremiumToggleRequest,
-    parent_email: str = Depends(get_current_parent),
-    session: AsyncSession = Depends(get_session),
-):
-    child = await _get_owned_child(session, parent_email, user_id)
-    if child.deleted_at is not None:
-        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account deleted")
-    await set_premium(session, child, value=payload.premium, actor=parent_email)
-    await session.commit()
-    return {"status": "ok", "premium": payload.premium}
 
 
 @router.post("/children/{user_id}/tier", response_model=TierOverrideOut)

@@ -109,3 +109,49 @@ async def test_consent_approve_sets_parent_session_cookie(client, db_session):
     assert "parent_session" in r.cookies
     # the cookie authorizes the dashboard for this parent_email
     assert (await client.get("/parent/children")).status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Task 4: close the free-premium leak
+# ---------------------------------------------------------------------------
+from tests.test_billing import _setup_parent  # noqa: E402
+
+
+async def test_parent_premium_endpoint_removed(client, db_session):
+    parent = f"pp{uuid.uuid4().hex[:6]}@example.com"
+    await _setup_parent(
+        client,
+        db_session,
+        parent_email=parent,
+        child_email=f"ppk{uuid.uuid4().hex[:6]}@example.com",
+        child_username=f"ppk{uuid.uuid4().hex[:6]}",
+    )
+    child = await db_session.scalar(select(User).where(User.parent_email == parent))
+    r = await client.post(
+        f"/parent/children/{child.id}/premium",
+        json={"premium": True},
+        headers=_csrf_headers(client),
+    )
+    assert r.status_code in (404, 405)  # endpoint no longer exists on the parent surface
+
+
+async def test_admin_can_grant_premium(admin_client, db_session):
+    u = User(
+        username=f"ag{uuid.uuid4().hex[:6]}",
+        email=None,
+        password_hash="x",
+        dob=date(2010, 1, 1),
+        country_code="GB",
+        currency_code="GBP",
+        is_active=True,
+    )
+    db_session.add(u)
+    await db_session.commit()
+    r = await admin_client.post(
+        f"/admin/users/{u.id}/premium",
+        json={"premium": True},
+        headers=_csrf_headers(admin_client),
+    )
+    assert r.status_code == 200
+    await db_session.refresh(u)
+    assert u.is_premium is True
