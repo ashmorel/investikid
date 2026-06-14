@@ -81,7 +81,7 @@ describe('ParentDashboard', () => {
     await waitFor(() => expect(screen.getByText('Login Page')).toBeInTheDocument());
   });
 
-  it('shows "Back to app" in the menu and returns to /home when an app session exists', async () => {
+  it('shows a visible "Back to App" link that returns to /home when an app session exists', async () => {
     (globalThis.fetch as any).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/users/me')) {
@@ -90,9 +90,8 @@ describe('ParentDashboard', () => {
       return new Response(JSON.stringify([]), { status: 200 });
     });
     renderPage();
-    await screen.findByText(/No children linked/i); // page settled, /me resolved
-    await userEvent.click(screen.getByRole('button', { name: /parent menu/i }));
-    await userEvent.click(await screen.findByRole('menuitem', { name: /back to app/i }));
+    const back = await screen.findByRole('button', { name: /back to app/i });
+    await userEvent.click(back);
     expect(await screen.findByText('Home Page')).toBeInTheDocument();
   });
 
