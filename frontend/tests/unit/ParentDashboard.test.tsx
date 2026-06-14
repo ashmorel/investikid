@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ParentDashboard from '@/pages/ParentDashboard';
@@ -34,6 +34,8 @@ function renderPage() {
         <Routes>
           <Route path="/parent" element={<ParentDashboard />} />
           <Route path="/parent/login" element={<div>Login Page</div>} />
+          <Route path="/login" element={<div>Normal Login Page</div>} />
+          <Route path="/home" element={<div>Home Page</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -76,5 +78,39 @@ describe('ParentDashboard', () => {
     );
     renderPage();
     await waitFor(() => expect(screen.getByText('Login Page')).toBeInTheDocument());
+  });
+
+  it('shows "Back to app" and returns to /home when an app session exists', async () => {
+    (globalThis.fetch as any).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/users/me')) {
+        return new Response(JSON.stringify({ id: 'u1', username: 'parent' }), { status: 200 });
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    });
+    renderPage();
+    const back = await screen.findByRole('button', { name: /back to app/i });
+    fireEvent.click(back);
+    expect(await screen.findByText('Home Page')).toBeInTheDocument();
+  });
+
+  it('logout clears both sessions and goes to the normal login', async () => {
+    const posts: string[] = [];
+    (globalThis.fetch as any).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if ((init?.method ?? 'GET').toUpperCase() === 'POST') posts.push(url);
+        if (url.includes('/users/me')) {
+          return new Response(JSON.stringify({ id: 'u1', username: 'parent' }), { status: 200 });
+        }
+        return new Response(JSON.stringify([]), { status: 200 });
+      },
+    );
+    renderPage();
+    const logoutBtn = await screen.findByRole('button', { name: /log out/i });
+    fireEvent.click(logoutBtn);
+    await waitFor(() => expect(screen.getByText('Normal Login Page')).toBeInTheDocument());
+    expect(posts.some((u) => u.includes('/parent/auth/logout'))).toBe(true);
+    expect(posts.some((u) => u.includes('/auth/logout') && !u.includes('/parent/'))).toBe(true);
   });
 });
