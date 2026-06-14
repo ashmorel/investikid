@@ -6,6 +6,8 @@ import re
 import time
 from dataclasses import dataclass
 
+from app.services import llm_usage
+
 _CACHE_TTL = 3600
 _ESCALATION_TIMEOUT = 5.0
 
@@ -90,6 +92,7 @@ def _needs_escalation(text: str) -> bool:
     return bool(_REVIEW_TOKENS.search(text))
 
 
+@llm_usage.surface("moderation")
 async def _model_moderation(text: str) -> tuple[bool, str | None]:
     import json
 

@@ -9,6 +9,7 @@ from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 
 from app.core.config import settings
+from app.services.llm_usage import record_usage
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +68,12 @@ class LLMClient(Protocol):
 
 
 class OpenAIClient:
-    def __init__(self, api_key: str, model: str, base_url: str | None = None) -> None:
+    def __init__(
+        self, api_key: str, model: str, base_url: str | None = None, provider: str = "openai"
+    ) -> None:
         self._client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self._model = model
+        self._provider = provider
 
     async def complete(
         self,
@@ -94,6 +98,14 @@ class OpenAIClient:
         while attempts < 2:
             try:
                 response = await self._client.chat.completions.create(**kwargs)
+                usage = getattr(response, "usage", None)
+                if usage is not None:
+                    record_usage(
+                        provider=self._provider,
+                        model=self._model,
+                        prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
+                        completion_tokens=getattr(usage, "completion_tokens", 0) or 0,
+                    )
                 return response.choices[0].message.content or ""
             except Exception as exc:
                 last_error = exc
@@ -125,9 +137,10 @@ class OpenAIClient:
 
 
 class AnthropicClient:
-    def __init__(self, api_key: str, model: str) -> None:
+    def __init__(self, api_key: str, model: str, provider: str = "anthropic") -> None:
         self._client = AsyncAnthropic(api_key=api_key)
         self._model = model
+        self._provider = provider
 
     async def complete(
         self,
@@ -148,6 +161,14 @@ class AnthropicClient:
                     temperature=temperature,
                     max_tokens=max_tokens,
                 )
+                usage = getattr(response, "usage", None)
+                if usage is not None:
+                    record_usage(
+                        provider=self._provider,
+                        model=self._model,
+                        prompt_tokens=getattr(usage, "input_tokens", 0) or 0,
+                        completion_tokens=getattr(usage, "output_tokens", 0) or 0,
+                    )
                 return response.content[0].text
             except Exception as exc:
                 last_error = exc
@@ -243,6 +264,7 @@ def _build_together_client() -> OpenAIClient:
         api_key=settings.llm_together_api_key,
         model=settings.llm_together_model,
         base_url=settings.llm_together_base_url,
+        provider="together",
     )
 
 
@@ -251,6 +273,7 @@ def _build_groq_client() -> OpenAIClient:
         api_key=settings.llm_groq_api_key,
         model=settings.llm_groq_model,
         base_url=settings.llm_groq_base_url,
+        provider="groq",
     )
 
 
@@ -300,11 +323,13 @@ def get_llm_client(tier: str = "lite", *, premium: bool | None = None) -> LLMCli
                 clients.append(AnthropicClient(
                     api_key=settings.llm_premium_api_key,
                     model=settings.llm_premium_model,
+                    provider="anthropic-premium",
                 ))
             else:
                 clients.append(OpenAIClient(
                     api_key=settings.llm_premium_api_key,
                     model=settings.llm_premium_model,
+                    provider="openai-premium",
                 ))
         # Fall back to the standard (open-source) providers when the premium
         # provider is unconfigured or fails (quota/5xx are retryable), so

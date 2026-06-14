@@ -52,6 +52,48 @@ async def test_anthropic_client_complete():
         mock_instance.messages.create.assert_awaited_once()
 
 
+async def test_openai_client_records_token_usage():
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "ok"
+    mock_response.usage.prompt_tokens = 120
+    mock_response.usage.completion_tokens = 30
+
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI, \
+            patch("app.services.llm_client.record_usage") as mock_record:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        MockOpenAI.return_value = mock_instance
+
+        client = OpenAIClient(api_key="k", model="llama-3", provider="together")
+        await client.complete(system_prompt="s", messages=[{"role": "user", "content": "hi"}])
+
+        mock_record.assert_called_once_with(
+            provider="together", model="llama-3", prompt_tokens=120, completion_tokens=30
+        )
+
+
+async def test_anthropic_client_records_token_usage():
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock()]
+    mock_response.content[0].text = "ok"
+    mock_response.usage.input_tokens = 200
+    mock_response.usage.output_tokens = 50
+
+    with patch("app.services.llm_client.AsyncAnthropic") as MockAnthropic, \
+            patch("app.services.llm_client.record_usage") as mock_record:
+        mock_instance = AsyncMock()
+        mock_instance.messages.create = AsyncMock(return_value=mock_response)
+        MockAnthropic.return_value = mock_instance
+
+        client = AnthropicClient(api_key="k", model="claude-x", provider="anthropic-premium")
+        await client.complete(system_prompt="s", messages=[{"role": "user", "content": "hi"}])
+
+        mock_record.assert_called_once_with(
+            provider="anthropic-premium", model="claude-x", prompt_tokens=200, completion_tokens=50
+        )
+
+
 async def test_openai_client_raises_llm_error_on_failure():
     with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
         mock_instance = AsyncMock()

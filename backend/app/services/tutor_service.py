@@ -12,6 +12,7 @@ from app.models.content import Lesson
 from app.models.skill_profile import TopicMastery
 from app.models.tutor import TutorConversation
 from app.models.user import User
+from app.services import llm_usage
 from app.services.llm_client import get_llm_client, get_model_name
 from app.services.moderation import moderate_output
 
@@ -74,6 +75,7 @@ def _skill_level(mastery_score: float) -> str:
     return "high"
 
 
+@llm_usage.surface("tutor")
 async def chat(
     *,
     session: AsyncSession,
