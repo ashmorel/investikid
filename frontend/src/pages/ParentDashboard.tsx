@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { parentApi, type Child } from '@/api/parent';
+import { authApi } from '@/api/auth';
 import { useParentAuthGuard } from '@/hooks/useParentAuthGuard';
 import { ChildCard } from '@/components/ChildCard';
 import { SubscriptionCard } from '@/components/SubscriptionCard';
@@ -24,11 +25,24 @@ export default function ParentDashboard() {
   const q = useQuery({ queryKey: ['children'], queryFn: parentApi.listChildren });
   useParentAuthGuard(q.error);
 
+  // A bridge user (a verified app user who is also a parent) reaches the parent
+  // area from the child app and keeps their app session. Standalone magic-link
+  // parents have no app session, so /me 401s — expected; no redirect here.
+  const me = useQuery({ queryKey: ['me'], queryFn: () => authApi.me(), retry: false, staleTime: 5 * 60_000 });
+  const hasAppSession = Boolean(me.data);
+
   const logout = useMutation({
-    mutationFn: parentApi.logout,
+    // Clear BOTH the parent session and any app session so "Log out" actually
+    // signs the bridge user out (not just out of the parent view), then send
+    // them to the normal sign-in screen.
+    mutationFn: async () => {
+      await parentApi.logout().catch(() => {});
+      await authApi.logout().catch(() => {});
+    },
     onSettled: () => {
       qc.removeQueries({ queryKey: ['children'] });
-      navigate('/parent/login', { replace: true });
+      qc.removeQueries({ queryKey: ['me'] });
+      navigate('/login', { replace: true });
     },
   });
 
@@ -65,7 +79,12 @@ export default function ParentDashboard() {
           </Link>
           <h1 className="sr-only">Parent Dashboard</h1>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center justify-end gap-1">
+          {hasAppSession && (
+            <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
+              ← Back to app
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={() => setFeedbackOpen(true)}>
             Send Feedback
           </Button>
