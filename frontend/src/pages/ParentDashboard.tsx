@@ -7,6 +7,14 @@ import { useParentAuthGuard } from '@/hooks/useParentAuthGuard';
 import { ChildCard } from '@/components/ChildCard';
 import { SubscriptionCard } from '@/components/SubscriptionCard';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Menu } from 'lucide-react';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { useToast } from '@/hooks/use-toast';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
@@ -79,19 +87,31 @@ export default function ParentDashboard() {
           </Link>
           <h1 className="sr-only">Parent Dashboard</h1>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-1">
-          {hasAppSession && (
-            <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
-              ← Back to app
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" aria-label="Parent menu">
+              <Menu className="h-5 w-5" aria-hidden="true" />
+              <span className="ml-1.5 hidden text-sm sm:inline">Menu</span>
             </Button>
-          )}
-          <Button variant="ghost" size="sm" onClick={() => setFeedbackOpen(true)}>
-            Send Feedback
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => logout.mutate()} disabled={logout.isPending}>
-            Log out
-          </Button>
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {hasAppSession && (
+              <DropdownMenuItem onSelect={() => navigate('/home')}>
+                Back to app
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onSelect={() => setFeedbackOpen(true)}>
+              Send Feedback
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => logout.mutate()}
+              disabled={logout.isPending}
+            >
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
 
       <MasteryReportCard />

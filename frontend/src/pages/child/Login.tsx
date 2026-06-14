@@ -1,12 +1,29 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { authApi } from '@/api/auth';
+import { authApi, type Me } from '@/api/auth';
 import { ApiError } from '@/api/client';
+import { isNativeApp } from '@/lib/platform';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthPage } from '@/components/AuthPage';
+
+// After /auth/login, confirm the auth cookie is actually usable by polling /me.
+// On iOS WKWebView the cross-domain Set-Cookie can lag the next request, so the
+// first /me 401s; poll for ~2s to let it settle. Returns the user, or null.
+async function establishSession(): Promise<Me | null> {
+  for (let i = 0; i < 8; i++) {
+    try {
+      const me = await authApi.me();
+      if (me) return me;
+    } catch {
+      /* cookie not ready yet — retry */
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return null;
+}
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -18,8 +35,23 @@ export default function Login() {
   const submit = useMutation({
     mutationFn: () => authApi.login(email, password),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['me'] });
-      navigate('/home', { replace: true });
+      let me = await establishSession();
+      if (!me && isNativeApp()) {
+        // iOS cold-start cookie race: the first login's cookie didn't persist.
+        // Re-issue the login (the manual "try again" that works) and re-verify.
+        try {
+          await authApi.login(email, password);
+        } catch {
+          /* fall through to the error path below */
+        }
+        me = await establishSession();
+      }
+      if (me) {
+        qc.setQueryData(['me'], me);
+        navigate('/home', { replace: true });
+      } else {
+        setError('Could not start your session. Please try again.');
+      }
     },
     onError: (err) => {
       if (err instanceof ApiError) {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ParentDashboard from '@/pages/ParentDashboard';
@@ -80,7 +81,7 @@ describe('ParentDashboard', () => {
     await waitFor(() => expect(screen.getByText('Login Page')).toBeInTheDocument());
   });
 
-  it('shows "Back to app" and returns to /home when an app session exists', async () => {
+  it('shows "Back to app" in the menu and returns to /home when an app session exists', async () => {
     (globalThis.fetch as any).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/users/me')) {
@@ -89,8 +90,9 @@ describe('ParentDashboard', () => {
       return new Response(JSON.stringify([]), { status: 200 });
     });
     renderPage();
-    const back = await screen.findByRole('button', { name: /back to app/i });
-    fireEvent.click(back);
+    await screen.findByText(/No children linked/i); // page settled, /me resolved
+    await userEvent.click(screen.getByRole('button', { name: /parent menu/i }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /back to app/i }));
     expect(await screen.findByText('Home Page')).toBeInTheDocument();
   });
 
@@ -107,8 +109,9 @@ describe('ParentDashboard', () => {
       },
     );
     renderPage();
-    const logoutBtn = await screen.findByRole('button', { name: /log out/i });
-    fireEvent.click(logoutBtn);
+    await screen.findByText(/No children linked/i);
+    await userEvent.click(screen.getByRole('button', { name: /parent menu/i }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /log out/i }));
     await waitFor(() => expect(screen.getByText('Normal Login Page')).toBeInTheDocument());
     expect(posts.some((u) => u.includes('/parent/auth/logout'))).toBe(true);
     expect(posts.some((u) => u.includes('/auth/logout') && !u.includes('/parent/'))).toBe(true);
