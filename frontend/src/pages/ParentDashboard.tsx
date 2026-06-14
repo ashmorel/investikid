@@ -87,31 +87,36 @@ export default function ParentDashboard() {
           </Link>
           <h1 className="sr-only">Parent Dashboard</h1>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" aria-label="Parent menu">
-              <Menu className="h-5 w-5" aria-hidden="true" />
-              <span className="ml-1.5 hidden text-sm sm:inline">Menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {hasAppSession && (
-              <DropdownMenuItem onSelect={() => navigate('/home')}>
-                Back to app
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onSelect={() => setFeedbackOpen(true)}>
-              Send Feedback
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => logout.mutate()}
-              disabled={logout.isPending}
+        <div className="flex items-center gap-1">
+          {hasAppSession && (
+            <button
+              type="button"
+              onClick={() => navigate('/home')}
+              className="whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:text-ink"
             >
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              ← Back to App
+            </button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" aria-label="Parent menu">
+                <Menu className="h-5 w-5" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setFeedbackOpen(true)}>
+                Send Feedback
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => logout.mutate()}
+                disabled={logout.isPending}
+              >
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </header>
 
       <MasteryReportCard />
