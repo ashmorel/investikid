@@ -1,3 +1,4 @@
+from app.services import llm_usage
 from app.services.age_tier import AGE_REGISTER_DIRECTIVE, AgeTier
 from app.services.llm_client import get_llm_client
 from app.services.moderation import moderate_output
@@ -30,6 +31,7 @@ def _build_messages(
     return system_prompt, messages
 
 
+@llm_usage.surface("home_greeting")
 async def generate_home_greeting(
     *,
     name: str,

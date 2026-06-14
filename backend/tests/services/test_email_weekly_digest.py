@@ -123,3 +123,24 @@ def test_weekly_digest_html_minimal_context():
     assert "Talk about it" not in html
     assert "Premium unlocks" not in html
     assert "/parent" in html
+
+
+def test_weekly_digest_html_contains_manage_preferences_link():
+    """Digest HTML must contain an inline 'Manage … & preferences' link to /parent (Task 11)."""
+    html = _render_html("weekly_digest", FULL_CTX)
+    assert "Manage" in html
+    assert "preferences" in html
+    # The link must point to the parent dashboard
+    assert 'href="' in html
+    # Both children appear; at minimum the link text includes "preferences"
+    assert "/parent" in html
+    # Specific inline link text (not just the button)
+    assert "Manage" in html and "&amp; preferences" in html
+
+
+def test_weekly_digest_html_manage_link_minimal():
+    """Manage link appears even for a subscribed parent with a single child."""
+    html = _render_html("weekly_digest", MINIMAL_CTX)
+    assert "Manage" in html
+    assert "&amp; preferences" in html
+    assert "/parent" in html

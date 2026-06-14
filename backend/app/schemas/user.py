@@ -25,6 +25,7 @@ class UserProfile(BaseModel):
     push_enabled: bool = False
     biometric_allowed: bool = False
     is_admin: bool
+    is_parent: bool = False  # verified email that is some child's parent_email
     parent_email: str | None
     created_at: datetime
     email_verified_at: datetime | None = None

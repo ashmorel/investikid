@@ -42,9 +42,25 @@ async def get_current_user(
     return user
 
 
+async def _is_parent(session: AsyncSession, user: User) -> bool:
+    if user.email_verified_at is None or not user.email:
+        return False
+    found = await session.scalar(
+        select(User.id)
+        .where(User.parent_email == user.email, User.deleted_at.is_(None))
+        .limit(1)
+    )
+    return found is not None
+
+
 @router.get("/me", response_model=UserProfile)
-async def get_profile(current_user: User = Depends(get_current_user)):
-    return current_user
+async def get_profile(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    profile = UserProfile.model_validate(current_user)
+    profile.is_parent = await _is_parent(session, current_user)
+    return profile
 
 
 @router.patch("/me", response_model=UserProfile)

@@ -17,6 +17,7 @@ export type Me = {
   push_enabled?: boolean;
   biometric_allowed?: boolean;
   is_admin: boolean;
+  is_parent?: boolean;   // verified email that is some child's parent_email
   age_tier: 'explorer' | 'investor';
   parent_email: string | null;
   created_at: string;
@@ -80,4 +81,6 @@ export const authApi = {
     apiFetch<{ status: string }>(`/auth/verify-email?token=${encodeURIComponent(token)}`),
   resendVerifyEmail: () =>
     apiFetch<{ status: string }>('/auth/verify-email/resend', { method: 'POST' }),
+  parentFromSession: () =>
+    apiFetch<{ status: string }>('/parent/auth/from-session', { method: 'POST' }),
 };

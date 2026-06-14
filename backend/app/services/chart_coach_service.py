@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.models.audit import AuditLog
 from app.models.tutor import ChartCoachConversation
 from app.models.user import User
+from app.services import llm_usage
 from app.services.llm_client import get_llm_client, get_model_name
 from app.services.moderation import moderate_output
 from app.services.price_provider import PricePoint
@@ -56,6 +57,7 @@ def _build_system_prompt(age: int, ticker: str, name: str, period: str, stats: s
     )
 
 
+@llm_usage.surface("chart_coach")
 async def chart_coach_chat(
     *,
     session: AsyncSession,

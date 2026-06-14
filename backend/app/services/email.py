@@ -398,7 +398,10 @@ def _render_weekly_digest_html(context: dict) -> str:
         'style="display:inline-block;padding:12px 24px;font-size:15px;'
         'font-weight:600;color:#ffffff;text-decoration:none;">Open parent dashboard</a>'
         "</td></tr></table>"
-        '<p style="margin:24px 0 0;font-size:13px;color:#6b7280;">'
+        f'<p style="margin:16px 0 0;font-size:14px;color:#374151;">'
+        f'<a href="{dashboard_url}" style="color:#2563eb;text-decoration:underline;">'
+        f"Manage {names} &amp; preferences →</a></p>"
+        '<p style="margin:8px 0 0;font-size:13px;color:#6b7280;">'
         "Manage email preferences in your dashboard settings.</p>"
         "</td></tr></table>"
         "</td></tr></table>"

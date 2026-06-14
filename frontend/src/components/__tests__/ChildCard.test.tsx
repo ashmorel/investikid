@@ -30,30 +30,20 @@ function renderCard(child: Child = BASE_CHILD) {
   );
 }
 
-describe('ChildCard premium toggle', () => {
+describe('ChildCard premium status (read-only)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('renders an unchecked premium switch for a free child', () => {
-    renderCard();
-    const sw = screen.getByLabelText('Premium');
-    expect(sw).toBeInTheDocument();
-    expect(sw).not.toBeChecked();
-  });
-
-  it('renders a checked premium switch for a premium child', () => {
+  it('shows a Premium badge for a premium child (read-only, no switch)', () => {
     renderCard({ ...BASE_CHILD, is_premium: true });
-    expect(screen.getByLabelText('Premium ✨')).toBeChecked();
+    expect(screen.getByText(/Premium ✨/)).toBeInTheDocument();
+    expect(screen.queryByRole('switch', { name: /premium/i })).toBeNull();
   });
 
-  it('grants premium when toggled on', async () => {
-    const spy = vi
-      .spyOn(parentApi, 'setChildPremium')
-      .mockResolvedValue({ status: 'ok', premium: true });
-    renderCard();
-    fireEvent.click(screen.getByLabelText('Premium'));
-    await waitFor(() => expect(spy).toHaveBeenCalledWith('child-1', true));
+  it('shows Free status for a non-premium child', () => {
+    renderCard({ ...BASE_CHILD, is_premium: false });
+    expect(screen.getByText(/Free plan/i)).toBeInTheDocument();
   });
 });
 

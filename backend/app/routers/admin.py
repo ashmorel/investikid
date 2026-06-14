@@ -50,6 +50,7 @@ from app.schemas.admin import (
     VideoPresignResponse,
     validate_lesson_content_json,
 )
+from app.schemas.parent import PremiumToggleRequest
 from app.services import storage, video_health_service
 from app.services.admin_content_generation_service import (
     _concat_text,
@@ -66,6 +67,7 @@ from app.services.app_settings import (
     set_trade_commission_pct,
 )
 from app.services.engagement_service import get_module_engagement
+from app.services.entitlements import set_premium
 from app.services.event_service import EVENT_KEY, set_event
 from app.services.level_service import premium_for_position
 from app.services.moderation import moderate_output
@@ -735,3 +737,18 @@ async def admin_presign_video(
         upload_url=storage.create_presigned_put(key, payload.content_type),
         public_url=storage.public_url(key),
     )
+
+
+# ── Premium comp (admin-only) ────────────────────────────────────────────────
+@router.post("/users/{user_id}/premium")
+async def admin_set_user_premium(
+    user_id: uuid.UUID,
+    payload: PremiumToggleRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    user = await session.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "user_not_found")
+    await set_premium(session, user, value=payload.premium, actor="admin")
+    await session.commit()
+    return {"status": "ok", "premium": payload.premium}

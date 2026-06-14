@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { consentApi, type Decision } from '@/api/consent';
@@ -8,6 +8,7 @@ import { ErrorBanner } from '@/components/ErrorBanner';
 import { AuthPage } from '@/components/AuthPage';
 
 export default function ConsentVerify() {
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const [done, setDone] = useState<Decision | null>(null);
@@ -22,7 +23,9 @@ export default function ConsentVerify() {
 
   const decide = useMutation({
     mutationFn: (d: Decision) => consentApi.decide(token, d, d === 'approve' ? attested : false),
-    onSuccess: (_data, d) => setDone(d),
+    onSuccess: (_res, d) => {
+      if (d === 'approve') { navigate('/parent'); } else { setDone(d); }
+    },
   });
 
   if (!token) {

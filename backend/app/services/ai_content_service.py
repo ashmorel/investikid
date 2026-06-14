@@ -12,6 +12,7 @@ from app.models.audit import AuditLog
 from app.models.content import Lesson
 from app.models.generated_content import GeneratedContent
 from app.models.user import User
+from app.services import llm_usage
 from app.services.content_variety_service import resolve_variant
 from app.services.llm_client import LLMError, get_llm_client, get_model_name
 from app.services.moderation import moderate_output
@@ -54,6 +55,7 @@ _SYSTEM_PROMPT = (
 )
 
 
+@llm_usage.surface("quiz")
 async def generate_practice_quiz(
     session: AsyncSession,
     lesson: Lesson,

@@ -33,6 +33,7 @@ export default function ParentDashboard() {
   });
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [hintSeen, setHintSeen] = useState(() => localStorage.getItem('parent-welcome-seen') === '1');
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -96,9 +97,19 @@ export default function ParentDashboard() {
         />
       )}
       {q.data && q.data.length === 0 && (
-        <p className="mt-6 text-sm text-muted-foreground">
-          No children linked to this account yet — once a child signs up with your email, they'll appear here.
-        </p>
+        <div className="rounded-xl border border-line bg-card p-4 text-sm text-muted-foreground mt-6">
+          <p className="font-medium text-foreground">No children linked to this email yet.</p>
+          <p className="mt-1">
+            If your child has signed up, make sure they entered <strong>this exact email address</strong> as
+            their parent's email when registering. Once they do, they'll appear here.
+          </p>
+        </div>
+      )}
+      {!hintSeen && (q.data?.length ?? 0) > 0 && (
+        <div className="mb-4 mt-6 flex items-start justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 p-3 text-sm">
+          <span>Welcome! From here you can manage notifications, your subscription, Face ID sign-in, and your child's data.</span>
+          <button type="button" className="font-semibold text-brand-700" onClick={() => { localStorage.setItem('parent-welcome-seen', '1'); setHintSeen(true); }}>Got it</button>
+        </div>
       )}
       {q.data && q.data.length > 0 && (
         <ul className="mt-6 space-y-3">

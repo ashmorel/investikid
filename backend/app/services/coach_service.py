@@ -13,6 +13,7 @@ from app.models.audit import AuditLog
 from app.models.content import Module
 from app.models.tutor import TutorConversation
 from app.models.user import User
+from app.services import llm_usage
 from app.services.age_tier import AGE_REGISTER_DIRECTIVE
 from app.services.gap_detection_service import get_strengths_and_gaps
 from app.services.llm_client import get_llm_client, get_model_name
@@ -151,6 +152,7 @@ _SKILL_INSTRUCTIONS = {
 }
 
 
+@llm_usage.surface("coach")
 async def coach_chat(
     *,
     session: AsyncSession,

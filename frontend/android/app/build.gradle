@@ -1,11 +1,32 @@
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 
+// --- Release signing for Google Play ---
+// Reads from a gitignored `keystore.properties` at the android/ root if present.
+// When it's absent (CI, fresh clones, debug-only work) signing is simply not
+// configured, so `assembleDebug`/`compileDebugSources` keep working untouched.
+// Create it from keystore.properties.example after generating your upload key.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
 android {
     namespace = "leeashmore.investikid.ai.app"
     compileSdk = rootProject.ext.compileSdkVersion
     kotlinOptions {
         jvmTarget = '21' // match capacitor.build.gradle's Java 21 source/target
+    }
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
     }
     defaultConfig {
         applicationId "leeashmore.investikid.ai.app"
@@ -22,6 +43,11 @@ android {
     }
     buildTypes {
         release {
+            // Only sign with the upload key when keystore.properties is present;
+            // otherwise a release build stays unsigned rather than failing.
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

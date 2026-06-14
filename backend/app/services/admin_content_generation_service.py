@@ -10,6 +10,7 @@ from app.models.audit import AuditLog
 from app.models.content import Level, Module
 from app.models.lesson_draft import LessonDraft
 from app.schemas.admin import validate_lesson_content_json
+from app.services import llm_usage
 from app.services.llm_client import get_llm_client, get_model_name
 from app.services.moderation import moderate_output
 
@@ -51,6 +52,7 @@ def _concat_text(parsed: dict) -> str:
     return "\n".join(parts)
 
 
+@llm_usage.surface("admin_content_gen")
 async def _generate_one(session, *, level, module, concept: str, lesson_type: str):
     client = get_llm_client("premium")
     system = _system_prompt(lesson_type, module, level)

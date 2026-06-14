@@ -2,6 +2,7 @@ import json
 import time
 
 from app.schemas.simulator import InvestingTipOut
+from app.services import llm_usage
 from app.services.llm_client import get_llm_client
 from app.services.moderation import moderate_output
 
@@ -67,6 +68,7 @@ def learning_stage(completed_lessons: int) -> str:
     return "advanced"
 
 
+@llm_usage.surface("tips_generic")
 async def generate_generic_tips() -> list[InvestingTipOut]:
     cache_key = "global"
     now = time.time()
@@ -129,6 +131,7 @@ def _personal_prompt(holdings: list[tuple[str, str]], stage: str, age: int) -> s
     )
 
 
+@llm_usage.surface("tips_personalised")
 async def generate_personalised_tips(
     *,
     user_id: int,
