@@ -150,3 +150,28 @@ harness for the app delegate); the test gates above are the contract.
 - Update: `frontend/ios/.gitignore` (or repo root) to ignore `GoogleService-Info.plist`
 - Unchanged: `frontend/src/lib/push.ts`, `frontend/src/lib/__tests__/push.test.ts`,
   all backend files, all Android files
+
+## Verification (2026-06-14)
+
+Verified end-to-end on a physical iPhone against the **testing** backend:
+
+1. **Token registration** — enabling push in-app registered an FCM token to the
+   backend: `push_devices` row `platform=ios`, length 142 (FCM token, not raw
+   APNs). Confirms the AppDelegate APNs→FCM bridge works.
+2. **APNs configuration** — initial sends returned FCM `THIRD_PARTY_AUTH_ERROR`
+   (HTTP 401) because the APNs Auth Key was not yet uploaded to Firebase. After
+   uploading the `.p8` (Key ID + Team ID) to Firebase → Cloud Messaging, a direct
+   FCM v1 send to the iOS token returned **HTTP 200** with a message ID.
+3. **Device delivery** — the **"Keep your streak"** banner appeared on the iPhone
+   (app backgrounded). Foreground sends route to the app's JS handler instead of
+   the tray (correct Capacitor behaviour), matching Android.
+
+iOS push parity is functionally complete. Build/test gates: `push.test.ts` green
+(JS unchanged), app archives with the Firebase SPM package, real-device banner
+delivered.
+
+### Operator items still outstanding for production delivery
+- Set `FIREBASE_SERVICE_ACCOUNT_JSON` on the **production** backend (only testing
+  has it). Until then push no-ops in prod.
+- Rebuild the iOS app with **no** `VITE_API_BASE_URL` (prod default) before any
+  TestFlight/App Store archive — the verified build above is testing-pointed.
