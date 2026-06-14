@@ -126,7 +126,7 @@ export function ChildCard({ child }: { child: Child }) {
         <ChildAnalytics analytics={child.analytics} />
       )}
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 sm:justify-between">
         <div className="flex items-center gap-2">
           <Switch
             id={`freeze-${child.user_id}`}
