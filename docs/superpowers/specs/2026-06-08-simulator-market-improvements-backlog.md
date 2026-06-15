@@ -1,7 +1,12 @@
 # Simulator / Market Page — Improvements Backlog
 
 **Date:** 2026-06-08
-**Status:** Backlog (feedback captured — NOT yet designed/approved)
+**Status:** ✅ RESOLVED — all 5 items were implemented on **2026-06-09** (region
+selector + region-aware movers, rotating tips, tidied news/country sections, and
+the zone-based IA restructure). Verified against the live code on 2026-06-15;
+kept for history. See `Market.tsx`, `components/child/simulator/RegionSelector.tsx`,
+`InvestingTips.tsx`, `backend/app/routers/simulator.py` (`/market/movers?region=`),
+`price_provider.get_market_movers`.
 **Repo:** `ashmorel/investikid` · branch `testing`
 **Surface:** the child **Simulator** experience — `frontend/src/pages/child/Simulator.tsx` (dashboard) and `frontend/src/pages/child/Market.tsx` (Browse Stocks). Market data comes from Yahoo Finance via `backend/app/services/price_provider.py`; tips/news summaries from the LLM.
 
