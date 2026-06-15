@@ -27,11 +27,14 @@ def test_create_presigned_put_uses_client(monkeypatch):
     fake.generate_presigned_url.return_value = "https://r2.example.com/PUT"
     monkeypatch.setattr(storage, "_client", lambda: fake)
     monkeypatch.setattr(storage.settings, "r2_bucket", "vids")
-    url = storage.create_presigned_put("videos/abc.mp4", "video/mp4", expires=900)
+    url = storage.create_presigned_put("videos/abc.mp4", "video/mp4", content_length=1234, expires=900)
     assert url == "https://r2.example.com/PUT"
     args, kwargs = fake.generate_presigned_url.call_args
     assert args[0] == "put_object"
     assert kwargs["Params"]["Bucket"] == "vids"
     assert kwargs["Params"]["Key"] == "videos/abc.mp4"
     assert kwargs["Params"]["ContentType"] == "video/mp4"
+    # ContentLength must be signed into the URL so R2 rejects an upload whose
+    # actual byte size differs from the (validated) claimed size.
+    assert kwargs["Params"]["ContentLength"] == 1234
     assert kwargs["ExpiresIn"] == 900

@@ -197,7 +197,7 @@ class LessonDraftUpdate(BaseModel):
 class VideoPresignRequest(BaseModel):
     filename: str = Field(max_length=255)
     content_type: str
-    size_bytes: int
+    size_bytes: int = Field(gt=0)
 
     @field_validator("content_type")
     @classmethod

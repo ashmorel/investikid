@@ -26,10 +26,20 @@ def public_url(key: str) -> str:
     return f"{settings.r2_public_base_url.rstrip('/')}/{key.lstrip('/')}"
 
 
-def create_presigned_put(key: str, content_type: str, expires: int = 900) -> str:
+def create_presigned_put(
+    key: str, content_type: str, content_length: int, expires: int = 900
+) -> str:
+    # ContentLength is signed into the URL, so R2 enforces the exact byte size:
+    # a client cannot claim a small size to pass the presign check and then PUT
+    # a larger file. The browser sets a matching Content-Length for the upload.
     return _client().generate_presigned_url(
         "put_object",
-        Params={"Bucket": settings.r2_bucket, "Key": key, "ContentType": content_type},
+        Params={
+            "Bucket": settings.r2_bucket,
+            "Key": key,
+            "ContentType": content_type,
+            "ContentLength": content_length,
+        },
         ExpiresIn=expires,
     )
 

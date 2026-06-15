@@ -734,7 +734,9 @@ async def admin_presign_video(
     return VideoPresignResponse(
         asset_id=asset.id,
         key=key,
-        upload_url=storage.create_presigned_put(key, payload.content_type),
+        upload_url=storage.create_presigned_put(
+            key, payload.content_type, content_length=payload.size_bytes
+        ),
         public_url=storage.public_url(key),
     )
 
