@@ -29,13 +29,19 @@ async def test_presign_rejects_non_mp4(admin_client, monkeypatch):
 async def test_presign_ok_creates_asset(admin_client, db_session, monkeypatch):
     import app.routers.admin as admin_mod
     monkeypatch.setattr(admin_mod.storage, "is_configured", lambda: True)
-    monkeypatch.setattr(admin_mod.storage, "create_presigned_put", lambda key, ct, expires=900: "https://r2/PUT")
+    calls = {}
+    monkeypatch.setattr(
+        admin_mod.storage, "create_presigned_put",
+        lambda key, ct, content_length, expires=900: calls.update(content_length=content_length) or "https://r2/PUT",
+    )
     monkeypatch.setattr(admin_mod.storage, "public_url", lambda key: f"https://cdn/{key}")
     r = await admin_client.post("/admin/video-assets/presign",
                                 json={"filename": "lesson.mp4", "content_type": "video/mp4", "size_bytes": 1000})
     assert r.status_code == 200
     body = r.json()
     assert body["upload_url"] == "https://r2/PUT"
+    # The presigned URL is bound to the claimed (validated) size for R2 enforcement.
+    assert calls["content_length"] == 1000
     assert body["public_url"].startswith("https://cdn/videos/")
     assert body["key"].startswith("videos/") and body["key"].endswith(".mp4")
 
