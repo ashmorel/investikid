@@ -1,10 +1,13 @@
 import uuid
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.services.revise_service import decode_ref, encode_ref
-
-pytestmark = pytest.mark.asyncio(loop_scope="session")
+from app.models.content import Lesson, LessonCompletion, Module
+from app.models.skill_profile import SpacedRepetitionItem, WeakConcept
+from app.models.user import User
+from app.services.revise_service import build_session, decode_ref, encode_ref
 
 
 def test_ref_roundtrip():
@@ -31,3 +34,79 @@ def test_ref_refresher_has_no_weak_id():
 def test_decode_ref_rejects_garbage():
     with pytest.raises(ValueError):
         decode_ref("not-a-real-ref")
+
+
+async def _seed_user(db_session):
+    user = User(email="rev@example.com", username="revkid", password_hash="x",
+                dob=datetime(2012, 1, 1).date(), country_code="GB", currency_code="GBP")
+    db_session.add(user)
+    module = Module(topic="stocks", title="Stocks", country_codes=[],
+                    is_premium=False, order_index=0, icon="📈")
+    db_session.add(module)
+    await db_session.flush()
+    return user, module
+
+
+def _quiz_payload(q):
+    return {"question": q, "choices": ["a", "b", "c"], "answer_index": 1,
+            "explanation": "because", "variant_rung": "core"}
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_build_session_is_weak_first_then_refreshers_capped_5(db_session):
+    user, module = await _seed_user(db_session)
+    weak_lessons = []
+    for i in range(2):
+        q = f"Weak concept {i}?"
+        lesson = Lesson(module_id=module.id, type="quiz", xp_reward=10, order_index=i,
+                        content_json={"question": q, "choices": ["a", "b"], "answer_index": 0})
+        db_session.add(lesson)
+        weak_lessons.append((q, lesson))
+        wc = WeakConcept(user_id=user.id, topic="stocks", concept=q, resolved=False)
+        db_session.add(wc)
+        await db_session.flush()
+        db_session.add(SpacedRepetitionItem(
+            user_id=user.id, weak_concept_id=wc.id, ease_factor=2.5,
+            interval_days=1, repetition_count=0,
+            next_review_at=datetime.now(UTC) - timedelta(days=1)))
+    for i in range(5):
+        q = f"Mastered {i}?"
+        lesson = Lesson(module_id=module.id, type="quiz", xp_reward=10, order_index=10 + i,
+                        content_json={"question": q, "choices": ["a", "b"], "answer_index": 0})
+        db_session.add(lesson)
+        await db_session.flush()
+        db_session.add(LessonCompletion(user_id=user.id, lesson_id=lesson.id))
+    await db_session.flush()
+
+    mock_quiz = AsyncMock(side_effect=lambda *a, **k: _quiz_payload(k["concept"]))
+    with patch("app.services.revise_service.generate_practice_quiz", mock_quiz):
+        session = await build_session(db_session, user, module_id=None)
+
+    assert len(session) == 5
+    assert session[0]["kind"] == "weak" and session[1]["kind"] == "weak"
+    assert all(s["kind"] == "refresher" for s in session[2:])
+    assert "answer_index" not in session[0]
+    assert set(session[0]) >= {"ref", "kind", "module_id", "lesson_id", "concept",
+                               "question", "choices"}
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_build_session_module_filter(db_session):
+    user, module = await _seed_user(db_session)
+    other = Module(topic="saving", title="Saving", country_codes=[],
+                   is_premium=False, order_index=1, icon="🐷")
+    db_session.add(other)
+    await db_session.flush()
+    lesson = Lesson(module_id=other.id, type="quiz", xp_reward=10, order_index=0,
+                    content_json={"question": "Save?", "choices": ["a"], "answer_index": 0})
+    db_session.add(lesson)
+    await db_session.flush()
+    db_session.add(LessonCompletion(user_id=user.id, lesson_id=lesson.id))
+    await db_session.flush()
+
+    mock_quiz = AsyncMock(side_effect=lambda *a, **k: _quiz_payload(k["concept"]))
+    with patch("app.services.revise_service.generate_practice_quiz", mock_quiz):
+        session = await build_session(db_session, user, module_id=other.id)
+
+    assert all(s["module_id"] == str(other.id) for s in session)
+    assert len(session) == 1
