@@ -133,11 +133,16 @@ async def chat(
             category=verdict.category, child_id=user.id,
         )
         conversation.messages = [
-            *conversation.messages,
+            *(conversation.messages or []),
             {"role": "user", "content": "[message removed by safety filter]"},
             {"role": "assistant", "content": verdict.reply},
         ]
         conversation.message_count += 2
+        session.add(AuditLog(
+            user_id=user.id,
+            event_type="moderation_block",
+            metadata_json={"surface": "tutor", "category": verdict.category, "stage": "input"},
+        ))
         await session.flush()
         return {
             "response": verdict.reply,
