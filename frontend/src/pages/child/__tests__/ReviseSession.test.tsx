@@ -25,17 +25,24 @@ function renderPage() {
   return render(<MemoryRouter initialEntries={['/revise/session']}><ReviseSession /></MemoryRouter>);
 }
 
-it('shows a weak badge, records an answer, then a summary', async () => {
+it('select-then-check: highlights the choice, records on Check, then summary', async () => {
   const { container } = renderPage();
   await screen.findByText('What is a stock?');
   expect(screen.getByText(/needs practice/i)).toBeInTheDocument();
   expect(await axe(container)).toHaveNoViolations();
 
-  fireEvent.click(screen.getByRole('button', { name: 'A slice of a company' }));
+  // Selecting a choice does NOT submit — it marks the radio as checked.
+  const choice = screen.getByRole('radio', { name: /a slice of a company/i });
+  fireEvent.click(choice);
+  expect(choice).toHaveAttribute('aria-checked', 'true');
+  expect(reviseApi.postAnswer).not.toHaveBeenCalled();
+
+  // Submission only happens on the explicit Check answer button.
+  fireEvent.click(screen.getByRole('button', { name: /check answer/i }));
   await waitFor(() => expect(reviseApi.postAnswer).toHaveBeenCalledWith('r1', 1));
   await screen.findByText(/A tiny piece\./i); // explanation shown
 
-  fireEvent.click(screen.getByRole('button', { name: /next|finish|done/i }));
+  fireEvent.click(screen.getByRole('button', { name: /finish|next/i }));
   await screen.findByText(/1 \/ 1 correct/i); // summary
 });
 
