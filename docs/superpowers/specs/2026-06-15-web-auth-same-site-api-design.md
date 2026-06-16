@@ -56,3 +56,32 @@ cross-*origin* (different subdomain), which CORS already permits.
 Revert the Vercel `VITE_API_BASE_URL` to the railway URL and redeploy — instantly
 restores the prior (cross-origin) behaviour. The Railway custom domain and DNS can
 be left in place harmlessly.
+
+## Operational gotchas (learned the hard way, 2026-06-15)
+
+Setting this up cost ~an hour of cert troubleshooting. The rules:
+
+- **Railway custom domain behind Cloudflare MUST be "DNS only" (grey cloud).** If
+  the `api` CNAME is **Proxied (orange)**, Railway reports **"Cloudflare proxy
+  detected"** and **can never issue its Let's Encrypt cert** (Cloudflare intercepts
+  the validation), so `https://api.investikid.ai` resets the TLS handshake. Grey
+  cloud → Railway issues + serves the cert directly → works. This was the entire
+  root cause of the outage.
+- **The Cloudflare proxy toggle can silently revert.** After setting grey, **refresh
+  the Cloudflare DNS page and re-confirm it stayed grey.** Railway's domain row is
+  the authoritative signal: "Cloudflare proxy detected" = still orange; "Active" =
+  cert issued.
+- **`app.investikid.ai` (Vercel) is also grey/DNS-only** and serves its **own**
+  Vercel cert. So both subdomains are grey, each fronted by its provider — they are
+  intentionally **not** "matched" to anything else. Don't proxy them.
+- **After any DNS edit, wait 15–30 min and verify in a *fresh* browser**
+  (incognito / mobile data / flushed DNS) — **not** repeated `curl`. Heavy toggling
+  churns resolver caches and makes *healthy* domains look broken (during this
+  incident `app` appeared down purely from cache churn while Vercel was fine).
+- **Don't toggle repeatedly.** Each failed attempt risks **Let's Encrypt's hourly
+  rate limit** (failed issuances per hostname), which then blocks issuance for ~1h.
+  Set the correct state once and let it settle.
+- **Verify via the dashboards + the provider's own domain**, e.g.
+  `investikid.up.railway.app/health` stays 200 throughout (it's a different
+  hostname, unaffected by the custom-domain cert), so a backend that's "down" only
+  on the custom domain is a cert/DNS problem, not an app problem.
