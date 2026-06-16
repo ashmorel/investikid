@@ -140,6 +140,7 @@ async def build_session(
 ) -> list[dict]:
     items: list[dict] = []
     seen_concepts: set[tuple[str, str]] = set()
+    now = datetime.now(UTC)
 
     # 1) Weak-first: due SR items -> weak concepts (already ordered by due-ness).
     due = await get_due_items(session, user.id)
@@ -190,6 +191,20 @@ async def build_session(
         )
         if is_weak:
             continue
+        # Skip concepts whose review is scheduled in the future (recently revised),
+        # so a correctly-answered refresher doesn't repeat until it's due again.
+        scheduled = await session.scalar(
+            select(SpacedRepetitionItem.id)
+            .join(WeakConcept, WeakConcept.id == SpacedRepetitionItem.weak_concept_id)
+            .where(
+                WeakConcept.user_id == user.id,
+                WeakConcept.topic == module.topic,
+                WeakConcept.concept == concept,
+                SpacedRepetitionItem.next_review_at > now,
+            )
+        )
+        if scheduled:
+            continue
         item = await _build_item(session, user, kind="refresher", lesson=lesson,
                                  module=module, concept=concept)
         if item:
@@ -232,19 +247,27 @@ async def record_answer(
     if data["kind"] == "weak" and data.get("weak_concept_id"):
         await record_review(session, user.id,
                             uuid.UUID(data["weak_concept_id"]), correct=correct)
-    elif data["kind"] == "refresher" and not correct:
+    elif data["kind"] == "refresher":
+        # Schedule the refresher via the SR engine so a correctly-answered one
+        # spaces out (future next_review_at) instead of repeating every session.
+        # Wrong -> active weakness (resolved=False, re-enters the weak loop);
+        # correct -> tracked as mastered (resolved=True) but still scheduled.
         wc = await session.scalar(
             select(WeakConcept).where(
                 WeakConcept.user_id == user.id, WeakConcept.topic == data["topic"],
                 WeakConcept.concept == data["concept"],
-                WeakConcept.resolved == False,  # noqa: E712
             )
         )
         if wc is None:
-            wc = WeakConcept(user_id=user.id, topic=data["topic"], concept=data["concept"])
+            wc = WeakConcept(
+                user_id=user.id, topic=data["topic"], concept=data["concept"],
+                resolved=correct,
+            )
             session.add(wc)
             await session.flush()
-        await record_review(session, user.id, wc.id, correct=False)
+        elif not correct:
+            wc.resolved = False  # a missed refresher becomes an active weakness
+        await record_review(session, user.id, wc.id, correct=correct)
 
     xp_awarded = 0
     goal_met = False
