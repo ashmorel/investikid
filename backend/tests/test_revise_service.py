@@ -221,3 +221,46 @@ async def test_list_modules_weak_first(db_session):
     assert mods[0]["topic"] == "saving"  # weak-first
     assert mods[0]["due_weak_count"] == 1
     assert {m["topic"] for m in mods} == {"stocks", "saving"}
+
+
+def test_award_revise_xp_is_daily_capped():
+    from datetime import date
+
+    from app.services.revise_service import (
+        REVISE_XP_DAILY_CAP,
+        XP_PER_CORRECT,
+        award_revise_xp,
+    )
+
+    p = UserProgress(
+        user_id=uuid.uuid4(), xp=0, xp_today=0, xp_today_date=None,
+        virtual_coins=0, level=1, daily_goal_xp=30, revise_xp_today=0,
+    )
+    today = date(2026, 6, 16)
+    awarded = [(award_revise_xp(p, today) or None) for _ in range(7)]
+    amounts = [r.awarded if r else 0 for r in awarded]
+    # cap 25, 5 XP each -> exactly 5 awards then 0
+    assert amounts[:5] == [XP_PER_CORRECT] * 5
+    assert amounts[5] == 0 and amounts[6] == 0
+    assert sum(amounts) == REVISE_XP_DAILY_CAP
+    assert p.revise_xp_today == REVISE_XP_DAILY_CAP
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_get_due_items_most_overdue_first(db_session):
+    from app.services.spaced_repetition_service import get_due_items
+
+    user, module = await _seed_user(db_session)
+    by_days = {}
+    for i, days in enumerate((1, 5)):  # the 5-days-overdue item should come first
+        wc = WeakConcept(user_id=user.id, topic="stocks", concept=f"c{i}", resolved=False)
+        db_session.add(wc)
+        await db_session.flush()
+        db_session.add(SpacedRepetitionItem(
+            user_id=user.id, weak_concept_id=wc.id, ease_factor=2.5, interval_days=1,
+            repetition_count=0, next_review_at=datetime.now(UTC) - timedelta(days=days)))
+        by_days[days] = wc.id
+    await db_session.flush()
+
+    due = await get_due_items(db_session, user.id)
+    assert [d.weak_concept_id for d in due] == [by_days[5], by_days[1]]
