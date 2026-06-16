@@ -24,6 +24,8 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 - **LLM topical guardrails** — ✅ shipped to prod 2026-06-16 (regex input gate + shared preamble across all 9 LLM surfaces + structured guardrail logs + adversarial test suite).
 - **Security: `starlette` ≥1.3.1 bump** — ✅ in prod (`starlette==1.3.1` / `fastapi==0.137.1`; clears GHSA-wqp7/x746/jp82/82w8; pip-audit clean).
 - **Simulator stock-page crash fix** — ✅ shipped to prod 2026-06-16 (drop NaN price-history rows at the provider + guard `StockChart` against null close).
+- **Cron hardening** — ✅ in prod 2026-06-16 (`video-health-cron` per-endpoint isolation + retries + corrected default URL; validated by manual run).
+- **Frontend Dependabot — 0 open** — ✅ 2026-06-16 (vite/form-data/@babel/core patched within Vite 6, then **Vite 6→7** major upgrade shipped to prod; the 2 remaining esbuild alerts dismissed as `not_used` — Deno-install-path #17 and Windows-dev-server #22, neither reachable in our Node/Vite/macOS-Linux setup).
 
 ---
 
@@ -49,7 +51,6 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 |---|---|---|
 | **Revision / spaced-repetition** | 💻🤔 | Lightweight "Revise" surface that resurfaces completed-lesson concepts so learning sticks; reuse existing lesson/quiz content + progress signals (`StrengthsGaps`), award XP/streak, WCAG 2.2 AA. **Decision:** slot into the stickiness track now (pre-beta) or defer post-launch. Last open item from the 2026-06-15 Quality & safety set (guardrails + starlette now shipped). |
 | **M10 teen-testing prep** | 💻 | Figma visual-direction mockups (darker/flatter theme, dialled-back mascot, denser simulator) for the teen sessions — *before* any Investor-Mode code change. Then one iteration pass from findings. Needs the beta cohort recruited first. |
-| **Vite 7 upgrade (clears esbuild advisory)** | 💻 | Last open Dependabot alert is esbuild GHSA-gv7w-rqvm-qjhr (high, but **dev-server-only** — not a production/runtime risk). The patched esbuild only ships with **Vite 7**; the other 4 alerts (vite/form-data/@babel/core) were cleared 2026-06-16 within Vite 6. Do the Vite 6→7 major bump + regression pass when convenient. Low urgency. |
 | **Native → `api.investikid.ai`** | 💻 | Migrate `NATIVE_API_FALLBACK` to the same-site API in a future native build (cleaner; build 6 keeps the railway URL, which still works). Low priority. |
 | **Testing/staging web same-site** | 💻⚙️ | Replicate the `api-testing` / `api-staging` subdomains if web QA on those envs is needed. Deferred (prod-only fix shipped). |
 
