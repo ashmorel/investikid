@@ -56,6 +56,39 @@ _SYSTEM_PROMPT = (
 )
 
 
+# Bump when the generation/verification pipeline changes so stale cached quiz
+# variants (e.g. pre-verification, possibly wrong answer keys) are not reused.
+_QUIZ_CACHE_VERSION = "v2"
+
+
+_VERIFIER_SYSTEM_PROMPT = (
+    "You are a meticulous maths and finance answer-checker for a children's quiz. "
+    "Solve the multiple-choice question YOURSELF, working step by step and computing "
+    "carefully — do not assume any option is correct. Then reply with ONLY compact "
+    'JSON giving the 0-based index of the single correct choice: {"answer_index": <int>}.'
+)
+
+
+async def _verify_answer(question: str, choices: list[str], answer_index: int) -> bool:
+    """Independently re-solve the question with the strongest model and return True
+    only if it agrees with ``answer_index``. Catches wrong answer keys (especially
+    arithmetic from the weaker free tier) before a question is served/cached.
+    Fail-closed: any error or disagreement → not verified."""
+    try:
+        client = get_llm_client(tier="premium")
+        numbered = "\n".join(f"{i}. {c}" for i, c in enumerate(choices))
+        raw = await client.complete(
+            system_prompt=_VERIFIER_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": f"Question: {question}\nChoices:\n{numbered}"}],
+            temperature=0.0,
+            max_tokens=300,
+            response_format="json",
+        )
+        return int(json.loads(raw)["answer_index"]) == int(answer_index)
+    except Exception:  # noqa: BLE001
+        return False
+
+
 @llm_usage.surface("quiz")
 async def generate_practice_quiz(
     session: AsyncSession,
@@ -70,7 +103,10 @@ async def generate_practice_quiz(
     """Generate or serve a cached practice quiz variant for a lesson concept."""
     model_name = get_model_name("premium" if premium else "standard")
     spec = await resolve_variant(session, user, lesson, concept)
-    variant_key = spec.variant_key
+    # Cache version: bumping it bypasses all quiz variants cached before the
+    # answer-verification pipeline existed, so old (possibly wrong-keyed)
+    # questions are regenerated + verified rather than served from cache.
+    variant_key = f"{spec.variant_key}:{_QUIZ_CACHE_VERSION}"
 
     def _with_rung(d: dict[str, Any]) -> dict[str, Any]:
         out = dict(d)
@@ -132,6 +168,17 @@ async def generate_practice_quiz(
                     session, lesson.id, concept, model_name, content
                 ))
 
+            # Independent answer check: never serve a question whose key a stronger
+            # model disagrees with (catches wrong arithmetic from the weak tier).
+            if not await _verify_answer(
+                result["question"], result["choices"], result["answer_index"]
+            ):
+                if attempt == 0:
+                    continue
+                return _with_rung(await _safe_cached_or_fallback(
+                    session, lesson.id, concept, model_name, content
+                ))
+
             session.add(GeneratedContent(
                 lesson_id=lesson.id,
                 concept=concept,
@@ -168,6 +215,8 @@ async def _safe_cached_or_fallback(
                 GeneratedContent.lesson_id == lesson_id,
                 GeneratedContent.concept == concept,
                 GeneratedContent.model_used == model_name,
+                # Only reuse current-pipeline (answer-verified) variants.
+                GeneratedContent.variant_key.like(f"%:{_QUIZ_CACHE_VERSION}"),
             )
         )
     ).all()

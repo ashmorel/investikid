@@ -50,6 +50,8 @@ async def lesson_fixture(db_session):
 async def test_generate_practice_quiz_calls_llm(db_session, lesson_fixture):
     user, module, quiz = lesson_fixture
     mock_client = AsyncMock()
+    # 1st complete() = generation, 2nd = the independent answer verifier (which
+    # here returns the same answer_index, so it agrees and the question is served).
     mock_client.complete = AsyncMock(return_value=VALID_QUIZ_JSON)
 
     with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
@@ -59,7 +61,28 @@ async def test_generate_practice_quiz_calls_llm(db_session, lesson_fixture):
     assert result["question"] is not None
     assert len(result["choices"]) >= 3
     assert isinstance(result["answer_index"], int)
-    mock_client.complete.assert_awaited_once()
+    assert mock_client.complete.await_count == 2  # generation + verification
+
+
+async def test_generate_practice_quiz_falls_back_when_answer_unverified(db_session, lesson_fixture):
+    user, module, quiz = lesson_fixture
+    # The generator proposes answer_index 1; the verifier disagrees (says 2) on
+    # both attempts → the (likely-wrong) question is never served; we fall back
+    # to the authored lesson question instead.
+    disagree = '{"answer_index": 2}'
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(
+        side_effect=[VALID_QUIZ_JSON, disagree, VALID_QUIZ_JSON, disagree]
+    )
+
+    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
+        result = await generate_practice_quiz(
+            db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
+        )
+
+    # Served the authored fallback, NOT the unverified generated question.
+    assert result["question"] == quiz.content_json["question"]
+    assert "weekly allowance" not in result["question"]
 
 
 async def test_generate_practice_quiz_uses_cache(db_session, lesson_fixture):
@@ -75,7 +98,7 @@ async def test_generate_practice_quiz_uses_cache(db_session, lesson_fixture):
             "explanation": "Cached.",
         },
         model_used="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
-        variant_key="core:0",
+        variant_key="core:0:v2",  # current cache version (see _QUIZ_CACHE_VERSION)
     )
     db_session.add(cached)
     await db_session.flush()
