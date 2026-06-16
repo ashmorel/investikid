@@ -16,7 +16,12 @@ export default function ReviseSession() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    reviseApi.getSession(moduleId).then((s) => setItems(s?.items ?? []));
+    // On a network error, degrade to the terminal "all caught up" state (which
+    // offers a Back-to-home button) rather than spinning on "Loading…" forever.
+    reviseApi
+      .getSession(moduleId)
+      .then((s) => setItems(s?.items ?? []))
+      .catch(() => setItems([]));
   }, [moduleId]);
 
   if (items === null) {
