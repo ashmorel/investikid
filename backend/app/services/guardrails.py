@@ -63,8 +63,10 @@ def with_guardrail_preamble(system_prompt: str) -> str:
 def log_guardrail_event(
     *, action: str, surface: str, category: str | None, child_id: int | None
 ) -> None:
-    """Emit one structured guardrail log line. Never logs message text or raw PII.
-    action is one of: input_block, output_block, redirect."""
+    """Emit one structured guardrail log line. Never logs message text or the
+    raw child id — the child is identified only by a pseudonymised correlation
+    hash (not cryptographically private). action is one of: input_block,
+    output_block, redirect."""
     hashed = (
         hashlib.sha256(str(child_id).encode()).hexdigest()[:12]
         if child_id is not None else "anon"
