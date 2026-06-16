@@ -3,6 +3,7 @@ import time
 
 from app.schemas.simulator import InvestingTipOut
 from app.services import llm_usage
+from app.services.guardrails import with_guardrail_preamble
 from app.services.llm_client import get_llm_client
 from app.services.moderation import moderate_output
 
@@ -80,7 +81,7 @@ async def generate_generic_tips() -> list[InvestingTipOut]:
     try:
         llm = get_llm_client(tier="lite")
         raw = await llm.complete(
-            system_prompt=_TIPS_PROMPT,
+            system_prompt=with_guardrail_preamble(_TIPS_PROMPT),
             messages=[{"role": "user", "content": "Generate 6 fresh investing tips for young learners."}],
             temperature=0.9,
             max_tokens=800,
@@ -157,7 +158,7 @@ async def generate_personalised_tips(
     try:
         llm = get_llm_client(tier="lite")
         raw = await llm.complete(
-            system_prompt=_personal_prompt(holdings, stage, age),
+            system_prompt=with_guardrail_preamble(_personal_prompt(holdings, stage, age)),
             messages=[{"role": "user", "content": "Generate 2 personalised tips."}],
             temperature=0.8,
             max_tokens=400,
