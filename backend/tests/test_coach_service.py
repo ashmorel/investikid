@@ -11,8 +11,6 @@ from app.services.coach_service import build_coach_context, coach_chat, parse_ac
 from app.services.guardrails import GUARDRAIL_PREAMBLE
 from app.services.moderation import _SAFE_FALLBACKS
 
-pytestmark = pytest.mark.asyncio(loop_scope="session")
-
 
 @pytest_asyncio.fixture
 async def coach_user(db_session):
@@ -133,6 +131,7 @@ class TestParseActions:
         assert actions[0]["label"] == "Go to module"
 
 
+@pytest.mark.asyncio(loop_scope="session")
 async def test_coach_blocks_injection_without_llm(db_session, coach_user):
     spy = MagicMock(side_effect=AssertionError("LLM must not be called on a blocked turn"))
     with patch("app.services.coach_service.get_llm_client", spy):
@@ -153,6 +152,7 @@ async def test_coach_blocks_injection_without_llm(db_session, coach_user):
     )
 
 
+@pytest.mark.asyncio(loop_scope="session")
 async def test_coach_prompt_includes_preamble(db_session, coach_user):
     captured = {}
 
