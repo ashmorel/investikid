@@ -15,7 +15,12 @@ from app.models.user import User
 from app.services import llm_usage
 from app.services.content_variety_service import resolve_variant
 from app.services.guardrails import with_guardrail_preamble
-from app.services.llm_client import LLMError, get_llm_client, get_model_name
+from app.services.llm_client import (
+    LLMError,
+    get_llm_client,
+    get_model_name,
+    get_strict_premium_client,
+)
 from app.services.moderation import moderate_output
 
 
@@ -57,9 +62,9 @@ _SYSTEM_PROMPT = (
 
 
 # Bump when the generation pipeline changes so stale cached quiz variants are not
-# reused. v2 = answer-verification; v3 = server-side choice shuffle (the model
-# tends to emit answer_index 0, putting the correct answer first every time).
-_QUIZ_CACHE_VERSION = "v3"
+# reused. v2 = answer-verification; v3 = choice shuffle; v4 = strict-premium
+# verifier (no silent Llama fallback) + deterministic fallback ordering.
+_QUIZ_CACHE_VERSION = "v4"
 
 
 def _shuffle_choices(quiz: dict[str, Any]) -> dict[str, Any]:
@@ -84,8 +89,14 @@ async def _verify_answer(question: str, choices: list[str], answer_index: int) -
     only if it agrees with ``answer_index``. Catches wrong answer keys (especially
     arithmetic from the weaker free tier) before a question is served/cached.
     Fail-closed: any error or disagreement → not verified."""
+    # Verify with the REAL premium model only — no silent fallback to the weak
+    # tier, which would just re-confirm its own mistakes. If premium isn't
+    # available, treat the answer as unverified so the caller serves the authored
+    # question instead.
+    client = get_strict_premium_client()
+    if client is None:
+        return False
     try:
-        client = get_llm_client(tier="premium")
         numbered = "\n".join(f"{i}. {c}" for i, c in enumerate(choices))
         raw = await client.complete(
             system_prompt=_VERIFIER_SYSTEM_PROMPT,
@@ -135,6 +146,15 @@ async def generate_practice_quiz(
         return _with_rung(cached.content_json)
 
     content = lesson.content_json or {}
+
+    # Without a trustworthy verifier (no premium model configured), don't generate
+    # unverifiable LLM questions — serve the authored lesson question instead
+    # (guaranteed correct). Skips the LLM entirely so we don't thrash.
+    if get_strict_premium_client() is None:
+        return _with_rung(
+            await _safe_cached_or_fallback(session, lesson.id, concept, model_name, content)
+        )
+
     user_message = f"Lesson topic: {topic}\nLesson content: {json.dumps(content)}"
     if wrong_answer_index is not None and "choices" in content:
         choices = content.get("choices", [])
@@ -221,7 +241,11 @@ async def _safe_cached_or_fallback(
     model_name: str,
     content: dict[str, Any],
 ) -> dict[str, Any]:
-    """Prefer any already-cached (therefore moderation-passed) variant; else deterministic fallback."""
+    """Prefer an already-cached (moderation-passed) variant; else the authored
+    question. DETERMINISTIC by design — revise re-derives the answer by re-calling
+    generate_practice_quiz, so this must return the same question + choice order
+    every time (a stable row pick + a seeded shuffle), not a random one."""
+    rng = random.Random(f"{lesson_id}:{concept}")
     rows = (
         await session.scalars(
             select(GeneratedContent).where(
@@ -234,16 +258,17 @@ async def _safe_cached_or_fallback(
         )
     ).all()
     if rows:
-        return random.choice(rows).content_json
-    return _fallback(content)
+        return sorted(rows, key=lambda r: str(r.id))[0].content_json
+    return _fallback(content, rng)
 
 
-def _fallback(original_content: dict[str, Any]) -> dict[str, Any]:
-    """Return the original question with shuffled choices as a fallback."""
+def _fallback(original_content: dict[str, Any], rng: random.Random | None = None) -> dict[str, Any]:
+    """Return the original question with shuffled choices as a fallback. Pass `rng`
+    (seeded) for a deterministic order when the result must be reproducible."""
     choices = list(original_content.get("choices", ["A", "B", "C"]))
     answer_idx = original_content.get("answer_index", 0)
     correct = choices[answer_idx] if answer_idx < len(choices) else choices[0]
-    random.shuffle(choices)
+    (rng or random).shuffle(choices)
     return {
         "question": original_content.get("question", original_content.get("prompt", "Practice question")),
         "choices": choices,

@@ -67,7 +67,7 @@ async def test_cache_hit_is_variant_scoped(db_session, monkeypatch):
     model = get_model_name("premium")
     db_session.add(GeneratedContent(
         lesson_id=lesson.id, concept="saving", model_used=model,
-        variant_key="core:0:v3", content_json=_QUIZ,
+        variant_key="core:0:v4", content_json=_QUIZ,
     ))
     await db_session.flush()
 
@@ -94,7 +94,7 @@ async def test_llm_failure_falls_back_to_random_cached_safe_variant(db_session, 
     model = get_model_name("premium")
     db_session.add(GeneratedContent(
         lesson_id=lesson.id, concept="saving", model_used=model,
-        variant_key="easier:0:v3", content_json=_QUIZ,
+        variant_key="easier:0:v4", content_json=_QUIZ,
     ))
     await db_session.flush()
 
