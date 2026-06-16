@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import HomeHero from '@/components/child/HomeHero';
 import { StatsCard } from '@/components/child/StatsCard';
 import { QuickLinksRow } from '@/components/child/home/QuickLinksRow';
+import { ReviseCard } from '@/components/child/home/ReviseCard';
 import { PremiumUpsellCard } from '@/components/child/PremiumUpsellCard';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useAllBadges } from '@/hooks/useAllBadges';
@@ -54,6 +55,8 @@ export default function Home() {
           xpToday={progress?.xp_today ?? 0}
         />
       </div>
+
+      <ReviseCard />
 
       <div className="mt-4">
         <QuickLinksRow
