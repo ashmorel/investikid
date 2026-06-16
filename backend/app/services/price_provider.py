@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Protocol
 
+import pandas as pd
 import yfinance as yf
 
 from app.services import price_cache
@@ -426,6 +427,8 @@ class LivePriceProvider:
         divisor = 100.0 if pence_convert else 1.0
         points: list[PricePoint] = []
         for dt, row in hist.iterrows():
+            if pd.isna(row[["Open", "High", "Low", "Close", "Volume"]]).any():
+                continue
             points.append(PricePoint(
                 date=dt.strftime("%Y-%m-%d"),
                 open=round(row["Open"] / divisor, 2),
