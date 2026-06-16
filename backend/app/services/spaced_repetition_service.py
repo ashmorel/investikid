@@ -46,7 +46,8 @@ async def get_due_items(
     session: AsyncSession,
     user_id: uuid.UUID,
 ) -> list[SpacedRepetitionItem]:
-    """Return SR items that are due for review (next_review_at <= now) and not resolved."""
+    """Return SR items due for review (next_review_at <= now) and not resolved,
+    most-overdue first."""
     now = datetime.now(UTC)
     result = await session.scalars(
         select(SpacedRepetitionItem)
@@ -56,6 +57,7 @@ async def get_due_items(
             SpacedRepetitionItem.next_review_at <= now,
             WeakConcept.resolved == False,  # noqa: E712
         )
+        .order_by(SpacedRepetitionItem.next_review_at.asc())
     )
     return list(result.all())
 

@@ -16,12 +16,16 @@ from app.services.ai_content_service import generate_practice_quiz
 from app.services.content_service import record_daily_activity
 from app.services.entitlements import is_premium
 from app.services.spaced_repetition_service import get_due_items, record_review
-from app.services.xp_service import record_xp
+from app.services.xp_service import XpResult, record_xp
 
 logger = logging.getLogger(__name__)
 
 SESSION_CAP = 5
 XP_PER_CORRECT = 5
+# One full session (5×5) earns XP per local day; beyond this, correct answers
+# still advance learning but award no XP/coins, so repeatable refreshers can't
+# be farmed for XP/streak/coins. Mirrors the simulator's SIM_XP_DAILY_CAP.
+REVISE_XP_DAILY_CAP = 25
 
 
 def _concept_of(lesson: Lesson) -> str:
@@ -196,6 +200,21 @@ async def build_session(
     return items
 
 
+def award_revise_xp(progress: UserProgress, today) -> XpResult | None:
+    """Award one correct answer's XP, capped per local day so repeatable
+    refreshers can't farm XP/coins/streak (mirrors simulator award_trade_xp).
+    Returns the XpResult, or None once the daily revise cap is reached."""
+    if progress.revise_xp_date != today:
+        progress.revise_xp_date = today
+        progress.revise_xp_today = 0
+    remaining = REVISE_XP_DAILY_CAP - progress.revise_xp_today
+    if remaining <= 0:
+        return None
+    awarded = min(XP_PER_CORRECT, remaining)
+    progress.revise_xp_today += awarded
+    return record_xp(progress, awarded, today=today)
+
+
 async def record_answer(
     session: AsyncSession, user: User, ref: str, selected_index: int
 ) -> dict:
@@ -236,10 +255,11 @@ async def record_answer(
             session.add(progress)
             await session.flush()
         today = datetime.now(UTC).date()
-        xp = record_xp(progress, XP_PER_CORRECT, today=today)
+        xp = award_revise_xp(progress, today)
         record_daily_activity(progress, today)
-        xp_awarded = xp.awarded
-        goal_met = xp.goal_met_now
+        if xp is not None:  # None once the daily revise XP cap is reached
+            xp_awarded = xp.awarded
+            goal_met = xp.goal_met_now
 
     await session.commit()
     return {
