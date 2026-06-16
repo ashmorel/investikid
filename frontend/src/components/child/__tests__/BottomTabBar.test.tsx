@@ -12,10 +12,11 @@ function renderBar(initialPath = '/home') {
 }
 
 describe('BottomTabBar', () => {
-  it('renders all five tab labels', () => {
+  it('renders all six tab labels', () => {
     renderBar();
     expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Learn')).toBeInTheDocument();
+    expect(screen.getByText('Revise')).toBeInTheDocument();
     expect(screen.getByText('Progress')).toBeInTheDocument();
     expect(screen.getByText('Simulator')).toBeInTheDocument();
     expect(screen.getByText('Stats')).toBeInTheDocument();
@@ -27,6 +28,7 @@ describe('BottomTabBar', () => {
     const hrefs = links.map((l) => l.getAttribute('href'));
     expect(hrefs).toContain('/home');
     expect(hrefs).toContain('/lessons');
+    expect(hrefs).toContain('/revise');
     expect(hrefs).toContain('/progress');
     expect(hrefs).toContain('/simulator');
     expect(hrefs).toContain('/stats');
