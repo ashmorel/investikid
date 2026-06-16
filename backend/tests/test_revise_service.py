@@ -264,3 +264,49 @@ async def test_get_due_items_most_overdue_first(db_session):
 
     due = await get_due_items(db_session, user.id)
     assert [d.weak_concept_id for d in due] == [by_days[5], by_days[1]]
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_correct_refresher_schedules_future_review(db_session):
+    user, module = await _seed_user(db_session)
+    await _progress(db_session, user)
+    lesson = Lesson(module_id=module.id, type="quiz", xp_reward=10, order_index=0,
+                    content_json={"question": "Fresh2?", "choices": ["a", "b"], "answer_index": 0})
+    db_session.add(lesson)
+    await db_session.flush()
+    ref = encode_ref(kind="refresher", topic="stocks", lesson_id=lesson.id,
+                     concept="Fresh2?", weak_concept_id=None)
+
+    mock_quiz = AsyncMock(side_effect=lambda *a, **k: _quiz_payload("Fresh2?"))
+    with patch("app.services.revise_service.generate_practice_quiz", mock_quiz):
+        result = await record_answer(db_session, user, ref, selected_index=1)  # correct (ans=1)
+
+    assert result["correct"] is True
+    wc = await db_session.scalar(select(WeakConcept).where(
+        WeakConcept.user_id == user.id, WeakConcept.concept == "Fresh2?"))
+    assert wc is not None and wc.resolved is True  # mastered, but tracked for scheduling
+    sr = await db_session.scalar(select(SpacedRepetitionItem).where(
+        SpacedRepetitionItem.weak_concept_id == wc.id))
+    assert sr is not None and sr.next_review_at > datetime.now(UTC)  # spaced forward
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_build_session_skips_not_yet_due_refresher(db_session):
+    user, module = await _seed_user(db_session)
+    lesson = Lesson(module_id=module.id, type="quiz", xp_reward=10, order_index=0,
+                    content_json={"question": "Done?", "choices": ["a"], "answer_index": 0})
+    db_session.add(lesson)
+    wc = WeakConcept(user_id=user.id, topic="stocks", concept="Done?", resolved=True)
+    db_session.add(wc)
+    await db_session.flush()
+    db_session.add(LessonCompletion(user_id=user.id, lesson_id=lesson.id))
+    db_session.add(SpacedRepetitionItem(
+        user_id=user.id, weak_concept_id=wc.id, ease_factor=2.5, interval_days=3,
+        repetition_count=1, next_review_at=datetime.now(UTC) + timedelta(days=3)))  # future
+    await db_session.flush()
+
+    mock_quiz = AsyncMock(side_effect=lambda *a, **k: _quiz_payload(k["concept"]))
+    with patch("app.services.revise_service.generate_practice_quiz", mock_quiz):
+        session = await build_session(db_session, user, module_id=None)
+
+    assert session == []  # recently revised -> not due -> excluded -> nothing to revise
