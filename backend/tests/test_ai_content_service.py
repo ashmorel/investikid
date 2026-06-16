@@ -8,9 +8,25 @@ import pytest_asyncio
 from app.models.content import Lesson, Module
 from app.models.generated_content import GeneratedContent
 from app.models.user import User
-from app.services.ai_content_service import _fallback, generate_practice_quiz
+from app.services.ai_content_service import (
+    _fallback,
+    _shuffle_choices,
+    generate_practice_quiz,
+)
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
+
+
+async def test_shuffle_choices_preserves_correct_answer(monkeypatch):
+    quiz = {"question": "q", "choices": ["right", "b", "c"], "answer_index": 0, "explanation": "e"}
+    # Force a deterministic non-identity order (reverse) to prove it moves.
+    monkeypatch.setattr(
+        "app.services.ai_content_service.random.shuffle", lambda lst: lst.reverse()
+    )
+    out = _shuffle_choices(quiz)
+    assert set(out["choices"]) == {"right", "b", "c"}
+    assert out["choices"][out["answer_index"]] == "right"  # still the correct choice
+    assert out["answer_index"] != 0  # no longer stuck in the first slot
 
 
 VALID_QUIZ_JSON = (
@@ -98,7 +114,7 @@ async def test_generate_practice_quiz_uses_cache(db_session, lesson_fixture):
             "explanation": "Cached.",
         },
         model_used="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
-        variant_key="core:0:v2",  # current cache version (see _QUIZ_CACHE_VERSION)
+        variant_key="core:0:v3",  # current cache version (see _QUIZ_CACHE_VERSION)
     )
     db_session.add(cached)
     await db_session.flush()

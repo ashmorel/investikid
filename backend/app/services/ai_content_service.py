@@ -56,9 +56,19 @@ _SYSTEM_PROMPT = (
 )
 
 
-# Bump when the generation/verification pipeline changes so stale cached quiz
-# variants (e.g. pre-verification, possibly wrong answer keys) are not reused.
-_QUIZ_CACHE_VERSION = "v2"
+# Bump when the generation pipeline changes so stale cached quiz variants are not
+# reused. v2 = answer-verification; v3 = server-side choice shuffle (the model
+# tends to emit answer_index 0, putting the correct answer first every time).
+_QUIZ_CACHE_VERSION = "v3"
+
+
+def _shuffle_choices(quiz: dict[str, Any]) -> dict[str, Any]:
+    """Randomise choice order so the correct answer isn't always first, keeping
+    answer_index pointed at the same (correct) choice."""
+    choices = list(quiz["choices"])
+    correct = choices[quiz["answer_index"]]
+    random.shuffle(choices)
+    return {**quiz, "choices": choices, "answer_index": choices.index(correct)}
 
 
 _VERIFIER_SYSTEM_PROMPT = (
@@ -178,6 +188,9 @@ async def generate_practice_quiz(
                 return _with_rung(await _safe_cached_or_fallback(
                     session, lesson.id, concept, model_name, content
                 ))
+
+            # Randomise choice order before caching so the answer isn't always first.
+            result = _shuffle_choices(result)
 
             session.add(GeneratedContent(
                 lesson_id=lesson.id,
