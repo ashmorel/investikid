@@ -70,7 +70,8 @@ async def test_generate_practice_quiz_calls_llm(db_session, lesson_fixture):
     # here returns the same answer_index, so it agrees and the question is served).
     mock_client.complete = AsyncMock(return_value=VALID_QUIZ_JSON)
 
-    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
+    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.ai_content_service.get_strict_premium_client", return_value=mock_client):
         result = await generate_practice_quiz(
             db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )
@@ -91,7 +92,8 @@ async def test_generate_practice_quiz_falls_back_when_answer_unverified(db_sessi
         side_effect=[VALID_QUIZ_JSON, disagree, VALID_QUIZ_JSON, disagree]
     )
 
-    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
+    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.ai_content_service.get_strict_premium_client", return_value=mock_client):
         result = await generate_practice_quiz(
             db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )
@@ -114,13 +116,14 @@ async def test_generate_practice_quiz_uses_cache(db_session, lesson_fixture):
             "explanation": "Cached.",
         },
         model_used="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
-        variant_key="core:0:v3",  # current cache version (see _QUIZ_CACHE_VERSION)
+        variant_key="core:0:v4",  # current cache version (see _QUIZ_CACHE_VERSION)
     )
     db_session.add(cached)
     await db_session.flush()
 
     mock_client = AsyncMock()
-    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
+    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.ai_content_service.get_strict_premium_client", return_value=mock_client):
         result = await generate_practice_quiz(
             db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )
@@ -133,13 +136,29 @@ async def test_generate_practice_quiz_fallback_on_invalid_json(db_session, lesso
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(return_value="not valid json at all")
 
-    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
+    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.ai_content_service.get_strict_premium_client", return_value=mock_client):
         result = await generate_practice_quiz(
             db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )
     # Should fall back to original question (shuffled or not)
     assert result["question"] is not None
     assert len(result["choices"]) >= 2
+
+
+async def test_no_premium_verifier_serves_authored_without_llm(db_session, lesson_fixture):
+    user, module, quiz = lesson_fixture
+    gen = AsyncMock()
+    gen.complete = AsyncMock(side_effect=AssertionError("LLM must not run without a verifier"))
+    with patch("app.services.ai_content_service.get_llm_client", return_value=gen), \
+         patch("app.services.ai_content_service.get_strict_premium_client", return_value=None):
+        result = await generate_practice_quiz(
+            db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
+        )
+    gen.complete.assert_not_awaited()  # short-circuited the LLM entirely
+    # served the authored lesson question, key still on the correct choice
+    assert result["question"] == quiz.content_json["question"]
+    assert result["choices"][result["answer_index"]] == "£20"
 
 
 UNSAFE_QUIZ_JSON = (
@@ -164,7 +183,8 @@ async def test_generate_practice_quiz_blocks_unsafe_and_falls_back(db_session, l
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(return_value=UNSAFE_QUIZ_JSON)
 
-    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
+    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.ai_content_service.get_strict_premium_client", return_value=mock_client):
         result = await generate_practice_quiz(
             db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )
@@ -200,7 +220,8 @@ async def test_generate_practice_quiz_safe_passes_through(db_session, lesson_fix
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(return_value=SAFE_QUIZ_JSON)
 
-    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client):
+    with patch("app.services.ai_content_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.ai_content_service.get_strict_premium_client", return_value=mock_client):
         result = await generate_practice_quiz(
             db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
         )

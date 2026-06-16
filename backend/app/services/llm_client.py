@@ -339,3 +339,23 @@ def get_llm_client(tier: str = "lite", *, premium: bool | None = None) -> LLMCli
     if tier == "standard":
         return _build_chain(settings.llm_standard_providers)
     return _build_chain(settings.llm_lite_providers)
+
+
+def get_strict_premium_client() -> LLMClient | None:
+    """The commercial premium model with NO open-source fallback. Returns None when
+    no premium key is configured. Used for answer verification, where silently
+    degrading to the weak tier would defeat the check (it would just re-confirm the
+    weak tier's own mistakes)."""
+    if not settings.llm_premium_api_key:
+        return None
+    if settings.llm_premium_provider == "anthropic":
+        return AnthropicClient(
+            api_key=settings.llm_premium_api_key,
+            model=settings.llm_premium_model,
+            provider="anthropic-premium",
+        )
+    return OpenAIClient(
+        api_key=settings.llm_premium_api_key,
+        model=settings.llm_premium_model,
+        provider="openai-premium",
+    )
