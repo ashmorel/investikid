@@ -11,6 +11,11 @@ from app.models.audit import AuditLog
 from app.models.tutor import ChartCoachConversation
 from app.models.user import User
 from app.services import llm_usage
+from app.services.guardrails import (
+    log_guardrail_event,
+    screen_input,
+    with_guardrail_preamble,
+)
 from app.services.llm_client import get_llm_client, get_model_name
 from app.services.moderation import moderate_output
 from app.services.price_provider import PricePoint
@@ -99,9 +104,35 @@ async def chart_coach_chat(
             f"Message limit reached ({max_messages}). Start a new conversation to keep learning!"
         )
 
+    verdict = screen_input(message, surface="chart_coach")
+    if verdict.blocked:
+        log_guardrail_event(
+            action="input_block", surface="chart_coach",
+            category=verdict.category, child_id=user.id,
+        )
+        session.add(AuditLog(
+            user_id=user.id,
+            event_type="moderation_block",
+            metadata_json={"surface": "chart_coach", "category": verdict.category, "stage": "input"},
+        ))
+        conversation.messages = [
+            *(conversation.messages or []),
+            {"role": "user", "content": "[message removed by safety filter]"},
+            {"role": "assistant", "content": verdict.reply},
+        ]
+        conversation.message_count += 2
+        await session.flush()
+        return {
+            "response": verdict.reply,
+            "conversation_id": conversation.id,
+            "messages_remaining": max(0, max_messages - conversation.message_count),
+        }
+
     age = (date.today() - user.dob).days // 365
     stats = _build_stats(ticker, period, points)
-    system_prompt = _build_system_prompt(age, ticker, name, period, stats)
+    system_prompt = with_guardrail_preamble(
+        _build_system_prompt(age, ticker, name, period, stats)
+    )
 
     history = [
         {"role": m["role"], "content": m["content"]}
@@ -120,6 +151,10 @@ async def chart_coach_chat(
     _mod = await moderate_output(raw_response, surface="chart_coach")
     filtered_response = _mod.text
     if not _mod.safe:
+        log_guardrail_event(
+            action="output_block", surface="chart_coach",
+            category=_mod.category, child_id=user.id,
+        )
         session.add(AuditLog(
             user_id=user.id,
             event_type="moderation_block",
