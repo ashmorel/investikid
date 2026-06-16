@@ -110,3 +110,24 @@ async def test_build_session_module_filter(db_session):
 
     assert all(s["module_id"] == str(other.id) for s in session)
     assert len(session) == 1
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_completed_lesson_that_is_weak_not_served_as_refresher(db_session):
+    # A completed lesson whose concept is ALSO an unresolved weak concept must not
+    # be offered as a refresher. With no SR item due, it should not appear at all.
+    user, module = await _seed_user(db_session)
+    lesson = Lesson(module_id=module.id, type="quiz", xp_reward=10, order_index=0,
+                    content_json={"question": "Risk?", "choices": ["a", "b"], "answer_index": 0})
+    db_session.add(lesson)
+    db_session.add(WeakConcept(user_id=user.id, topic="stocks", concept="Risk?", resolved=False))
+    await db_session.flush()
+    db_session.add(LessonCompletion(user_id=user.id, lesson_id=lesson.id))
+    await db_session.flush()
+
+    mock_quiz = AsyncMock(side_effect=lambda *a, **k: _quiz_payload(k["concept"]))
+    with patch("app.services.revise_service.generate_practice_quiz", mock_quiz):
+        session = await build_session(db_session, user, module_id=None)
+
+    # not due (no SR item) -> not weak-served; and excluded from refreshers -> empty
+    assert session == []

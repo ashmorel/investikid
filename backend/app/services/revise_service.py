@@ -64,6 +64,7 @@ async def _lesson_for_concept(
     rows = await session.execute(
         select(Lesson, Module).join(Module, Module.id == Lesson.module_id)
         .where(Module.topic == topic)
+        .order_by(Lesson.order_index)  # deterministic when concept strings collide
     )
     for lesson, module in rows.all():
         if _concept_of(lesson) == concept:
@@ -71,7 +72,9 @@ async def _lesson_for_concept(
     return None
 
 
-async def _build_item(session, user, *, kind, lesson, module, concept) -> dict | None:
+async def _build_item(
+    session, user, *, kind, lesson, module, concept, weak_concept_id=None
+) -> dict | None:
     try:
         quiz = await generate_practice_quiz(
             session, lesson, user=user, topic=module.topic,
@@ -80,19 +83,9 @@ async def _build_item(session, user, *, kind, lesson, module, concept) -> dict |
     except Exception:  # noqa: BLE001
         logger.warning("revise: quiz generation failed for %s", lesson.id)
         return None
-    wc_id = None
-    if kind == "weak":
-        wc = await session.scalar(
-            select(WeakConcept).where(
-                WeakConcept.user_id == user.id,
-                WeakConcept.topic == module.topic,
-                WeakConcept.concept == concept,
-            )
-        )
-        wc_id = wc.id if wc else None
     return {
         "ref": encode_ref(kind=kind, topic=module.topic, lesson_id=lesson.id,
-                          concept=concept, weak_concept_id=wc_id),
+                          concept=concept, weak_concept_id=weak_concept_id),
         "kind": kind,
         "module_id": str(module.id),
         "lesson_id": str(lesson.id),
@@ -127,7 +120,8 @@ async def build_session(
             if module_id and module.id != module_id:
                 continue
             item = await _build_item(session, user, kind="weak", lesson=lesson,
-                                     module=module, concept=w.concept)
+                                     module=module, concept=w.concept,
+                                     weak_concept_id=w.id)
             if item:
                 items.append(item)
                 seen_concepts.add((module.topic, w.concept))
