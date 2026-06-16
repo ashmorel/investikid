@@ -9,6 +9,7 @@ import Signup from '@/pages/child/Signup';
 import PendingConsent from '@/pages/child/PendingConsent';
 import Home from '@/pages/child/Home';
 const Shop = lazy(() => import('@/pages/child/Shop'));
+const ReviseSession = lazy(() => import('@/pages/child/ReviseSession'));
 import Lessons from '@/pages/child/Lessons';
 import Module from '@/pages/child/Module';
 import Level from '@/pages/child/Level';
@@ -17,6 +18,7 @@ import Simulator from '@/pages/child/Simulator';
 import Market from '@/pages/child/Market';
 import Stock from '@/pages/child/Stock';
 import Stats from '@/pages/child/Stats';
+import Revise from '@/pages/child/Revise';
 import StrengthsGaps from '@/pages/child/StrengthsGaps';
 import Coach from '@/pages/child/Coach';
 import ConsentVerify from '@/pages/ConsentVerify';
@@ -79,6 +81,8 @@ export default function App() {
           <Route path="/simulator/stock/:exchange/:ticker" element={<Stock />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="/progress" element={<StrengthsGaps />} />
+          <Route path="/revise" element={<Revise />} />
+          <Route path="/revise/session" element={<Suspense fallback={null}><ReviseSession /></Suspense>} />
           <Route path="/coach" element={<Coach />} />
         </Route>
 

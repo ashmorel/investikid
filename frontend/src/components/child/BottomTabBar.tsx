@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { Home, BookOpen, TrendingUp, BarChart3, Target } from 'lucide-react';
+import { Home, BookOpen, TrendingUp, BarChart3, Target, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TABS = [
   { to: '/home', label: 'Home', Icon: Home },
   { to: '/lessons', label: 'Learn', Icon: BookOpen },
+  { to: '/revise', label: 'Revise', Icon: RefreshCw },
   { to: '/progress', label: 'Progress', Icon: Target },
   { to: '/simulator', label: 'Simulator', Icon: TrendingUp },
   { to: '/stats', label: 'Stats', Icon: BarChart3 },

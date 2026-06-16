@@ -31,6 +31,7 @@ from app.routers import missions as missions_router
 from app.routers import parent as parent_router
 from app.routers import parent_auth as parent_auth_router
 from app.routers import premium as premium_router
+from app.routers import revise as revise_router
 from app.routers import simulator as simulator_router
 from app.routers import users as users_router
 from app.services.alerting import on_all_providers_down, on_provider_degraded
@@ -201,6 +202,7 @@ def create_app() -> FastAPI:
     application.include_router(parent_auth_router.router)
     application.include_router(parent_router.router)
     application.include_router(ai_router.router)
+    application.include_router(revise_router.router)
     application.include_router(premium_router.router)
     application.include_router(billing_router.router)
     application.include_router(admin_router.router)
