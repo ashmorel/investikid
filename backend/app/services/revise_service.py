@@ -185,6 +185,7 @@ async def record_answer(
             select(WeakConcept).where(
                 WeakConcept.user_id == user.id, WeakConcept.topic == data["topic"],
                 WeakConcept.concept == data["concept"],
+                WeakConcept.resolved == False,  # noqa: E712
             )
         )
         if wc is None:
@@ -205,7 +206,7 @@ async def record_answer(
         xp = record_xp(progress, XP_PER_CORRECT, today=today)
         record_daily_activity(progress, today)
         xp_awarded = xp.awarded
-        goal_met = xp.goal_met_today
+        goal_met = xp.goal_met_now
 
     await session.commit()
     return {
