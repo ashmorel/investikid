@@ -39,6 +39,23 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 | **M11 App Store Connect listing** | ⚙️ | Paste copy/keywords from the [listing kit](launch/2026-06-15-app-store-listing-kit.md); capture 5 screenshots; enter **privacy nutrition labels**; confirm **age rating** (4+ vs 9+/12+ — 🤔 decision in the kit). |
 | **Confirm OpenAI account spend cap + billing** | ⚙️🤔 | 30-sec check so premium (`gpt-4o-mini`) doesn't silently fall back to Llama. No top-up needed for beta; size the real cap post-beta from token data. |
 
+## 🟢 Quality & safety — raised 2026-06-15
+
+Pre-launch quality/safety. The **LLM guardrails** (kids'-app safety) and the
+**`starlette` security bump** should land **before public launch**; **revision /
+spaced-repetition** is a stickiness-vs-post-launch decision (see its note).
+
+| Item | Owner | Notes |
+|---|---|---|
+| **LLM topical guardrails** | 💻 | Keep every LLM surface (Coach, lesson reinforcement) inside personal-finance / the active module: scoped system prompt that declines/redirects off-topic, personal-advice ("should I buy X?"), and age-inappropriate asks; input-side prompt-injection screening ("ignore previous instructions…"); pass module/lesson context; fail-closed + log (no PII); adversarial regression suite. Layers on existing `moderate_output`. Pre-launch safety for a kids' app. |
+| **Security: bump `starlette` ≥1.3.1** | 💻 | `backend/requirements.txt` pins `starlette==0.49.1` (+ `fastapi==0.121.0`) — clears GHSA-wqp7-x3pw-xc5r, GHSA-x746-7m8f-x49c, GHSA-jp82-jpqv-5vv3, GHSA-82w8-qh3p-5jfq. Reconcile FastAPI's starlette pin (upgrade together); verify pytest + ruff + pip-audit clean. |
+| **Revision / spaced-repetition** | 💻🤔 | Lightweight "Revise" surface that resurfaces completed-lesson concepts so learning sticks; reuse existing lesson/quiz content + progress signals (`StrengthsGaps`), award XP/streak, WCAG 2.2 AA. Slots into the stickiness track (M7–M9) or a post-launch bet — decision. |
+
+<!-- Conditional — only if a chart-reading / stock-news feature is ever built:
+AI chart-reading & stock-news output (💻): concise, plain-English, tier-aware (explorer/investor),
+concept-only (no buy/sell advice), factual/neutral news summaries, all through moderate_output;
+fold examples into the guardrails adversarial suite. -->
+
 ## 🟡 Soon — code I can do when scheduled
 
 | Item | Owner | Notes |
