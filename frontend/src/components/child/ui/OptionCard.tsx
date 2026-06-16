@@ -23,7 +23,8 @@ export function OptionCard({ letter, state = 'default', checked, disabled, onSel
       className={cn(
         'flex w-full items-center gap-3 rounded-2xl border-2 p-3.5 text-left transition-all active:scale-[0.99] disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
         state === 'default' && 'border-gray-200 bg-white',
-        state === 'selected' && 'border-brand-500 bg-brand-50 shadow-md shadow-brand-600/15',
+        state === 'selected' &&
+          'border-brand-600 bg-brand-100 ring-2 ring-brand-500 shadow-md shadow-brand-600/25',
         state === 'correct' && 'border-success-500 bg-success-50',
         state === 'incorrect' && 'border-danger-500 bg-danger-50',
       )}
