@@ -21,6 +21,8 @@ back-to-app, full logout) · **web auth** (same-site `api.investikid.ai`) · pro
 LLM token instrumentation · device-QA fixes (login cookie race, safe-area,
 BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
+- **LLM topical guardrails** — ✅ shipped 2026-06-16 (regex input gate + shared preamble across all 9 LLM surfaces + structured guardrail logs + adversarial test suite, on branch testing)
+
 ---
 
 ## 🔴 Now — launch-critical path (mostly human)

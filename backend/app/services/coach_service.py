@@ -200,7 +200,9 @@ async def coach_chat(
             + ("Upgrade to premium for more!" if not premium else "Limit reached for this conversation.")
         )
 
-    # Pre-LLM topical/safety gate.
+    # Pre-LLM topical/safety gate. surface="tutor" intentionally borrows the
+    # tutor safe-fallback reply (there is no "coach" key in _SAFE_FALLBACKS);
+    # the audit/log calls below still record surface="coach".
     verdict = screen_input(message, surface="tutor")
     if verdict.blocked:
         log_guardrail_event(
