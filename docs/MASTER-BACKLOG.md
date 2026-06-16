@@ -1,6 +1,6 @@
 # InvestiKid — Master Backlog
 
-**Updated:** 2026-06-15
+**Updated:** 2026-06-16
 **Purpose:** the single go-forward list of what's left. Strategic context + per-M
 detail live in [`docs/2026-06-12-market-leader-roadmap.md`](2026-06-12-market-leader-roadmap.md);
 this is the actionable tracker. Update it as items ship.
@@ -21,7 +21,9 @@ back-to-app, full logout) · **web auth** (same-site `api.investikid.ai`) · pro
 LLM token instrumentation · device-QA fixes (login cookie race, safe-area,
 BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
-- **LLM topical guardrails** — ✅ shipped 2026-06-16 (regex input gate + shared preamble across all 9 LLM surfaces + structured guardrail logs + adversarial test suite, on branch testing)
+- **LLM topical guardrails** — ✅ shipped to prod 2026-06-16 (regex input gate + shared preamble across all 9 LLM surfaces + structured guardrail logs + adversarial test suite).
+- **Security: `starlette` ≥1.3.1 bump** — ✅ in prod (`starlette==1.3.1` / `fastapi==0.137.1`; clears GHSA-wqp7/x746/jp82/82w8; pip-audit clean).
+- **Simulator stock-page crash fix** — ✅ shipped to prod 2026-06-16 (drop NaN price-history rows at the provider + guard `StockChart` against null close).
 
 ---
 
@@ -45,6 +47,7 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
 | Item | Owner | Notes |
 |---|---|---|
+| **Revision / spaced-repetition** | 💻🤔 | Lightweight "Revise" surface that resurfaces completed-lesson concepts so learning sticks; reuse existing lesson/quiz content + progress signals (`StrengthsGaps`), award XP/streak, WCAG 2.2 AA. **Decision:** slot into the stickiness track now (pre-beta) or defer post-launch. Last open item from the 2026-06-15 Quality & safety set (guardrails + starlette now shipped). |
 | **M10 teen-testing prep** | 💻 | Figma visual-direction mockups (darker/flatter theme, dialled-back mascot, denser simulator) for the teen sessions — *before* any Investor-Mode code change. Then one iteration pass from findings. Needs the beta cohort recruited first. |
 | **Native → `api.investikid.ai`** | 💻 | Migrate `NATIVE_API_FALLBACK` to the same-site API in a future native build (cleaner; build 6 keeps the railway URL, which still works). Low priority. |
 | **Testing/staging web same-site** | 💻⚙️ | Replicate the `api-testing` / `api-staging` subdomains if web QA on those envs is needed. Deferred (prod-only fix shipped). |
