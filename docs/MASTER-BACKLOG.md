@@ -26,6 +26,7 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 - **Simulator stock-page crash fix** — ✅ shipped to prod 2026-06-16 (drop NaN price-history rows at the provider + guard `StockChart` against null close).
 - **Cron hardening** — ✅ in prod 2026-06-16 (`video-health-cron` per-endpoint isolation + retries + corrected default URL; validated by manual run).
 - **Frontend Dependabot — 0 open** — ✅ 2026-06-16 (vite/form-data/@babel/core patched within Vite 6, then **Vite 6→7** major upgrade shipped to prod; the 2 remaining esbuild alerts dismissed as `not_used` — Deno-install-path #17 and Windows-dev-server #22, neither reachable in our Node/Vite/macOS-Linux setup).
+- **Revision / spaced-repetition ("Revise")** — ✅ shipped to prod 2026-06-16 (home card + Revise tab/hub + capped-5 weak-first sessions with mastered-concept refreshers; LLM-generated cached/moderated questions; per-correct XP feeds the daily goal/streak; wrong refresher re-enters the SR loop; reuses the existing SR engine — **no migration**; WCAG 2.2 AA, vitest-axe).
 
 ---
 
@@ -49,7 +50,6 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
 | Item | Owner | Notes |
 |---|---|---|
-| **Revision / spaced-repetition** | 💻🤔 | Lightweight "Revise" surface that resurfaces completed-lesson concepts so learning sticks; reuse existing lesson/quiz content + progress signals (`StrengthsGaps`), award XP/streak, WCAG 2.2 AA. **Decision:** slot into the stickiness track now (pre-beta) or defer post-launch. Last open item from the 2026-06-15 Quality & safety set (guardrails + starlette now shipped). |
 | **M10 teen-testing prep** | 💻 | Figma visual-direction mockups (darker/flatter theme, dialled-back mascot, denser simulator) for the teen sessions — *before* any Investor-Mode code change. Then one iteration pass from findings. Needs the beta cohort recruited first. |
 | **Native → `api.investikid.ai`** | 💻 | Migrate `NATIVE_API_FALLBACK` to the same-site API in a future native build (cleaner; build 6 keeps the railway URL, which still works). Low priority. |
 | **Testing/staging web same-site** | 💻⚙️ | Replicate the `api-testing` / `api-staging` subdomains if web QA on those envs is needed. Deferred (prod-only fix shipped). |
