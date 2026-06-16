@@ -12,90 +12,48 @@ jobs:
     # not in a secret. Only CRON_SECRET is a real secret. Override BACKEND_URL via a
     # repo variable if the domain changes: ${{ vars.BACKEND_URL || '<default>' }}.
     env:
-      BACKEND_URL: ${{ vars.BACKEND_URL || 'https://lee-local-code-repo-production.up.railway.app' }}
+      BACKEND_URL: ${{ vars.BACKEND_URL || 'https://investikid.up.railway.app' }}
     steps:
-      - name: Trigger video-health check
+      - name: Trigger scheduled internal jobs
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "::error::CRON_SECRET is empty. Add it under the Actions Secrets tab, matching the value set on the Railway backend."
+          set -uo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET is empty. Add it under Actions → Secrets, matching the value set on the Railway backend."
             exit 1
           fi
-          code=$(curl -sS -o /tmp/resp.txt -w "%{http_code}" -X POST \
-            -H "X-Cron-Secret: $CRON_SECRET" \
-            "$BACKEND_URL/internal/video-health/run")
-          echo "HTTP status: $code"
-          cat /tmp/resp.txt; echo
-          if [ "$code" != "200" ]; then
-            echo "::error::Expected 200 but got $code. 401=secret mismatch with Railway; 503=CRON_SECRET unset on the backend; 404=endpoint not deployed."
+
+          # Each job runs independently: one bad endpoint no longer aborts the
+          # rest (previously a 401/5xx on the first step skipped every later job).
+          # --retry absorbs Railway cold-starts / transient 5xx so a sleeping
+          # backend doesn't fail the whole run.
+          endpoints=(
+            "internal/video-health/run"
+            "internal/trial-reminders/run"
+            "internal/push-streak-risk/run"
+            "internal/analytics-retention/run"
+            "internal/weekly-digest/run"
+          )
+
+          failed=0
+          for ep in "${endpoints[@]}"; do
+            echo "::group::POST /$ep"
+            code=$(curl -sS -o /tmp/resp.txt -w "%{http_code}" -X POST \
+              --retry 4 --retry-delay 5 --connect-timeout 15 --max-time 120 \
+              -H "X-Cron-Secret: $CRON_SECRET" \
+              "$BACKEND_URL/$ep" || echo "000")
+            echo "HTTP status: $code"
+            cat /tmp/resp.txt 2>/dev/null; echo
+            if [ "$code" != "200" ]; then
+              echo "::error::/$ep expected 200 but got $code. 401=secret mismatch with Railway; 503=CRON_SECRET unset on backend; 404=endpoint not deployed; 000/5xx=backend unreachable after retries."
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::One or more scheduled jobs failed — see the grouped logs above."
             exit 1
           fi
-      - name: Trigger trial-ending reminders
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "::error::CRON_SECRET is empty. Add it under the Actions Secrets tab, matching the value set on the Railway backend."
-            exit 1
-          fi
-          code=$(curl -sS -o /tmp/resp.txt -w "%{http_code}" -X POST \
-            -H "X-Cron-Secret: $CRON_SECRET" \
-            "$BACKEND_URL/internal/trial-reminders/run")
-          echo "HTTP status: $code"
-          cat /tmp/resp.txt; echo
-          if [ "$code" != "200" ]; then
-            echo "::error::Expected 200 but got $code. 401=secret mismatch with Railway; 503=CRON_SECRET unset on the backend; 404=endpoint not deployed."
-            exit 1
-          fi
-      - name: Trigger streak-at-risk push
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "::error::CRON_SECRET is empty. Add it under the Actions Secrets tab, matching the value set on the Railway backend."
-            exit 1
-          fi
-          code=$(curl -sS -o /tmp/resp.txt -w "%{http_code}" -X POST \
-            -H "X-Cron-Secret: $CRON_SECRET" \
-            "$BACKEND_URL/internal/push-streak-risk/run")
-          echo "HTTP status: $code"
-          cat /tmp/resp.txt; echo
-          if [ "$code" != "200" ]; then
-            echo "::error::Expected 200 but got $code. 401=secret mismatch with Railway; 503=CRON_SECRET unset on the backend; 404=endpoint not deployed."
-            exit 1
-          fi
-      - name: Trigger analytics retention purge
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "::error::CRON_SECRET is empty. Add it under the Actions Secrets tab, matching the value set on the Railway backend."
-            exit 1
-          fi
-          code=$(curl -sS -o /tmp/resp.txt -w "%{http_code}" -X POST \
-            -H "X-Cron-Secret: $CRON_SECRET" \
-            "$BACKEND_URL/internal/analytics-retention/run")
-          echo "HTTP status: $code"
-          cat /tmp/resp.txt; echo
-          if [ "$code" != "200" ]; then
-            echo "::error::Expected 200 but got $code. 401=secret mismatch with Railway; 503=CRON_SECRET unset on the backend; 404=endpoint not deployed."
-            exit 1
-          fi
-      - name: Trigger weekly digests
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "::error::CRON_SECRET is empty. Add it under the Actions Secrets tab, matching the value set on the Railway backend."
-            exit 1
-          fi
-          code=$(curl -sS -o /tmp/resp.txt -w "%{http_code}" -X POST \
-            -H "X-Cron-Secret: $CRON_SECRET" \
-            "$BACKEND_URL/internal/weekly-digest/run")
-          echo "HTTP status: $code"
-          cat /tmp/resp.txt; echo
-          if [ "$code" != "200" ]; then
-            echo "::error::Expected 200 but got $code. 401=secret mismatch with Railway; 503=CRON_SECRET unset on the backend; 404=endpoint not deployed."
-            exit 1
-          fi
+          echo "All scheduled internal jobs returned 200."
