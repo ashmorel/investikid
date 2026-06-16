@@ -78,9 +78,7 @@ def test_input_verdict_is_frozen():
 
 def test_with_guardrail_preamble_prepends():
     composed = with_guardrail_preamble("SURFACE RULES HERE")
-    assert composed.startswith(GUARDRAIL_PREAMBLE)
-    assert composed.endswith("SURFACE RULES HERE")
-    assert "\n\n" in composed
+    assert composed == GUARDRAIL_PREAMBLE + "\n\n" + "SURFACE RULES HERE"
 
 
 def test_log_guardrail_event_structured_no_pii(caplog):
@@ -98,9 +96,11 @@ def test_log_guardrail_event_structured_no_pii(caplog):
     assert "42" not in msg  # raw child id never logged
 
 
-def test_log_guardrail_event_anon_child():
+def test_log_guardrail_event_anon_child(caplog):
     # child_id=None must not raise and must log child=anon
-    log_guardrail_event(action="output_block", surface="tips", category=None, child_id=None)
+    with caplog.at_level(logging.INFO, logger="app.services.guardrails"):
+        log_guardrail_event(action="output_block", surface="tips", category=None, child_id=None)
+    assert "child=anon" in caplog.records[-1].getMessage()
 
 
 def test_log_guardrail_event_none_category(caplog):
