@@ -12,6 +12,7 @@ from app.services.revise_service import (
     build_session,
     decode_ref,
     encode_ref,
+    list_revisable_modules,
     record_answer,
 )
 
@@ -193,3 +194,30 @@ async def test_record_answer_wrong_refresher_creates_weak_concept(db_session):
         select(WeakConcept).where(WeakConcept.user_id == user.id,
                                   WeakConcept.concept == "Fresh?"))
     assert wc is not None  # missed refresher re-enters the SR loop
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_list_modules_weak_first(db_session):
+    user, module = await _seed_user(db_session)  # stocks
+    saving = Module(topic="saving", title="Saving", country_codes=[],
+                    is_premium=False, order_index=1, icon="🐷")
+    db_session.add(saving)
+    await db_session.flush()
+    for m in (module, saving):
+        lesson = Lesson(module_id=m.id, type="quiz", xp_reward=10, order_index=0,
+                        content_json={"question": f"{m.topic}?", "choices": ["a"], "answer_index": 0})
+        db_session.add(lesson)
+        await db_session.flush()
+        db_session.add(LessonCompletion(user_id=user.id, lesson_id=lesson.id))
+    wc = WeakConcept(user_id=user.id, topic="saving", concept="saving?", resolved=False)
+    db_session.add(wc)
+    await db_session.flush()
+    db_session.add(SpacedRepetitionItem(
+        user_id=user.id, weak_concept_id=wc.id, ease_factor=2.5, interval_days=1,
+        repetition_count=0, next_review_at=datetime.now(UTC) - timedelta(days=1)))
+    await db_session.flush()
+
+    mods = await list_revisable_modules(db_session, user)
+    assert mods[0]["topic"] == "saving"  # weak-first
+    assert mods[0]["due_weak_count"] == 1
+    assert {m["topic"] for m in mods} == {"stocks", "saving"}

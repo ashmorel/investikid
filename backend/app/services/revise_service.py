@@ -6,11 +6,11 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import Lesson, LessonCompletion, Module
-from app.models.skill_profile import WeakConcept
+from app.models.skill_profile import SpacedRepetitionItem, WeakConcept
 from app.models.user import User, UserProgress
 from app.services.ai_content_service import generate_practice_quiz
 from app.services.content_service import record_daily_activity
@@ -96,6 +96,37 @@ async def _build_item(
         "question": quiz["question"],
         "choices": quiz["choices"],
     }
+
+
+async def list_revisable_modules(session: AsyncSession, user: User) -> list[dict]:
+    comp_modules = (await session.scalars(
+        select(Module.id).distinct()
+        .join(Lesson, Lesson.module_id == Module.id)
+        .join(LessonCompletion, LessonCompletion.lesson_id == Lesson.id)
+        .where(LessonCompletion.user_id == user.id)
+    )).all()
+    if not comp_modules:
+        return []
+    modules = (await session.scalars(
+        select(Module).where(Module.id.in_(comp_modules))
+    )).all()
+    rows = (await session.execute(
+        select(WeakConcept.topic, func.count(SpacedRepetitionItem.id))
+        .join(SpacedRepetitionItem, SpacedRepetitionItem.weak_concept_id == WeakConcept.id)
+        .where(
+            SpacedRepetitionItem.user_id == user.id,
+            SpacedRepetitionItem.next_review_at <= func.now(),
+            WeakConcept.resolved == False,  # noqa: E712
+        )
+        .group_by(WeakConcept.topic)
+    )).all()
+    due_by_topic = {t: int(c) for t, c in rows}
+    out = [{
+        "module_id": str(m.id), "title": m.title, "icon": m.icon,
+        "topic": m.topic, "due_weak_count": due_by_topic.get(m.topic, 0),
+    } for m in modules]
+    out.sort(key=lambda d: (-d["due_weak_count"], d["title"]))  # weak-first
+    return out
 
 
 async def build_session(
