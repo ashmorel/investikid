@@ -41,6 +41,10 @@ async def test_returns_variant_rung_and_caches_under_variant_key(db_session, mon
             return json.dumps(_QUIZ)
 
     monkeypatch.setattr(ai_content_service, "get_llm_client", lambda **k: FakeClient())
+    # The strict premium verifier (no args) must be present, else generation is
+    # short-circuited to the authored question and nothing is cached. FakeClient
+    # echoes _QUIZ (answer_index 0), so the verifier agrees and the row caches.
+    monkeypatch.setattr(ai_content_service, "get_strict_premium_client", lambda: FakeClient())
 
     async def safe_mod(*a, **k):
         from app.services.moderation import ModerationResult
@@ -67,7 +71,7 @@ async def test_cache_hit_is_variant_scoped(db_session, monkeypatch):
     model = get_model_name("premium")
     db_session.add(GeneratedContent(
         lesson_id=lesson.id, concept="saving", model_used=model,
-        variant_key="core:0:v3", content_json=_QUIZ,
+        variant_key="core:0:v4", content_json=_QUIZ,
     ))
     await db_session.flush()
 
@@ -94,7 +98,7 @@ async def test_llm_failure_falls_back_to_random_cached_safe_variant(db_session, 
     model = get_model_name("premium")
     db_session.add(GeneratedContent(
         lesson_id=lesson.id, concept="saving", model_used=model,
-        variant_key="easier:0:v3", content_json=_QUIZ,
+        variant_key="easier:0:v4", content_json=_QUIZ,
     ))
     await db_session.flush()
 
