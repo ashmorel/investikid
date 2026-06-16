@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     # LLM / AI — premium tier (OpenAI or Anthropic)
     llm_premium_provider: str = "openai"  # "openai" | "anthropic"
     llm_premium_api_key: str = ""
-    llm_premium_model: str = "gpt-4o"
+    llm_premium_model: str = "gpt-4o-mini"
     # Parent social login (public client identifiers — NOT secrets)
     google_web_client_id: str = ""
     google_ios_client_id: str = ""
