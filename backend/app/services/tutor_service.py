@@ -13,6 +13,11 @@ from app.models.skill_profile import TopicMastery
 from app.models.tutor import TutorConversation
 from app.models.user import User
 from app.services import llm_usage
+from app.services.guardrails import (
+    log_guardrail_event,
+    screen_input,
+    with_guardrail_preamble,
+)
 from app.services.llm_client import get_llm_client, get_model_name
 from app.services.moderation import moderate_output
 
@@ -120,6 +125,31 @@ async def chat(
             + ("Upgrade to premium for more!" if not premium else "Limit reached for this conversation.")
         )
 
+    # Pre-LLM topical/safety gate: hard-block injection + unsafe categories.
+    verdict = screen_input(message, surface="tutor")
+    if verdict.blocked:
+        log_guardrail_event(
+            action="input_block", surface="tutor",
+            category=verdict.category, child_id=user.id,
+        )
+        conversation.messages = [
+            *(conversation.messages or []),
+            {"role": "user", "content": "[message removed by safety filter]"},
+            {"role": "assistant", "content": verdict.reply},
+        ]
+        conversation.message_count += 2
+        session.add(AuditLog(
+            user_id=user.id,
+            event_type="moderation_block",
+            metadata_json={"surface": "tutor", "category": verdict.category, "stage": "input"},
+        ))
+        await session.flush()
+        return {
+            "response": verdict.reply,
+            "conversation_id": conversation.id,
+            "messages_remaining": max(0, max_messages - conversation.message_count),
+        }
+
     # Get mastery for tone adaptation
     mastery = await session.get(TopicMastery, (user.id, topic))
     mastery_score = mastery.mastery_score if mastery else 0.0
@@ -142,10 +172,12 @@ async def chat(
     weak_concepts = [w.concept for w in weak_rows]
 
     # Build system prompt
-    system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(
-        skill_level_instruction=_SKILL_INSTRUCTIONS[level],
-        lesson_content=json.dumps(lesson.content_json or {}),
-    ) + _build_weak_concept_addendum(weak_concepts)
+    system_prompt = with_guardrail_preamble(
+        _SYSTEM_PROMPT_TEMPLATE.format(
+            skill_level_instruction=_SKILL_INSTRUCTIONS[level],
+            lesson_content=json.dumps(lesson.content_json or {}),
+        ) + _build_weak_concept_addendum(weak_concepts)
+    )
 
     # Build message history
     history = [
@@ -167,6 +199,10 @@ async def chat(
     _mod = await moderate_output(raw_response, surface="tutor")
     filtered_response = _mod.text
     if not _mod.safe:
+        log_guardrail_event(
+            action="output_block", surface="tutor",
+            category=_mod.category, child_id=user.id,
+        )
         session.add(AuditLog(
             user_id=user.id,
             event_type="moderation_block",

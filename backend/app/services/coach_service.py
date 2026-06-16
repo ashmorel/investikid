@@ -16,6 +16,11 @@ from app.models.user import User
 from app.services import llm_usage
 from app.services.age_tier import AGE_REGISTER_DIRECTIVE
 from app.services.gap_detection_service import get_strengths_and_gaps
+from app.services.guardrails import (
+    log_guardrail_event,
+    screen_input,
+    with_guardrail_preamble,
+)
 from app.services.llm_client import get_llm_client, get_model_name
 from app.services.moderation import moderate_output
 from app.services.recommendation_service import get_recommendations
@@ -195,6 +200,34 @@ async def coach_chat(
             + ("Upgrade to premium for more!" if not premium else "Limit reached for this conversation.")
         )
 
+    # Pre-LLM topical/safety gate. surface="tutor" intentionally borrows the
+    # tutor safe-fallback reply (there is no "coach" key in _SAFE_FALLBACKS);
+    # the audit/log calls below still record surface="coach".
+    verdict = screen_input(message, surface="tutor")
+    if verdict.blocked:
+        log_guardrail_event(
+            action="input_block", surface="coach",
+            category=verdict.category, child_id=user.id,
+        )
+        session.add(AuditLog(
+            user_id=user.id,
+            event_type="moderation_block",
+            metadata_json={"surface": "coach", "category": verdict.category, "stage": "input"},
+        ))
+        conversation.messages = [
+            *(conversation.messages or []),
+            {"role": "user", "content": "[message removed by safety filter]"},
+            {"role": "assistant", "content": verdict.reply},
+        ]
+        conversation.message_count += 2
+        await session.flush()
+        return {
+            "response": verdict.reply,
+            "conversation_id": conversation.id,
+            "messages_remaining": max(0, max_messages - conversation.message_count),
+            "actions": [],
+        }
+
     # Gather learning context
     recs = await get_recommendations(session, user)
     gaps = await get_strengths_and_gaps(session, user.id)
@@ -253,7 +286,9 @@ async def coach_chat(
         skill_level_instruction=_SKILL_INSTRUCTIONS[level],
         learning_state_context=context_block,
     )
-    system_prompt = f"{system_prompt}\n\n{AGE_REGISTER_DIRECTIVE[user.age_tier]}"
+    system_prompt = with_guardrail_preamble(
+        f"{system_prompt}\n\n{AGE_REGISTER_DIRECTIVE[user.age_tier]}"
+    )
 
     # Build message history
     history = [
@@ -275,6 +310,10 @@ async def coach_chat(
     _mod = await moderate_output(raw_response, surface="tutor")
     filtered_response = _mod.text
     if not _mod.safe:
+        log_guardrail_event(
+            action="output_block", surface="coach",
+            category=_mod.category, child_id=user.id,
+        )
         session.add(AuditLog(
             user_id=user.id,
             event_type="moderation_block",

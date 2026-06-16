@@ -1,5 +1,6 @@
 from app.services import llm_usage
 from app.services.age_tier import AGE_REGISTER_DIRECTIVE, AgeTier
+from app.services.guardrails import log_guardrail_event, with_guardrail_preamble
 from app.services.llm_client import get_llm_client
 from app.services.moderation import moderate_output
 
@@ -28,7 +29,7 @@ def _build_messages(
         f"Concepts due for review: {due_count}."
     )
     messages = [{"role": "user", "content": context}]
-    return system_prompt, messages
+    return with_guardrail_preamble(system_prompt), messages
 
 
 @llm_usage.surface("home_greeting")
@@ -66,5 +67,9 @@ async def generate_home_greeting(
 
     _mod = await moderate_output(text, surface="coach")
     if not _mod.safe:
+        log_guardrail_event(
+            action="output_block", surface="home_greeting",
+            category=_mod.category, child_id=None,
+        )
         raise ValueError("greeting blocked by moderation")
     return _mod.text[:_MAX_LEN]

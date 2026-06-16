@@ -52,6 +52,7 @@ from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
 )
+from app.services.guardrails import log_guardrail_event, with_guardrail_preamble
 from app.services.llm_client import LLMError, get_llm_client
 from app.services.moderation import moderate_output
 from app.services.premium_config import premium_required_error
@@ -248,7 +249,7 @@ async def get_news_summary(
     llm = get_llm_client(tier="lite")
     try:
         summary = await llm.complete(
-            system_prompt=system_prompt,
+            system_prompt=with_guardrail_preamble(system_prompt),
             messages=[{"role": "user", "content": f"Here are today's headlines about my stocks:\n{headlines}"}],
             temperature=0.5,
             max_tokens=200,
@@ -260,6 +261,10 @@ async def get_news_summary(
     # AuditLog moderation_block row is written when the model output is unsafe.
     _mod = await moderate_output(summary.strip(), surface="news_summary")
     if not _mod.safe:
+        log_guardrail_event(
+            action="output_block", surface="news_summary",
+            category=_mod.category, child_id=current_user.id,
+        )
         session.add(AuditLog(
             user_id=current_user.id,
             event_type="moderation_block",
@@ -319,7 +324,7 @@ async def get_stock_news_summary(
     llm = get_llm_client(tier="lite")
     try:
         summary = await llm.complete(
-            system_prompt=system_prompt,
+            system_prompt=with_guardrail_preamble(system_prompt),
             messages=[{"role": "user", "content": f"Recent news about {ticker}:\n{headlines}"}],
             temperature=0.5,
             max_tokens=200,
@@ -391,7 +396,7 @@ async def get_chart_guide(
     llm = get_llm_client(tier="standard")
     try:
         summary = await llm.complete(
-            system_prompt=system_prompt,
+            system_prompt=with_guardrail_preamble(system_prompt),
             messages=[{"role": "user", "content": f"Here's the chart data:\n{stats}"}],
             temperature=0.7,
             max_tokens=250,
@@ -523,7 +528,7 @@ async def get_time_machine(
         llm = get_llm_client(tier="lite")
         try:
             fun_fact = await llm.complete(
-                system_prompt=(
+                system_prompt=with_guardrail_preamble(
                     f"You are a friendly investing teacher for a {age}-year-old. "
                     "Write ONE short, fun 'Did you know?' fact comparing the investment return to "
                     "something relatable for a young person (university fees, a car, a holiday, "

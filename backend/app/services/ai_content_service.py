@@ -14,6 +14,7 @@ from app.models.generated_content import GeneratedContent
 from app.models.user import User
 from app.services import llm_usage
 from app.services.content_variety_service import resolve_variant
+from app.services.guardrails import with_guardrail_preamble
 from app.services.llm_client import LLMError, get_llm_client, get_model_name
 from app.services.moderation import moderate_output
 
@@ -103,7 +104,7 @@ async def generate_practice_quiz(
     for attempt in range(2):
         try:
             raw = await client.complete(
-                system_prompt=_SYSTEM_PROMPT,
+                system_prompt=with_guardrail_preamble(_SYSTEM_PROMPT),
                 messages=[{"role": "user", "content": user_message}],
                 temperature=0.3,
                 max_tokens=400,

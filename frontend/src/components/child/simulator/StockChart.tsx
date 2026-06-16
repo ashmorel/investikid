@@ -42,7 +42,7 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
     staleTime: 5 * 60 * 1000,
   });
 
-  const points = data ?? [];
+  const points = (data ?? []).filter((p) => Number.isFinite(p.close));
   const hasData = points.length >= 2;
 
   const startPrice = hasData ? points[0].close : 0;
