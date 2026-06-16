@@ -45,3 +45,13 @@ async def test_revise_modules_empty_for_new_user(child_client):
     resp = await client.get("/revise/modules")
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+async def test_revise_session_requires_auth(client):
+    resp = await client.get("/revise/session")
+    assert resp.status_code in (401, 403)
+
+
+async def test_revise_answer_requires_auth(client):
+    resp = await client.post("/revise/answer", json={"ref": "x", "selected_index": 0})
+    assert resp.status_code in (401, 403)

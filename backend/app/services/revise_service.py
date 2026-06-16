@@ -110,12 +110,14 @@ async def list_revisable_modules(session: AsyncSession, user: User) -> list[dict
     modules = (await session.scalars(
         select(Module).where(Module.id.in_(comp_modules))
     )).all()
+    now = datetime.now(UTC)
     rows = (await session.execute(
         select(WeakConcept.topic, func.count(SpacedRepetitionItem.id))
         .join(SpacedRepetitionItem, SpacedRepetitionItem.weak_concept_id == WeakConcept.id)
         .where(
+            WeakConcept.user_id == user.id,
             SpacedRepetitionItem.user_id == user.id,
-            SpacedRepetitionItem.next_review_at <= func.now(),
+            SpacedRepetitionItem.next_review_at <= now,
             WeakConcept.resolved == False,  # noqa: E712
         )
         .group_by(WeakConcept.topic)
