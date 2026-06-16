@@ -41,6 +41,10 @@ async def test_returns_variant_rung_and_caches_under_variant_key(db_session, mon
             return json.dumps(_QUIZ)
 
     monkeypatch.setattr(ai_content_service, "get_llm_client", lambda **k: FakeClient())
+    # The strict premium verifier (no args) must be present, else generation is
+    # short-circuited to the authored question and nothing is cached. FakeClient
+    # echoes _QUIZ (answer_index 0), so the verifier agrees and the row caches.
+    monkeypatch.setattr(ai_content_service, "get_strict_premium_client", lambda: FakeClient())
 
     async def safe_mod(*a, **k):
         from app.services.moderation import ModerationResult
