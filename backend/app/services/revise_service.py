@@ -4,16 +4,19 @@ import base64
 import json
 import logging
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import Lesson, LessonCompletion, Module
 from app.models.skill_profile import WeakConcept
-from app.models.user import User
+from app.models.user import User, UserProgress
 from app.services.ai_content_service import generate_practice_quiz
+from app.services.content_service import record_daily_activity
 from app.services.entitlements import is_premium
-from app.services.spaced_repetition_service import get_due_items
+from app.services.spaced_repetition_service import get_due_items, record_review
+from app.services.xp_service import record_xp
 
 logger = logging.getLogger(__name__)
 
@@ -158,3 +161,57 @@ async def build_session(
         if len(items) >= SESSION_CAP:
             break
     return items
+
+
+async def record_answer(
+    session: AsyncSession, user: User, ref: str, selected_index: int
+) -> dict:
+    data = decode_ref(ref)
+    lesson = await session.get(Lesson, uuid.UUID(data["lesson_id"]))
+    if lesson is None:
+        raise ValueError("lesson not found")
+    quiz = await generate_practice_quiz(
+        session, lesson, user=user, topic=data["topic"],
+        concept=data["concept"], premium=is_premium(user),
+    )
+    answer_index = quiz["answer_index"]
+    correct = selected_index == answer_index
+
+    if data["kind"] == "weak" and data.get("weak_concept_id"):
+        await record_review(session, user.id,
+                            uuid.UUID(data["weak_concept_id"]), correct=correct)
+    elif data["kind"] == "refresher" and not correct:
+        wc = await session.scalar(
+            select(WeakConcept).where(
+                WeakConcept.user_id == user.id, WeakConcept.topic == data["topic"],
+                WeakConcept.concept == data["concept"],
+            )
+        )
+        if wc is None:
+            wc = WeakConcept(user_id=user.id, topic=data["topic"], concept=data["concept"])
+            session.add(wc)
+            await session.flush()
+        await record_review(session, user.id, wc.id, correct=False)
+
+    xp_awarded = 0
+    goal_met = False
+    if correct:
+        progress = await session.get(UserProgress, user.id)
+        if progress is None:
+            progress = UserProgress(user_id=user.id)
+            session.add(progress)
+            await session.flush()
+        today = datetime.now(UTC).date()
+        xp = record_xp(progress, XP_PER_CORRECT, today=today)
+        record_daily_activity(progress, today)
+        xp_awarded = xp.awarded
+        goal_met = xp.goal_met_today
+
+    await session.commit()
+    return {
+        "correct": correct,
+        "answer_index": answer_index,
+        "explanation": quiz.get("explanation", ""),
+        "xp_awarded": xp_awarded,
+        "goal_met": goal_met,
+    }
