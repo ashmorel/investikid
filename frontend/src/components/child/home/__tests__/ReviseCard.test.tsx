@@ -25,6 +25,12 @@ it('hides when nothing is revisable', () => {
   expect(container).toBeEmptyDOMElement();
 });
 
+it('hides while loading (data undefined)', () => {
+  mockHook.mockReturnValue({ data: undefined });
+  const { container } = renderCard();
+  expect(container).toBeEmptyDOMElement();
+});
+
 it('leads with the weak count when due, and is accessible', async () => {
   mockHook.mockReturnValue({
     data: [{ module_id: 'm', title: 'Stocks', icon: '📈', topic: 'stocks', due_weak_count: 2 }],
