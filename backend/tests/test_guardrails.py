@@ -1,6 +1,14 @@
+import logging
+
 import pytest
 
-from app.services.guardrails import InputVerdict, screen_input
+from app.services.guardrails import (
+    GUARDRAIL_PREAMBLE,
+    InputVerdict,
+    log_guardrail_event,
+    screen_input,
+    with_guardrail_preamble,
+)
 
 # --- Messages that MUST be hard-blocked pre-LLM ---
 BLOCK_CASES = [
@@ -66,3 +74,36 @@ def test_input_verdict_is_frozen():
     v = InputVerdict(False, None, "")
     with pytest.raises(AttributeError):
         v.blocked = True  # type: ignore[misc]
+
+
+def test_with_guardrail_preamble_prepends():
+    composed = with_guardrail_preamble("SURFACE RULES HERE")
+    assert composed.startswith(GUARDRAIL_PREAMBLE)
+    assert composed.endswith("SURFACE RULES HERE")
+    assert "\n\n" in composed
+
+
+def test_log_guardrail_event_structured_no_pii(caplog):
+    with caplog.at_level(logging.INFO, logger="app.services.guardrails"):
+        log_guardrail_event(
+            action="input_block", surface="tutor",
+            category="prompt_injection", child_id=42,
+        )
+    rec = caplog.records[-1]
+    msg = rec.getMessage()
+    assert "action=input_block" in msg
+    assert "surface=tutor" in msg
+    assert "category=prompt_injection" in msg
+    assert "child=" in msg
+    assert "42" not in msg  # raw child id never logged
+
+
+def test_log_guardrail_event_anon_child():
+    # child_id=None must not raise and must log child=anon
+    log_guardrail_event(action="output_block", surface="tips", category=None, child_id=None)
+
+
+def test_log_guardrail_event_none_category(caplog):
+    with caplog.at_level(logging.INFO, logger="app.services.guardrails"):
+        log_guardrail_event(action="redirect", surface="tutor", category=None, child_id=1)
+    assert "category=none" in caplog.records[-1].getMessage()
