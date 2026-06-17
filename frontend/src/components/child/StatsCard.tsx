@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { isStreakActive } from '@/lib/streak';
 import { tierConfig, useAgeTier } from '@/lib/ageTier';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ type Props = {
 const XP_FOR_NEXT = 100;
 
 export function StatsCard({ xp, level, streakCount, streakFreezes, lastActivityDate, dailyGoalXp = 30, xpToday = 0, today }: Props) {
+  const { t } = useTranslation('home');
   const tier = useAgeTier();
   const emoji = tierConfig[tier].chipEmoji;
   const active = isStreakActive(lastActivityDate, today ?? new Date());
@@ -25,30 +27,30 @@ export function StatsCard({ xp, level, streakCount, streakFreezes, lastActivityD
   const goalMet = xpToday >= dailyGoalXp;
 
   return (
-    <div className="rounded-2xl border border-brand-200 bg-card p-4 shadow-sm" role="group" aria-label="Your progress">
+    <div className="rounded-2xl border border-brand-200 bg-card p-4 shadow-sm" role="group" aria-label={t('stats.ariaLabel')}>
       <div className="flex items-center justify-between gap-2">
         {/* Level chip */}
         <span className="flex items-center gap-1 text-sm font-extrabold text-ink">
-          {emoji && <span aria-hidden="true">⭐</span>}Level {level}
+          {emoji && <span aria-hidden="true">⭐</span>}{t('stats.level', { level })}
         </span>
 
         {/* Right cluster: streak + freeze chip */}
         <span className="flex items-center gap-1.5">
           <span className={cn('flex items-center gap-1.5 text-sm font-bold text-gray-700', !active && 'opacity-50')}>
             {emoji && <span aria-hidden="true">🔥</span>}
-            <span aria-label={active ? 'streak active' : 'streak inactive'}>
-              {streakCount}-day streak
+            <span aria-label={active ? t('stats.streakActive') : t('stats.streakInactive')}>
+              {t('stats.streak', { count: streakCount })}
             </span>
           </span>
           {streakFreezes > 0 && (
             <span
               role="img"
               className="text-sm font-bold text-gray-700"
-              aria-label={`${streakFreezes} streak freeze${streakFreezes === 1 ? '' : 's'} — saves your streak if you miss a day`}
+              aria-label={streakFreezes === 1 ? t('stats.freezeAriaLabel', { count: streakFreezes }) : t('stats.freezeAriaLabelPlural', { count: streakFreezes })}
             >
               {emoji
-                ? <span aria-hidden="true">🛡️ ×{streakFreezes}</span>
-                : `${streakFreezes} freeze${streakFreezes === 1 ? '' : 's'}`}
+                ? <><span aria-hidden="true">🛡</span><span aria-hidden="true"> ×</span>{streakFreezes}</>
+                : (streakFreezes === 1 ? t('stats.freezeText', { count: streakFreezes }) : t('stats.freezeTextPlural', { count: streakFreezes }))}
             </span>
           )}
         </span>
@@ -57,10 +59,10 @@ export function StatsCard({ xp, level, streakCount, streakFreezes, lastActivityD
       {/* Daily goal bar — the actionable element */}
       <div className="mt-2 flex items-center justify-between gap-2">
         <span className="text-xs font-bold text-gray-700">
-          Today: {xpToday} / {dailyGoalXp} XP
+          {t('stats.dailyGoal', { xpToday, dailyGoalXp })}
         </span>
         <span aria-live="polite" className={goalMet ? 'text-xs font-extrabold text-success-700' : 'sr-only'}>
-          {goalMet ? (emoji ? 'Goal met! ⭐' : 'Goal met') : ''}
+          {goalMet ? (emoji ? t('stats.goalMet') : t('stats.goalMetSimple')) : ''}
         </span>
       </div>
       <div
@@ -69,7 +71,7 @@ export function StatsCard({ xp, level, streakCount, streakFreezes, lastActivityD
         aria-valuenow={Math.min(xpToday, dailyGoalXp)}
         aria-valuemin={0}
         aria-valuemax={dailyGoalXp}
-        aria-label="Daily goal progress"
+        aria-label={t('stats.dailyGoalAriaLabel')}
       >
         <div
           className={`h-full rounded-full transition-all ${goalMet ? 'bg-success-500' : 'bg-brand-gradient'}`}
@@ -78,7 +80,7 @@ export function StatsCard({ xp, level, streakCount, streakFreezes, lastActivityD
       </div>
 
       <p className="mt-1.5 text-right text-[11px] font-semibold text-muted-foreground">
-        {xpInLevel} / {XP_FOR_NEXT} XP · {toGo} XP to Level {level + 1}
+        {t('stats.xpProgress', { xpInLevel, xpForNext: XP_FOR_NEXT, toGo, nextLevel: level + 1 })}
       </p>
     </div>
   );

@@ -1,0 +1,63 @@
+{
+  "pageTitle": "Your learning home",
+  "browseAll": "Browse all modules →",
+
+  "hero": {
+    "allCaughtUp": "All caught up",
+    "allCaughtUpSub": "You've finished everything for now!",
+    "reviewConcepts": "Review concepts",
+    "exploreModules": "Explore modules",
+    "continueLearning": "Continue learning",
+    "continue": "Continue",
+    "startHere": "Start here",
+    "continueCta": "Continue",
+    "startLessonCta": "Start lesson",
+    "nextLesson": "Your next lesson"
+  },
+
+  "stats": {
+    "ariaLabel": "Your progress",
+    "level": "Level {{level}}",
+    "streakActive": "streak active",
+    "streakInactive": "streak inactive",
+    "streak": "{{count}}-day streak",
+    "freezeAriaLabel": "{{count}} streak freeze — saves your streak if you miss a day",
+    "freezeAriaLabelPlural": "{{count}} streak freezes — saves your streak if you miss a day",
+    "freezeText": "{{count}} freeze",
+    "freezeTextPlural": "{{count}} freezes",
+    "dailyGoal": "Today: {{xpToday}} / {{dailyGoalXp}} XP",
+    "goalMet": "Goal met! ⭐",
+    "goalMetSimple": "Goal met",
+    "dailyGoalAriaLabel": "Daily goal progress",
+    "xpProgress": "{{xpInLevel}} / {{xpForNext}} XP · {{toGo}} XP to Level {{nextLevel}}"
+  },
+
+  "quickLinks": {
+    "heading": "While you're here",
+    "portfolio": "Portfolio",
+    "review": "{{count}} to review",
+    "badges": "Badges",
+    "badgesCount": "{{earned}} of {{total}}"
+  },
+
+  "revise": {
+    "conceptsToPractice": "{{count}} concept to practice",
+    "conceptsToPracticePlural": "{{count}} concepts to practice",
+    "keepFresh": "Keep your learning fresh",
+    "subDue": "A quick 5-question revision keeps your streak going.",
+    "subCaughtUp": "Revise a few things you've learned.",
+    "ariaLabel": "Revise: {{headline}}"
+  },
+
+  "upsell": {
+    "message": "Unlock all levels & the AI coach",
+    "cta": "Ask my grown-up",
+    "dismiss": "Dismiss"
+  },
+
+  "eventStrip": {
+    "ariaLabel": "Seasonal event: {{title}}",
+    "ariaLabelWithBonus": "Seasonal event: {{title}}, {{pct}} percent bonus XP",
+    "xpBonus": " — +{{pct}}% XP!"
+  }
+}

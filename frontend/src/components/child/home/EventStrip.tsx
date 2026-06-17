@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { apiFetch } from '@/api/client';
 import { tierConfig, useAgeTier } from '@/lib/ageTier';
 
@@ -12,6 +13,7 @@ type SeasonalEvent = {
 /** Slim seasonal-event banner (M9). Renders ONLY while an event is active, so
  * it never competes with the Home hero outside event weeks. */
 export function EventStrip() {
+  const { t } = useTranslation('home');
   const tier = useAgeTier();
   const emoji = tierConfig[tier].chipEmoji;
   const { data } = useQuery<{ event: SeasonalEvent | null } | null>({
@@ -26,12 +28,12 @@ export function EventStrip() {
   return (
     <p
       role="status"
-      aria-label={`Seasonal event: ${event.title}${event.xp_bonus_pct ? `, ${event.xp_bonus_pct} percent bonus XP` : ''}`}
+      aria-label={event.xp_bonus_pct ? t('eventStrip.ariaLabelWithBonus', { title: event.title, pct: event.xp_bonus_pct }) : t('eventStrip.ariaLabel', { title: event.title })}
       className="mb-3 flex min-h-[36px] items-center justify-center gap-1.5 rounded-xl bg-accent-100 px-3 py-1.5 text-center text-xs font-extrabold text-accent-700"
     >
       {emoji && event.emoji && <span aria-hidden="true">{event.emoji} </span>}
       {event.title}
-      {event.xp_bonus_pct > 0 && <span> — +{event.xp_bonus_pct}% XP!</span>}
+      {event.xp_bonus_pct > 0 && <span>{t('eventStrip.xpBonus', { pct: event.xp_bonus_pct })}</span>}
     </p>
   );
 }
