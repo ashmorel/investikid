@@ -253,8 +253,8 @@ export function ProfileMenu({ username }: { username: string }) {
         </button>
         <ConfirmDialog
           open={confirmReset}
-          title="Start fresh?"
-          message={`Start your practice portfolio over in ${currentCurrency}? This clears your current play holdings and history. Your XP and badges are safe.`}
+          title={t('resetConfirm.title')}
+          message={t('resetConfirm.message', { currency: currentCurrency })}
           onConfirm={() => resetPf.mutate()}
           onCancel={() => setConfirmReset(false)}
         />

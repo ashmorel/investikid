@@ -1,6 +1,10 @@
+// Use the real react-i18next library (not the global catalog mock) so that
+// initI18n wiring is exercised against the genuine i18next stack.
+vi.unmock('react-i18next');
+
 import { render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { useTranslation } from 'react-i18next';
 import { i18n, initI18n } from '../../src/i18n';
 
