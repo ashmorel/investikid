@@ -15,6 +15,7 @@ export function LanguageSwitcher() {
         id="settings-language"
         value={current}
         onChange={(e) => void setLanguage(e.target.value as LanguageCode)}
+        aria-describedby="settings-language-help"
         className="h-11 w-full rounded-md border border-input bg-background px-3 text-base"
       >
         {AVAILABLE_LANGUAGES.map((l) => (
@@ -23,7 +24,7 @@ export function LanguageSwitcher() {
           </option>
         ))}
       </select>
-      <p className="text-xs text-muted-foreground">{t('language.help')}</p>
+      <p id="settings-language-help" className="text-xs text-muted-foreground">{t('language.help')}</p>
     </div>
   );
 }

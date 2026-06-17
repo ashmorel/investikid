@@ -19,7 +19,7 @@ import { ErrorBanner } from '@/components/ErrorBanner';
 import { useToast } from '@/hooks/use-toast';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 import { SignInMethods } from '@/components/parent/SignInMethods';
-import { LanguageSwitcher } from '../components/settings/LanguageSwitcher';
+import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
 import { GroupsCard } from '@/components/parent/GroupsCard';
 import { NotificationPreferencesCard } from '@/components/parent/NotificationPreferencesCard';
 import { PremiumRequestsCard } from '@/components/parent/PremiumRequestsCard';
