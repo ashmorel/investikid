@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, Sparkles } from 'lucide-react';
 import { simulatorApi, type StockNews as StockNewsType, type NewsSummary } from '@/api/simulator';
@@ -19,6 +20,7 @@ type Props = {
 };
 
 export function StockNewsSection({ exchange, ticker }: Props) {
+  const { t } = useTranslation('simulator');
   const { data: news, isLoading: newsLoading } = useQuery<StockNewsType[] | null>({
     queryKey: ['stock-news', exchange, ticker],
     queryFn: () => simulatorApi.getStockNews(exchange, ticker),
@@ -36,7 +38,7 @@ export function StockNewsSection({ exchange, ticker }: Props) {
   if (newsLoading) {
     return (
       <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
-        <p className="text-sm text-muted-foreground">Loading news…</p>
+        <p className="text-sm text-muted-foreground">{t('stockNews.loading')}</p>
       </div>
     );
   }
@@ -47,21 +49,21 @@ export function StockNewsSection({ exchange, ticker }: Props) {
     <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
       <div className="mb-3 flex items-center gap-2">
         <Newspaper className="h-5 w-5 text-brand-700" />
-        <h3 className="text-base font-semibold text-gray-800">{ticker} News</h3>
+        <h3 className="text-base font-semibold text-gray-800">{t('stockNews.heading', { ticker })}</h3>
       </div>
 
       {summaryLoading ? (
         <div className="mb-4 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-brand-50 p-4">
           <div className="flex items-center gap-2 text-purple-700">
             <Sparkles className="h-4 w-4 animate-pulse" />
-            <span className="text-sm font-medium">AI is reading the news…</span>
+            <span className="text-sm font-medium">{t('stockNews.aiReading')}</span>
           </div>
         </div>
       ) : summary?.summary ? (
         <div className="mb-4 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-brand-50 p-4">
           <div className="mb-2 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-purple-600" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-purple-700">AI Summary</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-purple-700">{t('stockNews.aiSummaryLabel')}</span>
           </div>
           <p className="text-sm leading-relaxed text-gray-700">{summary.summary}</p>
         </div>

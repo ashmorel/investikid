@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { EduTooltip } from './EduTooltip';
 import { formatCurrency } from '@/lib/currency';
 
@@ -14,6 +15,7 @@ type StockHeaderProps = {
 export function StockHeader({
   name, ticker, exchange, price, currency, existingShares, existingAvgPrice,
 }: StockHeaderProps) {
+  const { t } = useTranslation('simulator');
   return (
     <div className="mb-6 rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
       <div className="flex items-center gap-2">
@@ -24,13 +26,13 @@ export function StockHeader({
       <div className="mt-2 flex items-center gap-2">
         <p className="text-3xl font-bold">{formatCurrency(price, currency)}</p>
         <EduTooltip
-          term="Price"
-          explanation="This is the current price for one share. In practice mode, prices stay the same so you can learn without surprises."
+          term={t('stockDetail.priceTooltipTerm')}
+          explanation={t('stockDetail.priceTooltipExplanation')}
         />
       </div>
       {existingShares && existingAvgPrice && (
         <p className="mt-2 text-sm text-muted-foreground">
-          You own {existingShares} shares · Avg buy {formatCurrency(existingAvgPrice, currency)}
+          {t('stockDetail.youOwn', { shares: existingShares, avgPrice: formatCurrency(existingAvgPrice, currency) })}
         </p>
       )}
     </div>

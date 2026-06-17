@@ -1,0 +1,265 @@
+{
+  "portfolio": {
+    "loading": "Loading portfolio…",
+    "practicePortfolio": "Practice Portfolio",
+    "playMoney": "· play money",
+    "thisWeek": "this week",
+    "holdingsTab": "Holdings",
+    "tradeHistoryTab": "Trade History"
+  },
+
+  "cashCard": {
+    "availableCash": "Available Cash",
+    "thisWeek": "This Week",
+    "multiCurrencyNote": "Total is approximate — converted at today's rates",
+    "browseStocks": "Browse stocks"
+  },
+
+  "holdings": {
+    "noStocksTitle": "No stocks yet!",
+    "noStocksBody": "Start by browsing the market and making your first trade.",
+    "browseMarket": "Browse Market →",
+    "sharesCount": "{{count}} shares",
+    "avgBuy": "avg {{value}}",
+    "marketValue": "value {{value}}",
+    "total": "Total",
+    "portfolioValue": "value {{value}}",
+    "col": {
+      "ticker": "Ticker",
+      "shares": "Shares",
+      "avgBuy": "Avg Buy",
+      "current": "Current",
+      "value": "Value",
+      "unrealizedPl": "Unrealized P/L",
+      "unrealizedPlTooltip": "This is how much you'd gain or lose if you sold now. It's 'unrealized' because you haven't sold yet."
+    }
+  },
+
+  "tradeHistory": {
+    "noTrades": "No trades yet.",
+    "tradeTooltipTerm": "Trade",
+    "tradeTooltipExplanation": "A trade is when you buy or sell shares of a stock.",
+    "buy": "Buy",
+    "sell": "Sell",
+    "sharesCount": "{{count}} shares"
+  },
+
+  "tradeForm": {
+    "buy": "Buy",
+    "sell": "Sell",
+    "tradeTypeLabel": "Trade type",
+    "availableCash": "Available cash",
+    "pricePerShare": "Price per share",
+    "youCanAfford": "You can afford",
+    "sharesAffordable": "{{count}} share",
+    "sharesAffordablePlural": "{{count}} shares",
+    "sharesOwned": "Shares owned",
+    "valueIfSold": "Value if sold",
+    "numberOfShares": "Number of shares",
+    "maxButton": "Max",
+    "sharesCalc": "{{count}} {{unit}} × {{price}} =",
+    "share": "share",
+    "shares": "shares",
+    "feeLine": "Fee ({{pct}}%): {{fee}}",
+    "totalCost": "Total: {{total}}",
+    "youReceive": "You'll receive ≈ {{amount}}",
+    "cashRemaining": "Cash remaining:",
+    "reviewTrade": "Review trade",
+    "validation": {
+      "atLeastOneShare": "Enter at least 1 share",
+      "insufficientCash": "Insufficient cash for this trade",
+      "insufficientShares": "Insufficient shares"
+    },
+    "review": {
+      "title": "Review Trade",
+      "buyShares": "Buy {{count}} shares of {{ticker}}",
+      "sellShares": "Sell {{count}} shares of {{ticker}}",
+      "pricePerShare": "Price per share: {{price}}",
+      "totalCost": "Total cost: {{amount}}",
+      "totalProceeds": "Total proceeds: {{amount}}",
+      "cashAfter": "Cash after trade: {{amount}}",
+      "tooltipTerm": "Review",
+      "tooltipExplanation": "Always review your trades before confirming. In real investing, you can't undo a trade!",
+      "confirm": "Confirm {{side}} of {{count}} shares",
+      "goBack": "Go back",
+      "submitting": "Submitting…"
+    },
+    "reflection": {
+      "title": "Selling at a loss",
+      "heading": "You'd be selling at a loss. What's your reason?",
+      "reasonGroupLabel": "Reason for selling",
+      "reason": {
+        "story": {
+          "label": "The company's story has changed",
+          "response": "A real reason to rethink — stories matter more than prices."
+        },
+        "cash": {
+          "label": "I need the cash for something else",
+          "response": "Fair — needing money is a real reason."
+        },
+        "fear": {
+          "label": "The price is falling and it scares me",
+          "response": "That's the one to watch: falling prices alone are often the worst reason to sell. Markets wobble; selling locks in the loss."
+        }
+      },
+      "confirmSell": "Confirm sell",
+      "cancel": "Cancel",
+      "submitting": "Submitting…"
+    }
+  },
+
+  "market": {
+    "loading": "Loading stocks…",
+    "heading": "Browse Stocks",
+    "refreshing": "Updating…",
+    "refreshPrices": "Refresh prices",
+    "searchPlaceholder": "Search any stock or company (e.g. Apple, Toyota, Samsung)…",
+    "searchLabel": "Search stocks",
+    "searchTypeMore": "Type one more character to search…",
+    "searchResults": "{{count}} result for \"{{query}}\"",
+    "searchResultsPlural": "{{count}} results for \"{{query}}\"",
+    "featuredSummary": "{{count}} featured stocks — search to find any stock worldwide",
+    "stocksAvailable": "{{count}} stocks available",
+    "searching": "Searching…",
+    "noResultsSearch": "No stocks found for \"{{query}}\". Try a different name or ticker.",
+    "noStocks": "No stocks available.",
+    "moreMarkets": "More markets",
+    "popularPrefix": "Popular ",
+    "backLabel": "Simulator"
+  },
+
+  "marketMovers": {
+    "loading": "Loading market movers…",
+    "topGainers": "Top Gainers",
+    "topLosers": "Top Losers",
+    "sectionTitle": "What's moving today"
+  },
+
+  "marketNews": {
+    "loading": "Loading news…",
+    "aiSummaryLabel": "AI Summary",
+    "aiReading": "AI is reading the news for you…",
+    "sectionTitle": "News for your stocks"
+  },
+
+  "investingTips": {
+    "sectionTitle": "Investing Tips",
+    "chartLabel": "{{ticker}} · 5yr",
+    "newTips": "New tips",
+    "forYou": "For you",
+    "groupLabel": "Investing tips",
+    "tipIndicator": "Go to tip {{n}}",
+    "pauseTips": "Pause tips",
+    "playTips": "Play tips",
+    "loadingChart": "Loading chart…",
+    "getTips": "Get new tips"
+  },
+
+  "stockDetail": {
+    "loading": "Loading…",
+    "notFound": "Stock not found.",
+    "notAvailable": "This stock isn't available in practice mode.",
+    "backLabel": "Market",
+    "youOwn": "You own {{shares}} shares · Avg buy {{avgPrice}}",
+    "priceTooltipTerm": "Price",
+    "priceTooltipExplanation": "This is the current price for one share. In practice mode, prices stay the same so you can learn without surprises.",
+    "toast": {
+      "tradeSuccess": "Nice trade!",
+      "tradeSuccessDefault": "Trade executed!",
+      "tradeSuccessDefaultDesc": "Your {{ticker}} trade was successful."
+    }
+  },
+
+  "stockChart": {
+    "loading": "Loading chart…",
+    "noData": "No price data available for this period",
+    "priceHistory": "Price History"
+  },
+
+  "stockNews": {
+    "loading": "Loading news…",
+    "aiSummaryLabel": "AI Summary",
+    "aiReading": "AI is reading the news…",
+    "heading": "{{ticker}} News"
+  },
+
+  "chartGuide": {
+    "heading": "Learn to Read Charts",
+    "aiAnalysing": "AI is analysing this chart for you…",
+    "aiInsightLabel": "AI Chart Insight",
+    "askPenny": "Ask Coach Penny about this chart",
+    "tips": {
+      "trend": {
+        "title": "Reading the trend",
+        "tip": "If the line goes up from left to right, the price has been rising. If it goes down, the price has been falling. The steeper the line, the faster the change."
+      },
+      "colour": {
+        "title": "Green vs Red",
+        "tip": "A green chart means the price is higher now than at the start of the period — the stock gained value. Red means it lost value. Neither is permanently good or bad!"
+      },
+      "timePeriods": {
+        "title": "Time periods matter",
+        "tip": "A stock might look bad on a 1-day chart but great on a 1-year chart. Always check multiple time periods before forming an opinion."
+      },
+      "shadedArea": {
+        "title": "The shaded area",
+        "tip": "The coloured area under the line helps you see the overall trend at a glance. A large shaded area that grows means steady gains over time."
+      }
+    }
+  },
+
+  "chartCoach": {
+    "name": "Coach Penny",
+    "chartLabel": "{{ticker}} Chart",
+    "messagesLeft": "{{count}} messages left",
+    "closeButton": "✕",
+    "emptyPrompt": "Ask me anything about this {{ticker}} chart! 📊",
+    "thinking": "Thinking…",
+    "error": "Something went wrong. Try sending your message again.",
+    "placeholder": "Ask about the chart…",
+    "send": "Send"
+  },
+
+  "timeMachine": {
+    "heading": "Investment Time Machine",
+    "hypothetical": "If you'd invested $5,000 in {{ticker}}…",
+    "yearsAgo": "{{n}} years ago",
+    "didYouKnow": "Did you know?",
+    "usdEquivalent": "{{local}} · ${{usd}}"
+  },
+
+  "diversification": {
+    "label": "Diversification",
+    "ariaLabel": "Diversification level",
+    "ariaValueText": "{{filled}} of 5",
+    "body": "Spreading across more companies lowers the damage any one can do",
+    "bands": {
+      "none": "No investments yet",
+      "oneBasket": "All eggs in one basket",
+      "spread": "Getting spread out",
+      "nice": "Nicely diversified",
+      "well": "Well spread"
+    }
+  },
+
+  "growthProjection": {
+    "heading": "If your portfolio kept growing ~7% a year…",
+    "inYears": "In {{n}} years",
+    "disclaimer": "An illustration of compounding — not a prediction or a promise."
+  },
+
+  "portfolioChart": {
+    "heading": "Portfolio Value"
+  },
+
+  "portfolioHero": {
+    "practicePortfolio": "Practice Portfolio",
+    "playMoney": "· play money",
+    "thisWeek": "this week"
+  },
+
+  "mission": {
+    "ariaLabel": "Active mission",
+    "label": "Mission"
+  }
+}

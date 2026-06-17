@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { GradientButton } from '@/components/child/ui/GradientButton';
 import { QuickStatCard } from './QuickStatCard';
 import { formatCurrency } from '@/lib/currency';
@@ -10,20 +11,21 @@ type CashCardProps = {
 };
 
 export function CashCard({ virtualCash, currencyCode, hasMultiCurrency, weekChange }: CashCardProps) {
+  const { t } = useTranslation('simulator');
   return (
     <div>
       <div className="grid grid-cols-2 gap-3">
-        <QuickStatCard label="Available Cash" value={formatCurrency(virtualCash, currencyCode)} emoji="💵" />
+        <QuickStatCard label={t('cashCard.availableCash')} value={formatCurrency(virtualCash, currencyCode)} emoji="💵" />
         {weekChange ? (
-          <QuickStatCard label="This Week" value={weekChange.value} emoji="📈" tone={weekChange.up ? 'success' : 'danger'} />
+          <QuickStatCard label={t('cashCard.thisWeek')} value={weekChange.value} emoji="📈" tone={weekChange.up ? 'success' : 'danger'} />
         ) : (
-          <QuickStatCard label="This Week" value="—" />
+          <QuickStatCard label={t('cashCard.thisWeek')} value="—" />
         )}
       </div>
       {hasMultiCurrency && (
-        <p className="mt-2 text-xs italic text-muted-foreground">Total is approximate — converted at today's rates</p>
+        <p className="mt-2 text-xs italic text-muted-foreground">{t('cashCard.multiCurrencyNote')}</p>
       )}
-      <GradientButton to="/simulator/market" full className="mt-3">Browse stocks <span aria-hidden="true">→</span></GradientButton>
+      <GradientButton to="/simulator/market" full className="mt-3">{t('cashCard.browseStocks')} <span aria-hidden="true">→</span></GradientButton>
     </div>
   );
 }

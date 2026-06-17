@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown } from 'lucide-react';
@@ -29,6 +30,7 @@ function MoverRow({ mover, rank }: { mover: MarketMover; rank: number }) {
 }
 
 function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeMovers }) {
+  const { t } = useTranslation('simulator');
   if (!data.winners.length && !data.losers.length) return null;
   return (
     <div>
@@ -38,7 +40,7 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
           <div className="rounded-2xl border border-brand-100 bg-card shadow-sm p-3">
             <div className="mb-2 flex items-center gap-1.5 text-success-700">
               <TrendingUp className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wide">Top Gainers</span>
+              <span className="text-xs font-semibold uppercase tracking-wide">{t('marketMovers.topGainers')}</span>
             </div>
             <div className="-mx-1 divide-y divide-gray-100">
               {data.winners.map((m, i) => <MoverRow key={`${m.exchange}-${m.ticker}`} mover={m} rank={i + 1} />)}
@@ -49,7 +51,7 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
           <div className="rounded-2xl border border-brand-100 bg-card shadow-sm p-3">
             <div className="mb-2 flex items-center gap-1.5 text-danger-700">
               <TrendingDown className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wide">Top Losers</span>
+              <span className="text-xs font-semibold uppercase tracking-wide">{t('marketMovers.topLosers')}</span>
             </div>
             <div className="-mx-1 divide-y divide-gray-100">
               {data.losers.map((m, i) => <MoverRow key={`${m.exchange}-${m.ticker}`} mover={m} rank={i + 1} />)}
@@ -62,6 +64,7 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
 }
 
 export function MarketMovers({ region }: { region: RegionCode }) {
+  const { t } = useTranslation('simulator');
   const { data, isLoading } = useQuery<Record<string, ExchangeMovers> | null>({
     queryKey: ['market-movers', region],
     queryFn: () => simulatorApi.getMarketMovers(region),
@@ -72,7 +75,7 @@ export function MarketMovers({ region }: { region: RegionCode }) {
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-brand-100 bg-card shadow-sm p-4">
-        <p className="text-sm text-muted-foreground">Loading market movers…</p>
+        <p className="text-sm text-muted-foreground">{t('marketMovers.loading')}</p>
       </div>
     );
   }
@@ -82,7 +85,7 @@ export function MarketMovers({ region }: { region: RegionCode }) {
   const exchanges = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <SectionCard title="What's moving today" icon={TrendingUp}>
+    <SectionCard title={t('marketMovers.sectionTitle')} icon={TrendingUp}>
       <div className="space-y-5">
         {exchanges.map(([exchange, movers]) => (
           <ExchangeSection key={exchange} exchange={exchange} data={movers} />

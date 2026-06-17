@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, Sparkles } from 'lucide-react';
 import { simulatorApi, type StockNews, type NewsSummary } from '@/api/simulator';
@@ -48,6 +49,7 @@ function NewsCard({ item }: { item: StockNews }) {
 }
 
 function AiSummary() {
+  const { t } = useTranslation('simulator');
   const { data, isLoading } = useQuery<NewsSummary | null>({
     queryKey: ['news-summary'],
     queryFn: () => simulatorApi.getNewsSummary(),
@@ -60,7 +62,7 @@ function AiSummary() {
       <div className="mb-4 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-brand-50 p-4">
         <div className="flex items-center gap-2 text-purple-700">
           <Sparkles className="h-4 w-4 animate-pulse" />
-          <span className="text-sm font-medium">AI is reading the news for you…</span>
+          <span className="text-sm font-medium">{t('marketNews.aiReading')}</span>
         </div>
       </div>
     );
@@ -72,14 +74,14 @@ function AiSummary() {
     <div className="mb-4 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-brand-50 p-4">
       <div className="mb-2 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-purple-600" />
-        <span className="text-xs font-semibold uppercase tracking-wide text-purple-700">AI Summary</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-purple-700">{t('marketNews.aiSummaryLabel')}</span>
       </div>
       <p className="text-sm leading-relaxed text-gray-700">{data.summary}</p>
       {data.tickers_mentioned.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
-          {data.tickers_mentioned.map((t) => (
-            <span key={t} className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700">
-              {t}
+          {data.tickers_mentioned.map((ticker) => (
+            <span key={ticker} className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+              {ticker}
             </span>
           ))}
         </div>
@@ -89,6 +91,7 @@ function AiSummary() {
 }
 
 export function MarketNews() {
+  const { t } = useTranslation('simulator');
   const { data, isLoading } = useQuery<StockNews[] | null>({
     queryKey: ['market-news'],
     queryFn: () => simulatorApi.getMarketNews(),
@@ -99,7 +102,7 @@ export function MarketNews() {
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-brand-100 bg-card shadow-sm p-4">
-        <p className="text-sm text-muted-foreground">Loading news…</p>
+        <p className="text-sm text-muted-foreground">{t('marketNews.loading')}</p>
       </div>
     );
   }
@@ -107,7 +110,7 @@ export function MarketNews() {
   if (!data || data.length === 0) return null;
 
   return (
-    <SectionCard title="News for your stocks" icon={Newspaper} collapsible defaultOpen={false}>
+    <SectionCard title={t('marketNews.sectionTitle')} icon={Newspaper} collapsible defaultOpen={false}>
       <AiSummary />
       <div className="-mx-1 divide-y divide-gray-100">
         {data.map((item, i) => (
