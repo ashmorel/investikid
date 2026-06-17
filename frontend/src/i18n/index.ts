@@ -3,7 +3,7 @@ import type { Resource, ResourceLanguage } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import type { LanguageCode } from './languages';
 
-const NAMESPACES = ['common'] as const;
+const NAMESPACES = ['common', 'settings'] as const;
 
 // Statically-analyzable glob so Vite can tree-shake and bundle locale JSON
 // files properly. A fully-dynamic template-literal import would fail at build

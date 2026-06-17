@@ -1,0 +1,41 @@
+{
+  "interestArea": "Interest area",
+  "preferences": "Preferences",
+  "learningRegion": "Learning region",
+  "sounds": {
+    "label": "Sounds",
+    "help": "Fun little sound effects when you learn and trade. On by default."
+  },
+  "dailyGoal": {
+    "legend": "Daily goal",
+    "help": "How much XP you aim for each day."
+  },
+  "shop": {
+    "label": "Penny's Shop"
+  },
+  "startFresh": "Start fresh",
+  "reminders": {
+    "streak": "Daily streak reminder",
+    "streakHelp": "A friendly evening nudge if your streak is about to end. Off by default.",
+    "streakDenied": "Turn on notifications for InvestiKid in your device Settings to use reminders.",
+    "alerts": "Streak alerts from InvestiKid",
+    "alertsHelp": "One short heads-up if your streak is about to end. Your grown-up turned this option on. Off by default.",
+    "alertsDenied": "Turn on notifications for InvestiKid in your device Settings to use alerts."
+  },
+  "faceId": {
+    "label": "Sign in with Face ID",
+    "help": "Unlock InvestiKid with Face ID instead of your password. Your grown-up turned this on."
+  },
+  "nav": {
+    "profile": "Profile",
+    "sendFeedback": "Send Feedback",
+    "admin": "Admin",
+    "parentArea": "Parent area",
+    "logOut": "Log out"
+  },
+  "dialog": {
+    "title": "Your interest area"
+  },
+  "save": "Save",
+  "saving": "Saving…"
+}
