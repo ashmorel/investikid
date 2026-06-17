@@ -15,6 +15,7 @@ def _build_messages(
     streak_count: int,
     due_count: int,
     tier: AgeTier,
+    language: str = "en",
 ) -> tuple[str, list[dict]]:
     system_prompt = (
         "You are Coach Penny, a warm, encouraging piggy-bank money-skills buddy for a child. "
@@ -29,7 +30,7 @@ def _build_messages(
         f"Concepts due for review: {due_count}."
     )
     messages = [{"role": "user", "content": context}]
-    return with_guardrail_preamble(system_prompt), messages
+    return with_guardrail_preamble(system_prompt, language=language), messages
 
 
 @llm_usage.surface("home_greeting")
@@ -41,6 +42,7 @@ async def generate_home_greeting(
     streak_count: int,
     due_count: int,
     tier: AgeTier,
+    language: str = "en",
 ) -> str:
     """Premium AI greeting. Raises on provider/moderation failure so the caller
     can fall back to the client-side templated line."""
@@ -52,6 +54,7 @@ async def generate_home_greeting(
         streak_count=streak_count,
         due_count=due_count,
         tier=tier,
+        language=language,
     )
 
     # Exact completion call pattern from coach_service.coach_chat:
