@@ -115,7 +115,7 @@ async def test_generate_practice_quiz_uses_cache(db_session, lesson_fixture):
             "answer_index": 0,
             "explanation": "Cached.",
         },
-        model_used="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
+        model_used="gemini-2.5-flash",  # get_model_name("standard") — Gemini backbone
         variant_key="core:0:v4",  # current cache version (see _QUIZ_CACHE_VERSION)
     )
     db_session.add(cached)

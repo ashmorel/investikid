@@ -277,9 +277,29 @@ def _build_groq_client() -> OpenAIClient:
     )
 
 
+def _build_gemini_flash_lite_client() -> OpenAIClient:
+    return OpenAIClient(
+        api_key=settings.llm_gemini_api_key,
+        model=settings.llm_gemini_flash_lite_model,
+        base_url=settings.llm_gemini_base_url,
+        provider="gemini",
+    )
+
+
+def _build_gemini_flash_client() -> OpenAIClient:
+    return OpenAIClient(
+        api_key=settings.llm_gemini_api_key,
+        model=settings.llm_gemini_flash_model,
+        base_url=settings.llm_gemini_base_url,
+        provider="gemini",
+    )
+
+
 _PROVIDER_BUILDERS: dict[str, tuple] = {
     "together": (_build_together_client, lambda: settings.llm_together_api_key),
     "groq": (_build_groq_client, lambda: settings.llm_groq_api_key),
+    "gemini_flash_lite": (_build_gemini_flash_lite_client, lambda: settings.llm_gemini_api_key),
+    "gemini_flash": (_build_gemini_flash_client, lambda: settings.llm_gemini_api_key),
 }
 
 
@@ -301,7 +321,9 @@ def _build_chain(provider_csv: str) -> FallbackLLMClient:
 def get_model_name(tier: str = "lite") -> str:
     if tier == "premium":
         return settings.llm_premium_model
-    return settings.llm_together_model
+    if tier == "standard":
+        return settings.llm_gemini_flash_model
+    return settings.llm_gemini_flash_lite_model
 
 
 def get_llm_client(tier: str = "lite", *, premium: bool | None = None) -> LLMClient:
