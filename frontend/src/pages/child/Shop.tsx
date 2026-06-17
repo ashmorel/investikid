@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBuyCosmetic, useCosmetics, useEquipCosmetic, type CosmeticItem } from '@/api/cosmetics';
 import { BackButton } from '@/components/child/BackButton';
 import { Penny } from '@/components/child/ui/Penny';
@@ -7,6 +8,7 @@ import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 import { tierConfig, useAgeTier } from '@/lib/ageTier';
 
 export default function Shop() {
+  const { t } = useTranslation('child');
   const { data, isLoading, isError } = useCosmetics();
   const buy = useBuyCosmetic();
   const equip = useEquipCosmetic();
@@ -31,27 +33,27 @@ export default function Shop() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-      <BackButton to="/home" label="Home" />
+      <BackButton to="/home" label={t('nav.home')} />
       <div className="mt-2 flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-xl font-extrabold text-gray-900">
           <Penny size={36} accessory={equipped} />
-          {playful ? "Penny's Shop" : 'Shop'}
+          {playful ? t('shop.pageTitle') : t('shop.pageTitleSimple')}
         </h1>
         <span
           className="rounded-full bg-accent-100 px-3 py-1.5 text-sm font-extrabold text-accent-700"
-          aria-label={`${data?.coins ?? 0} coins`}
+          aria-label={t('shop.coinsAriaLabel', { count: data?.coins ?? 0 })}
         >
           <span aria-hidden="true">🪙 </span>{data?.coins ?? 0}
         </span>
       </div>
       <p className="mt-1 text-sm text-gray-600">
-        Earn coins by learning — 1 coin for every XP. Spend them on looks for Penny.
+        {t('shop.description')}
       </p>
 
-      {isLoading && <p className="mt-6 text-sm text-muted-foreground">Loading the shop…</p>}
+      {isLoading && <p className="mt-6 text-sm text-muted-foreground">{t('shop.loading')}</p>}
       {isError && (
         <p role="alert" className="mt-6 text-sm font-semibold text-red-700">
-          The shop is closed right now — try again shortly.
+          {t('shop.error')}
         </p>
       )}
 
@@ -60,10 +62,10 @@ export default function Shop() {
           {data.items.map((item) => {
             const affordable = data.coins >= item.coin_cost;
             const label = item.owned
-              ? item.equipped ? 'Take off' : 'Wear it'
+              ? item.equipped ? t('shop.itemLabel.takeOff') : t('shop.itemLabel.wearIt')
               : item.is_premium && !item.can_buy && affordable
-                ? 'Premium'
-                : affordable ? 'Buy' : 'Keep saving';
+                ? t('shop.itemLabel.premium')
+                : affordable ? t('shop.itemLabel.buy') : t('shop.itemLabel.keepSaving');
             return (
               <li
                 key={item.id}
@@ -76,7 +78,7 @@ export default function Shop() {
                 </p>
                 <p className="text-xs font-semibold text-gray-600">
                   <span aria-hidden="true">🪙 </span>{item.coin_cost}
-                  {item.is_premium && <span className="sr-only"> — Premium item</span>}
+                  {item.is_premium && <span className="sr-only">{t('shop.itemPremiumSr')}</span>}
                 </p>
                 <button
                   type="button"
@@ -100,8 +102,8 @@ export default function Shop() {
 
       <ConfirmDialog
         open={confirmItem !== null}
-        title={confirmItem ? `Buy ${confirmItem.name}?` : ''}
-        message={confirmItem ? `This costs ${confirmItem.coin_cost} coins. You have ${data?.coins ?? 0}.` : ''}
+        title={confirmItem ? t('shop.confirmTitle', { name: confirmItem.name }) : ''}
+        message={confirmItem ? t('shop.confirmMessage', { cost: confirmItem.coin_cost, balance: data?.coins ?? 0 }) : ''}
         onConfirm={() => {
           if (confirmItem) buy.mutate(confirmItem.id);
           setConfirmItem(null);

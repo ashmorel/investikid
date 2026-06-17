@@ -1,22 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BottomSheet } from '@/components/mobile/BottomSheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useToast } from '@/hooks/use-toast';
 import { useSubmitFeedback, type FeedbackType } from '@/api/feedback';
-
-const TYPE_OPTIONS: { value: FeedbackType; label: string }[] = [
-  { value: 'bug', label: 'Bug Report' },
-  { value: 'feature', label: 'Feature Request' },
-  { value: 'general', label: 'General Feedback' },
-];
-
-const PLACEHOLDER: Record<FeedbackType, string> = {
-  bug: 'Describe the bug you encountered…',
-  feature: 'What feature would you like to see?',
-  general: 'Share your thoughts…',
-};
 
 const MAX = 2000;
 
@@ -29,12 +18,25 @@ export function FeedbackDialog({
   onOpenChange: (open: boolean) => void;
   audience: 'child' | 'parent';
 }) {
+  const { t } = useTranslation('child');
   const isMobile = !useMediaQuery('(min-width: 768px)');
   const { toast } = useToast();
   const submit = useSubmitFeedback(audience);
   const [type, setType] = useState<FeedbackType>('bug');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  const TYPE_OPTIONS: { value: FeedbackType; label: string }[] = [
+    { value: 'bug', label: t('feedback.type.bug') },
+    { value: 'feature', label: t('feedback.type.feature') },
+    { value: 'general', label: t('feedback.type.general') },
+  ];
+
+  const PLACEHOLDER: Record<FeedbackType, string> = {
+    bug: t('feedback.placeholder.bug'),
+    feature: t('feedback.placeholder.feature'),
+    general: t('feedback.placeholder.general'),
+  };
 
   function reset() {
     setType('bug');
@@ -53,11 +55,11 @@ export function FeedbackDialog({
       { feedback_type: type, message, page_url: window.location.pathname },
       {
         onSuccess: () => {
-          toast({ title: 'Thanks for your feedback!' });
+          toast({ title: t('feedback.success') });
           reset();
           onOpenChange(false);
         },
-        onError: () => setError('Could not send feedback. Please try again.'),
+        onError: () => setError(t('feedback.error')),
       },
     );
   }
@@ -66,7 +68,7 @@ export function FeedbackDialog({
     <div className="space-y-4">
       <div className="space-y-1.5">
         <label htmlFor="feedback-type" className="text-sm font-medium">
-          Type
+          {t('feedback.typeLabel')}
         </label>
         <select
           id="feedback-type"
@@ -81,7 +83,7 @@ export function FeedbackDialog({
       </div>
       <div className="space-y-1.5">
         <label htmlFor="feedback-message" className="text-sm font-medium">
-          Message
+          {t('feedback.messageLabel')}
         </label>
         <textarea
           id="feedback-message"
@@ -104,20 +106,20 @@ export function FeedbackDialog({
         disabled={submit.isPending || message.trim().length === 0}
         onClick={handleSubmit}
       >
-        {submit.isPending ? 'Sending…' : 'Send Feedback'}
+        {submit.isPending ? t('feedback.sending') : t('feedback.submit')}
       </Button>
     </div>
   );
 
   return isMobile ? (
-    <BottomSheet open={open} onOpenChange={handleOpenChange} title="Send feedback">
+    <BottomSheet open={open} onOpenChange={handleOpenChange} title={t('feedback.title')}>
       {body}
     </BottomSheet>
   ) : (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Send feedback</DialogTitle>
+          <DialogTitle>{t('feedback.title')}</DialogTitle>
         </DialogHeader>
         {body}
       </DialogContent>

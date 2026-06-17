@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import type { GroupLeaderboard as Board } from '@/api/groups';
 import { GROUP } from '@/lib/groupConfig';
 import { cn } from '@/lib/utils';
 
 export function GroupLeaderboard({ boards }: { boards: Board[] }) {
+  const { t } = useTranslation('child');
   if (boards.length === 0) {
     return (
       <p className="rounded-2xl border border-brand-100 bg-card p-4 text-sm text-muted-foreground">
@@ -15,7 +17,7 @@ export function GroupLeaderboard({ boards }: { boards: Board[] }) {
       {boards.map((b) => (
         <section
           key={b.group_id}
-          aria-label={`${b.group_name} leaderboard`}
+          aria-label={t('groupLeaderboard.ariaLabel', { name: b.group_name })}
           className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm"
         >
           <h3 className="mb-2 text-sm font-extrabold text-gray-900">{b.group_name}</h3>
@@ -31,9 +33,9 @@ export function GroupLeaderboard({ boards }: { boards: Board[] }) {
                 <span>
                   <span className="mr-2 text-muted-foreground">{i + 1}.</span>
                   {e.username}
-                  {e.is_me && <span className="ml-2 text-xs text-brand-700">(you)</span>}
+                  {e.is_me && <span className="ml-2 text-xs text-brand-700">{t('groupLeaderboard.youLabel')}</span>}
                 </span>
-                <span className="font-semibold">{e.xp_this_week} XP</span>
+                <span className="font-semibold">{e.xp_this_week} {t('groupLeaderboard.xpThisWeek')}</span>
               </li>
             ))}
           </ol>
