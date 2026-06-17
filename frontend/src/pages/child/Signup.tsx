@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authApi, type RegisterBody, PRIVACY_NOTICE_VERSION } from '@/api/auth';
 import { TOPIC_OPTIONS } from '@/api/content';
 import { ApiError } from '@/api/client';
@@ -32,6 +33,7 @@ const COUNTRIES: ReadonlyArray<{ code: string; name: string; currency: string }>
 ];
 
 export default function Signup() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [step, setStep] = useState<1 | 2>(1);
@@ -123,40 +125,40 @@ export default function Signup() {
         setFieldError({ field: 'top', msg: err.detail });
         return;
       }
-      setFieldError({ field: 'top', msg: 'Something went wrong. Please try again.' });
+      setFieldError({ field: 'top', msg: t('signup.step2.genericError') });
     },
   });
 
   if (step === 1) {
     return (
-      <AuthPage title="Let's get you set up" subtitle="Step 1 of 2: your age and country.">
+      <AuthPage title={t('signup.title')} subtitle={t('signup.step1.subtitle')}>
         <form
           className="space-y-4"
           onSubmit={(e) => { e.preventDefault(); if (step1Valid) setStep(2); }}
         >
           <div className="space-y-1.5">
-            <span id="dob-label" className="text-sm font-medium leading-none">Date of birth</span>
+            <span id="dob-label" className="text-sm font-medium leading-none">{t('signup.step1.dobLabel')}</span>
             <div className="flex gap-2" role="group" aria-labelledby="dob-label">
-              <select required aria-label="Day"
+              <select required aria-label={t('signup.step1.dobDayAriaLabel')}
                 className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                 value={dobD} onChange={(e) => updateDob(dobY, dobM, e.target.value)}>
-                <option value="">Day</option>
+                <option value="">{t('signup.step1.dobDay')}</option>
                 {Array.from({ length: dobDayCount }, (_, i) => String(i + 1)).map((d) => (
                   <option key={d} value={d}>{d}</option>
                 ))}
               </select>
-              <select required aria-label="Month"
+              <select required aria-label={t('signup.step1.dobMonthAriaLabel')}
                 className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                 value={dobM} onChange={(e) => updateDob(dobY, e.target.value, dobD)}>
-                <option value="">Month</option>
+                <option value="">{t('signup.step1.dobMonth')}</option>
                 {MONTHS.map((name, i) => (
                   <option key={name} value={String(i + 1)}>{name}</option>
                 ))}
               </select>
-              <select required aria-label="Year"
+              <select required aria-label={t('signup.step1.dobYearAriaLabel')}
                 className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                 value={dobY} onChange={(e) => updateDob(e.target.value, dobM, dobD)}>
-                <option value="">Year</option>
+                <option value="">{t('signup.step1.dobYear')}</option>
                 {dobYears.map((y) => (
                   <option key={y} value={String(y)}>{y}</option>
                 ))}
@@ -164,11 +166,11 @@ export default function Signup() {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="country">Country</Label>
+            <Label htmlFor="country">{t('signup.step1.country')}</Label>
             <select id="country" required
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={country} onChange={(e) => handleCountryChange(e.target.value)}>
-              <option value="">Select…</option>
+              <option value="">{t('signup.step1.countryPlaceholder')}</option>
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>{c.name}</option>
               ))}
@@ -176,32 +178,30 @@ export default function Signup() {
           </div>
           {age !== null && age < 8 && (
             <p role="alert" className="text-sm text-destructive">
-              You must be at least 8 years old to use InvestiKid.
+              {t('signup.step1.ageTooYoung')}
             </p>
           )}
           {step1Valid && needsConsent && (
             <p className="rounded-md border bg-muted/30 p-3 text-sm">
-              You're <span className="font-medium">{age}</span> in {countryName} — your parent's
-              email will be required to set up your account.
+              {t('signup.step1.needsConsentMessage', { age, country: countryName })}
             </p>
           )}
           {step1Valid && !needsConsent && (
             <p className="rounded-md border bg-muted/30 p-3 text-sm">
-              You're <span className="font-medium">{age}</span> in {countryName} — you can set up
-              your own account.
+              {t('signup.step1.noConsentMessage', { age, country: countryName })}
             </p>
           )}
-          <Button type="submit" disabled={!step1Valid} className="w-full">Next</Button>
+          <Button type="submit" disabled={!step1Valid} className="w-full">{t('signup.step1.next')}</Button>
         </form>
         <p className="mt-6 text-sm text-muted-foreground">
-          Already have an account? <Link to="/login" className="underline">Sign in</Link>.
+          {t('signup.step1.alreadyHaveAccount')} <Link to="/login" className="underline">{t('signup.step1.signIn')}</Link>.
         </p>
       </AuthPage>
     );
   }
 
   return (
-    <AuthPage title="Let's get you set up" subtitle="Step 2 of 2: your sign-in details.">
+    <AuthPage title={t('signup.title')} subtitle={t('signup.step2.subtitle')}>
       <form
         className="space-y-4"
         onSubmit={(e) => {
@@ -215,7 +215,7 @@ export default function Signup() {
         }}
       >
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t('signup.step2.email')}</Label>
           <Input id="email" type="email" autoComplete="email" required
             value={email} onChange={(e) => setEmail(e.target.value)}
             aria-invalid={fieldError?.field === 'email'} />
@@ -223,7 +223,7 @@ export default function Signup() {
             <p className="text-xs text-destructive">{fieldError.msg}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="username">Username</Label>
+          <Label htmlFor="username">{t('signup.step2.username')}</Label>
           <Input id="username" required minLength={3} autoComplete="username"
             value={username} onChange={(e) => setUsername(e.target.value)}
             aria-invalid={fieldError?.field === 'username'} />
@@ -231,40 +231,40 @@ export default function Signup() {
             <p className="text-xs text-destructive">{fieldError.msg}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="password">Password (min 12 characters, must include letter + digit)</Label>
+          <Label htmlFor="password">{t('signup.step2.password')}</Label>
           <Input id="password" type="password" required minLength={12}
             autoComplete="new-password"
             value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="confirm_password">Confirm password</Label>
+          <Label htmlFor="confirm_password">{t('signup.step2.confirmPassword')}</Label>
           <Input id="confirm_password" type="password" required
             autoComplete="new-password"
             value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
             aria-invalid={showMismatch} aria-describedby="confirm-password-error" />
           {showMismatch && (
             <p id="confirm-password-error" role="alert" className="text-xs text-destructive">
-              Passwords don't match.
+              {t('signup.step2.passwordMismatch')}
             </p>
           )}
         </div>
         {needsConsent && (
           <div className="space-y-1.5">
-            <Label htmlFor="parent_email">Parent email</Label>
+            <Label htmlFor="parent_email">{t('signup.step2.parentEmail')}</Label>
             <Input id="parent_email" type="email" required
               value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} />
             <p className="text-xs text-muted-foreground">
-              We'll email your parent to approve your account.
+              {t('signup.step2.parentEmailHelp')}
             </p>
           </div>
         )}
         <div className="space-y-1.5">
-          <Label htmlFor="currency">Currency</Label>
+          <Label htmlFor="currency">{t('signup.step2.currency')}</Label>
           <Input id="currency" required value={currency}
             onChange={(e) => setCurrency(e.target.value.toUpperCase())} maxLength={3} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="topic">Interest area</Label>
+          <Label htmlFor="topic">{t('signup.step2.topic')}</Label>
           <select id="topic"
             className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
             value={topic} onChange={(e) => setTopic(e.target.value)}>
@@ -279,16 +279,16 @@ export default function Signup() {
         <label className="flex items-start gap-2 text-sm text-gray-700">
           <input type="checkbox" checked={policyAccepted}
             onChange={(e) => setPolicyAccepted(e.target.checked)} className="mt-1" />
-          <span>I (or my grown-up) have read the{' '}
+          <span>{t('signup.step2.policyCheckbox')}{' '}
             <button type="button" onClick={() => setPrivacyOpen(true)}
-              className="underline text-brand-700">privacy notice</button>.</span>
+              className="underline text-brand-700">{t('signup.step2.privacyNoticeLink')}</button>.</span>
         </label>
         <div className="flex gap-3">
-          <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+          <Button type="button" variant="outline" onClick={() => setStep(1)}>{t('signup.step2.back')}</Button>
           <Button type="submit"
             disabled={submit.isPending || !policyAccepted || !passwordsMatch}
             className="flex-1">
-            {submit.isPending ? 'Creating account…' : 'Create account'}
+            {submit.isPending ? t('signup.step2.creatingAccount') : t('signup.step2.createAccount')}
           </Button>
         </div>
       </form>
@@ -296,8 +296,8 @@ export default function Signup() {
       <Dialog open={privacyOpen} onOpenChange={setPrivacyOpen}>
         <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Privacy Notice</DialogTitle>
-            <DialogDescription>How InvestiKid collects, uses, and protects your information.</DialogDescription>
+            <DialogTitle>{t('signup.privacyDialog.title')}</DialogTitle>
+            <DialogDescription>{t('signup.privacyDialog.description')}</DialogDescription>
           </DialogHeader>
           <PrivacyNotice />
         </DialogContent>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useReducedMotion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { contentApi, type LevelOut, type ModuleOut } from '@/api/content';
 import { playSound } from '@/lib/sound';
 import { haptic } from '@/lib/haptics';
@@ -17,6 +18,7 @@ export default function Module() {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation('lessons');
   const { open: openPaywall } = usePremiumPaywall();
   const nudgeKey = 'level-nudge:' + moduleId;
   const tier = useAgeTier();
@@ -62,14 +64,14 @@ export default function Module() {
   }, [showCompleteBanner, subtle, reducedMotion]);
 
   if (modulesQ.isLoading || levelsQ.isLoading) {
-    return <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6 text-sm text-gray-500">Loading…</div>;
+    return <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6 text-sm text-gray-500">{t('module.loading')}</div>;
   }
 
   if (modulesQ.isError || levelsQ.isError) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-        <BackButton to="/lessons" label="Modules" />
-        <p className="mt-2">Module not found or locked.</p>
+        <BackButton to="/lessons" label={t('modules.heading')} />
+        <p className="mt-2">{t('module.notFound')}</p>
       </div>
     );
   }
@@ -93,7 +95,7 @@ export default function Module() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="px-4 pt-4 sm:px-6">
-        <BackButton to="/lessons" label="Modules" />
+        <BackButton to="/lessons" label={t('modules.heading')} />
       </div>
       {/* Banner */}
       <div className="bg-gradient-to-br from-brand-100 to-brand-200 px-4 py-6 sm:px-6 sm:py-8 text-center">
@@ -112,12 +114,12 @@ export default function Module() {
                 aria-valuenow={progressDone}
                 aria-valuemin={0}
                 aria-valuemax={progressTotal}
-                aria-label="Module progress"
+                aria-label={t('module.progress.ariaLabel')}
               >
                 <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${pct}%` }} />
               </div>
               <p className="mt-1 text-xs font-semibold text-brand-700">
-                {progressDone} / {progressTotal} {unit}s complete
+                {t('module.progress.complete', { done: progressDone, total: progressTotal, unit })}
               </p>
             </div>
           );
@@ -136,7 +138,7 @@ export default function Module() {
                 if (level.locked_reason === 'premium') {
                   openPaywall({ kind: 'level', label: level.title });
                 } else {
-                  toast({ title: 'Locked', description: 'Finish the previous level first.' });
+                  toast({ title: t('module.locked.title'), description: t('module.locked.description') });
                 }
               }}
             />
@@ -150,27 +152,29 @@ export default function Module() {
           <div className="relative rounded-2xl border-2 border-accent-200 bg-accent-50 p-4 text-center">
             <button
               type="button"
-              aria-label="Dismiss"
+              aria-label={t('module.earnedNudge.dismiss')}
               onClick={() => {
                 dismissNudge(nudgeKey);
                 setNudgeDismissed(true);
               }}
               className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
             >
-              ✕
+              {t('module.earnedNudge.dismissIcon')}
             </button>
             <p className="text-base font-bold text-gray-900">
-              {subtle ? `You're ready for ${nextPremiumLevel.title}.` : `🎉 You're ready for ${nextPremiumLevel.title}!`}
+              {subtle
+                ? t('module.earnedNudge.readySubtle', { title: nextPremiumLevel.title })
+                : t('module.earnedNudge.readyFun', { title: nextPremiumLevel.title })}
             </p>
             <p className="mt-1 text-sm text-gray-600">
-              {subtle ? 'Premium unlocks the next level.' : 'Unlock Premium to keep going 🌟'}
+              {subtle ? t('module.earnedNudge.premiumSubtle') : t('module.earnedNudge.premiumFun')}
             </p>
             <button
               type="button"
               onClick={() => openPaywall({ kind: 'level', label: nextPremiumLevel.title })}
               className="mt-3 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
             >
-              {subtle ? 'Ask my grown-up' : 'Ask my grown-up ✨'}
+              {subtle ? t('module.earnedNudge.ctaSubtle') : t('module.earnedNudge.ctaFun')}
             </button>
           </div>
         </div>
@@ -181,19 +185,21 @@ export default function Module() {
         <div className="px-4 pb-6 sm:px-6">
           <div className="rounded-2xl border-2 border-brand-200 bg-brand-50 p-4 text-center">
             <p className="text-base font-bold text-gray-900">
-              {subtle ? 'Module complete.' : '🎉 Module complete!'}
+              {subtle ? t('module.completeBanner.titleSubtle') : t('module.completeBanner.titleFun')}
             </p>
             <p className="mt-1 text-sm text-gray-600">
               {subtle
-                ? `Great work on ${module?.title ?? 'this module'}.`
-                : `Great work finishing ${module?.title ?? 'this module'}.`}
+                ? t('module.completeBanner.bodySubtle', { title: module?.title ?? 'this module' })
+                : t('module.completeBanner.bodyFun', { title: module?.title ?? 'this module' })}
             </p>
             <button
               type="button"
               onClick={() => navigate(nextModule ? `/lessons/${nextModule.id}` : '/lessons')}
               className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
             >
-              {nextModule ? `Next: ${nextModule.title} →` : 'Back to all modules'}
+              {nextModule
+                ? t('module.completeBanner.nextCta', { title: nextModule.title })
+                : t('module.completeBanner.backCta')}
             </button>
           </div>
         </div>

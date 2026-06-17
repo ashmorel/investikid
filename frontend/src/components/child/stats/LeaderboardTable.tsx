@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { LeaderboardEntry } from '@/api/gamification';
 import { countryFlag } from '@/lib/country';
 import { cn } from '@/lib/utils';
@@ -8,10 +9,12 @@ type Props = {
 };
 
 export function LeaderboardTable({ entries, currentUsername }: Props) {
+  const { t } = useTranslation('child');
+
   if (entries.length === 0) {
     return (
       <p className="py-8 text-center text-muted-foreground">
-        No activity this week yet. Complete a lesson to get on the board!
+        {t('leaderboard.empty')}
       </p>
     );
   }
@@ -21,10 +24,10 @@ export function LeaderboardTable({ entries, currentUsername }: Props) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/50">
-            <th className="px-4 py-3 text-left font-medium">#</th>
-            <th className="px-4 py-3 text-left font-medium">Username</th>
-            <th className="px-4 py-3 text-left font-medium">Country</th>
-            <th className="px-4 py-3 text-right font-medium">XP This Week</th>
+            <th className="px-4 py-3 text-left font-medium">{t('leaderboard.colRank')}</th>
+            <th className="px-4 py-3 text-left font-medium">{t('leaderboard.colUsername')}</th>
+            <th className="px-4 py-3 text-left font-medium">{t('leaderboard.colCountry')}</th>
+            <th className="px-4 py-3 text-right font-medium">{t('leaderboard.colXp')}</th>
           </tr>
         </thead>
         <tbody>
@@ -44,7 +47,7 @@ export function LeaderboardTable({ entries, currentUsername }: Props) {
                     {entry.username}
                     {isCurrentUser && (
                       <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                        You
+                        {t('leaderboard.youBadge')}
                       </span>
                     )}
                   </span>

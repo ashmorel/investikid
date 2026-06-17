@@ -1,29 +1,32 @@
-const BANDS: { max: number; label: string }[] = [
-  { max: 0, label: 'No investments yet' },
-  { max: 1, label: 'All eggs in one basket' },
-  { max: 3, label: 'Getting spread out' },
-  { max: 5, label: 'Nicely diversified' },
-  { max: Infinity, label: 'Well spread' },
+import { useTranslation } from 'react-i18next';
+
+const BAND_KEYS: { max: number; key: string }[] = [
+  { max: 0, key: 'none' },
+  { max: 1, key: 'oneBasket' },
+  { max: 3, key: 'spread' },
+  { max: 5, key: 'nice' },
+  { max: Infinity, key: 'well' },
 ];
 
 export function DiversificationCard({ holdingsCount }: { holdingsCount: number }) {
-  const label = BANDS.find((b) => holdingsCount <= b.max)!.label;
+  const { t } = useTranslation('simulator');
+  const labelKey = BAND_KEYS.find((b) => holdingsCount <= b.max)!.key;
   const filled = Math.min(holdingsCount, 5);
 
   return (
     <div className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between">
-        <p className="text-xs font-semibold text-muted-foreground">Diversification</p>
+        <p className="text-xs font-semibold text-muted-foreground">{t('diversification.label')}</p>
         <span className="text-xl" aria-hidden="true">🧺</span>
       </div>
-      <p className="mt-0.5 text-lg font-extrabold text-ink">{label}</p>
+      <p className="mt-0.5 text-lg font-extrabold text-ink">{t(`diversification.bands.${labelKey}`)}</p>
       <div
         role="progressbar"
-        aria-label="Diversification level"
+        aria-label={t('diversification.ariaLabel')}
         aria-valuemin={0}
         aria-valuemax={5}
         aria-valuenow={filled}
-        aria-valuetext={`${filled} of 5`}
+        aria-valuetext={t('diversification.ariaValueText', { filled })}
         className="mt-2 flex gap-1"
       >
         {Array.from({ length: 5 }, (_, i) => (
@@ -34,7 +37,7 @@ export function DiversificationCard({ holdingsCount }: { holdingsCount: number }
         ))}
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        Spreading across more companies lowers the damage any one can do
+        {t('diversification.body')}
       </p>
     </div>
   );

@@ -1,0 +1,158 @@
+{
+  "modules": {
+    "heading": "Modules",
+    "summary": "{{moduleCount}} modules · {{lessonCount}} lessons",
+    "journey": {
+      "label": "Your journey",
+      "started": "{{started}} / {{total}} modules started",
+      "ariaLabel": "Modules started"
+    }
+  },
+
+  "module": {
+    "loading": "Loading…",
+    "notFound": "Module not found or locked.",
+    "progress": {
+      "ariaLabel": "Module progress",
+      "complete": "{{done}} / {{total}} {{unit}}s complete"
+    },
+    "locked": {
+      "title": "Locked",
+      "description": "Finish the previous level first."
+    },
+    "earnedNudge": {
+      "dismiss": "Dismiss",
+      "dismissIcon": "✕",
+      "readySubtle": "You're ready for {{title}}.",
+      "readyFun": "🎉 You're ready for {{title}}!",
+      "premiumSubtle": "Premium unlocks the next level.",
+      "premiumFun": "Unlock Premium to keep going 🌟",
+      "ctaSubtle": "Ask my grown-up",
+      "ctaFun": "Ask my grown-up ✨"
+    },
+    "completeBanner": {
+      "titleSubtle": "Module complete.",
+      "titleFun": "🎉 Module complete!",
+      "bodySubtle": "Great work on {{title}}.",
+      "bodyFun": "Great work finishing {{title}}.",
+      "nextCta": "Next: {{title}} →",
+      "backCta": "Back to all modules"
+    }
+  },
+
+  "lesson": {
+    "loading": "Loading…",
+    "notFound": "Lesson not found.",
+    "saveError": "Something went wrong saving your progress.",
+    "tryAgain": "Try again",
+    "practiceCta": "🎯 Practice this topic",
+    "backLabel": "Lessons"
+  },
+
+  "card": {
+    "gotIt": "Got it →",
+    "saving": "Saving…"
+  },
+
+  "quiz": {
+    "answerChoicesLabel": "Answer choices",
+    "checkAnswer": "Check answer",
+    "askCoachPenny": "Ask Coach Penny",
+    "continue": "Continue →",
+    "saving": "Saving…"
+  },
+
+  "scenario": {
+    "badge": "Real-life scenario",
+    "answerChoicesLabel": "Answer choices",
+    "checkAnswer": "Check answer",
+    "askCoachPenny": "Ask Coach Penny",
+    "continue": "Continue →",
+    "saving": "Saving…"
+  },
+
+  "video": {
+    "unavailable": "Video unavailable.",
+    "continue": "Continue →",
+    "saving": "Saving...",
+    "error": "This video is taking a break — read the lesson and continue.",
+    "openOnYouTube": "Open video on YouTube",
+    "finished": "✓ Finished — Mark complete →",
+    "watchedLabel": "I watched this",
+    "markComplete": "Mark complete →",
+    "captionsAvailable": "Captions available",
+    "noCaptions": "No captions",
+    "lessonVideoTitle": "Lesson video"
+  },
+
+  "completion": {
+    "alreadyDone": "You've already done this one",
+    "complete": "Lesson complete!",
+    "dailyGoalMet": "Daily goal met — nice one!",
+    "xpLabel": "XP",
+    "levelLabel": "Level",
+    "streakLabel": "Streak",
+    "starsDecor": "⭐ ⭐ ⭐",
+    "xpProgress": "{{xpInLevel}} / 100 XP to Level {{nextLevel}}",
+    "continue": "Continue"
+  },
+
+  "chrome": {
+    "goBack": "Go back",
+    "lessonOf": "Lesson {{position}} of {{total}}",
+    "lessonNum": "Lesson {{position}}"
+  },
+
+  "practice": {
+    "loading": "Generating practice question...",
+    "error": "Could not generate a practice question.",
+    "goBack": "Go back",
+    "noXp": "Practice — no XP",
+    "challenge": "Challenge",
+    "warmUp": "Warm-up",
+    "skip": "Skip"
+  },
+
+  "coachPenny": {
+    "title": "Coach Penny",
+    "messagesLeft": "{{count}} messages left",
+    "closeLabel": "Close Coach Penny",
+    "closeIcon": "✕",
+    "emptyPrompt": "Ask me anything about this lesson! 🎯",
+    "thinking": "Thinking...",
+    "errorMessage": "Coach Penny couldn't answer just now. Please try again in a moment.",
+    "inputPlaceholder": "Ask Coach Penny...",
+    "sendButton": "Send"
+  },
+
+  "mission": {
+    "sectionLabel": "Apply what you learned",
+    "label": "Your mission",
+    "cta": "Try it in the simulator"
+  },
+
+  "moduleCard": {
+    "lockedAriaLabel": "{{title}} (locked)",
+    "unlockToContinue": "Unlock to continue",
+    "locked": "Locked",
+    "lessonsProgress": "{{completed}} / {{total}} lessons",
+    "complete": "✓ Complete"
+  },
+
+  "levelCard": {
+    "ariaLabel": "{{title}}",
+    "ariaLabelPremium": "{{title}} (premium)",
+    "ariaLabelLocked": "{{title}} (locked)",
+    "completed": "✓ Completed",
+    "lessonsProgress": "{{completed}}/{{total}} lessons",
+    "progressAriaLabel": "{{title}} progress",
+    "unlockToContinue": "Unlock to continue",
+    "finishPrevious": "Finish the previous level to unlock"
+  },
+
+  "feedback": {
+    "correct": "Correct!",
+    "notQuite": "Not quite!",
+    "correctAnswer": "Correct answer: {{answer}}"
+  }
+}

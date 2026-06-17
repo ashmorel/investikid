@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useProgress } from '@/hooks/useProgress';
 import { useAllBadges } from '@/hooks/useAllBadges';
 import { useBadges } from '@/hooks/useBadges';
@@ -17,6 +18,7 @@ function SectionSkeleton() {
 }
 
 export default function Stats() {
+  const { t } = useTranslation('child');
   const progress = useProgress();
   const allBadges = useAllBadges();
   const earnedBadges = useBadges();
@@ -27,7 +29,7 @@ export default function Stats() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-4 sm:space-y-8 sm:py-6">
-      <h1 className="text-2xl font-bold">Your Stats</h1>
+      <h1 className="text-2xl font-bold">{t('stats.pageTitle')}</h1>
 
       {/* XP Summary */}
       {progress.isLoading ? (
@@ -41,12 +43,12 @@ export default function Stats() {
       ) : null}
 
       {!progress.isLoading && progress.data ? (
-        <p className="text-xs text-muted-foreground">🛡️ A streak freeze saves your streak if you miss a day. Earn one every 7-day streak (up to 2).</p>
+        <p className="text-xs text-muted-foreground">{t('stats.streakFreeze')}</p>
       ) : null}
 
       {/* Badges */}
       <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
-        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Badges</h2>
+        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">{t('stats.badgesSection')}</h2>
         {allBadges.isLoading || earnedBadges.isLoading ? (
           <SectionSkeleton />
         ) : allBadges.data && earnedBadges.data ? (
@@ -56,7 +58,7 @@ export default function Stats() {
 
       {/* Weekly Challenges */}
       <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
-        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Weekly Challenges</h2>
+        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">{t('stats.challengesSection')}</h2>
         {challenges.isLoading ? (
           <SectionSkeleton />
         ) : challenges.data ? (
@@ -64,15 +66,15 @@ export default function Stats() {
         ) : null}
       </section>
 
-      <section className="mt-5" aria-label="Your groups">
-        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Your groups</h2>
+      <section className="mt-5" aria-label={t('stats.groupsSection')}>
+        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">{t('stats.groupsSection')}</h2>
         <GroupLeaderboard boards={groupBoards.data ?? []} />
       <GroupGoals />
       </section>
 
       {/* Weekly Leaderboard */}
       <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
-        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">Weekly Leaderboard</h2>
+        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">{t('stats.leaderboardSection')}</h2>
         {leaderboard.isLoading ? (
           <SectionSkeleton />
         ) : leaderboard.data ? (

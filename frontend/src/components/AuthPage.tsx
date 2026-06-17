@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Penny } from '@/components/child/ui/Penny';
 
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function AuthPage({ children, title, subtitle, className }: Props) {
+  const { t } = useTranslation('common');
   return (
     <main
       className="box-border flex min-h-[100svh] w-full max-w-full items-center justify-center overflow-x-hidden px-4 py-8 sm:px-6"
@@ -26,7 +28,7 @@ export function AuthPage({ children, title, subtitle, className }: Props) {
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-100" aria-hidden="true">
               <Penny size={36} mood="happy" />
             </span>
-            <span className="text-xl font-extrabold tracking-tight text-ink">InvestiKid</span>
+            <span className="text-xl font-extrabold tracking-tight text-ink">{t('appName')}</span>
           </div>
           {title && <h1 className="mt-4 text-2xl font-extrabold text-ink">{title}</h1>}
           {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}

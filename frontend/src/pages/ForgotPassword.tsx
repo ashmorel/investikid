@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '@/api/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { AuthPage } from '@/components/AuthPage';
 
 export default function ForgotPassword() {
+  const { t } = useTranslation('auth');
   const [identifier, setIdentifier] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -19,28 +21,28 @@ export default function ForgotPassword() {
 
   if (submitted) {
     return (
-      <AuthPage title="Check your email">
+      <AuthPage title={t('forgotPassword.success.title')}>
         <p className="text-sm text-muted-foreground">
-          If that account exists, we've sent a reset link. Check your email (or ask a grown-up).
+          {t('forgotPassword.success.message')}
         </p>
         <p className="mt-4 text-sm text-muted-foreground">
-          <Link to="/login" className="underline">Back to sign in</Link>
+          <Link to="/login" className="underline">{t('forgotPassword.success.backToSignIn')}</Link>
         </p>
       </AuthPage>
     );
   }
 
   return (
-    <AuthPage title="Forgot your password?" subtitle="We'll email you a reset link.">
+    <AuthPage title={t('forgotPassword.title')} subtitle={t('forgotPassword.subtitle')}>
       <p className="text-sm text-muted-foreground">
-        Enter your email or username and we'll send you a reset link.
+        {t('forgotPassword.intro')}
       </p>
       <form
         className="mt-6 space-y-3"
         onSubmit={(e) => { e.preventDefault(); submit.mutate(); }}
       >
         <div className="space-y-1.5">
-          <Label htmlFor="identifier">Email or username</Label>
+          <Label htmlFor="identifier">{t('forgotPassword.identifierLabel')}</Label>
           <Input
             id="identifier"
             type="text"
@@ -51,11 +53,11 @@ export default function ForgotPassword() {
           />
         </div>
         <Button type="submit" disabled={submit.isPending} className="w-full">
-          {submit.isPending ? 'Sending…' : 'Send reset link'}
+          {submit.isPending ? t('forgotPassword.sending') : t('forgotPassword.sendResetLink')}
         </Button>
       </form>
       <p className="mt-6 text-sm text-muted-foreground">
-        <Link to="/login" className="underline">Back to sign in</Link>
+        <Link to="/login" className="underline">{t('forgotPassword.backToSignIn')}</Link>
       </p>
     </AuthPage>
   );

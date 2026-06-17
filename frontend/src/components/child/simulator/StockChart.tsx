@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
   ResponsiveContainer,
@@ -29,6 +30,7 @@ type Props = {
 };
 
 export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props) {
+  const { t } = useTranslation('simulator');
   const [period, setPeriod] = useState('1mo');
 
   const handlePeriodChange = (p: string) => {
@@ -68,7 +70,7 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
       aria-label={chartSummary}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">Price History</h3>
+        <h3 className="text-sm font-semibold text-gray-700">{t('stockChart.priceHistory')}</h3>
         {hasData && (
           <span className={`text-sm font-semibold ${isPositive ? 'text-success-600' : 'text-danger-600'}`}>
             {isPositive ? '+' : ''}{change.toFixed(2)} ({isPositive ? '+' : ''}{changePct.toFixed(1)}%)
@@ -94,11 +96,11 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
 
       {isLoading ? (
         <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
-          Loading chart…
+          {t('stockChart.loading')}
         </div>
       ) : !hasData ? (
         <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
-          No price data available for this period
+          {t('stockChart.noData')}
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={200}>

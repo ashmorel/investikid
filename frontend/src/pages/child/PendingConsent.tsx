@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ type State =
   | { kind: 'invalid' };
 
 export default function PendingConsent() {
+  const { t } = useTranslation('auth');
   const email = sessionStorage.getItem('pendingConsentEmail') ?? '';
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -45,27 +47,26 @@ export default function PendingConsent() {
 
   if (!email) {
     return (
-      <AuthPage title="Page expired" subtitle="Start again so we can recheck the right account.">
+      <AuthPage title={t('pendingConsent.expiredTitle')} subtitle={t('pendingConsent.expiredSubtitle')}>
         <p className="text-sm text-muted-foreground">
-          We need your email to recheck your account.
+          {t('pendingConsent.expiredBody')}
         </p>
         <p className="mt-4">
-          <Link to="/signup" className="underline">Start over</Link>
+          <Link to="/signup" className="underline">{t('pendingConsent.startOver')}</Link>
         </p>
       </AuthPage>
     );
   }
 
   return (
-    <AuthPage title="Almost there!" subtitle="We've emailed your grown-up to approve your account.">
+    <AuthPage title={t('pendingConsent.almostThereTitle')} subtitle={t('pendingConsent.almostThereSubtitle')}>
       <p className="text-sm text-muted-foreground">
-        We've emailed your parent at the address you provided. Once they click the approval link,
-        you'll be able to log in.
+        {t('pendingConsent.body')}
       </p>
 
       {state.kind === 'idle' && (
         <Button className="mt-6 w-full" onClick={() => setState({ kind: 'recheck' })}>
-          I've been approved
+          {t('pendingConsent.iHaveBeenApproved')}
         </Button>
       )}
 
@@ -75,37 +76,37 @@ export default function PendingConsent() {
           onSubmit={(e) => { e.preventDefault(); recheck.mutate(); }}
         >
           <div className="space-y-1.5">
-            <Label htmlFor="password">Enter your password to sign in</Label>
+            <Label htmlFor="password">{t('pendingConsent.enterPassword')}</Label>
             <Input id="password" type="password" autoComplete="current-password" required
               value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           {state.kind === 'still-pending' && (
             <p role="alert" className="text-sm text-destructive">
-              Not approved yet — please wait until your parent clicks the email link.
+              {t('pendingConsent.stillPending')}
             </p>
           )}
           {state.kind === 'invalid' && (
             <p role="alert" className="text-sm text-destructive">
-              Email or password incorrect.
+              {t('pendingConsent.invalid')}
             </p>
           )}
           <Button type="submit" disabled={recheck.isPending} className="w-full">
-            {recheck.isPending ? 'Signing in…' : 'Sign in'}
+            {recheck.isPending ? t('pendingConsent.signingIn') : t('pendingConsent.signIn')}
           </Button>
         </form>
       )}
 
       {state.kind === 'declined' && (
         <div role="alert" className="mt-6 rounded-md border border-destructive/50 bg-destructive/5 p-4 text-destructive">
-          <p className="font-semibold">Your parent has declined this account.</p>
+          <p className="font-semibold">{t('pendingConsent.declined')}</p>
           <p className="mt-2 text-sm">
-            <Link to="/signup" className="underline">Try a different account</Link>.
+            <Link to="/signup" className="underline">{t('pendingConsent.tryDifferent')}</Link>.
           </p>
         </div>
       )}
 
       <p className="mt-6 text-sm text-muted-foreground">
-        Wrong email? <Link to="/signup" className="underline">Use a different email</Link>.
+        {t('pendingConsent.wrongEmail')} <Link to="/signup" className="underline">{t('pendingConsent.useDifferent')}</Link>.
       </p>
     </AuthPage>
   );

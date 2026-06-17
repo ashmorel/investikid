@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Lightbulb, Pause, Play, Sparkles } from 'lucide-react';
@@ -7,6 +8,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { SectionCard } from './SectionCard';
 
 function MiniChart({ exchange, ticker }: { exchange: string; ticker: string }) {
+  const { t } = useTranslation('simulator');
   const { data } = useQuery<PricePoint[] | null>({
     queryKey: ['stock-history', exchange, ticker, '5y'],
     queryFn: () => simulatorApi.getStockHistory(exchange, ticker, '5y'),
@@ -17,7 +19,7 @@ function MiniChart({ exchange, ticker }: { exchange: string; ticker: string }) {
   if (points.length < 2) {
     return (
       <div className="flex h-12 items-center justify-center rounded-md bg-brand-100 text-xs text-brand-700">
-        Loading chart…
+        {t('investingTips.loadingChart')}
       </div>
     );
   }
@@ -54,6 +56,7 @@ type Props = {
 const ROTATE_MS = 7000;
 
 export function InvestingTips({ contextTicker, contextExchange }: Props) {
+  const { t } = useTranslation('simulator');
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [activeIndex, setActiveIndex] = useState(0);
@@ -135,23 +138,23 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
   };
 
   return (
-    <SectionCard title="Investing Tips" icon={Lightbulb} collapsible defaultOpen headingLevel={3}>
+    <SectionCard title={t('investingTips.sectionTitle')} icon={Lightbulb} collapsible defaultOpen headingLevel={3}>
       <div className="mb-2 flex items-center justify-end gap-2">
         <button
           type="button"
           onClick={handleRefresh}
           disabled={refreshing}
-          aria-label="Get new tips"
+          aria-label={t('investingTips.getTips')}
           className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500 disabled:opacity-50"
         >
           <Sparkles className={`h-3.5 w-3.5 ${!reducedMotion && refreshing ? 'animate-spin' : ''}`} />
-          New tips
+          {t('investingTips.newTips')}
         </button>
         {!reducedMotion && count > 1 && (
           <button
             type="button"
             onClick={() => setIsPlaying((p) => !p)}
-            aria-label={isPlaying ? 'Pause tips' : 'Play tips'}
+            aria-label={t(isPlaying ? 'investingTips.pauseTips' : 'investingTips.playTips')}
             className="inline-flex h-7 w-7 items-center justify-center rounded-full text-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
           >
             {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -167,7 +170,7 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
         onFocus={() => setPaused(true)}
         onBlur={() => setPaused(false)}
         role="group"
-        aria-label="Investing tips"
+        aria-label={t('investingTips.groupLabel')}
         className="flex gap-3 overflow-x-auto scroll-smooth pb-2"
         style={{ scrollSnapType: 'x mandatory' }}
       >
@@ -184,7 +187,7 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
                 <h4 className="text-xs font-bold text-brand-800">{tip.title}</h4>
                 {tip.personalised && (
                   <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
-                    For you
+                    {t('investingTips.forYou')}
                   </span>
                 )}
               </div>
@@ -193,7 +196,7 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
                 <MiniChart exchange={chartExchange} ticker={chartTicker} />
               </div>
               <p className="mt-1 text-center text-[10px] text-gray-400">
-                {chartTicker} · 5yr
+                {t('investingTips.chartLabel', { ticker: chartTicker })}
               </p>
             </div>
           );
@@ -206,7 +209,7 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
             key={i}
             type="button"
             onClick={() => goToIndex(i)}
-            aria-label={`Go to tip ${i + 1}`}
+            aria-label={t('investingTips.tipIndicator', { n: i + 1 })}
             aria-current={i === activeIndex}
             className="inline-flex h-6 w-6 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
           >

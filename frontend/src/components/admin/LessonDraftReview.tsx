@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   useLevelDrafts,
   useGenerateLevelLessons,
@@ -71,6 +72,7 @@ interface DraftCardProps {
 }
 
 function DraftCard({ draft, onApprove, onRegenerate, onReject, onSaveEdit }: DraftCardProps) {
+  const { t } = useTranslation('admin');
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState('');
 
@@ -96,10 +98,10 @@ function DraftCard({ draft, onApprove, onRegenerate, onReject, onSaveEdit }: Dra
       <div className="mb-2 flex items-center gap-2">
         <span className={`rounded px-2 py-0.5 text-xs capitalize ${TYPE_BADGE[draft.type]}`}>{draft.type}</span>
         {draft.moderation_safe ? (
-          <span className="rounded bg-success-100 px-2 py-0.5 text-xs text-success-800">Safe ✓</span>
+          <span className="rounded bg-success-100 px-2 py-0.5 text-xs text-success-800">{t('draftReview.draft.safe')}</span>
         ) : (
           <span className="rounded bg-danger-100 px-2 py-0.5 text-xs text-danger-700">
-            ⚠ Flagged: {draft.moderation_category}
+            {t('draftReview.draft.flagged', { category: draft.moderation_category })}
           </span>
         )}
       </div>
@@ -107,7 +109,7 @@ function DraftCard({ draft, onApprove, onRegenerate, onReject, onSaveEdit }: Dra
       {editing ? (
         <div>
           <label htmlFor={editFieldId} className="mb-1 block text-sm text-ink">
-            Edit content (JSON)
+            {t('draftReview.draft.editLabel')}
           </label>
           <textarea
             id={editFieldId}
@@ -129,14 +131,14 @@ function DraftCard({ draft, onApprove, onRegenerate, onReject, onSaveEdit }: Dra
               onClick={saveEdit}
               className="min-h-[44px] rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700"
             >
-              Save
+              {t('draftReview.draft.save')}
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
               className="min-h-[44px] rounded-md border border-line px-4 py-2 text-sm text-muted-foreground hover:bg-brand-50"
             >
-              Cancel
+              {t('draftReview.draft.cancel')}
             </button>
           </>
         ) : (
@@ -145,32 +147,32 @@ function DraftCard({ draft, onApprove, onRegenerate, onReject, onSaveEdit }: Dra
               type="button"
               onClick={() => onApprove(draft.id)}
               disabled={!draft.moderation_safe}
-              title={draft.moderation_safe ? 'Approve this draft' : 'Approval is blocked while this draft is flagged'}
-              aria-label={draft.moderation_safe ? 'Approve draft' : 'Approve draft (blocked — flagged content)'}
+              title={draft.moderation_safe ? t('draftReview.draft.approveTitle') : t('draftReview.draft.approveTitleBlocked')}
+              aria-label={draft.moderation_safe ? t('draftReview.draft.approveLabel') : t('draftReview.draft.approveLabelBlocked')}
               className="min-h-[44px] rounded-md bg-success-600 px-4 py-2 text-sm text-white hover:bg-success-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Approve
+              {t('draftReview.draft.approveButton')}
             </button>
             <button
               type="button"
               onClick={startEdit}
               className="min-h-[44px] rounded-md border border-line px-4 py-2 text-sm text-brand-600 hover:bg-brand-50"
             >
-              Edit
+              {t('draftReview.draft.editButton')}
             </button>
             <button
               type="button"
               onClick={() => onRegenerate(draft.id)}
               className="min-h-[44px] rounded-md border border-line px-4 py-2 text-sm text-ink hover:bg-brand-50"
             >
-              Regenerate
+              {t('draftReview.draft.regenerateButton')}
             </button>
             <button
               type="button"
               onClick={() => onReject(draft)}
               className="min-h-[44px] rounded-md border border-line px-4 py-2 text-sm text-danger-500 hover:bg-danger-100"
             >
-              Reject
+              {t('draftReview.draft.rejectButton')}
             </button>
           </>
         )}
@@ -184,6 +186,7 @@ interface LessonDraftReviewProps {
 }
 
 export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
+  const { t } = useTranslation('admin');
   const { data: drafts = [], isLoading } = useLevelDrafts(levelId);
   const generate = useGenerateLevelLessons(levelId);
   const approve = useApproveDraft(levelId);
@@ -214,12 +217,12 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
 
   return (
     <section className="mt-8 border-t border-line pt-6">
-      <h2 className="mb-4 text-xl font-semibold text-ink">Generate lessons (AI)</h2>
+      <h2 className="mb-4 text-xl font-semibold text-ink">{t('draftReview.generateHeading')}</h2>
 
       <form onSubmit={handleGenerate} className="mb-6 flex flex-col gap-4">
         <div>
           <label htmlFor="gen-concept" className="mb-1 block text-sm text-ink">
-            Concept
+            {t('draftReview.conceptLabel')}
           </label>
           <input
             id="gen-concept"
@@ -232,7 +235,7 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
 
         <div>
           <label htmlFor="gen-count" className="mb-1 block text-sm text-ink">
-            Count
+            {t('draftReview.countLabel')}
           </label>
           <input
             id="gen-count"
@@ -246,7 +249,7 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
         </div>
 
         <fieldset>
-          <legend className="mb-1 block text-sm text-ink">Lesson types</legend>
+          <legend className="mb-1 block text-sm text-ink">{t('draftReview.lessonTypesLabel')}</legend>
           <div className="flex flex-wrap gap-4">
             {(['card', 'quiz', 'scenario'] as const).map((t) => (
               <label key={t} className="flex items-center gap-2 text-sm capitalize text-ink">
@@ -268,28 +271,28 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
             disabled={generate.isPending}
             className="min-h-[44px] rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
           >
-            {generate.isPending ? 'Generating…' : 'Generate'}
+            {generate.isPending ? t('draftReview.generating') : t('draftReview.generateButton')}
           </button>
         </div>
 
         {generate.isPending && (
           <p role="status" className="text-sm text-muted-foreground">
-            Generating lessons…
+            {t('draftReview.generatingStatus')}
           </p>
         )}
         {skipped > 0 && (
           <p className="text-sm text-danger-600">
-            {skipped} couldn&apos;t be generated — try regenerating.
+            {t('draftReview.skipped', { count: skipped })}
           </p>
         )}
       </form>
 
-      <h3 className="mb-3 text-lg font-semibold text-ink">Draft review</h3>
+      <h3 className="mb-3 text-lg font-semibold text-ink">{t('draftReview.draftReviewHeading')}</h3>
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading drafts…</p>
+        <p className="text-muted-foreground">{t('draftReview.loadingDrafts')}</p>
       ) : drafts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No drafts yet. Generate some above.</p>
+        <p className="text-sm text-muted-foreground">{t('draftReview.noDrafts')}</p>
       ) : (
         <div className="flex flex-col gap-3">
           {drafts.map((draft) => (
@@ -307,8 +310,8 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
 
       <ConfirmDialog
         open={!!rejectTarget}
-        title="Reject draft?"
-        message="This will discard the generated draft. This cannot be undone."
+        title={t('draftReview.rejectTitle')}
+        message={t('draftReview.rejectMessage')}
         onConfirm={() => {
           if (rejectTarget) reject.mutate(rejectTarget.id);
           setRejectTarget(null);

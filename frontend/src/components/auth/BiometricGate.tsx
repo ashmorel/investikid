@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { App as CapacitorApp } from '@capacitor/app';
 import { authApi } from '@/api/auth';
 import { parentApi } from '@/api/parent';
@@ -18,6 +19,7 @@ type GateState = 'checking' | 'disabled' | 'locked' | 'unlocking' | 'unlocked';
  * enrolled accounts on this device.
  */
 export function BiometricGate({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation('auth');
   const [state, setState] = useState<GateState>('checking');
   const [accounts, setAccounts] = useState<BioAccount[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -101,11 +103,11 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-5 bg-brand-50 px-6">
       <Penny size={64} mood="happy" />
-      <h1 className="text-xl font-extrabold text-brand-900">Welcome back</h1>
+      <h1 className="text-xl font-extrabold text-brand-900">{t('biometricGate.welcomeBack')}</h1>
       <p aria-live="polite" className="sr-only">
-        {state === 'unlocking' ? 'Checking Face ID' : 'Locked'}
+        {state === 'unlocking' ? t('biometricGate.checkingFaceId') : t('biometricGate.locked')}
       </p>
-      <ul className="flex w-full max-w-xs flex-col gap-2" aria-label="Saved accounts">
+      <ul className="flex w-full max-w-xs flex-col gap-2" aria-label={t('biometricGate.savedAccounts')}>
         {accounts.map((acc) => (
           <li key={acc.key}>
             <button
@@ -126,7 +128,7 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
         onClick={() => { setState('unlocked'); navigate('/login'); }}
         className="min-h-[44px] text-sm font-semibold text-brand-700 underline focus-visible:outline focus-visible:outline-2"
       >
-        Sign in differently
+        {t('biometricGate.signInDifferently')}
       </button>
     </div>
   );

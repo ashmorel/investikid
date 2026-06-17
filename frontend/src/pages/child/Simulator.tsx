@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useTrades } from '@/hooks/useTrades';
@@ -17,6 +18,7 @@ import { cn } from '@/lib/utils';
 type Tab = 'holdings' | 'history';
 
 export default function Simulator() {
+  const { t } = useTranslation('simulator');
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio();
   const { data: trades } = useTrades();
   const { data: history } = usePortfolioHistory();
@@ -28,7 +30,7 @@ export default function Simulator() {
   const activeMission = missions?.find((m) => m.id === missionId) ?? missions?.[0] ?? undefined;
 
   if (portfolioLoading || !portfolio) {
-    return <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6"><p className="text-sm text-muted-foreground">Loading portfolio…</p></div>;
+    return <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6"><p className="text-sm text-muted-foreground">{t('portfolio.loading')}</p></div>;
   }
 
   const holdings = portfolio.holdings ?? [];
@@ -53,7 +55,7 @@ export default function Simulator() {
         <PortfolioHero totalValue={portfolio.total_value} currencyCode={portfolio.currency_code} history={history} />
       ) : (
         <div className="rounded-3xl bg-brand-gradient p-5 text-white shadow-lg shadow-brand-600/30">
-          <p className="text-xs font-bold uppercase tracking-wider text-white/90">Practice Portfolio <span className="font-medium normal-case opacity-80">· play money</span></p>
+          <p className="text-xs font-bold uppercase tracking-wider text-white/90">{t('portfolio.practicePortfolio')} <span className="font-medium normal-case opacity-80">{t('portfolio.playMoney')}</span></p>
           <p className="mt-1 text-4xl font-extrabold">{formatCurrency(portfolio.total_value, portfolio.currency_code)}</p>
         </div>
       )}
@@ -88,7 +90,7 @@ export default function Simulator() {
               activeTab === 'holdings' ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
             )}
           >
-            Holdings
+            {t('portfolio.holdingsTab')}
           </button>
           <button
             role="tab"
@@ -99,7 +101,7 @@ export default function Simulator() {
               activeTab === 'history' ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
             )}
           >
-            Trade History
+            {t('portfolio.tradeHistoryTab')}
           </button>
         </div>
 

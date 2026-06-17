@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { OptionCard, type OptionState } from '@/components/child/ui/OptionCard';
 import { GradientButton } from '@/components/child/ui/GradientButton';
 import { FeedbackPanel } from '@/components/child/ui/FeedbackPanel';
@@ -22,6 +23,7 @@ type Props = {
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 export function ScenarioLesson({ contentJson, onComplete, illustration, onShowPenny, completing = false }: Props) {
+  const { t } = useTranslation('lessons');
   const [selected, setSelected] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const isCorrect = selected === contentJson.correct_index;
@@ -44,9 +46,9 @@ export function ScenarioLesson({ contentJson, onComplete, illustration, onShowPe
   return (
     <div className="space-y-5 rounded-3xl bg-white p-6 shadow-lg shadow-brand-600/10">
       {illustration && <div>{illustration}</div>}
-      <span className="inline-block rounded-full bg-violet-100 px-3 py-1.5 text-[11px] font-extrabold text-violet-700"><span aria-hidden="true">🧠 </span>Real-life scenario</span>
+      <span className="inline-block rounded-full bg-violet-100 px-3 py-1.5 text-[11px] font-extrabold text-violet-700"><span aria-hidden="true">🧠 </span>{t('scenario.badge')}</span>
       <p className="text-lg font-extrabold leading-snug text-gray-900">{contentJson.prompt}</p>
-      <div className="space-y-3" role="radiogroup" aria-label="Answer choices">
+      <div className="space-y-3" role="radiogroup" aria-label={t('scenario.answerChoicesLabel')}>
         {contentJson.choices.map((choice, i) => (
           <OptionCard key={i} letter={LETTERS[i] ?? '?'} state={optionState(i)} checked={selected === i} disabled={submitted} onSelect={() => setSelected(i)}>
             {choice.label}
@@ -57,15 +59,15 @@ export function ScenarioLesson({ contentJson, onComplete, illustration, onShowPe
         <>
           <FeedbackPanel correct={isCorrect} explanation={contentJson.choices[selected!].outcome} correctAnswer={!isCorrect ? contentJson.choices[contentJson.correct_index].label : undefined} />
           <GradientButton full onClick={() => onComplete(isCorrect ? 1.0 : 0.0)} disabled={completing}>
-            {completing ? 'Saving…' : 'Continue →'}
+            {completing ? t('scenario.saving') : t('scenario.continue')}
           </GradientButton>
         </>
       ) : (
         <div className="flex items-center justify-between gap-4">
           {onShowPenny ? (
-            <button type="button" onClick={onShowPenny} className="text-sm font-bold text-brand-700 underline hover:text-brand-800">Ask Coach Penny</button>
+            <button type="button" onClick={onShowPenny} className="text-sm font-bold text-brand-700 underline hover:text-brand-800">{t('scenario.askCoachPenny')}</button>
           ) : <span />}
-          <GradientButton disabled={selected === null} onClick={handleCheck}>Check answer</GradientButton>
+          <GradientButton disabled={selected === null} onClick={handleCheck}>{t('scenario.checkAnswer')}</GradientButton>
         </div>
       )}
     </div>

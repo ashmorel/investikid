@@ -5,9 +5,13 @@ export function Trophy() {
       <circle cx="100" cy="20" r="2" fill="#f59e0b" opacity="0.6" />
       <circle cx="15" cy="60" r="2" fill="#fde68a" opacity="0.8" />
       <circle cx="105" cy="55" r="3" fill="#fde68a" opacity="0.7" />
+      {/* eslint-disable-next-line i18next/no-literal-string */}
       <text x="10" y="45" fontSize="14" fill="#fbbf24">✦</text>
+      {/* eslint-disable-next-line i18next/no-literal-string */}
       <text x="100" y="40" fontSize="10" fill="#f59e0b">✦</text>
+      {/* eslint-disable-next-line i18next/no-literal-string */}
       <text x="25" y="85" fontSize="8" fill="#fde68a">✦</text>
+      {/* eslint-disable-next-line i18next/no-literal-string */}
       <text x="95" y="80" fontSize="12" fill="#fbbf24">✦</text>
       <rect x="45" y="85" width="30" height="8" rx="2" fill="#d97706" />
       <rect x="50" y="75" width="20" height="12" rx="1" fill="#f59e0b" />

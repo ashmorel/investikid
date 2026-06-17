@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { simulatorApi, type TradeRequest, type QuoteOut, type PortfolioOut } from '@/api/simulator';
@@ -20,6 +21,7 @@ import { playSound } from '@/lib/sound';
 import { haptic } from '@/lib/haptics';
 
 export default function Stock() {
+  const { t } = useTranslation('simulator');
   const { exchange, ticker } = useParams<{ exchange: string; ticker: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -65,9 +67,9 @@ export default function Stock() {
         if (r.missions_completed.length) bits.push(`Mission complete: ${r.missions_completed[0].title}`);
       }
       if (bits.length) {
-        toast({ title: 'Nice trade!', description: bits.join(' · ') });
+        toast({ title: t('stockDetail.toast.tradeSuccess'), description: bits.join(' · ') });
       } else {
-        toast({ title: 'Trade executed!', description: `Your ${ticker} trade was successful.` });
+        toast({ title: t('stockDetail.toast.tradeSuccessDefault'), description: t('stockDetail.toast.tradeSuccessDefaultDesc', { ticker }) });
       }
       navigate('/simulator');
     },
@@ -83,14 +85,14 @@ export default function Stock() {
   });
 
   if (quoteQ.isLoading || portfolioQ.isLoading) {
-    return <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6"><p className="text-sm text-muted-foreground">Loading…</p></div>;
+    return <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6"><p className="text-sm text-muted-foreground">{t('stockDetail.loading')}</p></div>;
   }
 
   if (quoteQ.error?.status === 404) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-        <BackButton to="/simulator/market" label="Market" />
-        <p className="mt-2 text-sm">Stock not found.</p>
+        <BackButton to="/simulator/market" label={t('stockDetail.backLabel')} />
+        <p className="mt-2 text-sm">{t('stockDetail.notFound')}</p>
       </div>
     );
   }
@@ -98,8 +100,8 @@ export default function Stock() {
   if (quoteQ.error?.status === 403) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-        <BackButton to="/simulator/market" label="Market" />
-        <p className="mt-2 text-sm">This stock isn't available in practice mode.</p>
+        <BackButton to="/simulator/market" label={t('stockDetail.backLabel')} />
+        <p className="mt-2 text-sm">{t('stockDetail.notAvailable')}</p>
       </div>
     );
   }
@@ -110,7 +112,7 @@ export default function Stock() {
     if (!online) {
       return (
         <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-          <BackButton to="/simulator/market" label="Market" />
+          <BackButton to="/simulator/market" label={t('stockDetail.backLabel')} />
           <OfflineNotice className="mt-3" />
         </div>
       );
@@ -124,7 +126,7 @@ export default function Stock() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-      <BackButton to="/simulator/market" label="Market" className="mb-4" />
+      <BackButton to="/simulator/market" label={t('stockDetail.backLabel')} className="mb-4" />
 
       {!online && <OfflineNotice className="mb-4" />}
 

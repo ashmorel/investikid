@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Disclosure } from '@/components/a11y/Disclosure';
 import { buildYouTubeUrls, youtubeMessageOrigins } from '@/components/child/lesson/videoEmbed';
@@ -49,6 +50,7 @@ function ensureIframeApi(): void {
 }
 
 export function VideoLesson({ contentJson, onComplete, completing = false }: Props) {
+  const { t } = useTranslation('lessons');
   const [checkedWatched, setCheckedWatched] = useState(false);
   const isHosted = contentJson.video_source === 'hosted' && !!contentJson.video_url;
   const youtubeUrls = !isHosted && contentJson.youtube_id ? buildYouTubeUrls(contentJson.youtube_id) : null;
@@ -106,10 +108,10 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
   if (!isHosted && !youtubeUrls) {
     return (
       <div className="space-y-4">
-        <p>Video unavailable.</p>
+        <p>{t('video.unavailable')}</p>
         <div className="flex justify-end">
           <Button onClick={() => onComplete(null)} disabled={completing}>
-            {completing ? 'Saving...' : 'Continue →'}
+            {completing ? t('video.saving') : t('video.continue')}
           </Button>
         </div>
       </div>
@@ -122,7 +124,7 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
     return (
       <div className="space-y-4">
         <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <p className="font-medium">This video is taking a break — read the lesson and continue.</p>
+          <p className="font-medium">{t('video.error')}</p>
         </div>
         {youtubeUrls && (
           <a
@@ -132,7 +134,7 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
             referrerPolicy="strict-origin-when-cross-origin"
             className="text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
-            Open video on YouTube
+            {t('video.openOnYouTube')}
           </a>
         )}
         {contentJson.transcript && (
@@ -140,7 +142,7 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
         )}
         <div className="flex justify-end">
           <Button onClick={() => onComplete(null)} disabled={completing}>
-            {completing ? 'Saving...' : 'Continue →'}
+            {completing ? t('video.saving') : t('video.continue')}
           </Button>
         </div>
       </div>
@@ -156,7 +158,7 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
           {isHosted ? (
             <video
               src={contentJson.video_url}
-              title="Lesson video"
+              title={t('video.lessonVideoTitle')}
               controls
               playsInline
               preload="metadata"
@@ -167,7 +169,7 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
           ) : isNativeApp() && !isAndroid() ? (
             <iframe
               src={youtubeUrls!.embed}
-              title="Lesson video"
+              title={t('video.lessonVideoTitle')}
               referrerPolicy="strict-origin-when-cross-origin"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
@@ -175,10 +177,10 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
             />
           ) : (
             // web/Android: the IFrame Player API replaces this div with its iframe.
-            <div ref={playerHostRef} title="Lesson video" data-testid="yt-player-host" className="h-full w-full">
+            <div ref={playerHostRef} title={t('video.lessonVideoTitle')} data-testid="yt-player-host" className="h-full w-full">
               <iframe
                 src={youtubeUrls!.embed}
-                title="Lesson video"
+                title={t('video.lessonVideoTitle')}
                 referrerPolicy="strict-origin-when-cross-origin"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
@@ -191,7 +193,7 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
 
       {isYouTube && phase === 'ended' && (
         <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-          <p className="font-medium">✓ Finished — Mark complete →</p>
+          <p className="font-medium">{t('video.finished')}</p>
         </div>
       )}
 
@@ -203,7 +205,7 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
           referrerPolicy="strict-origin-when-cross-origin"
           className="text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
-          Open video on YouTube
+          {t('video.openOnYouTube')}
         </a>
       )}
       {contentJson.caption && phase !== 'ended' && (
@@ -211,7 +213,7 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
       )}
       {phase !== 'ended' && (
         <p className="text-xs text-muted-foreground">
-          {contentJson.captions_available ? 'Captions available' : 'No captions'}
+          {contentJson.captions_available ? t('video.captionsAvailable') : t('video.noCaptions')}
         </p>
       )}
       {contentJson.transcript && (
@@ -222,12 +224,12 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
       {phase !== 'ended' && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={watched} onChange={(e) => setCheckedWatched(e.target.checked)} />
-          I watched this
+          {t('video.watchedLabel')}
         </label>
       )}
       <div className="flex justify-end">
         <Button disabled={!watched || completing} onClick={() => onComplete(null)}>
-          {completing ? 'Saving...' : 'Mark complete →'}
+          {completing ? t('video.saving') : t('video.markComplete')}
         </Button>
       </div>
     </div>

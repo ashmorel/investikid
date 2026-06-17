@@ -60,7 +60,9 @@ export function Penny({
       {/* Eyes */}
       {mood === 'excited' ? (
         <>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
           <text x="16" y="31" fontSize="11" fill="white">★</text>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
           <text x="33" y="31" fontSize="11" fill="white">★</text>
         </>
       ) : (

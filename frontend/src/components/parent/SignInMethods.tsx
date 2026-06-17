@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { parentAuthApi, type Provider } from '@/api/parentAuth';
 import { parentApi } from '@/api/parent';
 import { socialIdToken } from '@/lib/socialLogin';
@@ -16,6 +17,7 @@ const PROVIDERS: { id: Provider; label: string }[] = [
 const PARENT_BIO_KEY = 'parent';
 
 export function SignInMethods() {
+  const { t } = useTranslation('parent');
   const qc = useQueryClient();
   const { data: identities = [], isLoading } = useQuery({
     queryKey: ['parent-identities'],
@@ -34,7 +36,7 @@ export function SignInMethods() {
     setBioPending(true);
     try {
       if (next) {
-        if (!(await biometric.verify('Set up Face ID sign-in'))) return;
+        if (!(await biometric.verify(t('signInMethods.biometric.enrollPrompt')))) return;
         const res = await parentApi.biometricEnroll(getDeviceId(), 'Parent');
         if (res?.secret) {
           await biometric.enroll(PARENT_BIO_KEY, 'Parent', res.secret);
@@ -48,7 +50,7 @@ export function SignInMethods() {
         setBioOn(false);
       }
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError(t('signInMethods.error.generic'));
     } finally {
       setBioPending(false);
     }
@@ -64,9 +66,9 @@ export function SignInMethods() {
     } catch (err: unknown) {
       const status = (err as { status?: number }).status;
       if (status === 409) {
-        setError('That account is already connected to a different parent.');
+        setError(t('signInMethods.error.alreadyConnected'));
       } else {
-        setError('Something went wrong. Please try again.');
+        setError(t('signInMethods.error.generic'));
       }
     } finally {
       setPending(null);
@@ -80,7 +82,7 @@ export function SignInMethods() {
       await parentAuthApi.unlinkProvider(provider);
       await qc.invalidateQueries({ queryKey: ['parent-identities'] });
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError(t('signInMethods.error.generic'));
     } finally {
       setPending(null);
     }
@@ -89,9 +91,9 @@ export function SignInMethods() {
   return (
     <section
       className="mt-6 rounded-2xl border border-brand-100 bg-card px-4 py-4 shadow-sm sm:px-6"
-      aria-label="Sign-in methods"
+      aria-label={t('signInMethods.sectionAriaLabel')}
     >
-      <h2 className="mb-3 text-sm font-semibold text-brand-900">Sign-in methods</h2>
+      <h2 className="mb-3 text-sm font-semibold text-brand-900">{t('signInMethods.heading')}</h2>
 
       {error && (
         <p role="alert" className="mb-3 rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700">
@@ -100,7 +102,7 @@ export function SignInMethods() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">{t('signInMethods.loading')}</p>
       ) : (
         <ul className="space-y-2">
           {PROVIDERS.map(({ id, label }) => {
@@ -111,27 +113,27 @@ export function SignInMethods() {
                 <span className="text-sm font-medium">{label}</span>
                 <div className="flex items-center gap-2">
                   {connected && (
-                    <span className="text-xs text-muted-foreground">Connected</span>
+                    <span className="text-xs text-muted-foreground">{t('signInMethods.connected')}</span>
                   )}
                   {connected ? (
                     <Button
                       variant="outline"
                       size="sm"
-                      aria-label={`Disconnect ${label}`}
+                      aria-label={t('signInMethods.disconnectAriaLabel', { label })}
                       disabled={isPending}
                       onClick={() => handleDisconnect(id)}
                     >
-                      {isPending ? 'Disconnecting…' : 'Disconnect'}
+                      {isPending ? t('signInMethods.disconnecting') : t('signInMethods.disconnect')}
                     </Button>
                   ) : (
                     <Button
                       variant="outline"
                       size="sm"
-                      aria-label={`Connect ${label}`}
+                      aria-label={t('signInMethods.connectAriaLabel', { label })}
                       disabled={isPending}
                       onClick={() => handleConnect(id)}
                     >
-                      {isPending ? 'Connecting…' : 'Connect'}
+                      {isPending ? t('signInMethods.connecting') : t('signInMethods.connect')}
                     </Button>
                   )}
                 </div>
@@ -144,7 +146,7 @@ export function SignInMethods() {
       {bioAvailable && (
         <div className="mt-3 border-t border-brand-100 pt-3">
           <label className="flex min-h-[44px] items-center justify-between gap-3 text-sm font-medium">
-            <span>Face ID sign-in</span>
+            <span>{t('signInMethods.faceIdLabel')}</span>
             <input
               type="checkbox"
               checked={bioOn}
@@ -155,7 +157,7 @@ export function SignInMethods() {
             />
           </label>
           <p id="parent-bio-help" className="mt-1 text-xs text-muted-foreground">
-            Unlock InvestiKid with Face ID on this device instead of your password.
+            {t('signInMethods.faceIdHelp')}
           </p>
         </div>
       )}

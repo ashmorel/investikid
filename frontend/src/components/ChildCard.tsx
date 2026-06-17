@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -22,18 +23,16 @@ const CHIP: Record<ChildStatus, string> = {
   deleted: 'bg-slate-300 text-slate-700 line-through',
 };
 
-const LABEL: Record<ChildStatus, string> = {
-  active: 'Active', pending: 'Pending consent',
-  frozen: 'Frozen', declined: 'Declined', deleted: 'Deleted',
-};
-
 export function ChildCard({ child }: { child: Child }) {
+  const { t } = useTranslation('parent');
   const status = childStatus(child);
   const isDeleted = status === 'deleted';
   const qc = useQueryClient();
   const { toast } = useToast();
   const [confirmText, setConfirmText] = useState('');
   const [open, setOpen] = useState(false);
+
+  const statusLabel = t(`childCard.status.${status}`);
 
   const freeze = useMutation({
     mutationFn: (frozen: boolean) => parentApi.freezeChild(child.user_id, frozen),
@@ -48,8 +47,8 @@ export function ChildCard({ child }: { child: Child }) {
     onError: (err, _frozen, ctx) => {
       qc.setQueryData(['children'], ctx?.prev);
       toast({
-        title: 'Could not update child',
-        description: err instanceof ApiError ? err.detail : 'Please try again.',
+        title: t('childCard.toast.freezeErrorTitle'),
+        description: err instanceof ApiError ? err.detail : undefined,
       });
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ['children'] }),
@@ -86,8 +85,8 @@ export function ChildCard({ child }: { child: Child }) {
     onError: (err, _value, ctx) => {
       qc.setQueryData(['children'], ctx?.prev);
       toast({
-        title: 'Could not update experience mode',
-        description: err instanceof ApiError ? err.detail : 'Please try again.',
+        title: t('childCard.toast.tierErrorTitle'),
+        description: err instanceof ApiError ? err.detail : undefined,
       });
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ['children'] }),
@@ -101,11 +100,15 @@ export function ChildCard({ child }: { child: Child }) {
     },
     onError: (err) => {
       toast({
-        title: 'Could not delete account',
-        description: err instanceof ApiError ? err.detail : 'Please try again.',
+        title: t('childCard.toast.eraseErrorTitle'),
+        description: err instanceof ApiError ? err.detail : undefined,
       });
     },
   });
+
+  const currentTierLabel = child.age_tier === 'investor'
+    ? t('childCard.experienceCurrentInvestor')
+    : t('childCard.experienceCurrentExplorer');
 
   return (
     <article className="rounded-lg border bg-card p-4">
@@ -116,9 +119,9 @@ export function ChildCard({ child }: { child: Child }) {
         </div>
         <span
           className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', CHIP[status])}
-          aria-label={`Status: ${LABEL[status]}`}
+          aria-label={t('childCard.statusAriaLabel', { status: statusLabel })}
         >
-          {LABEL[status]}
+          {statusLabel}
         </span>
       </div>
 
@@ -135,7 +138,7 @@ export function ChildCard({ child }: { child: Child }) {
             onCheckedChange={(frozen) => freeze.mutate(frozen)}
           />
           <Label htmlFor={`freeze-${child.user_id}`} className="text-sm">
-            Freeze account
+            {t('childCard.freezeLabel')}
           </Label>
         </div>
 
@@ -147,7 +150,7 @@ export function ChildCard({ child }: { child: Child }) {
             onCheckedChange={(value) => pushToggle.mutate(value)}
           />
           <Label htmlFor={`push-${child.user_id}`} className="text-sm">
-            Notifications
+            {t('childCard.pushLabel')}
           </Label>
         </div>
 
@@ -159,43 +162,42 @@ export function ChildCard({ child }: { child: Child }) {
             onCheckedChange={(value) => biometricToggle.mutate(value)}
           />
           <Label htmlFor={`biometric-${child.user_id}`} className="text-sm">
-            Face ID sign-in
+            {t('childCard.biometricLabel')}
           </Label>
         </div>
 
         <div className="flex items-center gap-2 text-sm">
           {child.is_premium
-            ? <span className="font-semibold text-brand-700">Premium ✨</span>
-            : <span className="text-muted-foreground">Free plan</span>}
+            ? <span className="font-semibold text-brand-700">{t('childCard.premium')}</span>
+            : <span className="text-muted-foreground">{t('childCard.freePlan')}</span>}
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button variant="ghost" size="sm" disabled={isDeleted}>
-              Delete account…
+              {t('childCard.deleteAccount')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete {child.username}?</DialogTitle>
+              <DialogTitle>{t('childCard.dialog.title', { username: child.username })}</DialogTitle>
               <DialogDescription>
-                This soft-deletes the account. Your child will no longer be able to sign in.
-                Type <span className="font-mono font-semibold">{child.username}</span> to confirm.
+                {t('childCard.dialog.description', { username: child.username })}
               </DialogDescription>
             </DialogHeader>
             <Input
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              aria-label="Type child username to confirm"
+              aria-label={t('childCard.dialog.confirmAriaLabel')}
             />
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>{t('childCard.dialog.cancel')}</Button>
               <Button
                 variant="destructive"
                 disabled={confirmText !== child.username || erase.isPending}
                 onClick={() => erase.mutate()}
               >
-                {erase.isPending ? 'Deleting…' : 'Delete account'}
+                {erase.isPending ? t('childCard.dialog.deleting') : t('childCard.dialog.confirm')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -204,7 +206,7 @@ export function ChildCard({ child }: { child: Child }) {
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Label htmlFor={`tier-${child.user_id}`} className="text-sm">
-          Experience mode
+          {t('childCard.experienceMode')}
         </Label>
         <select
           id={`tier-${child.user_id}`}
@@ -216,12 +218,12 @@ export function ChildCard({ child }: { child: Child }) {
             tier.mutate(v === 'auto' ? null : (v as 'explorer' | 'investor'));
           }}
         >
-          <option value="auto">Auto (recommended)</option>
-          <option value="explorer">Explorer</option>
-          <option value="investor">Investor</option>
+          <option value="auto">{t('childCard.experienceAuto')}</option>
+          <option value="explorer">{t('childCard.experienceExplorer')}</option>
+          <option value="investor">{t('childCard.experienceInvestor')}</option>
         </select>
         <span className="text-xs text-muted-foreground">
-          Currently: {child.age_tier === 'investor' ? 'Investor' : 'Explorer'}. Auto switches to Investor at 14.
+          {t('childCard.experienceCurrent', { tier: currentTierLabel })}
         </span>
       </div>
     </article>

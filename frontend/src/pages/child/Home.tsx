@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useProgress } from '@/hooks/useProgress';
 import { useRecommendations } from '@/api/ai';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import { trackOncePerSession } from '@/lib/analytics';
 import { EventStrip } from '@/components/child/home/EventStrip';
 
 export default function Home() {
+  const { t } = useTranslation('home');
   useEffect(() => trackOncePerSession('home_view'), []);
   const { data: progress } = useProgress();
   const { data: recs } = useRecommendations();
@@ -40,7 +42,7 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-      <h1 className="sr-only">Your learning home</h1>
+      <h1 className="sr-only">{t('pageTitle')}</h1>
       <EventStrip />
       <HomeHero />
 
@@ -74,7 +76,7 @@ export default function Home() {
 
       <div className="mt-5">
         <Button asChild className="bg-brand-gradient hover:brightness-110 text-white font-bold rounded-xl">
-          <Link to="/lessons">Browse all modules →</Link>
+          <Link to="/lessons">{t('browseAll')}</Link>
         </Button>
       </div>
     </div>

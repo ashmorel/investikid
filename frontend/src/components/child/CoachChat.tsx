@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { aiApi, type CoachAction, type CoachChatResponse } from '@/api/ai';
 import { useCoachGreeting } from '@/hooks/useCoachGreeting';
 import { Button } from '@/components/ui/button';
@@ -17,12 +18,6 @@ type CoachChatProps = {
   showHeader?: boolean;
 };
 
-const SUGGESTION_CHIPS = [
-  'What should I learn next?',
-  'Review my weak spots',
-  'How am I doing?',
-];
-
 function actionToPath(action: CoachAction): string {
   if (action.type === 'lesson' && action.lesson_id) {
     return `/lessons/${action.module_id}/${action.lesson_id}`;
@@ -31,6 +26,7 @@ function actionToPath(action: CoachAction): string {
 }
 
 export function CoachChat({ onNavigate, showHeader = true }: CoachChatProps) {
+  const { t } = useTranslation('child');
   const { greeting, isLoading: greetingLoading } = useCoachGreeting();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -38,6 +34,12 @@ export function CoachChat({ onNavigate, showHeader = true }: CoachChatProps) {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [chipsSent, setChipsSent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const SUGGESTION_CHIPS = [
+    { key: 'coach.chip.whatNext', text: t('coach.chip.whatNext') },
+    { key: 'coach.chip.weakSpots', text: t('coach.chip.weakSpots') },
+    { key: 'coach.chip.howAmIDoing', text: t('coach.chip.howAmIDoing') },
+  ];
 
   useEffect(() => {
     if (messagesEndRef.current?.scrollIntoView) {
@@ -75,10 +77,10 @@ export function CoachChat({ onNavigate, showHeader = true }: CoachChatProps) {
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100" aria-hidden="true">
               <Penny size={28} mood="happy" />
             </span>
-            <span className="font-bold text-gray-900">Coach Penny</span>
+            <span className="font-bold text-gray-900">{t('coach.title')}</span>
           </div>
           {remaining !== null && (
-            <span className="ml-auto text-xs text-gray-400">{remaining} messages left</span>
+            <span className="ml-auto text-xs text-gray-400">{t('coach.messagesLeft', { count: remaining })}</span>
           )}
         </div>
       )}
@@ -94,13 +96,13 @@ export function CoachChat({ onNavigate, showHeader = true }: CoachChatProps) {
 
         {!chipsSent && (
           <div className="flex flex-wrap gap-2.5">
-            {SUGGESTION_CHIPS.map((chip) => (
+            {SUGGESTION_CHIPS.map(({ key, text }) => (
               <button
-                key={chip}
-                onClick={() => handleSend(chip)}
+                key={key}
+                onClick={() => handleSend(text)}
                 className="rounded-full border border-brand-300 bg-white px-3 py-1.5 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50"
               >
-                {chip}
+                {text}
               </button>
             ))}
           </div>
@@ -139,7 +141,7 @@ export function CoachChat({ onNavigate, showHeader = true }: CoachChatProps) {
         {sendMessage.isPending && (
           <div className="flex justify-start">
             <div className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-gray-400">
-              Thinking…
+              {t('coach.thinking')}
             </div>
           </div>
         )}
@@ -147,7 +149,7 @@ export function CoachChat({ onNavigate, showHeader = true }: CoachChatProps) {
         {sendMessage.isError && (
           <div className="flex justify-start">
             <div className="max-w-[85%] rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-600">
-              Something went wrong. Try sending your message again.
+              {t('coach.error')}
             </div>
           </div>
         )}
@@ -161,7 +163,7 @@ export function CoachChat({ onNavigate, showHeader = true }: CoachChatProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Ask Coach Penny…"
+          placeholder={t('coach.placeholder')}
           maxLength={200}
           className="flex-1 rounded-xl border border-brand-200 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-brand-300"
           disabled={remaining === 0}
@@ -171,7 +173,7 @@ export function CoachChat({ onNavigate, showHeader = true }: CoachChatProps) {
           disabled={!input.trim() || sendMessage.isPending || remaining === 0}
           className="rounded-xl bg-brand-gradient px-4 text-white"
         >
-          Send
+          {t('coach.send')}
         </Button>
       </div>
     </div>

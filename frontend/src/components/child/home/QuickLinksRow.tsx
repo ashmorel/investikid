@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '@/lib/currency';
 import { tierConfig, useAgeTier } from '@/lib/ageTier';
 import { track } from '@/lib/analytics';
@@ -16,6 +17,7 @@ const chipBase =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500';
 
 export function QuickLinksRow({ portfolioValue, currencyCode, reviewDue, badgesEarned, badgesTotal }: Props) {
+  const { t } = useTranslation('home');
   const tier = useAgeTier();
   const emoji = tierConfig[tier].chipEmoji;
 
@@ -25,7 +27,7 @@ export function QuickLinksRow({ portfolioValue, currencyCode, reviewDue, badgesE
     chips.push({
       key: 'portfolio',
       to: '/simulator',
-      label: 'Portfolio',
+      label: t('quickLinks.portfolio'),
       text: formatCurrency(portfolioValue, currencyCode),
       className: 'bg-white text-gray-700',
       icon: '📊',
@@ -36,7 +38,7 @@ export function QuickLinksRow({ portfolioValue, currencyCode, reviewDue, badgesE
     chips.push({
       key: 'review',
       to: '/progress',
-      label: `${reviewDue} to review`,
+      label: t('quickLinks.review', { count: reviewDue }),
       text: '',
       className: 'bg-accent-100 text-accent-700',
       icon: '🔁',
@@ -47,8 +49,8 @@ export function QuickLinksRow({ portfolioValue, currencyCode, reviewDue, badgesE
     chips.push({
       key: 'badges',
       to: '/stats',
-      label: 'Badges',
-      text: `${badgesEarned} of ${badgesTotal}`,
+      label: t('quickLinks.badges'),
+      text: t('quickLinks.badgesCount', { earned: badgesEarned, total: badgesTotal }),
       className: 'bg-white text-gray-700',
       icon: '🏅',
     });
@@ -58,7 +60,7 @@ export function QuickLinksRow({ portfolioValue, currencyCode, reviewDue, badgesE
 
   return (
     <nav aria-label="Shortcuts">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">While you're here</p>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">{t('quickLinks.heading')}</p>
       <div className="mt-2 flex flex-wrap gap-2">
         {chips.map((c) => (
           <Link

@@ -2,6 +2,7 @@ import { useRef, useCallback, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useChildSession } from '@/hooks/useChildSession';
 import { useChildAuthGuard } from '@/hooks/useChildAuthGuard';
 import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
@@ -22,6 +23,7 @@ import { PremiumPaywallProvider, usePremiumPaywall } from '@/hooks/usePremiumPay
 function CoachLauncher({ dueCount, isPremium }: { dueCount: number; isPremium: boolean }) {
   const [coachOpen, setCoachOpen] = useState(false);
   const { open: openPaywall } = usePremiumPaywall();
+  const { t } = useTranslation('child');
   return (
     <>
       <PennyFAB
@@ -30,7 +32,7 @@ function CoachLauncher({ dueCount, isPremium }: { dueCount: number; isPremium: b
         onOpen={() =>
           isPremium
             ? setCoachOpen(true)
-            : openPaywall({ kind: 'coach', label: 'Coach Penny' })
+            : openPaywall({ kind: 'coach', label: t('coach.title') })
         }
       />
       <CoachPanel open={coachOpen} onOpenChange={setCoachOpen} />
@@ -44,6 +46,7 @@ export function Shell() {
   const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
   useRouteFocus();
+  const { t } = useTranslation('child');
   const { data: recsData } = useRecommendations();
 
   const mainRef = useRef<HTMLDivElement>(null);
@@ -64,7 +67,7 @@ export function Shell() {
     return (
       <div className="min-h-screen bg-surface">
         <header className="h-14 border-b border-brand-200" aria-busy="true" />
-        <p className="mx-auto mt-6 max-w-2xl px-4 text-sm text-muted-foreground">Loading…</p>
+        <p className="mx-auto mt-6 max-w-2xl px-4 text-sm text-muted-foreground">{t('shell.loading')}</p>
       </div>
     );
   }

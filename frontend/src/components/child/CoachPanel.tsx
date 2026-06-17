@@ -1,6 +1,7 @@
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
+import { useTranslation } from 'react-i18next';
 import { CoachChat } from '@/components/child/CoachChat';
 import { Penny } from '@/components/child/ui/Penny';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -8,6 +9,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 type CoachPanelProps = { open: boolean; onOpenChange: (open: boolean) => void };
 
 export function CoachPanel({ open, onOpenChange }: CoachPanelProps) {
+  const { t } = useTranslation('child');
   const isDesktop = useMediaQuery('(min-width: 640px)');
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -24,8 +26,8 @@ export function CoachPanel({ open, onOpenChange }: CoachPanelProps) {
             <Penny size={28} mood="happy" />
           </span>
           <div>
-            <SheetTitle>Coach Penny</SheetTitle>
-            <SheetDescription>Ask Coach Penny for learning help.</SheetDescription>
+            <SheetTitle>{t('coach.title')}</SheetTitle>
+            <SheetDescription>{t('coach.description')}</SheetDescription>
           </div>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-hidden px-4 py-3 pb-[calc(0.75rem+var(--safe-bottom))]">

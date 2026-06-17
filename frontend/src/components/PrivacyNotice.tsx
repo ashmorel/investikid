@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { PRIVACY_NOTICE_VERSION } from '@/api/auth';
 
 /**
@@ -5,127 +6,114 @@ import { PRIVACY_NOTICE_VERSION } from '@/api/auth';
  * and the modal shown during signup (so the content lives in one place).
  */
 export function PrivacyNotice() {
+  const { t } = useTranslation('parent');
   return (
     <div>
       <p className="text-sm text-muted-foreground">
-        Version {PRIVACY_NOTICE_VERSION} · Written for learners aged 8 and above
+        {t('privacyNotice.meta', { version: PRIVACY_NOTICE_VERSION })}
       </p>
 
       <p className="mt-4 text-sm">
-        When you sign up to InvestiKid, we show you this notice and record that you (or your parent
-        or guardian) agreed to it. If we make important changes, we will show you the updated
-        notice and ask you to agree again before you can keep using the app.
+        {t('privacyNotice.intro')}
       </p>
 
       <section className="mt-6">
-        <h2 className="text-lg font-semibold">What is InvestiKid?</h2>
+        <h2 className="text-lg font-semibold">{t('privacyNotice.whatIsApp.heading')}</h2>
         <p className="mt-2 text-sm">
-          InvestiKid is a learning app that teaches you about money — how to save it, how to spend
-          it wisely, and how the world of investing works. To do that, we need to know a few things
-          about you so the app works properly and keeps you safe.
+          {t('privacyNotice.whatIsApp.body')}
         </p>
       </section>
 
       <section className="mt-6">
-        <h2 className="text-lg font-semibold">What information do we collect?</h2>
-        <p className="mt-2 text-sm">When you join, we collect:</p>
+        <h2 className="text-lg font-semibold">{t('privacyNotice.whatWeCollect.heading')}</h2>
+        <p className="mt-2 text-sm">{t('privacyNotice.whatWeCollect.intro')}</p>
         <ul className="mt-2 list-disc pl-5 text-sm space-y-1">
-          <li><strong>Your username</strong> — the name you use to log in. It does not have to be your real name.</li>
-          <li><strong>Your date of birth</strong> — so we know your age and can give you the right level of protection.</li>
-          <li><strong>Your country</strong> — so we know which rules apply to your data and which currency to show you.</li>
-          <li><strong>A password</strong> — stored in a scrambled form so no one can read it, not even us.</li>
+          <li><strong>{t('privacyNotice.whatWeCollect.usernameLabel')}</strong>{` — ${t('privacyNotice.whatWeCollect.usernameDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whatWeCollect.dobLabel')}</strong>{` — ${t('privacyNotice.whatWeCollect.dobDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whatWeCollect.countryLabel')}</strong>{` — ${t('privacyNotice.whatWeCollect.countryDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whatWeCollect.passwordLabel')}</strong>{` — ${t('privacyNotice.whatWeCollect.passwordDesc')}`}</li>
         </ul>
-        <p className="mt-3 text-sm">We also collect:</p>
+        <p className="mt-3 text-sm">{t('privacyNotice.whatWeCollect.alsoCollect')}</p>
         <ul className="mt-2 list-disc pl-5 text-sm space-y-1">
-          <li><strong>Your email address</strong> — only if you are old enough to have one under the rules in your country.</li>
-          <li><strong>A parent or guardian's email address</strong> — if you are below the age of digital consent, we ask for their permission first.</li>
-          <li><strong>Your learning progress</strong> — lessons completed, XP earned, level, and streak count.</li>
-          <li><strong>Which topics you are learning about</strong> — so we can show you the right lessons.</li>
+          <li><strong>{t('privacyNotice.whatWeCollect.emailLabel')}</strong>{` — ${t('privacyNotice.whatWeCollect.emailDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whatWeCollect.parentEmailLabel')}</strong>{` — ${t('privacyNotice.whatWeCollect.parentEmailDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whatWeCollect.progressLabel')}</strong>{` — ${t('privacyNotice.whatWeCollect.progressDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whatWeCollect.topicsLabel')}</strong>{` — ${t('privacyNotice.whatWeCollect.topicsDesc')}`}</li>
         </ul>
-        <p className="mt-3 text-sm">We do <strong>not</strong> collect your home address, phone number, photo, or information about your family's finances.</p>
+        <p className="mt-3 text-sm">{t('privacyNotice.whatWeCollect.notCollectedPre')} <strong>{t('privacyNotice.whatWeCollect.notCollectedNot')}</strong>{` ${t('privacyNotice.whatWeCollect.notCollectedPost')}`}</p>
       </section>
 
       <section className="mt-6">
-        <h2 className="text-lg font-semibold">Why do we collect it?</h2>
+        <h2 className="text-lg font-semibold">{t('privacyNotice.whyWeCollect.heading')}</h2>
         <ul className="mt-2 list-disc pl-5 text-sm space-y-1">
-          <li><strong>Username and password</strong> — so you can log in safely.</li>
-          <li><strong>Date of birth</strong> — to check your age and keep you safe.</li>
-          <li><strong>Country</strong> — to follow the right rules for your country.</li>
-          <li><strong>Parent or guardian email</strong> — to get their permission if you are young.</li>
-          <li><strong>Learning progress</strong> — so the app remembers what you have done.</li>
-          <li><strong>Topic choice</strong> — to show you the right lessons.</li>
-          <li><strong>Your email (if given)</strong> — to send you account messages.</li>
+          <li><strong>{t('privacyNotice.whyWeCollect.loginSafelyLabel')}</strong>{` — ${t('privacyNotice.whyWeCollect.loginSafelyDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whyWeCollect.checkAgeLabel')}</strong>{` — ${t('privacyNotice.whyWeCollect.checkAgeDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whyWeCollect.countryRulesLabel')}</strong>{` — ${t('privacyNotice.whyWeCollect.countryRulesDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whyWeCollect.parentPermissionLabel')}</strong>{` — ${t('privacyNotice.whyWeCollect.parentPermissionDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whyWeCollect.rememberProgressLabel')}</strong>{` — ${t('privacyNotice.whyWeCollect.rememberProgressDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whyWeCollect.topicChoiceLabel')}</strong>{` — ${t('privacyNotice.whyWeCollect.topicChoiceDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whyWeCollect.emailMessagesLabel')}</strong>{` — ${t('privacyNotice.whyWeCollect.emailMessagesDesc')}`}</li>
         </ul>
         <p className="mt-3 text-sm">
-          We only use your information to run the app and keep it safe. We do not use it to sell
-          you things or to follow you around the internet.
+          {t('privacyNotice.whyWeCollect.onlyToRun')}
         </p>
       </section>
 
       <section className="mt-6">
-        <h2 className="text-lg font-semibold">Who can see your information?</h2>
+        <h2 className="text-lg font-semibold">{t('privacyNotice.whoCanSee.heading')}</h2>
         <ul className="mt-2 list-disc pl-5 text-sm space-y-1">
-          <li><strong>You</strong> — you can always see your own information inside the app.</li>
-          <li><strong>Your parent or guardian</strong> — if they gave permission for your account, they can see your progress and ask for a copy of your data.</li>
-          <li><strong>The InvestiKid team</strong> — to keep the app running, fix problems, and make sure it is safe. The team is not allowed to share your information with anyone else.</li>
+          <li><strong>{t('privacyNotice.whoCanSee.youLabel')}</strong>{` — ${t('privacyNotice.whoCanSee.youDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whoCanSee.parentLabel')}</strong>{` — ${t('privacyNotice.whoCanSee.parentDesc')}`}</li>
+          <li><strong>{t('privacyNotice.whoCanSee.teamLabel')}</strong>{` — ${t('privacyNotice.whoCanSee.teamDesc')}`}</li>
         </ul>
         <p className="mt-3 text-sm">
-          We do <strong>not</strong> share your personal information with advertisers, data brokers,
-          or any other company.
+          {t('privacyNotice.whoCanSee.noSharePre')} <strong>{t('privacyNotice.whoCanSee.noShareNot')}</strong>{` ${t('privacyNotice.whoCanSee.noSharePost')}`}
         </p>
       </section>
 
       <section className="mt-6">
-        <h2 className="text-lg font-semibold">Lesson videos (YouTube)</h2>
+        <h2 className="text-lg font-semibold">{t('privacyNotice.youtube.heading')}</h2>
         <p className="mt-2 text-sm">
-          Some lessons include educational videos embedded from YouTube. When a video loads,
-          YouTube (a Google service) may receive technical data — such as device and IP
-          information — so it can play the video. We use YouTube's privacy-enhanced mode
-          (<strong>youtube-nocookie.com</strong>), which does not set tracking cookies unless a
-          video is actually played. We do <strong>not</strong> share your child's account
-          details with YouTube. Google handles this technical data under its own privacy policy.
+          {t('privacyNotice.youtube.body')}
         </p>
       </section>
 
       <section className="mt-6">
-        <h2 className="text-lg font-semibold">How long do we keep your information?</h2>
+        <h2 className="text-lg font-semibold">{t('privacyNotice.retention.heading')}</h2>
         <p className="mt-2 text-sm">
-          We keep your information for as long as you have an account with us.
+          {t('privacyNotice.retention.body')}
         </p>
-        <p className="mt-2 text-sm">If you or your parent or guardian asks us to delete your account:</p>
+        <p className="mt-2 text-sm">{t('privacyNotice.retention.deletionIntro')}</p>
         <ol className="mt-2 list-decimal pl-5 text-sm space-y-1">
-          <li>We close the account straight away. You will not be able to log in.</li>
-          <li>After 30 days, we delete most of your personal information. We keep your year of birth and country briefly — without your name or email, this cannot identify you.</li>
-          <li>We keep a record of when you joined and when you asked us to delete your account, because the law requires it.</li>
+          <li>{t('privacyNotice.retention.step1')}</li>
+          <li>{t('privacyNotice.retention.step2')}</li>
+          <li>{t('privacyNotice.retention.step3')}</li>
         </ol>
       </section>
 
       <section className="mt-6">
-        <h2 className="text-lg font-semibold">Your choices</h2>
+        <h2 className="text-lg font-semibold">{t('privacyNotice.yourChoices.heading')}</h2>
         <ul className="mt-2 list-disc pl-5 text-sm space-y-1">
-          <li><strong>Personalised recommendations</strong> — switched <strong>off</strong> by default. You can turn it on in account settings.</li>
-          <li><strong>Marketing messages</strong> — switched <strong>off</strong> by default. You can change this in account settings.</li>
-          <li><strong>Delete your account</strong> — you or your parent or guardian can ask at any time.</li>
-          <li><strong>See your data</strong> — you can ask for a copy of all the information we hold about you.</li>
-          <li><strong>Fix your information</strong> — if something is wrong, you can update it in your profile settings.</li>
+          <li><strong>{t('privacyNotice.yourChoices.recommendationsLabel')}</strong>{` — ${t('privacyNotice.yourChoices.recommendationsDesc')}`}</li>
+          <li><strong>{t('privacyNotice.yourChoices.marketingLabel')}</strong>{` — ${t('privacyNotice.yourChoices.marketingDesc')}`}</li>
+          <li><strong>{t('privacyNotice.yourChoices.deleteAccountLabel')}</strong>{` — ${t('privacyNotice.yourChoices.deleteAccountDesc')}`}</li>
+          <li><strong>{t('privacyNotice.yourChoices.seeDataLabel')}</strong>{` — ${t('privacyNotice.yourChoices.seeDataDesc')}`}</li>
+          <li><strong>{t('privacyNotice.yourChoices.fixInfoLabel')}</strong>{` — ${t('privacyNotice.yourChoices.fixInfoDesc')}`}</li>
         </ul>
         <p className="mt-3 text-sm text-muted-foreground">
-          If you are below the age limit in your country, your parent or guardian manages these
-          choices for you — to make sure a grown-up is looking out for you.
+          {t('privacyNotice.yourChoices.minorNote')}
         </p>
       </section>
 
       <section className="mt-6">
-        <h2 className="text-lg font-semibold">Contact us</h2>
+        <h2 className="text-lg font-semibold">{t('privacyNotice.contact.heading')}</h2>
         <p className="mt-2 text-sm">
-          If you have a question about your information, or want to ask for a copy of your data or
-          delete your account, please contact us at{' '}
-          <strong>privacy@invest-ed.app</strong>. We will respond within 30 days.
+          {t('privacyNotice.contact.bodyPre')}{' '}
+          <strong>{t('privacyNotice.contact.email')}</strong>.{' '}
+          {t('privacyNotice.contact.bodyPost')}
         </p>
         <p className="mt-2 text-sm">
-          If you are not happy with how we have handled your information, you have the right to
-          complain to the data protection authority in your country — for example, the Information
-          Commissioner's Office (ICO) in the UK.
+          {t('privacyNotice.contact.complain')}
         </p>
       </section>
     </div>

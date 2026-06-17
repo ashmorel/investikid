@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLevelLessons, useDeleteLesson, lessonLabel } from '@/api/admin';
 import type { AdminLesson } from '@/api/admin';
 import LessonForm from './LessonForm';
@@ -7,6 +8,7 @@ import ConfirmDialog from './ConfirmDialog';
 import LessonDraftReview from './LessonDraftReview';
 
 export default function LevelLessonList() {
+  const { t } = useTranslation('admin');
   const { moduleId = '', levelId = '' } = useParams<{ moduleId: string; levelId: string }>();
   const { data: lessons = [], isLoading } = useLevelLessons(levelId);
   const deleteLesson = useDeleteLesson();
@@ -17,24 +19,24 @@ export default function LevelLessonList() {
 
   const sorted = [...lessons].sort((a, b) => a.order_index - b.order_index);
 
-  if (isLoading) return <p className="text-muted-foreground">Loading...</p>;
+  if (isLoading) return <p className="text-muted-foreground">{t('levelLessonList.loading')}</p>;
 
   return (
     <div>
       <div className="mb-2">
         <Link to={`/admin/modules/${moduleId}/levels`} className="text-xs text-muted-foreground hover:text-ink">
-          ← Back to levels
+          {t('levelLessonList.backToLevels')}
         </Link>
       </div>
 
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-ink">Lessons</h2>
+        <h2 className="text-xl font-semibold text-ink">{t('levelLessonList.heading')}</h2>
         <button
           type="button"
           onClick={() => { setEditingLesson(null); setShowNewLesson(true); }}
           className="text-sm text-brand-600 hover:text-brand-700"
         >
-          + Add Lesson
+          {t('levelLessonList.addLesson')}
         </button>
       </div>
 
@@ -55,14 +57,14 @@ export default function LevelLessonList() {
               onClick={() => { setEditingLesson(lesson); setShowNewLesson(false); }}
               className="text-xs text-brand-600"
             >
-              Edit
+              {t('levelLessonList.edit')}
             </button>
             <button
               type="button"
               onClick={() => setDeleteTarget(lesson)}
               className="text-xs text-danger-500"
             >
-              Delete
+              {t('levelLessonList.delete')}
             </button>
           </div>
         ))}
@@ -80,8 +82,8 @@ export default function LevelLessonList() {
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title="Delete lesson?"
-        message="This will permanently delete this lesson."
+        title={t('levelLessonList.deleteTitle')}
+        message={t('levelLessonList.deleteMessage')}
         onConfirm={() => { if (deleteTarget) deleteLesson.mutate(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
       />

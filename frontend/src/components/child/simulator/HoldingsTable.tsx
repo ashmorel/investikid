@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { EduTooltip } from './EduTooltip';
@@ -40,6 +41,7 @@ function TotalPl({ value, currencyCode }: { value: string; currencyCode: string 
 }
 
 export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, currencyCode }: Props) {
+  const { t } = useTranslation('simulator');
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const navigate = useNavigate();
   const showTotals =
@@ -49,13 +51,13 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
     return (
       <div className="rounded-2xl border border-brand-100 shadow-sm bg-white p-8 text-center space-y-3">
         <span className="text-5xl">📈</span>
-        <p className="font-bold text-gray-900">No stocks yet!</p>
-        <p className="text-sm text-gray-500">Start by browsing the market and making your first trade.</p>
+        <p className="font-bold text-gray-900">{t('holdings.noStocksTitle')}</p>
+        <p className="text-sm text-gray-500">{t('holdings.noStocksBody')}</p>
         <Link
           to="/simulator/market"
           className="inline-block rounded-xl bg-brand-gradient px-5 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity"
         >
-          Browse Market →
+          {t('holdings.browseMarket')}
         </Link>
       </div>
     );
@@ -88,9 +90,9 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
                 </span>
               </div>
               <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{h.shares} shares</span>
-                <span>avg {formatCurrency(h.avg_buy_price, currency)}</span>
-                <span>value {formatCurrency(h.market_value, currency)}</span>
+                <span>{t('holdings.sharesCount', { count: h.shares })}</span>
+                <span>{t('holdings.avgBuy', { value: formatCurrency(h.avg_buy_price, currency) })}</span>
+                <span>{t('holdings.marketValue', { value: formatCurrency(h.market_value, currency) })}</span>
               </div>
             </Link>
           );
@@ -98,11 +100,11 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
         {showTotals && (
           <div className="rounded-xl border border-brand-200 bg-brand-50 p-3" data-testid="holdings-totals">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-gray-900">Total</span>
+              <span className="font-bold text-gray-900">{t('holdings.total')}</span>
               <TotalPl value={totalUnrealizedPl!} currencyCode={currencyCode!} />
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              value {formatCurrency(holdingsValue!, currencyCode!)}
+              {t('holdings.portfolioValue', { value: formatCurrency(holdingsValue!, currencyCode!) })}
             </p>
           </div>
         )}
@@ -115,15 +117,15 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
       <table className="w-full text-sm">
         <thead className="border-b bg-muted/50">
           <tr>
-            <th className="px-3 py-2 text-left font-medium">Ticker</th>
-            <th className="px-3 py-2 text-left font-medium">Shares</th>
-            <th className="px-3 py-2 text-left font-medium">Avg Buy</th>
-            <th className="px-3 py-2 text-left font-medium">Current</th>
-            <th className="px-3 py-2 text-left font-medium">Value</th>
+            <th className="px-3 py-2 text-left font-medium">{t('holdings.col.ticker')}</th>
+            <th className="px-3 py-2 text-left font-medium">{t('holdings.col.shares')}</th>
+            <th className="px-3 py-2 text-left font-medium">{t('holdings.col.avgBuy')}</th>
+            <th className="px-3 py-2 text-left font-medium">{t('holdings.col.current')}</th>
+            <th className="px-3 py-2 text-left font-medium">{t('holdings.col.value')}</th>
             <th className="px-3 py-2 text-left font-medium">
               <EduTooltip
-                term="Unrealized P/L"
-                explanation="This is how much you'd gain or lose if you sold now. It's 'unrealized' because you haven't sold yet."
+                term={t('holdings.col.unrealizedPl')}
+                explanation={t('holdings.col.unrealizedPlTooltip')}
               />
             </th>
           </tr>
@@ -168,7 +170,7 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
         {showTotals && (
           <tfoot className="border-t bg-brand-50" data-testid="holdings-totals">
             <tr>
-              <td className="px-3 py-2 font-bold text-gray-900" colSpan={4}>Total</td>
+              <td className="px-3 py-2 font-bold text-gray-900" colSpan={4}>{t('holdings.total')}</td>
               <td className="px-3 py-2 font-bold">{formatCurrency(holdingsValue!, currencyCode!)}</td>
               <td className="px-3 py-2"><TotalPl value={totalUnrealizedPl!} currencyCode={currencyCode!} /></td>
             </tr>

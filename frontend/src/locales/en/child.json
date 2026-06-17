@@ -1,0 +1,219 @@
+{
+  "nav": {
+    "home": "Home",
+    "learn": "Learn",
+    "revise": "Revise",
+    "progress": "Progress",
+    "simulator": "Simulator",
+    "stats": "Stats",
+    "primaryMobile": "Primary mobile",
+    "primary": "Primary"
+  },
+
+  "topNav": {
+    "homeLink": "InvestiKid"
+  },
+
+  "shell": {
+    "loading": "Loading…"
+  },
+
+  "tierChip": {
+    "label": "Investor mode",
+    "text": "Investor"
+  },
+
+  "premiumBadge": {
+    "text": "Premium"
+  },
+
+  "masteredStamp": {
+    "text": "Mastered"
+  },
+
+  "offline": {
+    "notice": "You're offline — live prices need the internet. Your lessons still work!"
+  },
+
+  "coach": {
+    "title": "Coach Penny",
+    "description": "Ask Coach Penny for learning help.",
+    "backAriaLabel": "Back to home",
+    "back": "← Back",
+    "messagesLeft": "{{count}} messages left",
+    "thinking": "Thinking…",
+    "error": "Something went wrong. Try sending your message again.",
+    "placeholder": "Ask Coach Penny…",
+    "send": "Send",
+    "chip": {
+      "whatNext": "What should I learn next?",
+      "weakSpots": "Review my weak spots",
+      "howAmIDoing": "How am I doing?"
+    }
+  },
+
+  "paywall": {
+    "premiumTreat": "\"{{label}}\" is a Premium treat.",
+    "premiumUnlocks": "Premium unlocks more.",
+    "sendingRequest": "Sending…",
+    "mayBeLater": "Maybe later",
+    "noParent": "Ask a grown-up to set up Premium for you. 💛",
+    "alreadySent": "We already told your grown-up today 👍",
+    "sent": "We've let your grown-up know! 🎉"
+  },
+
+  "feedback": {
+    "title": "Send feedback",
+    "typeLabel": "Type",
+    "messageLabel": "Message",
+    "sending": "Sending…",
+    "submit": "Send Feedback",
+    "success": "Thanks for your feedback!",
+    "error": "Could not send feedback. Please try again.",
+    "type": {
+      "bug": "Bug Report",
+      "feature": "Feature Request",
+      "general": "General Feedback"
+    },
+    "placeholder": {
+      "bug": "Describe the bug you encountered…",
+      "feature": "What feature would you like to see?",
+      "general": "Share your thoughts…"
+    }
+  },
+
+  "currencySelector": {
+    "label": "Practice currency"
+  },
+
+  "moduleTile": {
+    "next": "Next",
+    "premiumAriaLabel": "{{title}} (premium)"
+  },
+
+  "shop": {
+    "pageTitle": "Penny's Shop",
+    "pageTitleSimple": "Shop",
+    "coinsAriaLabel": "{{count}} coins",
+    "description": "Earn coins by learning — 1 coin for every XP. Spend them on looks for Penny.",
+    "loading": "Loading the shop…",
+    "error": "The shop is closed right now — try again shortly.",
+    "itemLabel": {
+      "takeOff": "Take off",
+      "wearIt": "Wear it",
+      "premium": "Premium",
+      "buy": "Buy",
+      "keepSaving": "Keep saving"
+    },
+    "itemPremiumSr": " — Premium item",
+    "confirmTitle": "Buy {{name}}?",
+    "confirmMessage": "This costs {{cost}} coins. You have {{balance}}."
+  },
+
+  "stats": {
+    "pageTitle": "Your Stats",
+    "streakFreeze": "🛡️ A streak freeze saves your streak if you miss a day. Earn one every 7-day streak (up to 2).",
+    "badgesSection": "Badges",
+    "challengesSection": "Weekly Challenges",
+    "groupsSection": "Your groups",
+    "leaderboardSection": "Weekly Leaderboard"
+  },
+
+  "xpSummary": {
+    "levelLabel": "Level",
+    "level": "Level {{level}}",
+    "totalXpLabel": "Total XP",
+    "streakLabel": "Streak",
+    "streakDays": "{{count}}-day",
+    "xpProgress": "{{progress}}/100 XP to next level",
+    "xpAriaLabel": "XP progress to next level",
+    "streakActiveAria": "streak active",
+    "streakInactiveAria": "streak inactive",
+    "streakActiveText": "Keep it going!",
+    "streakInactiveText": "Complete a lesson to restart"
+  },
+
+  "badges": {
+    "earnedToday": "Earned today",
+    "earnedYesterday": "Earned yesterday",
+    "earnedDaysAgo": "Earned {{count}} days ago",
+    "earnedOn": "Earned {{date}}",
+    "locked": "Locked"
+  },
+
+  "challenges": {
+    "noActive": "No active challenges this week.",
+    "completed": "Completed!",
+    "progressAriaLabel": "{{title}} progress",
+    "xpReward": "+{{xp}} XP"
+  },
+
+  "groupGoals": {
+    "ariaLabel": "Group goals",
+    "groupGoalsSuffix": "— group goals",
+    "completed": "Completed! 🎉",
+    "completedSimple": "Completed",
+    "progressAriaLabel": "{{title}} group progress"
+  },
+
+  "groupLeaderboard": {
+    "ariaLabel": "{{name}} leaderboard",
+    "youLabel": "(you)",
+    "xpThisWeek": "XP"
+  },
+
+  "leaderboard": {
+    "empty": "No activity this week yet. Complete a lesson to get on the board!",
+    "colRank": "#",
+    "colUsername": "Username",
+    "colCountry": "Country",
+    "colXp": "XP This Week",
+    "youBadge": "You"
+  },
+
+  "recommendation": {
+    "progressCount": "{{completed}} of {{total}}",
+    "progressAriaLabel": "{{completed}} of {{total}} lessons completed"
+  },
+
+  "strengths": {
+    "loading": "Loading your progress…",
+    "pageTitle": "My Progress",
+    "subtitle": "See how you're doing across all topics",
+    "empty": "Complete some lessons to see your progress here!",
+    "overallMastery": "Overall Mastery",
+    "overallMasterySubtitle": "Across all topics you've studied",
+    "weakConcepts": "{{count}} weak concept",
+    "weakConceptsPlural": "{{count}} weak concepts",
+    "dueForReview": "{{count}} due for review",
+    "startToTrack": "Start this topic to track your progress",
+    "overallMasteryAriaLabel": "Overall mastery: {{pct}}%"
+  },
+
+  "level": {
+    "loading": "Loading…",
+    "premium": "Premium",
+    "seeWhatsIncluded": "See what's included",
+    "levelsLabel": "Levels",
+    "notFound": "Level not found.",
+    "progress": "Level progress",
+    "willLearn": "In this level you'll learn…",
+    "lessonCount": "{{completed}} / {{total}} lessons"
+  },
+
+  "illustrations": {
+    "budgetPieChart": {
+      "center": "Budget",
+      "needs": "50% Needs",
+      "wants": "30% Wants",
+      "savings": "20% Savings"
+    },
+    "cryptoChart": {
+      "warning": "↑ This is NOT \"guaranteed money\" ↑"
+    },
+    "eggs": {
+      "allInOne": "All in one ✗",
+      "spreadOut": "Spread out ✓"
+    }
+  }
+}

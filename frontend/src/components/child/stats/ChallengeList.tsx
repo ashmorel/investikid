@@ -1,4 +1,5 @@
 import { CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { ChallengeOut } from '@/api/gamification';
 import { cn } from '@/lib/utils';
 import { PremiumBadge } from '@/components/child/PremiumBadge';
@@ -10,12 +11,13 @@ type Props = {
 };
 
 export function ChallengeList({ challenges, isPremium = false }: Props) {
+  const { t } = useTranslation('child');
   const { open: openPaywall } = usePremiumPaywall();
 
   if (challenges.length === 0) {
     return (
       <p className="py-8 text-center text-muted-foreground">
-        No active challenges this week.
+        {t('challenges.noActive')}
       </p>
     );
   }
@@ -38,7 +40,7 @@ export function ChallengeList({ challenges, isPremium = false }: Props) {
                 </div>
                 <p className="text-sm text-muted-foreground">{c.description}</p>
               </div>
-              <span className="shrink-0 text-sm font-medium text-primary">+{c.xp_reward} XP</span>
+              <span className="shrink-0 text-sm font-medium text-primary">{t('challenges.xpReward', { xp: c.xp_reward })}</span>
             </div>
 
             <div className="mt-3 flex items-center gap-2">
@@ -47,7 +49,7 @@ export function ChallengeList({ challenges, isPremium = false }: Props) {
                 aria-valuenow={c.progress}
                 aria-valuemin={0}
                 aria-valuemax={c.target_value}
-                aria-label={`${c.title} progress`}
+                aria-label={t('challenges.progressAriaLabel', { title: c.title })}
                 className="h-2 flex-1 rounded-full bg-muted"
               >
                 <div
@@ -59,7 +61,7 @@ export function ChallengeList({ challenges, isPremium = false }: Props) {
                 />
               </div>
               <span className="text-xs font-medium text-muted-foreground">
-                {completed ? 'Completed!' : `${pct}%`}
+                {completed ? t('challenges.completed') : `${pct}%`}
               </span>
             </div>
           </div>
