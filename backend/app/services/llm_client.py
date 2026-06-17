@@ -48,6 +48,27 @@ def _is_retryable(exc: Exception | None) -> bool:
     return "rate" in msg or "timeout" in msg or "503" in msg or "502" in msg or "429" in msg
 
 
+def _is_provider_auth_error(exc: LLMError) -> bool:
+    """True for 401/403 — a bad/misconfigured key on THIS provider.
+
+    The chain should advance to the next provider rather than failing the whole
+    request, because the error is specific to this provider's credentials, not
+    to the request itself.
+    """
+    cause = exc.__cause__
+    status = getattr(cause, "status_code", None) or getattr(cause, "status", None)
+    if isinstance(status, int) and status in (401, 403):
+        return True
+    msg = str(exc).lower()
+    return (
+        "401" in msg
+        or "403" in msg
+        or "unauthorized" in msg
+        or "invalid api key" in msg
+        or "invalid_api_key" in msg
+    )
+
+
 class LLMClient(Protocol):
     async def complete(
         self,
@@ -223,9 +244,10 @@ class FallbackLLMClient:
                     response_format=response_format,
                 )
             except LLMError as e:
-                if not e.retryable or i == len(self.clients) - 1:
+                should_fallback = e.retryable or _is_provider_auth_error(e)
+                if not should_fallback or i == len(self.clients) - 1:
                     raise
-                logger.warning("Provider %d failed (retryable), trying next: %s", i, e)
+                logger.warning("Provider %d failed (retryable/auth), trying next: %s", i, e)
                 last_error = e
                 _fire_failure_hook(str(e))
         raise last_error  # type: ignore[misc]  # unreachable if clients is non-empty
@@ -251,9 +273,10 @@ class FallbackLLMClient:
                     yield chunk
                 return
             except LLMError as e:
-                if not e.retryable or i == len(self.clients) - 1:
+                should_fallback = e.retryable or _is_provider_auth_error(e)
+                if not should_fallback or i == len(self.clients) - 1:
                     raise
-                logger.warning("Provider %d stream failed (retryable), trying next: %s", i, e)
+                logger.warning("Provider %d stream failed (retryable/auth), trying next: %s", i, e)
                 last_error = e
                 _fire_failure_hook(str(e))
         raise last_error  # type: ignore[misc]
@@ -277,9 +300,29 @@ def _build_groq_client() -> OpenAIClient:
     )
 
 
+def _build_gemini_flash_lite_client() -> OpenAIClient:
+    return OpenAIClient(
+        api_key=settings.llm_gemini_api_key,
+        model=settings.llm_gemini_flash_lite_model,
+        base_url=settings.llm_gemini_base_url,
+        provider="gemini",
+    )
+
+
+def _build_gemini_flash_client() -> OpenAIClient:
+    return OpenAIClient(
+        api_key=settings.llm_gemini_api_key,
+        model=settings.llm_gemini_flash_model,
+        base_url=settings.llm_gemini_base_url,
+        provider="gemini",
+    )
+
+
 _PROVIDER_BUILDERS: dict[str, tuple] = {
     "together": (_build_together_client, lambda: settings.llm_together_api_key),
     "groq": (_build_groq_client, lambda: settings.llm_groq_api_key),
+    "gemini_flash_lite": (_build_gemini_flash_lite_client, lambda: settings.llm_gemini_api_key),
+    "gemini_flash": (_build_gemini_flash_client, lambda: settings.llm_gemini_api_key),
 }
 
 
@@ -301,7 +344,9 @@ def _build_chain(provider_csv: str) -> FallbackLLMClient:
 def get_model_name(tier: str = "lite") -> str:
     if tier == "premium":
         return settings.llm_premium_model
-    return settings.llm_together_model
+    if tier == "standard":
+        return settings.llm_gemini_flash_model
+    return settings.llm_gemini_flash_lite_model
 
 
 def get_llm_client(tier: str = "lite", *, premium: bool | None = None) -> LLMClient:
@@ -359,3 +404,77 @@ def get_strict_premium_client() -> LLMClient | None:
         model=settings.llm_premium_model,
         provider="openai-premium",
     )
+
+
+async def probe_provider(name: str) -> dict:
+    """Ping one provider with a tiny prompt; report ok/error. Never returns the key."""
+    entry = _PROVIDER_BUILDERS.get(name)
+    if entry is None:
+        return {"provider": name, "configured": False, "ok": False, "detail": "unknown provider"}
+    builder, key_getter = entry
+    api_key = key_getter()
+    if not api_key:
+        return {"provider": name, "configured": False, "ok": False, "detail": "no api key set"}
+    client = builder()
+    try:
+        await client.complete(
+            system_prompt="ping",
+            messages=[{"role": "user", "content": "Reply with: OK"}],
+            max_tokens=5,
+            temperature=0,
+        )
+        return {"provider": name, "configured": True, "ok": True, "detail": "responded"}
+    except Exception as exc:  # noqa: BLE001
+        raw = f"{type(exc).__name__}: {exc}"[:200]
+        # Scrub the API key from the error message — providers can echo it back in 401 bodies.
+        safe_detail = raw.replace(api_key, "[REDACTED]") if api_key else raw
+        return {
+            "provider": name,
+            "configured": True,
+            "ok": False,
+            "detail": safe_detail,
+        }
+
+
+async def probe_all_providers() -> list[dict]:
+    """Probe every provider used by the lite/standard tiers + the premium tier."""
+    names = ["gemini_flash_lite", "gemini_flash", "together"]
+    results = [await probe_provider(n) for n in names]
+    # premium (separate path — uses get_strict_premium_client)
+    premium = get_strict_premium_client()
+    if premium is None:
+        results.append(
+            {"provider": "premium", "configured": False, "ok": False, "detail": "no premium key set"}
+        )
+    else:
+        try:
+            await premium.complete(
+                system_prompt="ping",
+                messages=[{"role": "user", "content": "Reply with: OK"}],
+                max_tokens=5,
+                temperature=0,
+            )
+            results.append(
+                {
+                    "provider": "premium",
+                    "model": get_model_name("premium"),
+                    "configured": True,
+                    "ok": True,
+                    "detail": "responded",
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            raw = f"{type(exc).__name__}: {exc}"[:200]
+            # Scrub premium key from any error echoed back by the provider.
+            premium_key = settings.llm_premium_api_key
+            safe_detail = raw.replace(premium_key, "[REDACTED]") if premium_key else raw
+            results.append(
+                {
+                    "provider": "premium",
+                    "model": get_model_name("premium"),
+                    "configured": True,
+                    "ok": False,
+                    "detail": safe_detail,
+                }
+            )
+    return results

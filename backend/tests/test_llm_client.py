@@ -267,9 +267,171 @@ async def test_fallback_client_with_no_providers_raises_llm_error():
 
 def test_get_model_name():
     with patch("app.services.llm_client.settings") as mock_settings:
-        mock_settings.llm_together_model = "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
-        mock_settings.llm_premium_model = "gpt-4o"
+        mock_settings.llm_gemini_flash_lite_model = "gemini-2.5-flash-lite"
+        mock_settings.llm_gemini_flash_model = "gemini-2.5-flash"
+        mock_settings.llm_premium_model = "gpt-5-mini"
 
-        assert get_model_name("lite") == "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
-        assert get_model_name("standard") == "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
-        assert get_model_name("premium") == "gpt-4o"
+        assert get_model_name("lite") == "gemini-2.5-flash-lite"
+        assert get_model_name("standard") == "gemini-2.5-flash"
+        assert get_model_name("premium") == "gpt-5-mini"
+
+
+def _mock_settings_for_gemini(mock_settings, *, gemini_key: str, together_key: str = "") -> None:
+    """Apply all settings attributes needed for Gemini provider tests."""
+    mock_settings.llm_gemini_api_key = gemini_key
+    mock_settings.llm_gemini_base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    mock_settings.llm_gemini_flash_lite_model = "gemini-2.5-flash-lite"
+    mock_settings.llm_gemini_flash_model = "gemini-2.5-flash"
+    mock_settings.llm_together_api_key = together_key
+    mock_settings.llm_together_base_url = "https://api.together.xyz/v1"
+    mock_settings.llm_together_model = "meta-llama/Meta-Llama-3-8B-Instruct-Lite"
+
+
+def test_get_llm_client_lite_gemini_primary_with_together_fallback():
+    """When Gemini key is set, lite chain has Gemini first and Together second."""
+    with patch("app.services.llm_client.settings") as mock_settings:
+        mock_settings.llm_lite_providers = "gemini_flash_lite,together"
+        _mock_settings_for_gemini(mock_settings, gemini_key="gm-key", together_key="tog-key")
+
+        client = get_llm_client(tier="lite")
+        assert isinstance(client, FallbackLLMClient)
+        assert len(client.clients) == 2
+        first = client.clients[0]
+        second = client.clients[1]
+        assert isinstance(first, OpenAIClient)
+        assert first._provider == "gemini"
+        assert first._model == "gemini-2.5-flash-lite"
+        assert isinstance(second, OpenAIClient)
+        assert second._provider == "together"
+
+
+def test_get_llm_client_standard_gemini_primary_with_together_fallback():
+    """When Gemini key is set, standard chain has Gemini Flash first and Together second."""
+    with patch("app.services.llm_client.settings") as mock_settings:
+        mock_settings.llm_standard_providers = "gemini_flash,together"
+        _mock_settings_for_gemini(mock_settings, gemini_key="gm-key", together_key="tog-key")
+
+        client = get_llm_client(tier="standard")
+        assert isinstance(client, FallbackLLMClient)
+        assert len(client.clients) == 2
+        first = client.clients[0]
+        assert isinstance(first, OpenAIClient)
+        assert first._provider == "gemini"
+        assert first._model == "gemini-2.5-flash"
+        second = client.clients[1]
+        assert isinstance(second, OpenAIClient)
+        assert second._provider == "together"
+
+
+def test_get_llm_client_gemini_key_empty_falls_back_to_together():
+    """When Gemini key is absent (CI/local), Gemini is skipped and Together serves."""
+    with patch("app.services.llm_client.settings") as mock_settings:
+        mock_settings.llm_lite_providers = "gemini_flash_lite,together"
+        _mock_settings_for_gemini(mock_settings, gemini_key="", together_key="tog-key")
+
+        client = get_llm_client(tier="lite")
+        assert isinstance(client, FallbackLLMClient)
+        assert len(client.clients) == 1
+        assert isinstance(client.clients[0], OpenAIClient)
+        assert client.clients[0]._provider == "together"
+
+
+def test_gemini_client_targets_gemini_base_url():
+    """The Gemini OpenAIClient is constructed with the Gemini base URL."""
+    with patch("app.services.llm_client.settings") as mock_settings:
+        mock_settings.llm_standard_providers = "gemini_flash"
+        _mock_settings_for_gemini(mock_settings, gemini_key="gm-key")
+
+        client = get_llm_client(tier="standard")
+        assert isinstance(client, FallbackLLMClient)
+        assert len(client.clients) == 1
+        gemini_client = client.clients[0]
+        assert isinstance(gemini_client, OpenAIClient)
+        # The underlying AsyncOpenAI client stores base_url; verify via provider + model
+        assert gemini_client._provider == "gemini"
+        assert gemini_client._model == "gemini-2.5-flash"
+
+
+async def test_fallback_falls_through_on_auth_error():
+    """A 401 (bad API key) on provider 0 should fall through to provider 1, not raise."""
+
+    class AuthError(Exception):
+        status_code = 401
+
+    err = LLMError("unauthorized", retryable=False)
+    err.__cause__ = AuthError()
+
+    bad = AsyncMock()
+    bad.complete = AsyncMock(side_effect=err)
+
+    good = AsyncMock()
+    good.complete = AsyncMock(return_value="ok")
+
+    client = FallbackLLMClient(clients=[bad, good])
+    result = await client.complete(
+        system_prompt="s",
+        messages=[{"role": "user", "content": "x"}],
+    )
+    assert result == "ok"
+    good.complete.assert_awaited_once()
+
+
+async def test_fallback_falls_through_on_403_auth_error():
+    """A 403 (forbidden/bad key) on provider 0 should fall through to provider 1."""
+
+    class ForbiddenError(Exception):
+        status_code = 403
+
+    err = LLMError("forbidden", retryable=False)
+    err.__cause__ = ForbiddenError()
+
+    bad = AsyncMock()
+    bad.complete = AsyncMock(side_effect=err)
+
+    good = AsyncMock()
+    good.complete = AsyncMock(return_value="fallback result")
+
+    client = FallbackLLMClient(clients=[bad, good])
+    result = await client.complete(
+        system_prompt="s",
+        messages=[{"role": "user", "content": "x"}],
+    )
+    assert result == "fallback result"
+    good.complete.assert_awaited_once()
+
+
+async def test_fallback_auth_error_on_last_provider_still_raises():
+    """A 401 on the last (only) provider must still propagate — no more fallbacks."""
+
+    class AuthError(Exception):
+        status_code = 401
+
+    err = LLMError("unauthorized", retryable=False)
+    err.__cause__ = AuthError()
+
+    only_bad = AsyncMock()
+    only_bad.complete = AsyncMock(side_effect=err)
+
+    client = FallbackLLMClient(clients=[only_bad])
+    with pytest.raises(LLMError, match="unauthorized"):
+        await client.complete(
+            system_prompt="s",
+            messages=[{"role": "user", "content": "x"}],
+        )
+
+
+async def test_fallback_non_auth_non_retryable_still_raises_immediately():
+    """A generic 400 (bad request, non-auth) on provider 0 must raise immediately
+    without trying provider 1 — this is the existing contract."""
+    bad = AsyncMock()
+    bad.complete = AsyncMock(side_effect=LLMError("bad request", retryable=False))
+    good = AsyncMock()
+    good.complete = AsyncMock(return_value="should not reach")
+
+    client = FallbackLLMClient(clients=[bad, good])
+    with pytest.raises(LLMError, match="bad request"):
+        await client.complete(
+            system_prompt="s",
+            messages=[{"role": "user", "content": "x"}],
+        )
+    good.complete.assert_not_awaited()
