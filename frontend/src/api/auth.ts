@@ -11,6 +11,7 @@ export type Me = {
   dob: string;
   country_code: string;
   currency_code: string;
+  language?: string;
   topic_path: string | null;
   content_region: string | null;
   is_premium: boolean;
@@ -51,6 +52,11 @@ export const authApi = {
     }),
   biometricUnenroll: (device_id: string) =>
     apiFetch(`/auth/biometric/devices/${device_id}`, { method: 'DELETE' }),
+  updateLanguage: (language: string) =>
+    apiFetch<Me>('/users/me/language', {
+      method: 'PATCH',
+      body: JSON.stringify({ language }),
+    }),
   updatePreferences: (body: {
     topic_path?: string | null;
     content_region?: string | null;
