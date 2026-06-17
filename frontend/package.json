@@ -12,7 +12,8 @@
     "test:e2e": "playwright test",
     "test:e2e:a11y": "playwright test tests/e2e/a11y-flow.spec.ts",
     "test:e2e:responsive": "playwright test tests/e2e/responsive.spec.ts",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "i18n:pseudo": "node scripts/gen-pseudo-locale.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
