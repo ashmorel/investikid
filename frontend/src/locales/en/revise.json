@@ -1,0 +1,43 @@
+{
+  "pageTitle": "Revise",
+
+  "hub": {
+    "dailyRevise": "Daily revise",
+    "dailyReviseSubtitle": "Up to 5 questions",
+    "loading": "Loading…",
+    "empty": "Complete a lesson first, then come back to revise it!",
+    "dueBadge": "{{count}} to practice",
+    "refreshLabel": "Refresh"
+  },
+
+  "session": {
+    "loading": "Loading…",
+    "progress": "{{current}} of {{total}}",
+
+    "kindBadge": {
+      "weak": "Needs practice",
+      "normal": "Quick refresher"
+    },
+
+    "answerChoicesLabel": "Answer choices",
+
+    "xpAwarded": "+{{xp}} XP",
+    "streakKept": "· 🔥 streak kept!",
+
+    "checkAnswer": "Check answer",
+    "next": "Next →",
+    "finish": "Finish",
+
+    "empty": {
+      "heading": "All caught up! 🎉",
+      "sub": "Nothing to revise right now.",
+      "backHome": "Back to home"
+    },
+
+    "done": {
+      "heading": "Great revising! 🌟",
+      "score": "{{correct}} / {{total}} correct",
+      "cta": "Done"
+    }
+  }
+}
