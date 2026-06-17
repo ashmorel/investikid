@@ -1,5 +1,5 @@
 import { type LanguageCode, isSupportedLanguage } from './languages';
-import { LANGUAGE_STORAGE_KEY } from '../hooks/useLanguage';
+import { LANGUAGE_STORAGE_KEY } from './constants';
 import { isNativeApp } from '../lib/platform';
 
 // Map an arbitrary BCP-47 locale to one of our supported codes.

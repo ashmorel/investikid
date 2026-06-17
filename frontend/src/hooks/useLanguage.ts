@@ -3,9 +3,10 @@ import { useCallback } from 'react';
 import type { Me } from '../api/auth';
 import { authApi } from '../api/auth';
 import { changeLanguage } from '../i18n';
+import { LANGUAGE_STORAGE_KEY } from '../i18n/constants';
 import { type LanguageCode, isSupportedLanguage } from '../i18n/languages';
 
-export const LANGUAGE_STORAGE_KEY = 'language';
+export { LANGUAGE_STORAGE_KEY };
 
 function resolveLanguage(me: Me | undefined): LanguageCode {
   if (me?.language && isSupportedLanguage(me.language)) {

@@ -13,6 +13,7 @@ describe('mapToSupported', () => {
   it('maps Chinese scripts correctly', () => {
     expect(mapToSupported('zh-Hant-HK')).toBe('zh-Hant');
     expect(mapToSupported('zh-TW')).toBe('zh-Hant');
+    expect(mapToSupported('zh-MO')).toBe('zh-Hant');
     expect(mapToSupported('zh-CN')).toBe('zh-Hans');
     expect(mapToSupported('zh')).toBe('zh-Hans');
   });
