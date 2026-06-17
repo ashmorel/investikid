@@ -11,6 +11,9 @@ test-results
 vite.config.d.ts
 vite.config.js
 
+# Generated pseudo-locale (i18n extraction proof; never committed)
+src/locales/en-XA/
+
 # Capacitor iOS build artifacts
 ios/App/App/public/
 ios/App/Pods/
