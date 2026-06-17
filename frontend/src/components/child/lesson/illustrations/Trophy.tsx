@@ -17,7 +17,6 @@ export function Trophy() {
       <rect x="50" y="75" width="20" height="12" rx="1" fill="#f59e0b" />
       <path d="M35,30 Q35,70 50,75 L70,75 Q85,70 85,30 Z" fill="#fbbf24" />
       <path d="M40,35 Q40,65 52,70 L68,70 Q80,65 80,35 Z" fill="#f59e0b" />
-      {/* eslint-disable-next-line i18next/no-literal-string */}
       <text x="60" y="58" textAnchor="middle" fontSize="24" fill="#fff">⭐</text>
       <path d="M35,35 Q20,35 20,50 Q20,65 35,65" fill="none" stroke="#fbbf24" strokeWidth="4" strokeLinecap="round" />
       <path d="M85,35 Q100,35 100,50 Q100,65 85,65" fill="none" stroke="#fbbf24" strokeWidth="4" strokeLinecap="round" />

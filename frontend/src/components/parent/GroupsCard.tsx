@@ -175,6 +175,7 @@ export function GroupsCard({ childrenList }: { childrenList: ChildLite[] }) {
                   {(g.members ?? []).map((m) => (
                     <li key={m.child_user_id} className="flex items-center justify-between text-sm">
                       <span>{m.username}</span>
+                      {/* eslint-disable i18next/no-literal-string -- decorative glyph, aria-label carries the accessible name */}
                       <button
                         type="button"
                         aria-label={t('groups.removeAriaLabel', { username: m.username })}
@@ -187,6 +188,7 @@ export function GroupsCard({ childrenList }: { childrenList: ChildLite[] }) {
                       >
                         ✕
                       </button>
+                      {/* eslint-enable i18next/no-literal-string */}
                     </li>
                   ))}
                 </ul>

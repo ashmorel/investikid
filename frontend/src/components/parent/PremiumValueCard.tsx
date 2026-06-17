@@ -68,6 +68,7 @@ export function PremiumValueCard({ onSubscribe }: { onSubscribe?: () => void }) 
       <ul className="mt-3 space-y-2">
         {PREMIUM_BENEFITS.slice(0, 3).map((benefit) => (
           <li key={benefit} className="flex items-start gap-2 text-sm text-ink">
+            {/* eslint-disable-next-line i18next/no-literal-string -- decorative glyph, aria-hidden */}
             <span aria-hidden="true" className="text-brand-600">✓</span>
             <span>{benefit}</span>
           </li>

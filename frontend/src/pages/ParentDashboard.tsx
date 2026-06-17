@@ -86,6 +86,7 @@ export default function ParentDashboard() {
         <div className="flex items-center gap-2">
           <Link to="/parent" className="flex items-center gap-2" aria-label={t('dashboard.homeAriaLabel')}>
             <Penny size={32} mood="happy" />
+            {/* eslint-disable-next-line i18next/no-literal-string -- brand name, not translatable */}
             <span className="text-lg font-extrabold tracking-tight text-ink sm:text-xl">InvestiKid</span>
           </Link>
           <h1 className="sr-only">{t('dashboard.title')}</h1>

@@ -34,7 +34,7 @@ export default tseslint.config(
       ...jsxA11y.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': 'off',
-      'i18next/no-literal-string': ['warn', {
+      'i18next/no-literal-string': ['error', {
         mode: 'jsx-text-only',
         'jsx-attributes': { include: ['alt', 'aria-label', 'placeholder', 'title'] },
       }],

@@ -86,6 +86,7 @@ export default function Try() {
           <ul className="mt-2 space-y-1.5">
             {demo.learning_objectives.map((obj) => (
               <li key={obj} className="flex items-start gap-2 text-sm text-gray-700">
+                {/* eslint-disable-next-line i18next/no-literal-string -- decorative glyph, aria-hidden */}
                 <span aria-hidden="true" className="mt-0.5 text-brand-500">★</span>
                 <span>{obj}</span>
               </li>
