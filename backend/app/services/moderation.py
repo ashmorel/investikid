@@ -63,6 +63,7 @@ _CATEGORY_PATTERNS: dict[str, re.Pattern] = {
 }
 
 _REVIEW_TOKENS = re.compile(r"\b(weapon|suicide|kill yourself|explicit)\b", re.I)
+_HAS_NON_ASCII = re.compile(r"[^\x00-\x7F]")
 
 
 @dataclass(frozen=True)
@@ -89,7 +90,11 @@ def _prefilter_category(text: str) -> str | None:
 
 
 def _needs_escalation(text: str) -> bool:
-    return bool(_REVIEW_TOKENS.search(text))
+    # English review tokens OR any non-ASCII text. Non-Latin/accented output
+    # (i.e. every non-English language) must always reach the multilingual model
+    # classifier — the English-keyword prefilter can't judge it. (Sub-project B
+    # makes AI surfaces reply in the user's language.)
+    return bool(_REVIEW_TOKENS.search(text) or _HAS_NON_ASCII.search(text))
 
 
 @llm_usage.surface("moderation")

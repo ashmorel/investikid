@@ -1,7 +1,7 @@
 import pytest
 
 from app.services import moderation
-from app.services.moderation import ModerationResult, moderate_output
+from app.services.moderation import ModerationResult, _needs_escalation, moderate_output
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -129,25 +129,21 @@ async def test_genuine_financial_advice_still_blocked(advice):
 # ---------------------------------------------------------------------------
 # Cross-language regression tests (Sub-project B evidence)
 #
-# The prefilter and escalation-trigger are English-only regex.  Non-English
-# unsafe text therefore reaches _model_moderation, which is the multilingual
-# Gemini model.  We prove the pipeline (a) handles non-ASCII without encoding
-# errors and (b) honours whatever verdict the model returns, by monkeypatching
-# _needs_escalation → True and _model_moderation → a controlled verdict.
-# This mirrors exactly how test_fail_closed_on_escalation_error and
-# test_escalation_safe_verdict_passes_and_caches mock the pipeline.
+# Non-English text contains non-ASCII characters, so _needs_escalation now
+# returns True for it directly — no monkeypatch needed for that function.
+# We monkeypatch only _model_moderation (the LLM call) with a controlled
+# verdict, exactly as test_escalation_safe_verdict_passes_and_caches does.
 # ---------------------------------------------------------------------------
 
 
 async def test_moderation_blocks_unsafe_spanish_output(monkeypatch):
-    """Spanish financial-advice text: mocked model returns UNSAFE."""
-    monkeypatch.setattr(moderation, "_needs_escalation", lambda _t: True)
-
+    """Spanish financial-advice text escalates via non-ASCII gate; mocked model returns UNSAFE."""
     async def unsafe_verdict(_text):
         return (False, "financial_advice")
 
     monkeypatch.setattr(moderation, "_model_moderation", unsafe_verdict)
 
+    # "Deberías" contains í — non-ASCII → real _needs_escalation returns True
     spanish_unsafe = "Deberías comprar acciones de Apple ahora mismo."
     r = await moderate_output(spanish_unsafe, surface="quiz")
 
@@ -158,14 +154,13 @@ async def test_moderation_blocks_unsafe_spanish_output(monkeypatch):
 
 
 async def test_moderation_blocks_unsafe_chinese_output(monkeypatch):
-    """Simplified-Chinese financial-advice text: mocked model returns UNSAFE."""
-    monkeypatch.setattr(moderation, "_needs_escalation", lambda _t: True)
-
+    """Chinese financial-advice text escalates via non-ASCII gate; mocked model returns UNSAFE."""
     async def unsafe_verdict(_text):
         return (False, "financial_advice")
 
     monkeypatch.setattr(moderation, "_model_moderation", unsafe_verdict)
 
+    # All Chinese characters are non-ASCII → real _needs_escalation returns True
     chinese_unsafe = "你现在应该马上买苹果股票。"
     r = await moderate_output(chinese_unsafe, surface="quiz")
 
@@ -176,21 +171,20 @@ async def test_moderation_blocks_unsafe_chinese_output(monkeypatch):
 
 
 async def test_moderation_passes_safe_non_english_output(monkeypatch):
-    """Safe educational text in Spanish/Chinese: mocked model returns SAFE.
+    """Safe educational text in Spanish/Chinese escalates via non-ASCII gate; mocked model returns SAFE.
 
-    Also confirms non-ASCII text survives the round-trip with no encoding
-    errors and is returned verbatim when the model says safe.
+    Confirms non-ASCII text survives the round-trip with no encoding errors
+    and is returned verbatim when the model says safe.
     """
-    monkeypatch.setattr(moderation, "_needs_escalation", lambda _t: True)
-
     async def safe_verdict(_text):
         return (True, None)
 
     monkeypatch.setattr(moderation, "_model_moderation", safe_verdict)
 
     safe_texts = [
-        # Spanish: "Saving is when you keep part of your money instead of spending it all."
-        "Ahorrar es guardar parte de tu dinero en lugar de gastarlo todo.",
+        # Spanish: "Diversification means not putting all your eggs in one basket."
+        # Contains accented é → non-ASCII → escalates through the real gate.
+        "La diversificación significa no poner todos tus huevos en una sola cesta.",
         # Chinese (Traditional): "Diversification means not putting all your eggs in one basket."
         "分散投資的意思是不要把所有雞蛋放在同一個籃子裡。",
     ]
@@ -199,3 +193,26 @@ async def test_moderation_passes_safe_non_english_output(monkeypatch):
         assert r.safe is True, f"safe non-English text wrongly blocked: {txt!r}"
         assert r.text == txt
         assert r.category is None
+
+
+# ---------------------------------------------------------------------------
+# Gate unit tests — _needs_escalation directly
+# ---------------------------------------------------------------------------
+
+
+def test_needs_escalation_true_for_non_ascii():
+    """Non-ASCII text (Chinese, accented Spanish) must always escalate."""
+    # Chinese characters
+    assert _needs_escalation("你现在应该买股票") is True
+    # Spanish with accented vowel (í)
+    assert _needs_escalation("Deberías matarte") is True
+
+
+def test_needs_escalation_false_for_plain_ascii_safe():
+    """Plain ASCII text without a review token must NOT escalate (cost preservation)."""
+    assert _needs_escalation("Buy this nice safe thing") is False
+
+
+def test_needs_escalation_true_for_english_review_token():
+    """Existing English review-token behaviour is preserved."""
+    assert _needs_escalation("talk about weapon") is True
