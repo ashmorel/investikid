@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ProgressBar } from './ProgressBar';
 import { Disclosure } from './a11y/Disclosure';
 import type { ChildAnalytics as ChildAnalyticsType, ModuleProgress, LevelProgress, StandardRef } from '@/api/parent';
@@ -18,7 +19,7 @@ function StandardsBadge({ standards }: { standards: StandardRef[] }) {
       className="mb-1.5 text-[11px] text-muted-foreground"
       title={standards.map((s) => `${s.code}: ${s.label}`).join(' · ')}
     >
-      Aligned to {shortNames.join(' · ')}
+      {`Aligned to ${shortNames.join(' · ')}`}
     </p>
   );
 }
@@ -47,28 +48,30 @@ function TypeBadge({ type }: { type: string }) {
 }
 
 function LevelStateBadge({ level }: { level: LevelProgress }) {
+  const { t } = useTranslation('parent');
   if (level.state === 'completed') {
     return (
       <span className="rounded-full bg-success-100 px-2 py-0.5 text-[11px] font-medium text-success-700">
-        Completed{level.passed ? ' ✓' : ''}
+        {level.passed ? t('childAnalytics.levelStateBadge.completedPassed') : t('childAnalytics.levelStateBadge.completed')}
       </span>
     );
   }
   if (level.state === 'locked') {
     return (
       <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-        🔒 Locked
+        {t('childAnalytics.levelStateBadge.locked')}
       </span>
     );
   }
   return (
     <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-medium text-brand-700">
-      In progress
+      {t('childAnalytics.levelStateBadge.inProgress')}
     </span>
   );
 }
 
 function ModuleProgressBlock({ module }: { module: ModuleProgress }) {
+  const { t } = useTranslation('parent');
   return (
     <Disclosure label={`${module.icon} ${module.title} — ${module.lessons_completed}/${module.lessons_total}`}>
       {module.standards_alignment && module.standards_alignment.length > 0 && (
@@ -81,7 +84,7 @@ function ModuleProgressBlock({ module }: { module: ModuleProgress }) {
             <span className="flex items-center gap-2">
               {level.mastered_at && (
                 <span className="text-[11px] text-success-700">
-                  Mastered {formatMasteredDate(level.mastered_at)}
+                  {t('childAnalytics.masteredDate', { date: formatMasteredDate(level.mastered_at) })}
                 </span>
               )}
               <LevelStateBadge level={level} />
@@ -97,23 +100,24 @@ function ModuleProgressBlock({ module }: { module: ModuleProgress }) {
 }
 
 export function ChildAnalytics({ analytics }: { analytics: ChildAnalyticsType }) {
+  const { t } = useTranslation('parent');
   const [expanded, setExpanded] = useState(false);
   const hasActivity = analytics.lessons_completed > 0 || analytics.badges.length > 0;
 
   if (!hasActivity) {
     return (
-      <p className="mt-2 text-xs text-muted-foreground">No activity yet</p>
+      <p className="mt-2 text-xs text-muted-foreground">{t('childAnalytics.noActivity')}</p>
     );
   }
 
   return (
     <div className="mt-2">
       <p className="text-[13px] text-muted-foreground">
-        Lvl {analytics.level}
+        {`Lvl ${analytics.level}`}
         <span className="mx-1.5">&middot;</span>
-        {analytics.xp} XP
+        {`${analytics.xp} XP`}
         <span className="mx-1.5">&middot;</span>
-        {analytics.streak_count}-day streak
+        {`${analytics.streak_count}-day streak`}
         {analytics.streak_count > 0 && ' 🔥'}
       </p>
 
@@ -123,7 +127,7 @@ export function ChildAnalytics({ analytics }: { analytics: ChildAnalyticsType })
         aria-expanded={expanded}
         className="mt-1 text-[13px] font-medium text-brand-700 hover:text-brand-800"
       >
-        {expanded ? 'Hide progress' : 'Show progress'}
+        {expanded ? t('childAnalytics.hideProgress') : t('childAnalytics.showProgress')}
       </button>
 
       <AnimatePresence initial={false}>
@@ -140,12 +144,12 @@ export function ChildAnalytics({ analytics }: { analytics: ChildAnalyticsType })
               <ProgressBar
                 value={analytics.lessons_completed}
                 max={analytics.lessons_total}
-                label={`${analytics.lessons_completed} of ${analytics.lessons_total} lessons completed`}
+                label={t('childAnalytics.progressLabel', { completed: analytics.lessons_completed, total: analytics.lessons_total })}
               />
 
               {analytics.recent_lessons.length > 0 && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Recent:</p>
+                  <p className="text-xs text-muted-foreground">{t('childAnalytics.recent')}</p>
                   <ul className="mt-1 divide-y divide-muted">
                     {analytics.recent_lessons.map((lesson) => (
                       <li
@@ -173,7 +177,7 @@ export function ChildAnalytics({ analytics }: { analytics: ChildAnalyticsType })
 
               {analytics.badges.length > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Badges:{' '}
+                  {t('childAnalytics.badges')}{' '}
                   {analytics.badges.map((b, i) => (
                     <span key={b.name}>
                       {i > 0 && <span className="mx-1">&middot;</span>}
@@ -185,7 +189,7 @@ export function ChildAnalytics({ analytics }: { analytics: ChildAnalyticsType })
 
               {analytics.modules_progress.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">Progress by module</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t('childAnalytics.progressByModule')}</p>
                   <div className="mt-1 space-y-2">
                     {analytics.modules_progress.map((m) => (
                       <ModuleProgressBlock key={m.module_id} module={m} />

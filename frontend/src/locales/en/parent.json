@@ -1,0 +1,346 @@
+{
+  "dashboard": {
+    "homeAriaLabel": "InvestiKid parent home",
+    "title": "Parent Dashboard",
+    "backToApp": "← Back to App",
+    "menuAriaLabel": "Parent menu",
+    "sendFeedback": "Send Feedback",
+    "logOut": "Log out",
+    "loading": "Loading…",
+    "noChildrenLinked": "No children linked to this email yet.",
+    "noChildrenLinkedHelp": "If your child has signed up, make sure they entered this exact email address as their parent's email when registering. Once they do, they'll appear here.",
+    "welcome": "Welcome! From here you can manage notifications, your subscription, Face ID sign-in, and your child's data.",
+    "welcomeDismiss": "Got it",
+    "preferences": "Preferences",
+    "childrenLoadError": {
+      "title": "Could not load children",
+      "message": "Please try refreshing the page."
+    },
+    "checkoutToast": {
+      "title": "Welcome to Premium!",
+      "description": "All your children now have access to premium features."
+    }
+  },
+  "authCallback": {
+    "signingIn": "Signing you in…",
+    "linkExpiredTitle": "Sign-in link expired",
+    "errorTitle": "Could not sign you in",
+    "linkExpiredMessage": "This link is invalid, expired, or already used.",
+    "errorMessage": "Please try again in a moment.",
+    "requestNewLink": "Request a new link"
+  },
+  "privacy": {
+    "heading": "Privacy Notice",
+    "backToSignUp": "Back to sign up",
+    "signIn": "Sign in"
+  },
+  "try": {
+    "intro": {
+      "heading": "Try your first InvestiKid lesson",
+      "subtitle": "No account needed — jump straight in.",
+      "objectivesHeading": "You'll learn to…",
+      "start": "Start →",
+      "alreadyHaveAccount": "Already have an account?",
+      "backToLogin": "Back to log in"
+    },
+    "lesson": {
+      "srHeading": "Try a lesson — {{moduleTitle}}",
+      "progress": "Lesson {{current}} of {{total}}",
+      "signUp": "Sign up",
+      "progressAriaLabel": "Lesson progress"
+    },
+    "done": {
+      "heading": "You finished your first lesson!",
+      "createAccount": "Create an account to save your progress",
+      "parentsLearnMore": "Parents: learn more"
+    },
+    "tease": {
+      "otherModules": "{{count}} more modules — from Budgeting to Your Brain on Money."
+    }
+  },
+  "signInMethods": {
+    "sectionAriaLabel": "Sign-in methods",
+    "heading": "Sign-in methods",
+    "loading": "Loading…",
+    "connected": "Connected",
+    "disconnect": "Disconnect",
+    "disconnecting": "Disconnecting…",
+    "connect": "Connect",
+    "connecting": "Connecting…",
+    "disconnectAriaLabel": "Disconnect {{label}}",
+    "connectAriaLabel": "Connect {{label}}",
+    "faceIdLabel": "Face ID sign-in",
+    "faceIdHelp": "Unlock InvestiKid with Face ID on this device instead of your password.",
+    "error": {
+      "alreadyConnected": "That account is already connected to a different parent.",
+      "generic": "Something went wrong. Please try again."
+    },
+    "biometric": {
+      "enrollPrompt": "Set up Face ID sign-in"
+    }
+  },
+  "deleteAccount": {
+    "heading": "Danger zone",
+    "body": "Deleting your account permanently removes your account, all your children's accounts and their data, and cannot be undone.",
+    "billingWarning": "If you have a paid subscription, deleting your account here does not cancel billing. Cancel it in the App Store (iOS), Google Play (Android), or via Manage Subscription first.",
+    "trigger": "Delete my account…",
+    "dialog": {
+      "title": "Delete my account?",
+      "description": "This permanently deletes your account and all your children's accounts and data. This cannot be undone. If you have a paid subscription, cancel it in the App Store, Google Play, or via Manage Subscription first — deleting here does not cancel billing.",
+      "confirmLabel": "Type your email to confirm",
+      "cancel": "Cancel",
+      "deleting": "Deleting…",
+      "confirm": "Delete account"
+    },
+    "error": {
+      "emailMismatch": "That doesn't match your account email.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "groups": {
+    "heading": "Leaderboard groups",
+    "subheading": "Create a group and share its code so friends and family can compare progress.",
+    "newGroupLabel": "New group name",
+    "creating": "Creating…",
+    "createGroup": "Create group",
+    "loadingGroups": "Loading groups…",
+    "noGroups": "No groups yet.",
+    "deleteGroup": "Delete group",
+    "deleteConfirm": "Delete the group \"{{name}}\"? This can't be undone.",
+    "code": "Code:",
+    "copyAriaLabel": "Copy code for {{name}}",
+    "copy": "Copy",
+    "removeAriaLabel": "Remove {{username}}",
+    "addChildHeading": "Add a child to a group",
+    "joinCodeLabel": "Group code",
+    "joinChildLabel": "Child",
+    "joinChildPlaceholder": "Choose a child…",
+    "joining": "Joining…",
+    "join": "Join",
+    "removeChildConfirm": "Remove {{username}} from \"{{groupName}}\"?",
+    "joinError": {
+      "full": "Group is full.",
+      "generic": "Couldn't join — check the code."
+    },
+    "toast": {
+      "createErrorTitle": "Couldn't create the group",
+      "createErrorDesc": "Please try again.",
+      "removeErrorTitle": "Couldn't remove that child",
+      "removeErrorDesc": "Please try again.",
+      "deleteErrorTitle": "Couldn't delete the group",
+      "deleteErrorDesc": "Please try again."
+    }
+  },
+  "notificationPreferences": {
+    "heading": "Email preferences",
+    "subEmailLabel": "Email me about my subscription",
+    "subEmailHelp": "Occasional reminders, like when a free trial is ending.",
+    "digestLabel": "Weekly progress email",
+    "digestHelp": "A weekly summary of what your child learned.",
+    "toast": {
+      "errorTitle": "Couldn't update preferences",
+      "errorDesc": "Please try again."
+    }
+  },
+  "premiumRequests": {
+    "sectionAriaLabel": "Premium requests",
+    "requested": "✨ Premium requested",
+    "approveAriaLabel": "Approve and subscribe to unlock {{contextLabel}} for {{childUsername}}",
+    "approve": "Approve",
+    "declineAriaLabel": "Decline request from {{childUsername}}",
+    "decline": "Decline"
+  },
+  "premiumValue": {
+    "sectionAriaLabel": "Premium upgrade",
+    "evidenceHeadline": "{{name}} mastered {{count}} skill this month.",
+    "evidenceHeadlinePlural": "{{name}} mastered {{count}} skills this month.",
+    "defaultHeadline": "Real financial skills, with the evidence to prove it.",
+    "evidenceBody": "Unlock the full curriculum + AI coach to keep the momentum.",
+    "defaultBody": "Premium gives your child the full curriculum and a safe AI coach.",
+    "pendingRequest": "{{names}} asked to unlock Premium — subscribe to say yes.",
+    "subscribeCta": "Subscribe to Premium"
+  },
+  "subscription": {
+    "sectionAriaLabel": "Subscription status",
+    "choosePlanLegend": "Choose a plan",
+    "choosePlanAriaLabel": "Choose a plan",
+    "savePercent": "Save {{pct}}%",
+    "oneSubscriptionNote": "One subscription unlocks Premium for all your children.",
+    "freeUpgrade": "Free plan — upgrade for AI coach, advanced scenarios, and more",
+    "manageSubscription": "Manage subscription",
+    "subscribe": "Subscribe",
+    "subscribing": "Subscribing…",
+    "restorePurchases": "Restore Purchases",
+    "restoring": "Restoring…",
+    "subscribeToPremium": "Subscribe to Premium",
+    "redirecting": "Redirecting…",
+    "manageBilling": "Manage Billing",
+    "note": {
+      "purchasePending": "Your purchase is pending — it can take a moment to confirm.",
+      "nothingToRestoreApple": "Nothing to restore on this Apple ID.",
+      "nothingToRestoreGoogle": "Nothing to restore on this Google account.",
+      "error": "Something went wrong. Please try again."
+    }
+  },
+  "childCard": {
+    "statusAriaLabel": "Status: {{status}}",
+    "status": {
+      "active": "Active",
+      "pending": "Pending consent",
+      "frozen": "Frozen",
+      "declined": "Declined",
+      "deleted": "Deleted"
+    },
+    "freezeLabel": "Freeze account",
+    "pushLabel": "Notifications",
+    "biometricLabel": "Face ID sign-in",
+    "premium": "Premium ✨",
+    "freePlan": "Free plan",
+    "deleteAccount": "Delete account…",
+    "dialog": {
+      "title": "Delete {{username}}?",
+      "description": "This soft-deletes the account. Your child will no longer be able to sign in. Type {{username}} to confirm.",
+      "confirmAriaLabel": "Type child username to confirm",
+      "cancel": "Cancel",
+      "deleting": "Deleting…",
+      "confirm": "Delete account"
+    },
+    "experienceMode": "Experience mode",
+    "experienceAuto": "Auto (recommended)",
+    "experienceExplorer": "Explorer",
+    "experienceInvestor": "Investor",
+    "experienceCurrent": "Currently: {{tier}}. Auto switches to Investor at 14.",
+    "experienceCurrentInvestor": "Investor",
+    "experienceCurrentExplorer": "Explorer",
+    "toast": {
+      "freezeErrorTitle": "Could not update child",
+      "tierErrorTitle": "Could not update experience mode",
+      "eraseErrorTitle": "Could not delete account"
+    }
+  },
+  "masteryReport": {
+    "sectionAriaLabel": "Mastery report",
+    "singleChildSkills": "{{username}} mastered {{count}} skill this month",
+    "singleChildSkillsPlural": "{{username}} mastered {{count}} skills this month",
+    "singleChildReport": "{{username}}'s learning report",
+    "householdSkills": "{{count}} skill mastered in the last {{days}} days",
+    "householdSkillsPlural": "{{count}} skills mastered in the last {{days}} days",
+    "householdReport": "Your family learning report",
+    "skillsAriaLabel": "Skills {{username}} can now use",
+    "canNow": "can now: {{objective}}",
+    "noMasteriesQueued": "No new masteries yet — {{nextLabel}} is queued up.",
+    "noMasteriesNone": "No new masteries yet.",
+    "multiChildStats": "{{username}} · {{count}} this month ({{total}} all-time)"
+  },
+  "childAnalytics": {
+    "noActivity": "No activity yet",
+    "showProgress": "Show progress",
+    "hideProgress": "Hide progress",
+    "progressLabel": "{{completed}} of {{total}} lessons completed",
+    "recent": "Recent:",
+    "badges": "Badges:",
+    "progressByModule": "Progress by module",
+    "levelStateBadge": {
+      "completed": "Completed",
+      "completedPassed": "Completed ✓",
+      "locked": "🔒 Locked",
+      "inProgress": "In progress"
+    },
+    "masteredDate": "Mastered {{date}}"
+  },
+  "privacyNotice": {
+    "meta": "Version {{version}} · Written for learners aged 8 and above",
+    "intro": "When you sign up to InvestiKid, we show you this notice and record that you (or your parent or guardian) agreed to it. If we make important changes, we will show you the updated notice and ask you to agree again before you can keep using the app.",
+    "whatIsApp": {
+      "heading": "What is InvestiKid?",
+      "body": "InvestiKid is a learning app that teaches you about money — how to save it, how to spend it wisely, and how the world of investing works. To do that, we need to know a few things about you so the app works properly and keeps you safe."
+    },
+    "whatWeCollect": {
+      "heading": "What information do we collect?",
+      "intro": "When you join, we collect:",
+      "usernameLabel": "Your username",
+      "usernameDesc": "the name you use to log in. It does not have to be your real name.",
+      "dobLabel": "Your date of birth",
+      "dobDesc": "so we know your age and can give you the right level of protection.",
+      "countryLabel": "Your country",
+      "countryDesc": "so we know which rules apply to your data and which currency to show you.",
+      "passwordLabel": "A password",
+      "passwordDesc": "stored in a scrambled form so no one can read it, not even us.",
+      "alsoCollect": "We also collect:",
+      "emailLabel": "Your email address",
+      "emailDesc": "only if you are old enough to have one under the rules in your country.",
+      "parentEmailLabel": "A parent or guardian's email address",
+      "parentEmailDesc": "if you are below the age of digital consent, we ask for their permission first.",
+      "progressLabel": "Your learning progress",
+      "progressDesc": "lessons completed, XP earned, level, and streak count.",
+      "topicsLabel": "Which topics you are learning about",
+      "topicsDesc": "so we can show you the right lessons.",
+      "notCollectedPre": "We do",
+      "notCollectedNot": "not",
+      "notCollectedPost": "collect your home address, phone number, photo, or information about your family's finances."
+    },
+    "whyWeCollect": {
+      "heading": "Why do we collect it?",
+      "loginSafelyLabel": "Username and password",
+      "loginSafelyDesc": "so you can log in safely.",
+      "checkAgeLabel": "Date of birth",
+      "checkAgeDesc": "to check your age and keep you safe.",
+      "countryRulesLabel": "Country",
+      "countryRulesDesc": "to follow the right rules for your country.",
+      "parentPermissionLabel": "Parent or guardian email",
+      "parentPermissionDesc": "to get their permission if you are young.",
+      "rememberProgressLabel": "Learning progress",
+      "rememberProgressDesc": "so the app remembers what you have done.",
+      "topicChoiceLabel": "Topic choice",
+      "topicChoiceDesc": "to show you the right lessons.",
+      "emailMessagesLabel": "Your email (if given)",
+      "emailMessagesDesc": "to send you account messages.",
+      "onlyToRun": "We only use your information to run the app and keep it safe. We do not use it to sell you things or to follow you around the internet."
+    },
+    "whoCanSee": {
+      "heading": "Who can see your information?",
+      "youLabel": "You",
+      "youDesc": "you can always see your own information inside the app.",
+      "parentLabel": "Your parent or guardian",
+      "parentDesc": "if they gave permission for your account, they can see your progress and ask for a copy of your data.",
+      "teamLabel": "The InvestiKid team",
+      "teamDesc": "to keep the app running, fix problems, and make sure it is safe. The team is not allowed to share your information with anyone else.",
+      "noSharePre": "We do",
+      "noShareNot": "not",
+      "noSharePost": "share your personal information with advertisers, data brokers, or any other company."
+    },
+    "youtube": {
+      "heading": "Lesson videos (YouTube)",
+      "body": "Some lessons include educational videos embedded from YouTube. When a video loads, YouTube (a Google service) may receive technical data — such as device and IP information — so it can play the video. We use YouTube's privacy-enhanced mode (youtube-nocookie.com), which does not set tracking cookies unless a video is actually played. We do not share your child's account details with YouTube. Google handles this technical data under its own privacy policy."
+    },
+    "retention": {
+      "heading": "How long do we keep your information?",
+      "body": "We keep your information for as long as you have an account with us.",
+      "deletionIntro": "If you or your parent or guardian asks us to delete your account:",
+      "step1": "We close the account straight away. You will not be able to log in.",
+      "step2": "After 30 days, we delete most of your personal information. We keep your year of birth and country briefly — without your name or email, this cannot identify you.",
+      "step3": "We keep a record of when you joined and when you asked us to delete your account, because the law requires it."
+    },
+    "yourChoices": {
+      "heading": "Your choices",
+      "recommendationsLabel": "Personalised recommendations",
+      "recommendationsDesc": "switched off by default. You can turn it on in account settings.",
+      "marketingLabel": "Marketing messages",
+      "marketingDesc": "switched off by default. You can change this in account settings.",
+      "deleteAccountLabel": "Delete your account",
+      "deleteAccountDesc": "you or your parent or guardian can ask at any time.",
+      "seeDataLabel": "See your data",
+      "seeDataDesc": "you can ask for a copy of all the information we hold about you.",
+      "fixInfoLabel": "Fix your information",
+      "fixInfoDesc": "if something is wrong, you can update it in your profile settings.",
+      "minorNote": "If you are below the age limit in your country, your parent or guardian manages these choices for you — to make sure a grown-up is looking out for you."
+    },
+    "contact": {
+      "heading": "Contact us",
+      "bodyPre": "If you have a question about your information, or want to ask for a copy of your data or delete your account, please contact us at",
+      "email": "privacy@invest-ed.app",
+      "bodyPost": "We will respond within 30 days.",
+      "complain": "If you are not happy with how we have handled your information, you have the right to complain to the data protection authority in your country — for example, the Information Commissioner's Office (ICO) in the UK."
+    }
+  }
+}

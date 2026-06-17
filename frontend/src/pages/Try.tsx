@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Penny } from '@/components/child/ui/Penny';
 import { GradientButton } from '@/components/child/ui/GradientButton';
 import { CardLesson } from '@/components/child/lesson/CardLesson';
@@ -49,6 +50,7 @@ function DemoLessonStep({ lesson, onComplete }: { lesson: DemoLesson; onComplete
  * No auth, no API calls — completing the arc lands on a sign-up conversion screen.
  */
 export default function Try() {
+  const { t } = useTranslation('parent');
   const [stage, setStage] = useState<'intro' | 'lesson' | 'done'>('intro');
   const [index, setIndex] = useState(0);
   const [xp, setXp] = useState(0);
@@ -75,12 +77,12 @@ export default function Try() {
           </span>
           <p className="mt-4 text-3xl" aria-hidden="true">{demo.icon}</p>
           <p className="mt-1 text-sm font-bold uppercase tracking-wide text-brand-700">{demo.module_title}</p>
-          <h1 className="mt-2 text-2xl font-extrabold text-gray-900">Try your first InvestiKid lesson</h1>
-          <p className="mt-1 text-sm text-gray-600">No account needed — jump straight in.</p>
+          <h1 className="mt-2 text-2xl font-extrabold text-gray-900">{t('try.intro.heading')}</h1>
+          <p className="mt-1 text-sm text-gray-600">{t('try.intro.subtitle')}</p>
         </div>
 
         <section aria-labelledby="try-objectives-heading" className="mt-6 rounded-2xl border border-brand-100 bg-brand-50 p-4">
-          <h2 id="try-objectives-heading" className="text-sm font-bold text-gray-900">You'll learn to…</h2>
+          <h2 id="try-objectives-heading" className="text-sm font-bold text-gray-900">{t('try.intro.objectivesHeading')}</h2>
           <ul className="mt-2 space-y-1.5">
             {demo.learning_objectives.map((obj) => (
               <li key={obj} className="flex items-start gap-2 text-sm text-gray-700">
@@ -92,10 +94,10 @@ export default function Try() {
         </section>
 
         <div className="mt-6">
-          <GradientButton full onClick={() => setStage('lesson')}>Start →</GradientButton>
+          <GradientButton full onClick={() => setStage('lesson')}>{t('try.intro.start')}</GradientButton>
         </div>
         <p className="mt-4 text-center text-sm text-gray-600">
-          Already have an account? <Link to="/login" className="font-medium underline">Back to log in</Link>
+          {t('try.intro.alreadyHaveAccount')}{' '}<Link to="/login" className="font-medium underline">{t('try.intro.backToLogin')}</Link>
         </p>
       </main>
     );
@@ -110,27 +112,27 @@ export default function Try() {
             <Penny size={52} mood="excited" />
           </span>
           <h1 className="mt-4 text-2xl font-extrabold text-gray-900">
-            You finished your first lesson! <span aria-hidden="true">🎉</span>
+            {t('try.done.heading')} <span aria-hidden="true">🎉</span>
           </h1>
           <p className="mt-3 inline-block rounded-full bg-brand-gradient px-4 py-1.5 text-sm font-extrabold text-white shadow">
             <XpCountUp value={xp} /> <span aria-hidden="true">XP</span>
           </p>
         </div>
 
-        <section aria-label="What's next" className="mt-6 space-y-3 rounded-2xl border border-brand-100 bg-brand-50 p-4 text-sm text-gray-700">
+        <section aria-label={t('try.lesson.srHeading', { moduleTitle: demo.module_title })} className="mt-6 space-y-3 rounded-2xl border border-brand-100 bg-brand-50 p-4 text-sm text-gray-700">
           <p className="font-bold text-gray-900">
             {teaseLevels} <span aria-hidden="true">🔒</span>
           </p>
           <p>
-            {demo.tease.other_module_count} more modules — from Budgeting to Your Brain on Money.
+            {t('try.tease.otherModules', { count: demo.tease.other_module_count })}
           </p>
         </section>
 
         <div className="mt-6">
-          <GradientButton full to="/signup">Create an account to save your progress</GradientButton>
+          <GradientButton full to="/signup">{t('try.done.createAccount')}</GradientButton>
         </div>
         <p className="mt-4 text-center text-sm text-gray-600">
-          <Link to="/privacy" className="underline">Parents: learn more</Link>
+          <Link to="/privacy" className="underline">{t('try.done.parentsLearnMore')}</Link>
         </p>
       </main>
     );
@@ -138,10 +140,10 @@ export default function Try() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
-      <h1 className="sr-only">Try a lesson — {demo.module_title}</h1>
+      <h1 className="sr-only">{t('try.lesson.srHeading', { moduleTitle: demo.module_title })}</h1>
       <div className="flex items-center justify-between text-xs font-semibold text-gray-600">
-        <span>Lesson {index + 1} of {total}</span>
-        <Link to="/signup" className="font-bold text-brand-700 underline hover:text-brand-800">Sign up</Link>
+        <span>{t('try.lesson.progress', { current: index + 1, total })}</span>
+        <Link to="/signup" className="font-bold text-brand-700 underline hover:text-brand-800">{t('try.lesson.signUp')}</Link>
       </div>
       <div
         className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-brand-100"
@@ -149,7 +151,7 @@ export default function Try() {
         aria-valuenow={index}
         aria-valuemin={0}
         aria-valuemax={total}
-        aria-label="Lesson progress"
+        aria-label={t('try.lesson.progressAriaLabel')}
       >
         <div className="h-full rounded-full bg-brand-gradient transition-all" style={{ width: `${Math.round((index / total) * 100)}%` }} />
       </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { billingApi, type Plan, type PlanOut, type SubscriptionStatus } from '@/api/billing';
 import { Button } from '@/components/ui/button';
 import { isAndroid, isNativeApp } from '@/lib/platform';
@@ -39,11 +40,12 @@ function PlanPicker({
   value: Plan;
   onChange: (p: Plan) => void;
 }) {
+  const { t } = useTranslation('parent');
   if (!plans || plans.length === 0) return null;
   return (
     <fieldset className="mt-3">
-      <legend className="sr-only">Choose a plan</legend>
-      <div role="radiogroup" aria-label="Choose a plan" className="flex flex-col gap-2">
+      <legend className="sr-only">{t('subscription.choosePlanLegend')}</legend>
+      <div role="radiogroup" aria-label={t('subscription.choosePlanAriaLabel')} className="flex flex-col gap-2">
         {plans.map((p) => {
           const checked = p.plan === value;
           const per = p.interval === 'year' ? '/yr' : '/mo';
@@ -66,7 +68,7 @@ function PlanPicker({
                 <span className="text-sm font-bold capitalize text-brand-900">{p.plan}</span>
                 {p.savings_pct != null && (
                   <span className="rounded-full bg-success-100 px-2 py-0.5 text-[11px] font-bold text-success-700">
-                    Save {p.savings_pct}%
+                    {t('subscription.savePercent', { pct: p.savings_pct })}
                   </span>
                 )}
               </span>
@@ -79,13 +81,14 @@ function PlanPicker({
         })}
       </div>
       <p className="mt-2 text-xs font-medium text-brand-800">
-        One subscription unlocks Premium for <strong>all</strong> your children.
+        {t('subscription.oneSubscriptionNote')}
       </p>
     </fieldset>
   );
 }
 
 export function SubscriptionCard() {
+  const { t } = useTranslation('parent');
   const qc = useQueryClient();
   const [note, setNote] = useState<string | null>(null);
   const [plan, setPlan] = useState<Plan>('annual');
@@ -141,12 +144,12 @@ export function SubscriptionCard() {
       if ('verified' in res && res.verified) {
         await refreshStatus();
       } else if ('pending' in res && res.pending) {
-        setNote('Your purchase is pending — it can take a moment to confirm.');
+        setNote(t('subscription.note.purchasePending'));
       }
     },
     onError: (err) => {
       if (isUserCancelled(err)) return;
-      setNote('Something went wrong. Please try again.');
+      setNote(t('subscription.note.error'));
     },
   });
 
@@ -163,12 +166,12 @@ export function SubscriptionCard() {
       if (res.count > 0) {
         await refreshStatus();
       } else {
-        setNote('Nothing to restore on this Apple ID.');
+        setNote(t('subscription.note.nothingToRestoreApple'));
       }
     },
     onError: (err) => {
       if (isUserCancelled(err)) return;
-      setNote('Something went wrong. Please try again.');
+      setNote(t('subscription.note.error'));
     },
   });
 
@@ -195,12 +198,12 @@ export function SubscriptionCard() {
       if ('verified' in res && res.verified) {
         await refreshStatus();
       } else if ('pending' in res && res.pending) {
-        setNote('Your purchase is pending — it can take a moment to confirm.');
+        setNote(t('subscription.note.purchasePending'));
       }
     },
     onError: (err) => {
       if (isUserCancelled(err)) return;
-      setNote('Something went wrong. Please try again.');
+      setNote(t('subscription.note.error'));
     },
   });
 
@@ -220,12 +223,12 @@ export function SubscriptionCard() {
       if (res.count > 0) {
         await refreshStatus();
       } else {
-        setNote('Nothing to restore on this Google account.');
+        setNote(t('subscription.note.nothingToRestoreGoogle'));
       }
     },
     onError: (err) => {
       if (isUserCancelled(err)) return;
-      setNote('Something went wrong. Please try again.');
+      setNote(t('subscription.note.error'));
     },
   });
 
@@ -259,12 +262,12 @@ export function SubscriptionCard() {
     return (
       <section
         className="rounded-lg border-2 border-brand-200 bg-brand-50 px-4 py-4 sm:px-6 sm:py-6"
-        aria-label="Subscription status"
+        aria-label={t('subscription.sectionAriaLabel')}
       >
         <p className="text-sm font-medium text-brand-900">
           {isActive
             ? statusText
-            : 'Free plan — upgrade for AI coach, advanced scenarios, and more'}
+            : t('subscription.freeUpgrade')}
         </p>
 
         {isActive ? (
@@ -273,7 +276,7 @@ export function SubscriptionCard() {
             className="mt-3"
             onClick={() => window.open(manageUrl, '_blank', 'noopener,noreferrer')}
           >
-            Manage subscription
+            {t('subscription.manageSubscription')}
           </Button>
         ) : (
           <>
@@ -284,14 +287,14 @@ export function SubscriptionCard() {
               onClick={() => subscribeMutation.mutate()}
               disabled={subscribeMutation.isPending}
             >
-              {subscribeMutation.isPending ? 'Subscribing…' : 'Subscribe'}
+              {subscribeMutation.isPending ? t('subscription.subscribing') : t('subscription.subscribe')}
             </Button>
             <Button
               variant="outline"
               onClick={() => restoreMutation.mutate()}
               disabled={restoreMutation.isPending}
             >
-              {restoreMutation.isPending ? 'Restoring…' : 'Restore Purchases'}
+              {restoreMutation.isPending ? t('subscription.restoring') : t('subscription.restorePurchases')}
             </Button>
           </div>
           </>
@@ -311,10 +314,10 @@ export function SubscriptionCard() {
     return (
       <section
         className="rounded-lg border-2 border-brand-200 bg-brand-50 px-4 py-4 sm:px-6 sm:py-6"
-        aria-label="Subscription status"
+        aria-label={t('subscription.sectionAriaLabel')}
       >
         <p className="text-sm font-medium text-brand-900">
-          Free plan — upgrade for AI coach, advanced scenarios, and more
+          {t('subscription.freeUpgrade')}
         </p>
         <PlanPicker plans={plansData?.plans} value={plan} onChange={setPlan} />
         <Button
@@ -322,7 +325,7 @@ export function SubscriptionCard() {
           onClick={() => checkout.mutate()}
           disabled={checkout.isPending}
         >
-          {checkout.isPending ? 'Redirecting…' : 'Subscribe to Premium'}
+          {checkout.isPending ? t('subscription.redirecting') : t('subscription.subscribeToPremium')}
         </Button>
       </section>
     );
@@ -331,7 +334,7 @@ export function SubscriptionCard() {
   return (
     <section
       className="rounded-lg border-2 border-brand-200 bg-brand-50 px-4 py-4 sm:px-6 sm:py-6"
-      aria-label="Subscription status"
+      aria-label={t('subscription.sectionAriaLabel')}
     >
       <p className="text-sm font-medium text-brand-900">{statusText}</p>
       <Button
@@ -340,7 +343,7 @@ export function SubscriptionCard() {
         onClick={() => portal.mutate()}
         disabled={portal.isPending}
       >
-        {portal.isPending ? 'Redirecting…' : 'Manage Billing'}
+        {portal.isPending ? t('subscription.redirecting') : t('subscription.manageBilling')}
       </Button>
     </section>
   );

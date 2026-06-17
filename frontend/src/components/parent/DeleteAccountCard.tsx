@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +12,7 @@ import { parentApi } from '@/api/parent';
 import { ApiError } from '@/api/client';
 
 export function DeleteAccountCard() {
+  const { t } = useTranslation('parent');
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -26,23 +28,21 @@ export function DeleteAccountCard() {
     },
     onError: (err) => {
       if (err instanceof ApiError && err.status === 400) {
-        setError("That doesn't match your account email.");
+        setError(t('deleteAccount.error.emailMismatch'));
       } else {
-        setError('Something went wrong. Please try again.');
+        setError(t('deleteAccount.error.generic'));
       }
     },
   });
 
   return (
     <section className="mt-6 rounded-2xl border border-danger-100 bg-card p-4 text-foreground">
-      <h2 className="text-lg font-semibold text-danger-700">Danger zone</h2>
+      <h2 className="text-lg font-semibold text-danger-700">{t('deleteAccount.heading')}</h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        Deleting your account permanently removes your account, all your children&apos;s accounts
-        and their data, and cannot be undone.
+        {t('deleteAccount.body')}
       </p>
       <p className="mt-2 text-sm font-medium text-danger-700">
-        If you have a paid subscription, deleting your account here does not cancel billing. Cancel
-        it in the App Store (iOS), Google Play (Android), or via Manage Subscription first.
+        {t('deleteAccount.billingWarning')}
       </p>
 
       <Dialog
@@ -57,20 +57,18 @@ export function DeleteAccountCard() {
       >
         <DialogTrigger asChild>
           <Button variant="destructive" size="sm" className="mt-4">
-            Delete my account…
+            {t('deleteAccount.trigger')}
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete my account?</DialogTitle>
+            <DialogTitle>{t('deleteAccount.dialog.title')}</DialogTitle>
             <DialogDescription>
-              This permanently deletes your account and all your children&apos;s accounts and data.
-              This cannot be undone. If you have a paid subscription, cancel it in the App Store,
-              Google Play, or via Manage Subscription first — deleting here does not cancel billing.
+              {t('deleteAccount.dialog.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="delete-confirm-email">Type your email to confirm</Label>
+            <Label htmlFor="delete-confirm-email">{t('deleteAccount.dialog.confirmLabel')}</Label>
             <Input
               id="delete-confirm-email"
               type="email"
@@ -90,7 +88,7 @@ export function DeleteAccountCard() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>{t('deleteAccount.dialog.cancel')}</Button>
             <Button
               variant="destructive"
               disabled={confirmEmail.trim() === '' || remove.isPending}
@@ -99,7 +97,7 @@ export function DeleteAccountCard() {
                 remove.mutate();
               }}
             >
-              {remove.isPending ? 'Deleting…' : 'Delete account'}
+              {remove.isPending ? t('deleteAccount.dialog.deleting') : t('deleteAccount.dialog.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>

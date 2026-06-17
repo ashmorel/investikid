@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { billingApi, type SubscriptionStatus } from '@/api/billing';
 import { parentApi } from '@/api/parent';
 import { premiumApi } from '@/api/premium';
@@ -16,6 +17,7 @@ const REQUESTS_KEY = ['premium-requests'];
  * NOT reimplemented — onSubscribe routes to the existing subscribe action.
  */
 export function PremiumValueCard({ onSubscribe }: { onSubscribe?: () => void }) {
+  const { t } = useTranslation('parent');
   const { data: sub, isLoading } = useQuery<SubscriptionStatus | null>({
     queryKey: STATUS_QUERY_KEY,
     queryFn: billingApi.getStatus,
@@ -50,18 +52,18 @@ export function PremiumValueCard({ onSubscribe }: { onSubscribe?: () => void }) 
 
   return (
     <section
-      aria-label="Premium upgrade"
+      aria-label={t('premiumValue.sectionAriaLabel')}
       className="mb-4 rounded-2xl border-2 border-brand-200 bg-brand-50 p-4 sm:p-6"
     >
       <h2 className="text-base font-extrabold text-brand-900">
         {evidence
-          ? `${evidence.name} mastered ${evidence.count} skill${evidence.count === 1 ? '' : 's'} this month.`
-          : 'Real financial skills, with the evidence to prove it.'}
+          ? t(evidence.count === 1 ? 'premiumValue.evidenceHeadline' : 'premiumValue.evidenceHeadlinePlural', { name: evidence.name, count: evidence.count })
+          : t('premiumValue.defaultHeadline')}
       </h2>
       <p className="mt-1 text-sm text-gray-700">
         {evidence
-          ? 'Unlock the full curriculum + AI coach to keep the momentum.'
-          : 'Premium gives your child the full curriculum and a safe AI coach.'}
+          ? t('premiumValue.evidenceBody')
+          : t('premiumValue.defaultBody')}
       </p>
       <ul className="mt-3 space-y-2">
         {PREMIUM_BENEFITS.slice(0, 3).map((benefit) => (
@@ -74,8 +76,7 @@ export function PremiumValueCard({ onSubscribe }: { onSubscribe?: () => void }) 
 
       {pendingNames.length > 0 && (
         <p className="mt-4 rounded-xl bg-accent-50 px-3 py-2 text-sm font-medium text-accent-700">
-          <strong>{pendingNames.join(' and ')}</strong> asked to unlock Premium —
-          subscribe to say yes.
+          {t('premiumValue.pendingRequest', { names: pendingNames.join(' and ') })}
         </p>
       )}
 
@@ -83,7 +84,7 @@ export function PremiumValueCard({ onSubscribe }: { onSubscribe?: () => void }) 
         className="mt-4 min-h-[44px] bg-brand-600 text-white hover:bg-brand-700"
         onClick={() => onSubscribe?.()}
       >
-        Subscribe to Premium
+        {t('premiumValue.subscribeCta')}
       </Button>
     </section>
   );

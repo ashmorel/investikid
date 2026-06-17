@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { parentApi, type Child } from '@/api/parent';
 import { authApi } from '@/api/auth';
 import { useParentAuthGuard } from '@/hooks/useParentAuthGuard';
@@ -29,6 +30,7 @@ import { DeleteAccountCard } from '@/components/parent/DeleteAccountCard';
 import { Penny } from '@/components/child/ui/Penny';
 
 export default function ParentDashboard() {
+  const { t } = useTranslation('parent');
   const navigate = useNavigate();
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['children'], queryFn: parentApi.listChildren });
@@ -64,8 +66,8 @@ export default function ParentDashboard() {
     const checkoutResult = searchParams.get('checkout');
     if (checkoutResult === 'success') {
       toast({
-        title: 'Welcome to Premium!',
-        description: 'All your children now have access to premium features.',
+        title: t('dashboard.checkoutToast.title'),
+        description: t('dashboard.checkoutToast.description'),
       });
       searchParams.delete('checkout');
       setSearchParams(searchParams, { replace: true });
@@ -73,7 +75,7 @@ export default function ParentDashboard() {
       searchParams.delete('checkout');
       setSearchParams(searchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams, toast]);
+  }, [searchParams, setSearchParams, toast, t]);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
@@ -82,11 +84,11 @@ export default function ParentDashboard() {
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
       >
         <div className="flex items-center gap-2">
-          <Link to="/parent" className="flex items-center gap-2" aria-label="InvestiKid parent home">
+          <Link to="/parent" className="flex items-center gap-2" aria-label={t('dashboard.homeAriaLabel')}>
             <Penny size={32} mood="happy" />
             <span className="text-lg font-extrabold tracking-tight text-ink sm:text-xl">InvestiKid</span>
           </Link>
-          <h1 className="sr-only">Parent Dashboard</h1>
+          <h1 className="sr-only">{t('dashboard.title')}</h1>
         </div>
         <div className="flex items-center gap-1">
           {hasAppSession && (
@@ -95,25 +97,25 @@ export default function ParentDashboard() {
               onClick={() => navigate('/home')}
               className="whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:text-ink"
             >
-              ← Back to App
+              {t('dashboard.backToApp')}
             </button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" aria-label="Parent menu">
+              <Button variant="ghost" size="sm" aria-label={t('dashboard.menuAriaLabel')}>
                 <Menu className="h-5 w-5" aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setFeedbackOpen(true)}>
-                Send Feedback
+                {t('dashboard.sendFeedback')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onSelect={() => logout.mutate()}
                 disabled={logout.isPending}
               >
-                Log out
+                {t('dashboard.logOut')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -136,27 +138,26 @@ export default function ParentDashboard() {
       </div>
       <NotificationPreferencesCard />
 
-      {q.isLoading && <p className="mt-6 text-sm text-muted-foreground">Loading…</p>}
+      {q.isLoading && <p className="mt-6 text-sm text-muted-foreground">{t('dashboard.loading')}</p>}
       {q.isError && (
         <ErrorBanner
           className="mt-6"
-          title="Could not load children"
-          message="Please try refreshing the page."
+          title={t('dashboard.childrenLoadError.title')}
+          message={t('dashboard.childrenLoadError.message')}
         />
       )}
       {q.data && q.data.length === 0 && (
         <div className="rounded-xl border border-line bg-card p-4 text-sm text-muted-foreground mt-6">
-          <p className="font-medium text-foreground">No children linked to this email yet.</p>
+          <p className="font-medium text-foreground">{t('dashboard.noChildrenLinked')}</p>
           <p className="mt-1">
-            If your child has signed up, make sure they entered <strong>this exact email address</strong> as
-            their parent's email when registering. Once they do, they'll appear here.
+            {t('dashboard.noChildrenLinkedHelp')}
           </p>
         </div>
       )}
       {!hintSeen && (q.data?.length ?? 0) > 0 && (
         <div className="mb-4 mt-6 flex items-start justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 p-3 text-sm">
-          <span>Welcome! From here you can manage notifications, your subscription, Face ID sign-in, and your child's data.</span>
-          <button type="button" className="font-semibold text-brand-700" onClick={() => { localStorage.setItem('parent-welcome-seen', '1'); setHintSeen(true); }}>Got it</button>
+          <span>{t('dashboard.welcome')}</span>
+          <button type="button" className="font-semibold text-brand-700" onClick={() => { localStorage.setItem('parent-welcome-seen', '1'); setHintSeen(true); }}>{t('dashboard.welcomeDismiss')}</button>
         </div>
       )}
       {q.data && q.data.length > 0 && (
@@ -171,7 +172,7 @@ export default function ParentDashboard() {
       />
       <SignInMethods />
       <section className="mt-6 rounded-xl border border-line bg-card p-4">
-        <p className="mb-3 text-sm font-semibold text-muted-foreground">Preferences</p>
+        <p className="mb-3 text-sm font-semibold text-muted-foreground">{t('dashboard.preferences')}</p>
         <LanguageSwitcher />
       </section>
       <DeleteAccountCard />

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { parentApi } from '@/api/parent';
 import { ApiError } from '@/api/client';
 import { ErrorBanner } from '@/components/ErrorBanner';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 type State = 'pending' | 'gone' | 'error';
 
 export default function ParentAuthCallback() {
+  const { t } = useTranslation('parent');
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const navigate = useNavigate();
@@ -25,21 +27,17 @@ export default function ParentAuthCallback() {
   }, [token, navigate]);
 
   if (state === 'pending') {
-    return <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6"><p>Signing you in…</p></main>;
+    return <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6"><p>{t('authCallback.signingIn')}</p></main>;
   }
 
   return (
     <main className="mx-auto max-w-md px-4 py-4 sm:px-6 sm:py-6">
       <ErrorBanner
-        title={state === 'gone' ? 'Sign-in link expired' : 'Could not sign you in'}
-        message={
-          state === 'gone'
-            ? 'This link is invalid, expired, or already used.'
-            : 'Please try again in a moment.'
-        }
+        title={t(state === 'gone' ? 'authCallback.linkExpiredTitle' : 'authCallback.errorTitle')}
+        message={t(state === 'gone' ? 'authCallback.linkExpiredMessage' : 'authCallback.errorMessage')}
         action={
           <Button asChild variant="outline">
-            <Link to="/parent/login">Request a new link</Link>
+            <Link to="/parent/login">{t('authCallback.requestNewLink')}</Link>
           </Button>
         }
       />
