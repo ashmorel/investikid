@@ -124,3 +124,78 @@ async def test_genuine_financial_advice_still_blocked(advice):
     r = await moderate_output(advice, surface="tutor")
     assert r.safe is False
     assert r.category == "financial_advice"
+
+
+# ---------------------------------------------------------------------------
+# Cross-language regression tests (Sub-project B evidence)
+#
+# The prefilter and escalation-trigger are English-only regex.  Non-English
+# unsafe text therefore reaches _model_moderation, which is the multilingual
+# Gemini model.  We prove the pipeline (a) handles non-ASCII without encoding
+# errors and (b) honours whatever verdict the model returns, by monkeypatching
+# _needs_escalation → True and _model_moderation → a controlled verdict.
+# This mirrors exactly how test_fail_closed_on_escalation_error and
+# test_escalation_safe_verdict_passes_and_caches mock the pipeline.
+# ---------------------------------------------------------------------------
+
+
+async def test_moderation_blocks_unsafe_spanish_output(monkeypatch):
+    """Spanish financial-advice text: mocked model returns UNSAFE."""
+    monkeypatch.setattr(moderation, "_needs_escalation", lambda _t: True)
+
+    async def unsafe_verdict(_text):
+        return (False, "financial_advice")
+
+    monkeypatch.setattr(moderation, "_model_moderation", unsafe_verdict)
+
+    spanish_unsafe = "Deberías comprar acciones de Apple ahora mismo."
+    r = await moderate_output(spanish_unsafe, surface="quiz")
+
+    assert r.safe is False
+    assert r.category == "financial_advice"
+    assert r.text == moderation._SAFE_FALLBACKS["quiz"]
+    assert spanish_unsafe not in r.text
+
+
+async def test_moderation_blocks_unsafe_chinese_output(monkeypatch):
+    """Simplified-Chinese financial-advice text: mocked model returns UNSAFE."""
+    monkeypatch.setattr(moderation, "_needs_escalation", lambda _t: True)
+
+    async def unsafe_verdict(_text):
+        return (False, "financial_advice")
+
+    monkeypatch.setattr(moderation, "_model_moderation", unsafe_verdict)
+
+    chinese_unsafe = "你现在应该马上买苹果股票。"
+    r = await moderate_output(chinese_unsafe, surface="quiz")
+
+    assert r.safe is False
+    assert r.category == "financial_advice"
+    assert r.text == moderation._SAFE_FALLBACKS["quiz"]
+    assert chinese_unsafe not in r.text
+
+
+async def test_moderation_passes_safe_non_english_output(monkeypatch):
+    """Safe educational text in Spanish/Chinese: mocked model returns SAFE.
+
+    Also confirms non-ASCII text survives the round-trip with no encoding
+    errors and is returned verbatim when the model says safe.
+    """
+    monkeypatch.setattr(moderation, "_needs_escalation", lambda _t: True)
+
+    async def safe_verdict(_text):
+        return (True, None)
+
+    monkeypatch.setattr(moderation, "_model_moderation", safe_verdict)
+
+    safe_texts = [
+        # Spanish: "Saving is when you keep part of your money instead of spending it all."
+        "Ahorrar es guardar parte de tu dinero en lugar de gastarlo todo.",
+        # Chinese (Traditional): "Diversification means not putting all your eggs in one basket."
+        "分散投資的意思是不要把所有雞蛋放在同一個籃子裡。",
+    ]
+    for txt in safe_texts:
+        r = await moderate_output(txt, surface="tutor")
+        assert r.safe is True, f"safe non-English text wrongly blocked: {txt!r}"
+        assert r.text == txt
+        assert r.category is None
