@@ -12,7 +12,13 @@ from app.core.database import get_session
 from app.core.security import decode_token, get_token_from_cookie
 from app.models.push_device import PushDevice
 from app.models.user import User, UserProgress
-from app.schemas.user import DailyGoalUpdate, UpdatePreferencesRequest, UserProfile, UserProgressOut
+from app.schemas.user import (
+    DailyGoalUpdate,
+    UpdateLanguageRequest,
+    UpdatePreferencesRequest,
+    UserProfile,
+    UserProgressOut,
+)
 from app.services.export_service import build_user_export
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -79,6 +85,20 @@ async def update_preferences(
     await session.commit()
     await session.refresh(current_user)
     return current_user
+
+
+@router.patch("/me/language", response_model=UserProfile)
+async def update_language(
+    payload: UpdateLanguageRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    current_user.language = payload.language
+    await session.commit()
+    await session.refresh(current_user)
+    profile = UserProfile.model_validate(current_user)
+    profile.is_parent = await _is_parent(session, current_user)
+    return profile
 
 
 @router.get("/me/progress", response_model=UserProgressOut)

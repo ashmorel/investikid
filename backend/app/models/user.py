@@ -21,6 +21,7 @@ class User(Base):
     dob: Mapped[date] = mapped_column(Date, nullable=False)
     country_code: Mapped[str] = mapped_column(String(2), nullable=False)
     currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    language: Mapped[str] = mapped_column(String(10), nullable=False, server_default="en")
     topic_path: Mapped[str | None] = mapped_column(String(20), nullable=True)
     content_region: Mapped[str | None] = mapped_column(String(2), nullable=True)
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

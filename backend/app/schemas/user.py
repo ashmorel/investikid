@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.core.languages import is_supported_language
 from app.schemas.content import TOPIC_PATH_VALUES
 from app.services.age_tier import AgeTier
 
@@ -19,6 +20,7 @@ class UserProfile(BaseModel):
     dob: date
     country_code: str
     currency_code: str
+    language: str = "en"
     topic_path: str | None
     content_region: str | None = None
     is_premium: bool
@@ -88,6 +90,17 @@ class UpdatePreferencesRequest(BaseModel):
             return v
         if v not in TOPIC_PATH_VALUES:
             raise ValueError("topic_path must be one of the known learning topics")
+        return v
+
+
+class UpdateLanguageRequest(BaseModel):
+    language: str
+
+    @field_validator("language")
+    @classmethod
+    def language_supported(cls, v: str) -> str:
+        if not is_supported_language(v):
+            raise ValueError("unsupported language")
         return v
 
 
