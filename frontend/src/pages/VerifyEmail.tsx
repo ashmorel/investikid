@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authApi, type Me } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { AuthPage } from '@/components/AuthPage';
 
 export default function VerifyEmail() {
+  const { t } = useTranslation('auth');
   const [params] = useSearchParams();
   const qc = useQueryClient();
   const token = params.get('token') ?? '';
@@ -35,18 +37,18 @@ export default function VerifyEmail() {
     onSuccess: () => setResendDone(true),
     onError: (err) => {
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
-        setResendError('Please sign in and try again from the banner.');
+        setResendError(t('verifyEmail.error.resendError.needsSignIn'));
       } else {
-        setResendError('Something went wrong. Please try again.');
+        setResendError(t('verifyEmail.error.resendError.generic'));
       }
     },
   });
 
   if (!token) {
     return (
-      <AuthPage title="That link didn't work" subtitle="Please use the verification link from your email.">
+      <AuthPage title={t('verifyEmail.invalidLink.title')} subtitle={t('verifyEmail.invalidLink.subtitle')}>
         <p role="alert" className="text-sm text-destructive">
-          Invalid link. Please use the verification link from your email.
+          {t('verifyEmail.invalidLink.message')}
         </p>
       </AuthPage>
     );
@@ -54,8 +56,8 @@ export default function VerifyEmail() {
 
   if (verify.isLoading) {
     return (
-      <AuthPage title="Verifying your email...">
-        <p className="text-sm text-muted-foreground">This should only take a moment.</p>
+      <AuthPage title={t('verifyEmail.loading.title')}>
+        <p className="text-sm text-muted-foreground">{t('verifyEmail.loading.message')}</p>
       </AuthPage>
     );
   }
@@ -65,24 +67,24 @@ export default function VerifyEmail() {
     const isExpired = status === 410;
     return (
       <AuthPage
-        title={isExpired ? 'That link expired' : 'That link didn’t work'}
-        subtitle={isExpired ? 'Request a fresh verification email.' : 'Try again or head back to sign in.'}
+        title={isExpired ? t('verifyEmail.error.expiredTitle') : t('verifyEmail.error.genericTitle')}
+        subtitle={isExpired ? t('verifyEmail.error.expiredSubtitle') : t('verifyEmail.error.genericSubtitle')}
       >
         <p className="text-sm text-muted-foreground">
           {isExpired
-            ? 'This link is invalid or expired.'
-            : 'Something went wrong. Please try again.'}
+            ? t('verifyEmail.error.expiredMessage')
+            : t('verifyEmail.error.genericMessage')}
         </p>
         {!isExpired && (
           <p className="mt-4 text-sm text-muted-foreground">
-            <Link to="/login" className="underline">Back to sign in</Link>
+            <Link to="/login" className="underline">{t('verifyEmail.error.backToSignIn')}</Link>
           </p>
         )}
         {isExpired && (
           <div className="mt-4">
             {resendDone ? (
               <p className="text-sm text-muted-foreground">
-                Verification email sent. Check your inbox.
+                {t('verifyEmail.error.resendDone')}
               </p>
             ) : (
               <>
@@ -91,7 +93,7 @@ export default function VerifyEmail() {
                   disabled={resend.isPending}
                   variant="outline"
                 >
-                  {resend.isPending ? 'Sending…' : 'Resend verification email'}
+                  {resend.isPending ? t('verifyEmail.error.sending') : t('verifyEmail.error.resendButton')}
                 </Button>
                 {resendError && (
                   <p role="alert" className="mt-2 text-sm text-destructive">{resendError}</p>
@@ -105,14 +107,14 @@ export default function VerifyEmail() {
   }
 
   return (
-    <AuthPage title="Email verified!">
+    <AuthPage title={t('verifyEmail.success.title')}>
       <p className="text-sm text-muted-foreground">
-        Your email is confirmed. You're all set.
+        {t('verifyEmail.success.message')}
       </p>
       <p className="mt-4 text-sm text-muted-foreground">
-        <Link to="/home" className="underline">Go to your home page</Link>
+        <Link to="/home" className="underline">{t('verifyEmail.success.goHome')}</Link>
         {' · '}
-        <Link to="/login" className="underline">Sign in</Link>
+        <Link to="/login" className="underline">{t('verifyEmail.success.signIn')}</Link>
       </p>
     </AuthPage>
   );

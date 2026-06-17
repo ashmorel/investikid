@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
@@ -8,14 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthPage } from '@/components/AuthPage';
 
-function validatePassword(pw: string): string | null {
-  if (pw.length < 12) return 'Password must be at least 12 characters.';
-  if (!/[a-zA-Z]/.test(pw)) return 'Password must contain at least one letter.';
-  if (!/[0-9]/.test(pw)) return 'Password must contain at least one digit.';
+function validatePassword(pw: string, t: (k: string) => string): string | null {
+  if (pw.length < 12) return t('resetPassword.error.minLength');
+  if (!/[a-zA-Z]/.test(pw)) return t('resetPassword.error.needsLetter');
+  if (!/[0-9]/.test(pw)) return t('resetPassword.error.needsDigit');
   return null;
 }
 
 export default function ResetPassword() {
+  const { t } = useTranslation('auth');
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
 
@@ -39,18 +41,18 @@ export default function ResetPassword() {
           setServerError(err.detail);
           return;
         }
-        setServerError(err.detail || 'Something went wrong. Please try again.');
+        setServerError(err.detail || t('resetPassword.error.generic'));
         return;
       }
-      setServerError('Something went wrong. Please try again.');
+      setServerError(t('resetPassword.error.generic'));
     },
   });
 
   if (!token) {
     return (
-      <AuthPage title="That link didn't work" subtitle="Please use the reset link from your email.">
+      <AuthPage title={t('resetPassword.invalidLink.title')} subtitle={t('resetPassword.invalidLink.subtitle')}>
         <p role="alert" className="text-sm text-destructive">
-          Invalid link. Please use the reset link from your email.
+          {t('resetPassword.invalidLink.message')}
         </p>
       </AuthPage>
     );
@@ -58,12 +60,12 @@ export default function ResetPassword() {
 
   if (success) {
     return (
-      <AuthPage title="Password updated">
+      <AuthPage title={t('resetPassword.success.title')}>
         <p className="text-sm text-muted-foreground">
-          Your password has been reset successfully.
+          {t('resetPassword.success.message')}
         </p>
         <p className="mt-4 text-sm text-muted-foreground">
-          <Link to="/login" className="underline">Sign in with your new password</Link>
+          <Link to="/login" className="underline">{t('resetPassword.success.signInLink')}</Link>
         </p>
       </AuthPage>
     );
@@ -71,12 +73,12 @@ export default function ResetPassword() {
 
   if (expired) {
     return (
-      <AuthPage title="Link expired" subtitle="Request a fresh reset link when you're ready.">
+      <AuthPage title={t('resetPassword.expired.title')} subtitle={t('resetPassword.expired.subtitle')}>
         <p className="text-sm text-muted-foreground">
-          This link has expired or was already used. Request a new one.
+          {t('resetPassword.expired.message')}
         </p>
         <p className="mt-4 text-sm text-muted-foreground">
-          <Link to="/forgot-password" className="underline">Request a new reset link</Link>
+          <Link to="/forgot-password" className="underline">{t('resetPassword.expired.requestLink')}</Link>
         </p>
       </AuthPage>
     );
@@ -86,17 +88,17 @@ export default function ResetPassword() {
     e.preventDefault();
     setClientError(null);
     setServerError(null);
-    const pwErr = validatePassword(newPassword);
+    const pwErr = validatePassword(newPassword, t);
     if (pwErr) { setClientError(pwErr); return; }
-    if (newPassword !== confirm) { setClientError('Passwords do not match.'); return; }
+    if (newPassword !== confirm) { setClientError(t('resetPassword.error.mismatch')); return; }
     submit.mutate();
   }
 
   return (
-    <AuthPage title="Choose a new password">
+    <AuthPage title={t('resetPassword.title')}>
       <form className="space-y-3" onSubmit={handleSubmit}>
         <div className="space-y-1.5">
-          <Label htmlFor="new-password">New password</Label>
+          <Label htmlFor="new-password">{t('resetPassword.newPassword')}</Label>
           <Input
             id="new-password"
             type="password"
@@ -107,11 +109,11 @@ export default function ResetPassword() {
             onChange={(e) => setNewPassword(e.target.value)}
           />
           <p className="text-xs text-muted-foreground">
-            Min 12 characters, must include a letter and a digit.
+            {t('resetPassword.newPasswordHint')}
           </p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="confirm-password">Confirm new password</Label>
+          <Label htmlFor="confirm-password">{t('resetPassword.confirmPassword')}</Label>
           <Input
             id="confirm-password"
             type="password"
@@ -128,7 +130,7 @@ export default function ResetPassword() {
           <p role="alert" className="text-sm text-destructive">{serverError}</p>
         )}
         <Button type="submit" disabled={submit.isPending} className="w-full">
-          {submit.isPending ? 'Updating…' : 'Update password'}
+          {submit.isPending ? t('resetPassword.updating') : t('resetPassword.updatePassword')}
         </Button>
       </form>
     </AuthPage>
