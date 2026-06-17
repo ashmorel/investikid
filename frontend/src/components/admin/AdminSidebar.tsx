@@ -1,17 +1,19 @@
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const NAV_ITEMS = [
-  { to: '/admin', label: 'Dashboard', icon: '📊', end: true },
-  { to: '/admin/modules', label: 'Modules', icon: '📖', end: false },
-  { to: '/admin/badges', label: 'Badges', icon: '🏆', end: false },
-  { to: '/admin/challenges', label: 'Challenges', icon: '⚡', end: false },
-  { to: '/admin/feedback', label: 'Feedback', icon: '💬', end: false },
-  { to: '/admin/video-health', label: 'Video health', icon: '🎬', end: false },
-  { to: '/admin/analytics', label: 'Analytics', icon: '📈', end: false },
-  { to: '/admin/settings', label: 'Settings', icon: '⚙️', end: false },
+  { to: '/admin', tKey: 'sidebar.items.dashboard', icon: '📊', end: true },
+  { to: '/admin/modules', tKey: 'sidebar.items.modules', icon: '📖', end: false },
+  { to: '/admin/badges', tKey: 'sidebar.items.badges', icon: '🏆', end: false },
+  { to: '/admin/challenges', tKey: 'sidebar.items.challenges', icon: '⚡', end: false },
+  { to: '/admin/feedback', tKey: 'sidebar.items.feedback', icon: '💬', end: false },
+  { to: '/admin/video-health', tKey: 'sidebar.items.videoHealth', icon: '🎬', end: false },
+  { to: '/admin/analytics', tKey: 'sidebar.items.analytics', icon: '📈', end: false },
+  { to: '/admin/settings', tKey: 'sidebar.items.settings', icon: '⚙️', end: false },
 ];
 
 export default function AdminSidebar() {
+  const { t } = useTranslation('admin');
   return (
     // Mobile: a full-width top bar with a horizontally scrollable nav row.
     // md+: a fixed-width vertical sidebar beside the content.
@@ -22,10 +24,10 @@ export default function AdminSidebar() {
       className="flex w-full shrink-0 flex-col border-b border-line bg-card px-3 pb-3 md:w-52 md:border-b-0 md:border-r md:px-4 md:pb-4"
       style={{ paddingTop: 'calc(var(--safe-top) + 0.75rem)' }}
     >
-      <div className="mb-3 text-base font-extrabold text-ink md:mb-6 md:text-lg">📚 InvestiKid Admin</div>
+      <div className="mb-3 text-base font-extrabold text-ink md:mb-6 md:text-lg">📚 {t('sidebar.title')}</div>
       <nav
         className="flex flex-row gap-1 overflow-x-auto pb-1 md:flex-col md:overflow-x-visible md:pb-0"
-        aria-label="Admin navigation"
+        aria-label={t('sidebar.nav')}
       >
         {NAV_ITEMS.map((item) => (
           <NavLink
@@ -40,12 +42,12 @@ export default function AdminSidebar() {
               }`
             }
           >
-            {item.icon} {item.label}
+            {item.icon} {t(item.tKey)}
           </NavLink>
         ))}
       </nav>
       <div className="mt-3 border-t border-line pt-3 md:mt-auto md:pt-4">
-        <a href="/" className="text-sm text-muted-foreground hover:text-ink">← Back to App</a>
+        <a href="/" className="text-sm text-muted-foreground hover:text-ink">{t('sidebar.backToApp')}</a>
       </div>
     </aside>
   );

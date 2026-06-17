@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   useModules, useCreateModule, useUpdateModule,
   useLessons, useDeleteLesson, useReorderLessons,
@@ -13,6 +14,7 @@ import ModuleEngagement from './ModuleEngagement';
 
 export default function ModuleForm() {
   const { moduleId } = useParams<{ moduleId: string }>();
+  const { t } = useTranslation('admin');
   const isEdit = !!moduleId && moduleId !== 'new';
 
   const { data: modules = [] } = useModules();
@@ -22,7 +24,7 @@ export default function ModuleForm() {
 
   // Wait for data to load in edit mode before rendering the form
   if (isEdit && !existing) {
-    return <div className="text-muted-foreground">Loading…</div>;
+    return <div className="text-muted-foreground">{t('moduleForm.loading')}</div>;
   }
 
   return <ModuleFormInner key={existing?.id ?? 'new'} existing={existing} modules={modules} lessons={lessons} countries={countries} isEdit={isEdit} moduleId={moduleId} />;
@@ -36,6 +38,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
   isEdit: boolean;
   moduleId?: string;
 }) {
+  const { t } = useTranslation('admin');
   const navigate = useNavigate();
   const createMod = useCreateModule();
   const updateMod = useUpdateModule();
@@ -114,33 +117,33 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
   return (
     <div className="max-w-2xl">
       <h2 className="mb-4 text-xl font-semibold text-ink">
-        {isEdit ? 'Edit Module' : 'New Module'}
+        {isEdit ? t('moduleForm.editTitle') : t('moduleForm.newTitle')}
       </h2>
       <form onSubmit={handleSave} className="flex flex-col gap-4">
         <div>
-          <label htmlFor="mod-topic" className="mb-1 block text-sm text-ink">Topic</label>
+          <label htmlFor="mod-topic" className="mb-1 block text-sm text-ink">{t('moduleForm.topicLabel')}</label>
           <input id="mod-topic" value={topic} onChange={(e) => setTopic(e.target.value)} required
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
         </div>
         <div>
-          <label htmlFor="mod-title" className="mb-1 block text-sm text-ink">Title</label>
+          <label htmlFor="mod-title" className="mb-1 block text-sm text-ink">{t('moduleForm.titleLabel')}</label>
           <input id="mod-title" value={title} onChange={(e) => setTitle(e.target.value)} required
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
         </div>
         <div className="flex gap-4">
           <div className="flex-1">
-            <label htmlFor="mod-icon" className="mb-1 block text-sm text-ink">Icon</label>
+            <label htmlFor="mod-icon" className="mb-1 block text-sm text-ink">{t('moduleForm.iconLabel')}</label>
             <input id="mod-icon" value={icon} onChange={(e) => setIcon(e.target.value)} required
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
           <div className="flex items-end gap-2 pb-2">
             <input id="mod-premium" type="checkbox" checked={isPremium} onChange={(e) => setIsPremium(e.target.checked)}
               className="h-4 w-4 rounded border-input bg-background" />
-            <label htmlFor="mod-premium" className="text-sm text-ink">Premium</label>
+            <label htmlFor="mod-premium" className="text-sm text-ink">{t('moduleForm.premiumLabel')}</label>
           </div>
         </div>
         <div>
-          <span className="mb-1 block text-sm text-ink">Countries (empty = global)</span>
+          <span className="mb-1 block text-sm text-ink">{t('moduleForm.countriesLabel')}</span>
           <div className="flex flex-wrap gap-2">
             {countries.map((code) => (
               <button
@@ -161,7 +164,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
 
         {/* Prerequisites */}
         <div>
-          <span className="mb-1 block text-sm text-ink">Prerequisites (optional)</span>
+          <span className="mb-1 block text-sm text-ink">{t('moduleForm.prerequisitesLabel')}</span>
           <div className="flex flex-wrap gap-2">
             {modules
               .filter((m) => m.id !== moduleId)
@@ -185,62 +188,62 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
         {/* Age Range */}
         <div className="flex gap-4">
           <div className="flex-1">
-            <label htmlFor="mod-min-age" className="mb-1 block text-sm text-ink">Min Age</label>
+            <label htmlFor="mod-min-age" className="mb-1 block text-sm text-ink">{t('moduleForm.minAgeLabel')}</label>
             <input id="mod-min-age" type="number" value={minAge} onChange={(e) => setMinAge(e.target.value)}
-              min={1} max={99} placeholder="Any"
+              min={1} max={99} placeholder={t('moduleForm.agePlaceholder')}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
           <div className="flex-1">
-            <label htmlFor="mod-max-age" className="mb-1 block text-sm text-ink">Max Age</label>
+            <label htmlFor="mod-max-age" className="mb-1 block text-sm text-ink">{t('moduleForm.maxAgeLabel')}</label>
             <input id="mod-max-age" type="number" value={maxAge} onChange={(e) => setMaxAge(e.target.value)}
-              min={1} max={99} placeholder="Any"
+              min={1} max={99} placeholder={t('moduleForm.agePlaceholder')}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
-          <p className="self-end pb-2 text-xs text-muted-foreground">Leave empty for all ages</p>
+          <p className="self-end pb-2 text-xs text-muted-foreground">{t('moduleForm.ageHelp')}</p>
         </div>
 
         {/* Completion cash reward */}
         <div>
-          <label htmlFor="mod-cash" className="mb-1 block text-sm text-ink">Completion cash reward (optional)</label>
+          <label htmlFor="mod-cash" className="mb-1 block text-sm text-ink">{t('moduleForm.cashLabel')}</label>
           <input id="mod-cash" type="number" min="0" step="0.01" value={completionCashReward}
-            onChange={(e) => setCompletionCashReward(e.target.value)} placeholder="None"
+            onChange={(e) => setCompletionCashReward(e.target.value)} placeholder={t('moduleForm.cashPlaceholder')}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
         </div>
 
         {/* Standards alignment */}
         <div>
-          <span className="mb-1 block text-sm text-ink">Standards alignment (optional)</span>
+          <span className="mb-1 block text-sm text-ink">{t('moduleForm.standardsLabel')}</span>
           <div className="flex flex-col gap-2">
             {standards.map((s, i) => (
               <div key={i} className="flex items-start gap-2">
                 <input
-                  aria-label={`Standard ${i + 1} framework`}
+                  aria-label={t('moduleForm.standardAriaLabel.framework', { number: i + 1 })}
                   value={s.framework}
-                  placeholder="Framework"
+                  placeholder={t('moduleForm.standardPlaceholder.framework')}
                   onChange={(e) => setStandards((prev) => prev.map((row, idx) => idx === i ? { ...row, framework: e.target.value } : row))}
                   className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
                 />
                 <input
-                  aria-label={`Standard ${i + 1} code`}
+                  aria-label={t('moduleForm.standardAriaLabel.code', { number: i + 1 })}
                   value={s.code}
-                  placeholder="Code"
+                  placeholder={t('moduleForm.standardPlaceholder.code')}
                   onChange={(e) => setStandards((prev) => prev.map((row, idx) => idx === i ? { ...row, code: e.target.value } : row))}
                   className="w-24 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
                 />
                 <input
-                  aria-label={`Standard ${i + 1} label`}
+                  aria-label={t('moduleForm.standardAriaLabel.label', { number: i + 1 })}
                   value={s.label}
-                  placeholder="Label"
+                  placeholder={t('moduleForm.standardPlaceholder.label')}
                   onChange={(e) => setStandards((prev) => prev.map((row, idx) => idx === i ? { ...row, label: e.target.value } : row))}
                   className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
                 />
                 <button
                   type="button"
-                  aria-label={`Remove standard ${i + 1}`}
+                  aria-label={t('moduleForm.standardAriaLabel.remove', { number: i + 1 })}
                   onClick={() => setStandards((prev) => prev.filter((_, idx) => idx !== i))}
                   className="self-center text-xs text-danger-500"
                 >
-                  Remove
+                  {t('moduleForm.removeStandard')}
                 </button>
               </div>
             ))}
@@ -250,38 +253,38 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
             onClick={() => setStandards((prev) => [...prev, { framework: '', code: '', label: '' }])}
             className="mt-2 text-sm text-brand-600 hover:text-brand-700"
           >
-            + Add standard
+            {t('moduleForm.addStandard')}
           </button>
         </div>
 
         {/* Sources */}
         <div>
-          <span className="mb-1 block text-sm text-ink">Sources (optional)</span>
+          <span className="mb-1 block text-sm text-ink">{t('moduleForm.sourcesLabel')}</span>
           <div className="flex flex-col gap-2">
             {sources.map((s, i) => (
               <div key={i} className="flex items-start gap-2">
                 <input
-                  aria-label={`Source ${i + 1} title`}
+                  aria-label={t('moduleForm.sourceAriaLabel.title', { number: i + 1 })}
                   value={s.title}
-                  placeholder="Title"
+                  placeholder={t('moduleForm.sourcePlaceholder.title')}
                   onChange={(e) => setSources((prev) => prev.map((row, idx) => idx === i ? { ...row, title: e.target.value } : row))}
                   className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
                 />
                 <input
-                  aria-label={`Source ${i + 1} url`}
+                  aria-label={t('moduleForm.sourceAriaLabel.url', { number: i + 1 })}
                   value={s.url}
                   type="url"
-                  placeholder="https://…"
+                  placeholder={t('moduleForm.sourcePlaceholder.url')}
                   onChange={(e) => setSources((prev) => prev.map((row, idx) => idx === i ? { ...row, url: e.target.value } : row))}
                   className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
                 />
                 <button
                   type="button"
-                  aria-label={`Remove source ${i + 1}`}
+                  aria-label={t('moduleForm.sourceAriaLabel.remove', { number: i + 1 })}
                   onClick={() => setSources((prev) => prev.filter((_, idx) => idx !== i))}
                   className="self-center text-xs text-danger-500"
                 >
-                  Remove
+                  {t('moduleForm.removeSource')}
                 </button>
               </div>
             ))}
@@ -291,7 +294,7 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
             onClick={() => setSources((prev) => [...prev, { title: '', url: '' }])}
             className="mt-2 text-sm text-brand-600 hover:text-brand-700"
           >
-            + Add source
+            {t('moduleForm.addSource')}
           </button>
         </div>
 
@@ -299,9 +302,9 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
         {isEdit && moduleId && (
           <div className="mt-4 border-t border-line pt-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-base font-medium text-ink">Lessons ({sortedLessons.length})</h3>
+              <h3 className="text-base font-medium text-ink">{t('moduleForm.lessonsHeading', { count: sortedLessons.length })}</h3>
               <button type="button" onClick={() => { setEditingLesson(null); setShowNewLesson(true); }}
-                className="text-sm text-brand-600 hover:text-brand-700">+ Add Lesson</button>
+                className="text-sm text-brand-600 hover:text-brand-700">{t('moduleForm.addLesson')}</button>
             </div>
             <div className="flex flex-col gap-2">
               {sortedLessons.map((l, i) => (
@@ -322,9 +325,9 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
                   </span>
                   <span className="text-xs text-muted-foreground">{l.xp_reward} XP</span>
                   <button type="button" onClick={() => { setEditingLesson(l); setShowNewLesson(false); }}
-                    className="text-xs text-brand-600">Edit</button>
+                    className="text-xs text-brand-600">{t('moduleForm.edit')}</button>
                   <button type="button" onClick={() => setDeleteTarget(l)}
-                    className="text-xs text-danger-500">Delete</button>
+                    className="text-xs text-danger-500">{t('moduleForm.delete')}</button>
                 </div>
               ))}
             </div>
@@ -334,11 +337,11 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
 
         <div className="mt-4 flex gap-3">
           <button type="submit" className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700">
-            Save
+            {t('moduleForm.save')}
           </button>
           <button type="button" onClick={() => navigate('/admin/modules')}
             className="rounded-md border border-line px-6 py-2 text-sm text-muted-foreground hover:bg-brand-50">
-            Cancel
+            {t('moduleForm.cancel')}
           </button>
         </div>
       </form>
@@ -355,8 +358,8 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title={`Delete lesson?`}
-        message="This will permanently delete this lesson."
+        title={t('moduleForm.deleteTitle')}
+        message={t('moduleForm.deleteMessage')}
         onConfirm={() => { if (deleteTarget) deleteLesson.mutate(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
       />

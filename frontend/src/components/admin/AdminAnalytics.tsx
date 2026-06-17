@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAnalyticsSummary } from '@/api/admin';
 
 const RANGES = [7, 30, 90] as const;
@@ -18,14 +19,15 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
 }
 
 export default function AdminAnalytics() {
+  const { t } = useTranslation('admin');
   const [days, setDays] = useState<number>(30);
   const { data, isLoading, isError } = useAnalyticsSummary(days);
 
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Analytics</h1>
-        <div role="group" aria-label="Date range" className="flex gap-1">
+        <h1 className="text-xl font-bold text-gray-900">{t('analytics.pageTitle')}</h1>
+        <div role="group" aria-label={t('analytics.dateRangeLabel')} className="flex gap-1">
           {RANGES.map((r) => (
             <button
               key={r}
@@ -36,16 +38,17 @@ export default function AdminAnalytics() {
                 days === r ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 border border-gray-300'
               }`}
             >
+              {/* eslint-disable-next-line i18next/no-literal-string */}
               {r}d
             </button>
           ))}
         </div>
       </div>
 
-      {isLoading && <p className="mt-6 text-sm text-gray-500">Loading analytics…</p>}
+      {isLoading && <p className="mt-6 text-sm text-gray-500">{t('analytics.loading')}</p>}
       {isError && (
         <p role="alert" className="mt-6 text-sm font-semibold text-red-700">
-          Could not load analytics. Try again shortly.
+          {t('analytics.error')}
         </p>
       )}
 
@@ -53,50 +56,50 @@ export default function AdminAnalytics() {
         <div className="mt-4 space-y-6">
           <section aria-label="Key metrics" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <KpiCard
-              label="Activation"
+              label={t('analytics.kpi.activation')}
               value={fmtPct(data.activation.rate_pct)}
-              sub={`${data.activation.activated} of ${data.activation.signups} signups did a lesson <24h`}
+              sub={t('analytics.kpi.activatedSignups', { activated: data.activation.activated, signups: data.activation.signups })}
             />
             <KpiCard
-              label="Hero tap-through"
+              label={t('analytics.kpi.heroTapThrough')}
               value={fmtPct(data.engagement.cta_through_pct)}
-              sub={`${data.engagement.home_cta_tap} taps / ${data.engagement.home_view} home views`}
+              sub={t('analytics.kpi.tapsAndViews', { taps: data.engagement.home_cta_tap, views: data.engagement.home_view })}
             />
             <KpiCard
-              label="Lessons completed"
+              label={t('analytics.kpi.lessonsCompleted')}
               value={String(data.engagement.lesson_completed)}
-              sub={`last ${data.window_days} days`}
+              sub={t('analytics.kpi.lastDays', { days: data.window_days })}
             />
             <KpiCard
-              label="Digests sent"
+              label={t('analytics.kpi.digestsSent')}
               value={String(data.engagement.digest_sent)}
-              sub={`last ${data.window_days} days`}
+              sub={t('analytics.kpi.lastDays', { days: data.window_days })}
             />
           </section>
 
-          <section aria-label="Trial funnel">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-gray-600">Trial funnel</h2>
+          <section aria-label={t('analytics.trialFunnel.heading')}>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-gray-600">{t('analytics.trialFunnel.heading')}</h2>
             <div className="mt-2 grid grid-cols-3 gap-3">
-              <KpiCard label="Paywall views" value={String(data.funnel.paywall_view)} />
-              <KpiCard label="Trials started" value={String(data.funnel.trial_started)} sub="Stripe only (v1)" />
-              <KpiCard label="Subscriptions" value={String(data.funnel.subscription_activated)} />
+              <KpiCard label={t('analytics.trialFunnel.paywallViews')} value={String(data.funnel.paywall_view)} />
+              <KpiCard label={t('analytics.trialFunnel.trialsStarted')} value={String(data.funnel.trial_started)} sub={t('analytics.trialFunnel.trialsStartedSub')} />
+              <KpiCard label={t('analytics.trialFunnel.subscriptions')} value={String(data.funnel.subscription_activated)} />
             </div>
           </section>
 
-          <section aria-label="Signup cohorts">
+          <section aria-label={t('analytics.cohorts.heading')}>
             <h2 className="text-sm font-bold uppercase tracking-wide text-gray-600">
-              Weekly signup cohorts (last 8 weeks)
+              {t('analytics.cohorts.heading')}
             </h2>
             {data.cohorts.length === 0 ? (
-              <p className="mt-2 text-sm text-gray-500">No signups in the cohort window yet.</p>
+              <p className="mt-2 text-sm text-gray-500">{t('analytics.cohorts.noSignups')}</p>
             ) : (
               <table className="mt-2 w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500">
-                    <th scope="col" className="py-2 pr-4">Week</th>
-                    <th scope="col" className="py-2 pr-4">Signups</th>
-                    <th scope="col" className="py-2 pr-4">D7 retained</th>
-                    <th scope="col" className="py-2">D30 retained</th>
+                    <th scope="col" className="py-2 pr-4">{t('analytics.cohorts.week')}</th>
+                    <th scope="col" className="py-2 pr-4">{t('analytics.cohorts.signups')}</th>
+                    <th scope="col" className="py-2 pr-4">{t('analytics.cohorts.d7')}</th>
+                    <th scope="col" className="py-2">{t('analytics.cohorts.d30')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -113,11 +116,11 @@ export default function AdminAnalytics() {
             )}
           </section>
 
-          <section aria-label="Shortcut taps">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-gray-600">Home shortcut taps</h2>
+          <section aria-label={t('analytics.shortcuts.heading')}>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-gray-600">{t('analytics.shortcuts.heading')}</h2>
             <div className="mt-2 flex flex-wrap gap-3">
               {Object.entries(data.engagement.quicklink_taps).length === 0 ? (
-                <p className="text-sm text-gray-500">None yet.</p>
+                <p className="text-sm text-gray-500">{t('analytics.shortcuts.none')}</p>
               ) : (
                 Object.entries(data.engagement.quicklink_taps).map(([surface, count]) => (
                   <span key={surface} className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm">
@@ -130,8 +133,7 @@ export default function AdminAnalytics() {
           </section>
 
           <p className="text-xs text-gray-400">
-            First-party counts only — no third-party trackers. Raw events auto-delete after 13 months.
-            /try demo and Apple/Google trials are not tracked in v1.
+            {t('analytics.footer')}
           </p>
         </div>
       )}

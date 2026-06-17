@@ -82,6 +82,7 @@ function ChildMastery({ child, multi }: { child: MasteryReportChild; multi: bool
               key={obj}
               className="rounded-full bg-success-50 px-2.5 py-1 text-xs font-semibold text-success-700"
             >
+              {/* eslint-disable-next-line i18next/no-literal-string -- decorative check glyph */}
               <span aria-hidden="true">✓ </span>{t('masteryReport.canNow', { objective: obj })}
             </li>
           ))}
@@ -95,13 +96,12 @@ function ChildMastery({ child, multi }: { child: MasteryReportChild; multi: bool
       )}
       {child.standards.length > 0 && (
         <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-          {`Aligned to ${Array.from(new Set(child.standards.map((s) => s.framework).filter(Boolean))).join(' · ')}`}
+          {t('masteryReport.alignedTo', { frameworks: Array.from(new Set(child.standards.map((s) => s.framework).filter(Boolean))).join(' · ') })}
         </p>
       )}
       {child.weak_topic && nextLabel && (
         <p className="mt-1.5 text-sm text-gray-700">
-          {`Worth a look: `}<strong className="capitalize">{child.weak_topic.replace(/_/g, ' ')}</strong>{` — try `}
-          <strong>{nextLabel}</strong>{` together.`}
+          {t('masteryReport.worthALook', { topic: child.weak_topic.replace(/_/g, ' '), nextLabel })}
         </p>
       )}
     </div>

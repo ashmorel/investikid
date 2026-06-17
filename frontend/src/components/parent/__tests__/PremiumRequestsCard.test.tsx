@@ -28,7 +28,7 @@ function wrap(ui: React.ReactNode) {
 describe('PremiumRequestsCard', () => {
   it('renders the pending request', async () => {
     render(wrap(<PremiumRequestsCard />));
-    expect(await screen.findByText('Yasmin')).toBeInTheDocument();
+    expect(await screen.findByText(/Yasmin/)).toBeInTheDocument();
     expect(screen.getByText(/Investing Basics/)).toBeInTheDocument();
   });
 
@@ -50,7 +50,7 @@ describe('PremiumRequestsCard', () => {
 
   it('has no accessibility violations', async () => {
     const { container } = render(wrap(<PremiumRequestsCard />));
-    await screen.findByText('Yasmin');
+    await screen.findByText(/Yasmin/);
     expect(await axe(container)).toHaveNoViolations();
   });
 });

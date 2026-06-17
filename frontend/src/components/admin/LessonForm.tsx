@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCreateLesson, useUpdateLesson, useCreateLevelLesson, presignVideo, uploadToPresigned } from '@/api/admin';
 import type { AdminLesson, ApplyMission, MissionType } from '@/api/admin';
 
@@ -34,6 +35,7 @@ interface LessonFormProps {
 }
 
 export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, onClose }: LessonFormProps) {
+  const { t } = useTranslation('admin');
   const isEdit = !!lesson;
   const createLesson = useCreateLesson();
   const createLevelLesson = useCreateLevelLesson(levelId ?? '');
@@ -89,11 +91,11 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
   async function handleVideoFile(file: File) {
     setUploadErr(null);
     if (file.type !== 'video/mp4') {
-      setUploadErr('Please choose an MP4 file.');
+      setUploadErr(t('lessonForm.video.uploadErrorMp4'));
       return;
     }
     if (file.size > MAX_VIDEO_BYTES) {
-      setUploadErr('File too large (max 200 MB).');
+      setUploadErr(t('lessonForm.video.uploadErrorSize'));
       return;
     }
     try {
@@ -104,7 +106,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
       setUploadPct(100);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Upload failed';
-      setUploadErr(/not_configured/i.test(msg) ? 'Video upload not configured.' : msg);
+      setUploadErr(/not_configured/i.test(msg) ? t('lessonForm.video.uploadErrorNotConfigured') : msg);
       setUploadPct(null);
     }
   }
@@ -145,7 +147,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (type === 'video' && videoSource === 'hosted' && !videoUrl) {
-      setUploadErr('Please upload a video file first.');
+      setUploadErr(t('lessonForm.video.uploadErrorRequired'));
       return;
     }
     const content_json = buildContentJson();
@@ -164,7 +166,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-lg rounded-lg border border-line bg-card p-6 max-h-[90vh] overflow-y-auto">
         <h3 className="mb-4 text-lg font-semibold text-ink">
-          {isEdit ? 'Edit Lesson' : 'New Lesson'}
+          {isEdit ? t('lessonForm.editTitle') : t('lessonForm.newTitle')}
         </h3>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Type selector */}
@@ -186,7 +188,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
 
           {/* XP Reward */}
           <div>
-            <label htmlFor="lesson-xp" className="mb-1 block text-sm text-ink">XP Reward</label>
+            <label htmlFor="lesson-xp" className="mb-1 block text-sm text-ink">{t('lessonForm.xpReward')}</label>
             <input id="lesson-xp" type="number" value={xpReward} onChange={(e) => setXpReward(Number(e.target.value))}
               className="w-24 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
           </div>
@@ -195,12 +197,12 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
           {type === 'card' && (
             <>
               <div>
-                <label htmlFor="card-title" className="mb-1 block text-sm text-ink">Title</label>
+                <label htmlFor="card-title" className="mb-1 block text-sm text-ink">{t('lessonForm.card.title')}</label>
                 <input id="card-title" value={cardTitle} onChange={(e) => setCardTitle(e.target.value)} required
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
               <div>
-                <label htmlFor="card-body" className="mb-1 block text-sm text-ink">Body</label>
+                <label htmlFor="card-body" className="mb-1 block text-sm text-ink">{t('lessonForm.card.body')}</label>
                 <textarea id="card-body" value={cardBody} onChange={(e) => setCardBody(e.target.value)} required rows={3}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
@@ -211,12 +213,12 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
           {type === 'quiz' && (
             <>
               <div>
-                <label htmlFor="quiz-question" className="mb-1 block text-sm text-ink">Question</label>
+                <label htmlFor="quiz-question" className="mb-1 block text-sm text-ink">{t('lessonForm.quiz.question')}</label>
                 <input id="quiz-question" value={question} onChange={(e) => setQuestion(e.target.value)} required
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
               <div>
-                <span className="mb-1 block text-sm text-ink">Choices</span>
+                <span className="mb-1 block text-sm text-ink">{t('lessonForm.quiz.choices')}</span>
                 {choices.map((c, i) => (
                   <div key={i} className="mb-2 flex items-center gap-2">
                     <input
@@ -225,29 +227,32 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                       checked={answerIndex === i}
                       onChange={() => setAnswerIndex(i)}
                       className="h-4 w-4"
-                      aria-label={`Mark choice ${i + 1} as correct`}
+                      aria-label={t('lessonForm.quiz.markCorrectAriaLabel', { number: i + 1 })}
                     />
                     <input
                       value={c}
                       onChange={(e) => { const nc = [...choices]; nc[i] = e.target.value; setChoices(nc); }}
                       className="flex-1 rounded-md border border-input bg-background px-3 py-1 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
-                      placeholder={`Choice ${i + 1}`}
+                      placeholder={t('lessonForm.quiz.choicePlaceholder', { number: i + 1 })}
                       required
                     />
                     {choices.length > 2 && (
-                      <button type="button" onClick={() => {
+                      <button type="button" aria-label={t('lessonForm.quiz.removeChoice')} onClick={() => {
                         const nc = choices.filter((_, j) => j !== i);
                         setChoices(nc);
                         if (answerIndex >= nc.length) setAnswerIndex(nc.length - 1);
-                      }} className="text-danger-500">✕</button>
+                      }} className="text-danger-500" aria-hidden="false">
+                        {/* eslint-disable-next-line i18next/no-literal-string -- decorative remove glyph */}
+                        <span aria-hidden="true">✕</span>
+                      </button>
                     )}
                   </div>
                 ))}
                 <button type="button" onClick={() => setChoices([...choices, ''])}
-                  className="text-sm text-brand-600">+ Add Choice</button>
+                  className="text-sm text-brand-600">{t('lessonForm.quiz.addChoice')}</button>
               </div>
               <div>
-                <label htmlFor="quiz-explanation" className="mb-1 block text-sm text-ink">Explanation</label>
+                <label htmlFor="quiz-explanation" className="mb-1 block text-sm text-ink">{t('lessonForm.quiz.explanation')}</label>
                 <input id="quiz-explanation" value={explanation} onChange={(e) => setExplanation(e.target.value)} required
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
@@ -258,12 +263,12 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
           {type === 'scenario' && (
             <>
               <div>
-                <label htmlFor="scenario-prompt" className="mb-1 block text-sm text-ink">Prompt</label>
+                <label htmlFor="scenario-prompt" className="mb-1 block text-sm text-ink">{t('lessonForm.scenario.prompt')}</label>
                 <textarea id="scenario-prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} required rows={2}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
               <div>
-                <span className="mb-1 block text-sm text-ink">Choices</span>
+                <span className="mb-1 block text-sm text-ink">{t('lessonForm.scenario.choices')}</span>
                 {scenarioChoices.map((c, i) => (
                   <div key={i} className="mb-3 rounded-md border border-line bg-card p-3">
                     <div className="mb-2 flex items-center gap-2">
@@ -273,34 +278,37 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                         checked={correctIndex === i}
                         onChange={() => setCorrectIndex(i)}
                         className="h-4 w-4"
-                        aria-label={`Mark choice ${i + 1} as correct`}
+                        aria-label={t('lessonForm.scenario.markCorrectAriaLabel', { number: i + 1 })}
                       />
                       <input
                         value={c.label}
                         onChange={(e) => { const nc = [...scenarioChoices]; nc[i] = { ...nc[i], label: e.target.value }; setScenarioChoices(nc); }}
                         className="flex-1 rounded-md border border-input bg-background px-3 py-1 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
-                        placeholder="Label"
+                        placeholder={t('lessonForm.scenario.labelPlaceholder')}
                         required
                       />
                       {scenarioChoices.length > 2 && (
-                        <button type="button" onClick={() => {
+                        <button type="button" aria-label={t('lessonForm.scenario.removeChoice')} onClick={() => {
                           const nc = scenarioChoices.filter((_, j) => j !== i);
                           setScenarioChoices(nc);
                           if (correctIndex >= nc.length) setCorrectIndex(nc.length - 1);
-                        }} className="text-danger-500">✕</button>
+                        }} className="text-danger-500">
+                          {/* eslint-disable-next-line i18next/no-literal-string -- decorative remove glyph */}
+                          <span aria-hidden="true">✕</span>
+                        </button>
                       )}
                     </div>
                     <input
                       value={c.outcome}
                       onChange={(e) => { const nc = [...scenarioChoices]; nc[i] = { ...nc[i], outcome: e.target.value }; setScenarioChoices(nc); }}
                       className="ml-6 w-[calc(100%-1.5rem)] rounded-md border border-input bg-background px-3 py-1 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
-                      placeholder="Outcome message"
+                      placeholder={t('lessonForm.scenario.outcomePlaceholder')}
                       required
                     />
                   </div>
                 ))}
                 <button type="button" onClick={() => setScenarioChoices([...scenarioChoices, { label: '', outcome: '' }])}
-                  className="text-sm text-brand-600">+ Add Choice</button>
+                  className="text-sm text-brand-600">{t('lessonForm.scenario.addChoice')}</button>
               </div>
             </>
           )}
@@ -309,7 +317,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
           {type === 'video' && (
             <>
               <fieldset>
-                <legend className="mb-1 block text-sm text-ink">Video source</legend>
+                <legend className="mb-1 block text-sm text-ink">{t('lessonForm.video.sourceLabel')}</legend>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 text-sm text-ink">
                     <input
@@ -319,7 +327,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                       checked={videoSource === 'youtube'}
                       onChange={() => setVideoSource('youtube')}
                     />
-                    YouTube
+                    {t('lessonForm.video.youtube')}
                   </label>
                   <label className="flex items-center gap-2 text-sm text-ink">
                     <input
@@ -329,21 +337,21 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                       checked={videoSource === 'hosted'}
                       onChange={() => setVideoSource('hosted')}
                     />
-                    Uploaded video
+                    {t('lessonForm.video.uploaded')}
                   </label>
                 </div>
               </fieldset>
 
               {videoSource === 'youtube' ? (
                 <div>
-                  <label htmlFor="video-youtube" className="mb-1 block text-sm text-ink">YouTube URL or ID</label>
+                  <label htmlFor="video-youtube" className="mb-1 block text-sm text-ink">{t('lessonForm.video.youtubeLabel')}</label>
                   <input id="video-youtube" value={youtubeInput} onChange={(e) => setYoutubeInput(e.target.value)} required
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300"
-                    placeholder="Paste a YouTube link or 11-character ID." />
+                    placeholder={t('lessonForm.video.youtubePlaceholder')} />
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <label htmlFor="video-file" className="mb-1 block text-sm text-ink">Video file (MP4, ≤200 MB)</label>
+                  <label htmlFor="video-file" className="mb-1 block text-sm text-ink">{t('lessonForm.video.fileLabel')}</label>
                   <input
                     id="video-file"
                     type="file"
@@ -352,11 +360,11 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handleVideoFile(f); }}
                   />
                   {uploadPct !== null && (
-                    <p className="text-sm text-muted-foreground">Uploading… {uploadPct}%</p>
+                    <p className="text-sm text-muted-foreground">{t('lessonForm.video.uploading', { pct: uploadPct })}</p>
                   )}
                   {videoUrl && (
                     <video
-                      aria-label="Uploaded video preview"
+                      aria-label={t('lessonForm.video.uploadedPreviewAriaLabel')}
                       className="mt-2 w-full max-w-md rounded-md border border-input"
                       src={videoUrl}
                       controls
@@ -371,24 +379,24 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
               )}
 
               <div>
-                <label htmlFor="video-caption" className="mb-1 block text-sm text-ink">Caption</label>
+                <label htmlFor="video-caption" className="mb-1 block text-sm text-ink">{t('lessonForm.video.captionLabel')}</label>
                 <input id="video-caption" value={videoCaption} onChange={(e) => setVideoCaption(e.target.value)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
               </div>
 
               <div>
-                <label htmlFor="video-transcript" className="mb-1 block text-sm text-ink">Transcript</label>
+                <label htmlFor="video-transcript" className="mb-1 block text-sm text-ink">{t('lessonForm.video.transcriptLabel')}</label>
                 <textarea id="video-transcript" value={videoTranscript} onChange={(e) => setVideoTranscript(e.target.value)}
                   rows={4}
-                  placeholder="Full text of the video so the lesson is accessible (WCAG)."
+                  placeholder={t('lessonForm.video.transcriptPlaceholder')}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
-                <p className="mt-1 text-xs text-muted-foreground">A transcript is required for WCAG 2.2 AA — the child can open it under the video.</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('lessonForm.video.transcriptHelp')}</p>
               </div>
 
               <label htmlFor="video-captions" className="flex items-center gap-2 text-sm text-ink">
                 <input id="video-captions" type="checkbox" className="h-4 w-4"
                   checked={captionsAvailable} onChange={(e) => setCaptionsAvailable(e.target.checked)} />
-                <span>Captions available on this video</span>
+                <span>{t('lessonForm.video.captionsAvailable')}</span>
               </label>
             </>
           )}
@@ -399,13 +407,13 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
               <input id="mission-enabled" type="checkbox" checked={missionEnabled}
                 onChange={(e) => setMissionEnabled(e.target.checked)}
                 className="h-4 w-4 rounded border-input bg-background" />
-              <label htmlFor="mission-enabled" className="text-sm text-ink">Apply mission (simulator)</label>
+              <label htmlFor="mission-enabled" className="text-sm text-ink">{t('lessonForm.mission.enabledLabel')}</label>
             </div>
 
             {missionEnabled && (
               <div className="mt-3 flex flex-col gap-3">
                 <div>
-                  <label htmlFor="mission-type" className="mb-1 block text-sm text-ink">Mission type</label>
+                  <label htmlFor="mission-type" className="mb-1 block text-sm text-ink">{t('lessonForm.mission.typeLabel')}</label>
                   <select id="mission-type" value={missionType}
                     onChange={(e) => setMissionType(e.target.value as MissionType)}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink focus:ring-2 focus:ring-brand-300">
@@ -417,7 +425,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
 
                 {missionType === 'diversify' && (
                   <div>
-                    <label htmlFor="mission-n" className="mb-1 block text-sm text-ink">Number of stocks (N)</label>
+                    <label htmlFor="mission-n" className="mb-1 block text-sm text-ink">{t('lessonForm.mission.nLabel')}</label>
                     <input id="mission-n" type="number" min="1" step="1" value={missionN}
                       onChange={(e) => setMissionN(e.target.value)}
                       className="w-24 rounded-md border border-input bg-background px-3 py-2 text-base text-ink focus:ring-2 focus:ring-brand-300" />
@@ -426,7 +434,7 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
 
                 {missionType === 'invest_amount' && (
                   <div>
-                    <label htmlFor="mission-amount" className="mb-1 block text-sm text-ink">Amount to invest</label>
+                    <label htmlFor="mission-amount" className="mb-1 block text-sm text-ink">{t('lessonForm.mission.amountLabel')}</label>
                     <input id="mission-amount" type="number" min="0" step="0.01" value={missionAmount}
                       onChange={(e) => setMissionAmount(e.target.value)}
                       className="w-40 rounded-md border border-input bg-background px-3 py-2 text-base text-ink focus:ring-2 focus:ring-brand-300" />
@@ -434,14 +442,14 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
                 )}
 
                 <div>
-                  <label htmlFor="mission-title" className="mb-1 block text-sm text-ink">Mission title</label>
+                  <label htmlFor="mission-title" className="mb-1 block text-sm text-ink">{t('lessonForm.mission.titleLabel')}</label>
                   <input id="mission-title" value={missionTitle}
                     onChange={(e) => setMissionTitle(e.target.value)}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
                 </div>
 
                 <div>
-                  <label htmlFor="mission-prompt" className="mb-1 block text-sm text-ink">Mission prompt</label>
+                  <label htmlFor="mission-prompt" className="mb-1 block text-sm text-ink">{t('lessonForm.mission.promptLabel')}</label>
                   <textarea id="mission-prompt" value={missionPrompt} rows={2}
                     onChange={(e) => setMissionPrompt(e.target.value)}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
@@ -449,15 +457,15 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
 
                 <div className="flex gap-4">
                   <div>
-                    <label htmlFor="mission-xp" className="mb-1 block text-sm text-ink">Mission XP</label>
+                    <label htmlFor="mission-xp" className="mb-1 block text-sm text-ink">{t('lessonForm.mission.xpLabel')}</label>
                     <input id="mission-xp" type="number" min="0" step="1" value={missionXp}
                       onChange={(e) => setMissionXp(e.target.value)}
                       className="w-24 rounded-md border border-input bg-background px-3 py-2 text-base text-ink focus:ring-2 focus:ring-brand-300" />
                   </div>
                   <div>
-                    <label htmlFor="mission-cash" className="mb-1 block text-sm text-ink">Mission cash reward (optional)</label>
+                    <label htmlFor="mission-cash" className="mb-1 block text-sm text-ink">{t('lessonForm.mission.cashLabel')}</label>
                     <input id="mission-cash" type="number" min="0" step="0.01" value={missionCash}
-                      onChange={(e) => setMissionCash(e.target.value)} placeholder="None"
+                      onChange={(e) => setMissionCash(e.target.value)} placeholder={t('lessonForm.mission.cashPlaceholder')}
                       className="w-40 rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
                   </div>
                 </div>
@@ -467,11 +475,11 @@ export default function LessonForm({ moduleId, levelId, lesson, nextOrderIndex, 
 
           <div className="mt-2 flex gap-3">
             <button type="submit" className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700">
-              {isEdit ? 'Update' : 'Create'}
+              {isEdit ? t('lessonForm.submit') : t('lessonForm.create')}
             </button>
             <button type="button" onClick={onClose}
               className="rounded-md border border-line px-6 py-2 text-sm text-muted-foreground hover:bg-brand-50">
-              Cancel
+              {t('lessonForm.cancel')}
             </button>
           </div>
         </form>

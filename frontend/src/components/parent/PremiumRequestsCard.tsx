@@ -21,9 +21,7 @@ export function PremiumRequestsCard({ onApprove }: { onApprove?: () => void }) {
       <ul className="mt-2 space-y-2">
         {reqs.map((r) => (
           <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-sm text-ink">
-            <span>
-              <strong>{r.child_username}</strong> asked to unlock <em>{r.context_label}</em>
-            </span>
+            <span>{t('premiumRequests.requestDescription', { childUsername: r.child_username, contextLabel: r.context_label })}</span>
             <span className="flex shrink-0 gap-2">
               <Button
                 size="sm"

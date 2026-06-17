@@ -148,7 +148,8 @@
     "approveAriaLabel": "Approve and subscribe to unlock {{contextLabel}} for {{childUsername}}",
     "approve": "Approve",
     "declineAriaLabel": "Decline request from {{childUsername}}",
-    "decline": "Decline"
+    "decline": "Decline",
+    "requestDescription": "{{childUsername}} asked to unlock {{contextLabel}}"
   },
   "premiumValue": {
     "sectionAriaLabel": "Premium upgrade",
@@ -230,7 +231,9 @@
     "canNow": "can now: {{objective}}",
     "noMasteriesQueued": "No new masteries yet — {{nextLabel}} is queued up.",
     "noMasteriesNone": "No new masteries yet.",
-    "multiChildStats": "{{username}} · {{count}} this month ({{total}} all-time)"
+    "multiChildStats": "{{username}} · {{count}} this month ({{total}} all-time)",
+    "alignedTo": "Aligned to {{frameworks}}",
+    "worthALook": "Worth a look: {{topic}} — try {{nextLabel}} together."
   },
   "childAnalytics": {
     "noActivity": "No activity yet",

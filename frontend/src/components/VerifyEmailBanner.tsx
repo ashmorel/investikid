@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { authApi, type Me } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function VerifyEmailBanner({ profile }: Props) {
+  const { t } = useTranslation('auth');
   const qc = useQueryClient();
   const [dismissed, setDismissed] = useState(false);
   const [resendDone, setResendDone] = useState(false);
@@ -41,9 +43,9 @@ export function VerifyEmailBanner({ profile }: Props) {
       className="flex items-center justify-between gap-4 border-b border-brand-300 bg-brand-50 px-4 py-2 text-sm text-brand-900"
     >
       <span>
-        Please confirm your email address.{' '}
+        {t('verifyEmailBanner.pleaseConfirm')}{' '}
         {resendDone ? (
-          <span className="font-medium">Verification email sent — check your inbox.</span>
+          <span className="font-medium">{t('verifyEmailBanner.sent')}</span>
         ) : (
           <Button
             variant="ghost"
@@ -52,18 +54,19 @@ export function VerifyEmailBanner({ profile }: Props) {
             onClick={() => { setResendError(null); resend.mutate(); }}
             disabled={resend.isPending}
           >
-            {resend.isPending ? 'Sending…' : 'Resend'}
+            {resend.isPending ? t('verifyEmailBanner.sending') : t('verifyEmailBanner.resend')}
           </Button>
         )}
         {resendError && <span className="ml-2 font-medium">{resendError}</span>}
       </span>
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={t('verifyEmailBanner.dismiss')}
         className="text-brand-700 hover:text-brand-900"
         onClick={() => setDismissed(true)}
       >
-        ✕
+        {/* eslint-disable-next-line i18next/no-literal-string -- decorative dismiss glyph */}
+        <span aria-hidden="true">✕</span>
       </button>
     </div>
   );

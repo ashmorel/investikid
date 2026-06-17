@@ -1,22 +1,24 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useBadges, useDeleteBadge, badgeIcon } from '@/api/admin';
 import ConfirmDialog from './ConfirmDialog';
 import type { AdminBadge } from '@/api/admin';
 
 export default function BadgeList() {
+  const { t } = useTranslation('admin');
   const { data: badges = [], isLoading } = useBadges();
   const deleteBadge = useDeleteBadge();
   const [deleteTarget, setDeleteTarget] = useState<AdminBadge | null>(null);
 
-  if (isLoading) return <p className="text-muted-foreground">Loading...</p>;
+  if (isLoading) return <p className="text-muted-foreground">{t('badgeList.loading')}</p>;
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-ink">Badges</h2>
+        <h2 className="text-xl font-semibold text-ink">{t('badgeList.heading')}</h2>
         <Link to="/admin/badges/new" className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700">
-          + New Badge
+          {t('badgeList.newButton')}
         </Link>
       </div>
       <div className="flex flex-col gap-2">
@@ -27,15 +29,15 @@ export default function BadgeList() {
               <div className="font-medium text-ink">{b.name}</div>
               <div className="text-xs text-muted-foreground">{b.condition_type} ≥ {b.condition_value}</div>
             </div>
-            <Link to={`/admin/badges/${b.id}`} className="text-xs text-brand-600 hover:text-brand-700">Edit</Link>
-            <button type="button" onClick={() => setDeleteTarget(b)} className="text-xs text-danger-500 hover:text-danger-400">Delete</button>
+            <Link to={`/admin/badges/${b.id}`} className="text-xs text-brand-600 hover:text-brand-700">{t('badgeList.edit')}</Link>
+            <button type="button" onClick={() => setDeleteTarget(b)} className="text-xs text-danger-500 hover:text-danger-400">{t('badgeList.delete')}</button>
           </div>
         ))}
       </div>
       <ConfirmDialog
         open={!!deleteTarget}
-        title={`Delete "${deleteTarget?.name}"?`}
-        message="This badge will be permanently deleted. Deletion will fail if users have earned it."
+        title={t('badgeList.deleteTitle', { name: deleteTarget?.name ?? '' })}
+        message={t('badgeList.deleteMessage')}
         onConfirm={() => { if (deleteTarget) deleteBadge.mutate(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
       />

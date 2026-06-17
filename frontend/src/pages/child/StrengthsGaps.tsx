@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useStrengths, type TopicStrength } from '@/api/ai';
 
 const STATUS_STYLES: Record<string, { border: string; text: string; label: string; emoji: string }> = {
@@ -7,12 +8,13 @@ const STATUS_STYLES: Record<string, { border: string; text: string; label: strin
 };
 
 function MasteryRing({ value }: { value: number }) {
+  const { t } = useTranslation('child');
   const pct = Math.round(value * 100);
   const circumference = 2 * Math.PI * 52;
   const offset = circumference - (value * circumference);
 
   return (
-    <div className="flex flex-col items-center" role="img" aria-label={`Overall mastery: ${pct}%`}>
+    <div className="flex flex-col items-center" role="img" aria-label={t('strengths.overallMasteryAriaLabel', { pct })}>
       <div className="relative h-[120px] w-[120px]">
         <svg viewBox="0 0 120 120" className="-rotate-90">
           <circle cx="60" cy="60" r="52" fill="none" stroke="#bae6fd" strokeWidth="10" />
@@ -25,13 +27,14 @@ function MasteryRing({ value }: { value: number }) {
           {pct}%
         </span>
       </div>
-      <p className="mt-2 text-sm font-semibold text-brand-600">Overall Mastery</p>
-      <p className="text-xs text-muted-foreground">Across all topics you've studied</p>
+      <p className="mt-2 text-sm font-semibold text-brand-600">{t('strengths.overallMastery')}</p>
+      <p className="text-xs text-muted-foreground">{t('strengths.overallMasterySubtitle')}</p>
     </div>
   );
 }
 
 function TopicCard({ topic }: { topic: TopicStrength }) {
+  const { t } = useTranslation('child');
   const style = STATUS_STYLES[topic.status] ?? STATUS_STYLES.new;
   const pct = Math.round(topic.mastery_score * 100);
 
@@ -68,25 +71,26 @@ function TopicCard({ topic }: { topic: TopicStrength }) {
       <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
         {topic.status !== 'new' && (
           <>
-            <span>{topic.weak_count} weak concept{topic.weak_count !== 1 ? 's' : ''}</span>
+            <span>{t(topic.weak_count !== 1 ? 'strengths.weakConceptsPlural' : 'strengths.weakConcepts', { count: topic.weak_count })}</span>
             {topic.due_for_review > 0 && (
-              <span className="text-accent-700">{topic.due_for_review} due for review</span>
+              <span className="text-accent-700">{t('strengths.dueForReview', { count: topic.due_for_review })}</span>
             )}
           </>
         )}
-        {topic.status === 'new' && <span>Start this topic to track your progress</span>}
+        {topic.status === 'new' && <span>{t('strengths.startToTrack')}</span>}
       </div>
     </div>
   );
 }
 
 export default function StrengthsGaps() {
+  const { t } = useTranslation('child');
   const { data, isLoading } = useStrengths();
 
   if (isLoading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-6">
-        <p className="text-sm text-gray-500">Loading your progress…</p>
+        <p className="text-sm text-gray-500">{t('strengths.loading')}</p>
       </div>
     );
   }
@@ -96,8 +100,8 @@ export default function StrengthsGaps() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
-      <h1 className="text-2xl font-extrabold text-gray-900">My Progress</h1>
-      <p className="mt-1 text-sm text-gray-500">See how you're doing across all topics</p>
+      <h1 className="text-2xl font-extrabold text-gray-900">{t('strengths.pageTitle')}</h1>
+      <p className="mt-1 text-sm text-gray-500">{t('strengths.subtitle')}</p>
 
       <div className="mt-6">
         <MasteryRing value={overall} />
@@ -108,7 +112,7 @@ export default function StrengthsGaps() {
           topics.map((t) => <TopicCard key={t.topic} topic={t} />)
         ) : (
           <p className="text-sm text-center text-gray-500">
-            Complete some lessons to see your progress here!
+            {t('strengths.empty')}
           </p>
         )}
       </div>

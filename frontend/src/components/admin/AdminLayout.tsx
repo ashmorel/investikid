@@ -1,14 +1,16 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useChildSession } from '@/hooks/useChildSession';
 import AdminSidebar from './AdminSidebar';
 
 export default function AdminLayout() {
+  const { t } = useTranslation('admin');
   const { data: session, isLoading } = useChildSession();
 
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <span className="text-muted-foreground">Loading…</span>
+        <span className="text-muted-foreground">{t('layout.loading')}</span>
       </div>
     );
   }

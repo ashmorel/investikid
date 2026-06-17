@@ -38,6 +38,8 @@
   "coach": {
     "title": "Coach Penny",
     "description": "Ask Coach Penny for learning help.",
+    "backAriaLabel": "Back to home",
+    "back": "← Back",
     "messagesLeft": "{{count}} messages left",
     "thinking": "Thinking…",
     "error": "Something went wrong. Try sending your message again.",
@@ -172,6 +174,31 @@
   "recommendation": {
     "progressCount": "{{completed}} of {{total}}",
     "progressAriaLabel": "{{completed}} of {{total}} lessons completed"
+  },
+
+  "strengths": {
+    "loading": "Loading your progress…",
+    "pageTitle": "My Progress",
+    "subtitle": "See how you're doing across all topics",
+    "empty": "Complete some lessons to see your progress here!",
+    "overallMastery": "Overall Mastery",
+    "overallMasterySubtitle": "Across all topics you've studied",
+    "weakConcepts": "{{count}} weak concept",
+    "weakConceptsPlural": "{{count}} weak concepts",
+    "dueForReview": "{{count}} due for review",
+    "startToTrack": "Start this topic to track your progress",
+    "overallMasteryAriaLabel": "Overall mastery: {{pct}}%"
+  },
+
+  "level": {
+    "loading": "Loading…",
+    "premium": "Premium",
+    "seeWhatsIncluded": "See what's included",
+    "levelsLabel": "Levels",
+    "notFound": "Level not found.",
+    "progress": "Level progress",
+    "willLearn": "In this level you'll learn…",
+    "lessonCount": "{{completed}} / {{total}} lessons"
   },
 
   "illustrations": {
