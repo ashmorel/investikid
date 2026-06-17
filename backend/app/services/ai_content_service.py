@@ -170,7 +170,7 @@ async def generate_practice_quiz(
     for attempt in range(2):
         try:
             raw = await client.complete(
-                system_prompt=with_guardrail_preamble(_SYSTEM_PROMPT),
+                system_prompt=with_guardrail_preamble(_SYSTEM_PROMPT, language=user.language),
                 messages=[{"role": "user", "content": user_message}],
                 temperature=0.3,
                 max_tokens=400,
@@ -185,6 +185,7 @@ async def generate_practice_quiz(
             _mod = await moderate_output(
                 " ".join([result["question"], *result["choices"], result["explanation"]]),
                 surface="quiz",
+                language=user.language,
             )
             if not _mod.safe:
                 session.add(AuditLog(

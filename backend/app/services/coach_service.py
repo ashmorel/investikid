@@ -287,7 +287,8 @@ async def coach_chat(
         learning_state_context=context_block,
     )
     system_prompt = with_guardrail_preamble(
-        f"{system_prompt}\n\n{AGE_REGISTER_DIRECTIVE[user.age_tier]}"
+        f"{system_prompt}\n\n{AGE_REGISTER_DIRECTIVE[user.age_tier]}",
+        language=user.language,
     )
 
     # Build message history
@@ -307,7 +308,7 @@ async def coach_chat(
     )
 
     # Kid-safe moderation
-    _mod = await moderate_output(raw_response, surface="tutor")
+    _mod = await moderate_output(raw_response, surface="tutor", language=user.language)
     filtered_response = _mod.text
     if not _mod.safe:
         log_guardrail_event(

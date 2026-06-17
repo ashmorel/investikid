@@ -4,6 +4,7 @@ import hashlib
 import logging
 from dataclasses import dataclass
 
+from app.core.languages import language_directive
 from app.services.moderation import _CATEGORY_PATTERNS, _fallback_for
 
 logger = logging.getLogger(__name__)
@@ -55,9 +56,13 @@ def screen_input(text: str, *, surface: str) -> InputVerdict:
         return InputVerdict(True, "error", _fallback_for(surface))
 
 
-def with_guardrail_preamble(system_prompt: str) -> str:
-    """Prepend the shared guardrail preamble to a surface's system prompt."""
-    return f"{GUARDRAIL_PREAMBLE}\n\n{system_prompt}"
+def with_guardrail_preamble(system_prompt: str, *, language: str = "en") -> str:
+    """Prepend the shared guardrail preamble to a surface's system prompt, and
+    append a language directive so the model replies in the user's language.
+    `language` defaults to "en" (no-op) for backward compatibility."""
+    body = f"{GUARDRAIL_PREAMBLE}\n\n{system_prompt}"
+    directive = language_directive(language)
+    return f"{body}\n\n{directive}" if directive else body
 
 
 def log_guardrail_event(

@@ -131,7 +131,8 @@ async def chart_coach_chat(
     age = (date.today() - user.dob).days // 365
     stats = _build_stats(ticker, period, points)
     system_prompt = with_guardrail_preamble(
-        _build_system_prompt(age, ticker, name, period, stats)
+        _build_system_prompt(age, ticker, name, period, stats),
+        language=user.language,
     )
 
     history = [
@@ -148,7 +149,7 @@ async def chart_coach_chat(
         max_tokens=settings.tutor_max_response_tokens,
     )
 
-    _mod = await moderate_output(raw_response, surface="chart_coach")
+    _mod = await moderate_output(raw_response, surface="chart_coach", language=user.language)
     filtered_response = _mod.text
     if not _mod.safe:
         log_guardrail_event(

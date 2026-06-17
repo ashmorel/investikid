@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.services import tips_service
-from app.services.tips_service import generate_personalised_tips, learning_stage
+from app.services.tips_service import generate_generic_tips, generate_personalised_tips, learning_stage
 
 
 def test_learning_stage_buckets():
@@ -191,3 +191,46 @@ async def test_personalised_tips_refresh_bypasses_cache():
         await generate_personalised_tips(user_id=1, holdings=[("AAPL", "Apple Inc.")], stage="beginner", age=12)
         await generate_personalised_tips(user_id=1, holdings=[("AAPL", "Apple Inc.")], stage="beginner", age=12, refresh=True)
     assert gc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_generic_tips_threads_language():
+    """with_guardrail_preamble must receive language="de" when called with that arg."""
+    mock_client = MagicMock()
+    mock_client.complete = AsyncMock(return_value=_SIX_GENERIC)
+    with patch(
+        "app.services.tips_service.with_guardrail_preamble",
+        wraps=tips_service.with_guardrail_preamble,
+    ) as spy, \
+         patch("app.services.tips_service.get_llm_client", return_value=mock_client), \
+         patch(
+             "app.services.tips_service.moderate_output",
+             new=AsyncMock(return_value=MagicMock(safe=True, text="ok", category=None)),
+         ):
+        await generate_generic_tips(language="de")
+    assert spy.call_args.kwargs.get("language") == "de"
+
+
+@pytest.mark.asyncio
+async def test_personalised_tips_threads_language():
+    """with_guardrail_preamble must receive language="de" when called with that arg."""
+    mock_client = MagicMock()
+    mock_client.complete = AsyncMock(return_value=_TWO_TIPS)
+    with patch(
+        "app.services.tips_service.with_guardrail_preamble",
+        wraps=tips_service.with_guardrail_preamble,
+    ) as spy, \
+         patch("app.services.tips_service.get_llm_client", return_value=mock_client), \
+         patch(
+             "app.services.tips_service.moderate_output",
+             new=AsyncMock(return_value=MagicMock(safe=True, text="ok", category=None)),
+         ):
+        # Non-empty holdings + non-"new" stage ensures the LLM/preamble path is reached.
+        await generate_personalised_tips(
+            user_id=1,
+            holdings=[("AAPL", "Apple Inc.")],
+            stage="beginner",
+            age=12,
+            language="de",
+        )
+    assert spy.call_args.kwargs.get("language") == "de"

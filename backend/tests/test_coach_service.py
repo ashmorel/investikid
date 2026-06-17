@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from app.models.audit import AuditLog
 from app.models.user import User
+from app.services import coach_service
 from app.services.coach_service import build_coach_context, coach_chat, parse_actions
 from app.services.guardrails import GUARDRAIL_PREAMBLE
 from app.services.moderation import _SAFE_FALLBACKS
@@ -168,3 +169,19 @@ async def test_coach_prompt_includes_preamble(db_session, coach_user):
             message="how do I save money?", conversation_id=None, premium=False,
         )
     assert GUARDRAIL_PREAMBLE in captured["system_prompt"]
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_coach_chat_threads_language(db_session, coach_user):
+    coach_user.language = "es"
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value="¡Sigamos aprendiendo sobre el ahorro!")
+
+    with patch("app.services.coach_service.with_guardrail_preamble",
+               wraps=coach_service.with_guardrail_preamble) as spy, \
+         patch("app.services.coach_service.get_llm_client", return_value=mock_client):
+        await coach_service.coach_chat(
+            session=db_session, user=coach_user,
+            message="how do I save money?", conversation_id=None, premium=False,
+        )
+    assert spy.call_args.kwargs.get("language") == "es"
