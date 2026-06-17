@@ -249,7 +249,7 @@ async def get_news_summary(
     llm = get_llm_client(tier="lite")
     try:
         summary = await llm.complete(
-            system_prompt=with_guardrail_preamble(system_prompt),
+            system_prompt=with_guardrail_preamble(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Here are today's headlines about my stocks:\n{headlines}"}],
             temperature=0.5,
             max_tokens=200,
@@ -324,7 +324,7 @@ async def get_stock_news_summary(
     llm = get_llm_client(tier="lite")
     try:
         summary = await llm.complete(
-            system_prompt=with_guardrail_preamble(system_prompt),
+            system_prompt=with_guardrail_preamble(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Recent news about {ticker}:\n{headlines}"}],
             temperature=0.5,
             max_tokens=200,
@@ -396,7 +396,7 @@ async def get_chart_guide(
     llm = get_llm_client(tier="standard")
     try:
         summary = await llm.complete(
-            system_prompt=with_guardrail_preamble(system_prompt),
+            system_prompt=with_guardrail_preamble(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Here's the chart data:\n{stats}"}],
             temperature=0.7,
             max_tokens=250,
@@ -533,7 +533,8 @@ async def get_time_machine(
                     "Write ONE short, fun 'Did you know?' fact comparing the investment return to "
                     "something relatable for a young person (university fees, a car, a holiday, "
                     "a gaming setup, etc). Keep it to 1-2 sentences. Be encouraging but never "
-                    "give investment advice. Use the reader's perspective ('you' not 'they')."
+                    "give investment advice. Use the reader's perspective ('you' not 'they').",
+                    language=current_user.language,
                 ),
                 messages=[{
                     "role": "user",
