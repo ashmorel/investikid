@@ -12,6 +12,9 @@ function Probe() {
 describe('i18n init', () => {
   it('renders a key from the en catalog', async () => {
     await initI18n('en');
+    // Ensure the active language is 'en' regardless of prior test runs that may
+    // have changed it (initI18n is idempotent when already initialized).
+    await i18n.changeLanguage('en');
     render(
       <I18nextProvider i18n={i18n}>
         <Probe />

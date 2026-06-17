@@ -41,29 +41,31 @@ const appTree = (
   </BrowserRouter>
 );
 
+const rootTree = (
+  <React.StrictMode>
+    <I18nextProvider i18n={i18n}>
+      {persister ? (
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{
+            persister,
+            maxAge: PERSIST_MAX_AGE,
+            dehydrateOptions: { shouldDehydrateQuery },
+          }}
+        >
+          {appTree}
+        </PersistQueryClientProvider>
+      ) : (
+        <QueryClientProvider client={queryClient}>{appTree}</QueryClientProvider>
+      )}
+    </I18nextProvider>
+  </React.StrictMode>
+);
+
 async function bootstrap() {
   await initI18n('en'); // TODO(Task 6): replace with resolveBootLanguage()
 
-  ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-      <I18nextProvider i18n={i18n}>
-        {persister ? (
-          <PersistQueryClientProvider
-            client={queryClient}
-            persistOptions={{
-              persister,
-              maxAge: PERSIST_MAX_AGE,
-              dehydrateOptions: { shouldDehydrateQuery },
-            }}
-          >
-            {appTree}
-          </PersistQueryClientProvider>
-        ) : (
-          <QueryClientProvider client={queryClient}>{appTree}</QueryClientProvider>
-        )}
-      </I18nextProvider>
-    </React.StrictMode>,
-  );
+  ReactDOM.createRoot(document.getElementById('root')!).render(rootTree);
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
@@ -74,4 +76,7 @@ async function bootstrap() {
   void ensureAndroidChannel();
 }
 
-void bootstrap();
+bootstrap().catch((err) => {
+  console.error('[bootstrap] i18n init failed; rendering without preloaded i18n:', err);
+  ReactDOM.createRoot(document.getElementById('root')!).render(rootTree);
+});
