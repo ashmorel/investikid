@@ -10,6 +10,7 @@ import { registerBackButton } from './lib/backButton';
 import { initNativeChrome } from './lib/nativeChrome';
 import { ensureAndroidChannel } from './lib/notifications';
 import { i18n, initI18n } from './i18n';
+import { resolveBootLanguage } from './i18n/resolveLanguage';
 import './index.css';
 
 // Marker read by the boot watchdog in index.html: confirms the entry module
@@ -63,7 +64,7 @@ const rootTree = (
 );
 
 async function bootstrap() {
-  await initI18n('en'); // TODO(Task 6): replace with resolveBootLanguage()
+  await initI18n(await resolveBootLanguage());
 
   ReactDOM.createRoot(document.getElementById('root')!).render(rootTree);
 
