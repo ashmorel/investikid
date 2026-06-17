@@ -176,7 +176,8 @@ async def chat(
         _SYSTEM_PROMPT_TEMPLATE.format(
             skill_level_instruction=_SKILL_INSTRUCTIONS[level],
             lesson_content=json.dumps(lesson.content_json or {}),
-        ) + _build_weak_concept_addendum(weak_concepts)
+        ) + _build_weak_concept_addendum(weak_concepts),
+        language=user.language,
     )
 
     # Build message history

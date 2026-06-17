@@ -3,6 +3,7 @@ from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from app.services import tutor_service
 import pytest_asyncio
 from sqlalchemy import select
 
@@ -180,3 +181,19 @@ async def test_chat_prompt_includes_guardrail_preamble(db_session, tutor_fixture
 
     from app.services.guardrails import GUARDRAIL_PREAMBLE
     assert GUARDRAIL_PREAMBLE in captured["system_prompt"]
+
+
+async def test_tutor_chat_threads_language(db_session, tutor_fixture):
+    user, module, quiz = tutor_fixture
+    user.language = "es"
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value="Una acción es una parte pequeña de una empresa.")
+
+    with patch("app.services.tutor_service.with_guardrail_preamble",
+               wraps=tutor_service.with_guardrail_preamble) as spy, \
+         patch("app.services.tutor_service.get_llm_client", return_value=mock_client):
+        await tutor_service.chat(
+            session=db_session, user=user, lesson=quiz, topic="stocks",
+            message="what is a stock?", conversation_id=None, premium=False,
+        )
+    assert spy.call_args.kwargs.get("language") == "es"

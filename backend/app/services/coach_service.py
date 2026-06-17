@@ -287,7 +287,8 @@ async def coach_chat(
         learning_state_context=context_block,
     )
     system_prompt = with_guardrail_preamble(
-        f"{system_prompt}\n\n{AGE_REGISTER_DIRECTIVE[user.age_tier]}"
+        f"{system_prompt}\n\n{AGE_REGISTER_DIRECTIVE[user.age_tier]}",
+        language=user.language,
     )
 
     # Build message history

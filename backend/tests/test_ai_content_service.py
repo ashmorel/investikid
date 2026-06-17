@@ -8,6 +8,7 @@ import pytest_asyncio
 from app.models.content import Lesson, Module
 from app.models.generated_content import GeneratedContent
 from app.models.user import User
+from app.services import ai_content_service
 from app.services.ai_content_service import (
     _fallback,
     _shuffle_choices,
@@ -235,3 +236,19 @@ async def test_generate_practice_quiz_safe_passes_through(db_session, lesson_fix
         )
     ).scalars().all()
     assert rows == []
+
+
+async def test_generate_practice_quiz_threads_language(db_session, lesson_fixture):
+    user, module, quiz = lesson_fixture
+    user.language = "es"
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=VALID_QUIZ_JSON)
+
+    with patch("app.services.ai_content_service.with_guardrail_preamble",
+               wraps=ai_content_service.with_guardrail_preamble) as spy, \
+         patch("app.services.ai_content_service.get_llm_client", return_value=mock_client), \
+         patch("app.services.ai_content_service.get_strict_premium_client", return_value=mock_client):
+        await ai_content_service.generate_practice_quiz(
+            db_session, quiz, user=user, topic="budgeting", concept="50/30/20 rule", premium=False,
+        )
+    assert spy.call_args.kwargs.get("language") == "es"

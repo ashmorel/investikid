@@ -131,7 +131,8 @@ async def chart_coach_chat(
     age = (date.today() - user.dob).days // 365
     stats = _build_stats(ticker, period, points)
     system_prompt = with_guardrail_preamble(
-        _build_system_prompt(age, ticker, name, period, stats)
+        _build_system_prompt(age, ticker, name, period, stats),
+        language=user.language,
     )
 
     history = [

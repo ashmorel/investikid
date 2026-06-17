@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from app.models.audit import AuditLog
 from app.models.user import User
+from app.services import chart_coach_service
 from app.services.chart_coach_service import chart_coach_chat
 from app.services.guardrails import GUARDRAIL_PREAMBLE
 from app.services.moderation import _SAFE_FALLBACKS
@@ -70,3 +71,19 @@ async def test_chart_coach_prompt_includes_preamble(db_session, chart_user):
             conversation_id=None, points=_points(),
         )
     assert GUARDRAIL_PREAMBLE in captured["system_prompt"]
+
+
+async def test_chart_coach_threads_language(db_session, chart_user):
+    chart_user.language = "es"
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value="¡La línea subió!")
+
+    with patch("app.services.chart_coach_service.with_guardrail_preamble",
+               wraps=chart_coach_service.with_guardrail_preamble) as spy, \
+         patch("app.services.chart_coach_service.get_llm_client", return_value=mock_client):
+        await chart_coach_service.chart_coach_chat(
+            session=db_session, user=chart_user, ticker="AAPL", exchange="NASDAQ",
+            name="Apple", period="1M", message="why did it go up?",
+            conversation_id=None, points=_points(),
+        )
+    assert spy.call_args.kwargs.get("language") == "es"
