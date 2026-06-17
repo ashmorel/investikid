@@ -1,0 +1,9 @@
+{
+  "common": {
+    "appName": "InvestiKid",
+    "language": {
+      "label": "Language",
+      "help": "More languages are coming soon."
+    }
+  }
+}
