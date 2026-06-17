@@ -435,3 +435,153 @@ async def test_fallback_non_auth_non_retryable_still_raises_immediately():
             messages=[{"role": "user", "content": "x"}],
         )
     good.complete.assert_not_awaited()
+
+
+# ---------------------------------------------------------------------------
+# Reasoning-model kwarg tests (GPT-5 / o-series fix)
+# ---------------------------------------------------------------------------
+
+
+async def test_openai_complete_reasoning_model_uses_max_completion_tokens():
+    """gpt-5-mini must use max_completion_tokens and omit max_tokens + temperature."""
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "reasoning answer"
+    mock_response.usage = None
+
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        MockOpenAI.return_value = mock_instance
+
+        client = OpenAIClient(api_key="test-key", model="gpt-5-mini")
+        result = await client.complete(
+            system_prompt="You are helpful.",
+            messages=[{"role": "user", "content": "Hi"}],
+            max_tokens=800,
+            temperature=0.7,
+        )
+        assert result == "reasoning answer"
+        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+        assert call_kwargs["max_completion_tokens"] == 800
+        assert "max_tokens" not in call_kwargs
+        assert "temperature" not in call_kwargs
+
+
+async def test_openai_complete_normal_model_uses_max_tokens():
+    """gpt-4o-mini (non-reasoning) must use max_tokens + temperature unchanged."""
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "normal answer"
+    mock_response.usage = None
+
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        MockOpenAI.return_value = mock_instance
+
+        client = OpenAIClient(api_key="test-key", model="gpt-4o-mini")
+        result = await client.complete(
+            system_prompt="You are helpful.",
+            messages=[{"role": "user", "content": "Hi"}],
+            max_tokens=600,
+            temperature=0.4,
+        )
+        assert result == "normal answer"
+        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+        assert call_kwargs["max_tokens"] == 600
+        assert call_kwargs["temperature"] == 0.4
+        assert "max_completion_tokens" not in call_kwargs
+
+
+async def test_openai_complete_gemini_model_uses_max_tokens():
+    """gemini-2.5-flash via the OpenAI-compat shim must use max_tokens + temperature."""
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "gemini answer"
+    mock_response.usage = None
+
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        MockOpenAI.return_value = mock_instance
+
+        client = OpenAIClient(
+            api_key="gm-key",
+            model="gemini-2.5-flash",
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            provider="gemini",
+        )
+        result = await client.complete(
+            system_prompt="You are helpful.",
+            messages=[{"role": "user", "content": "Hi"}],
+            max_tokens=400,
+            temperature=0.3,
+        )
+        assert result == "gemini answer"
+        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+        assert call_kwargs["max_tokens"] == 400
+        assert call_kwargs["temperature"] == 0.3
+        assert "max_completion_tokens" not in call_kwargs
+
+
+async def test_openai_stream_reasoning_model_uses_max_completion_tokens():
+    """gpt-5-mini stream must use max_completion_tokens and omit max_tokens + temperature."""
+
+    async def fake_stream():
+        chunk = MagicMock()
+        chunk.choices = [MagicMock()]
+        chunk.choices[0].delta.content = "hi"
+        yield chunk
+
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=fake_stream())
+        MockOpenAI.return_value = mock_instance
+
+        client = OpenAIClient(api_key="test-key", model="gpt-5-mini")
+        chunks = []
+        async for chunk in client.stream(
+            system_prompt="You are helpful.",
+            messages=[{"role": "user", "content": "Hi"}],
+            max_tokens=800,
+            temperature=0.7,
+        ):
+            chunks.append(chunk)
+
+        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+        assert call_kwargs["max_completion_tokens"] == 800
+        assert "max_tokens" not in call_kwargs
+        assert "temperature" not in call_kwargs
+        assert call_kwargs.get("stream") is True
+
+
+async def test_openai_stream_normal_model_uses_max_tokens():
+    """gpt-4o-mini stream must use max_tokens + temperature unchanged."""
+
+    async def fake_stream():
+        chunk = MagicMock()
+        chunk.choices = [MagicMock()]
+        chunk.choices[0].delta.content = "hi"
+        yield chunk
+
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=fake_stream())
+        MockOpenAI.return_value = mock_instance
+
+        client = OpenAIClient(api_key="test-key", model="gpt-4o-mini")
+        chunks = []
+        async for chunk in client.stream(
+            system_prompt="You are helpful.",
+            messages=[{"role": "user", "content": "Hi"}],
+            max_tokens=600,
+            temperature=0.4,
+        ):
+            chunks.append(chunk)
+
+        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+        assert call_kwargs["max_tokens"] == 600
+        assert call_kwargs["temperature"] == 0.4
+        assert "max_completion_tokens" not in call_kwargs
+        assert call_kwargs.get("stream") is True
