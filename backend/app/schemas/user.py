@@ -99,6 +99,8 @@ class UpdateLanguageRequest(BaseModel):
     @field_validator("language")
     @classmethod
     def language_supported(cls, v: str) -> str:
+        # BCP-47 codes are case-sensitive by convention; only trim whitespace.
+        v = v.strip()
         if not is_supported_language(v):
             raise ValueError("unsupported language")
         return v

@@ -16,7 +16,8 @@ _BASE = {
 
 async def _register_and_login(client, email, username):
     await client.post(_REGISTER_URL, json={**_BASE, "email": email, "username": username})
-    await client.post(_LOGIN_URL, json={"email": email, "password": "SecurePass123!"})
+    login = await client.post(_LOGIN_URL, json={"email": email, "password": "SecurePass123!"})
+    assert login.status_code == 200, f"Login failed during setup: {login.text}"
     csrf = client.cookies.get("csrf_token")
     if csrf:
         client.headers["X-CSRF-Token"] = csrf
@@ -40,3 +41,4 @@ async def test_patch_rejects_unknown_language(client):
     await _register_and_login(client, "lang_reject@example.com", "langreject")
     r = await client.patch("/users/me/language", json={"language": "xx"})
     assert r.status_code == 422
+    assert "unsupported language" in str(r.json())
