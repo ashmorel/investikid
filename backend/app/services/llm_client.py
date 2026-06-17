@@ -30,6 +30,13 @@ def _fire_failure_hook(detail: str) -> None:
         pass  # no running loop
 
 
+def _is_openai_reasoning_model(model: str) -> bool:
+    """GPT-5 family and o-series reasoning models require max_completion_tokens
+    and reject a non-default temperature."""
+    m = model.lower()
+    return m.startswith("gpt-5") or m.startswith(("o1", "o3", "o4"))
+
+
 class LLMError(Exception):
     """Raised when an LLM call fails after retries."""
 
@@ -105,12 +112,13 @@ class OpenAIClient:
         response_format: Literal["text", "json"] = "text",
     ) -> str:
         all_messages = [{"role": "system", "content": system_prompt}, *messages]
-        kwargs: dict = {
-            "model": self._model,
-            "messages": all_messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-        }
+        kwargs: dict = {"model": self._model, "messages": all_messages}
+        if _is_openai_reasoning_model(self._model):
+            kwargs["max_completion_tokens"] = max_tokens
+            # temperature: only the default (1) is supported → omit entirely
+        else:
+            kwargs["max_tokens"] = max_tokens
+            kwargs["temperature"] = temperature
         if response_format == "json":
             kwargs["response_format"] = {"type": "json_object"}
 
@@ -141,14 +149,15 @@ class OpenAIClient:
         max_tokens: int = 500,
     ) -> AsyncIterator[str]:
         all_messages = [{"role": "system", "content": system_prompt}, *messages]
+        stream_kwargs: dict = {"model": self._model, "messages": all_messages, "stream": True}
+        if _is_openai_reasoning_model(self._model):
+            stream_kwargs["max_completion_tokens"] = max_tokens
+            # temperature: only the default (1) is supported → omit entirely
+        else:
+            stream_kwargs["max_tokens"] = max_tokens
+            stream_kwargs["temperature"] = temperature
         try:
-            response = await self._client.chat.completions.create(
-                model=self._model,
-                messages=all_messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=True,
-            )
+            response = await self._client.chat.completions.create(**stream_kwargs)
             async for chunk in response:
                 delta = chunk.choices[0].delta if chunk.choices else None
                 if delta and delta.content:
