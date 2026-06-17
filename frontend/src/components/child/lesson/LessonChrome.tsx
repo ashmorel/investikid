@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Penny } from '@/components/child/ui/Penny';
 import { useAgeTier } from '@/lib/ageTier';
 import { ENCOURAGEMENT } from '@/lib/tierCopy';
@@ -18,6 +19,7 @@ interface LessonChromeProps {
  * Rendered above the active lesson renderer; never shown on the CompletionPanel screen.
  */
 export function LessonChrome({ position, total, xpReward, onBack }: LessonChromeProps) {
+  const { t } = useTranslation('lessons');
   // Pick a stable line based on position so it doesn't change on re-render
   const lines = ENCOURAGEMENT[useAgeTier()];
   const line = lines[(position - 1) % lines.length];
@@ -29,7 +31,7 @@ export function LessonChrome({ position, total, xpReward, onBack }: LessonChrome
       <div className="flex items-center gap-2">
         <button
           type="button"
-          aria-label="Go back"
+          aria-label={t('chrome.goBack')}
           onClick={onBack}
           className="flex-shrink-0 rounded-full p-1 text-brand-700 hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
         >
@@ -45,7 +47,7 @@ export function LessonChrome({ position, total, xpReward, onBack }: LessonChrome
           aria-valuenow={Math.max(0, position - 1)}
           aria-valuemin={0}
           aria-valuemax={total || 1}
-          aria-label={total > 0 ? `Lesson ${position} of ${total}` : `Lesson ${position}`}
+          aria-label={total > 0 ? t('chrome.lessonOf', { position, total }) : t('chrome.lessonNum', { position })}
           className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-brand-100"
         >
           <div

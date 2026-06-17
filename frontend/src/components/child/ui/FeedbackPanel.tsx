@@ -1,9 +1,11 @@
 import { motion, useReducedMotion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 type Props = { correct: boolean; explanation: string; correctAnswer?: string };
 
 export function FeedbackPanel({ correct, explanation, correctAnswer }: Props) {
+  const { t } = useTranslation('lessons');
   const reducedMotion = useReducedMotion();
   // Juice pack (spec C/D): correct → check pop, wrong → gentle wiggle. Both off under reduced motion.
   const wiggle = !correct && !reducedMotion ? { x: [0, -7, 7, -4, 4, 0] } : undefined;
@@ -25,9 +27,9 @@ export function FeedbackPanel({ correct, explanation, correctAnswer }: Props) {
         >
           {correct ? '✓' : '✕'}
         </motion.span>
-        <p className={cn('text-lg font-extrabold', correct ? 'text-success-700' : 'text-danger-700')}>{correct ? 'Correct!' : 'Not quite!'}</p>
+        <p className={cn('text-lg font-extrabold', correct ? 'text-success-700' : 'text-danger-700')}>{correct ? t('feedback.correct') : t('feedback.notQuite')}</p>
       </div>
-      {!correct && correctAnswer && <p className="mt-2 text-sm font-bold text-danger-700">Correct answer: {correctAnswer}</p>}
+      {!correct && correctAnswer && <p className="mt-2 text-sm font-bold text-danger-700">{t('feedback.correctAnswer', { answer: correctAnswer })}</p>}
       <p className="mt-2 text-sm leading-relaxed text-gray-700">{explanation}</p>
     </motion.div>
   );
