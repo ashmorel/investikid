@@ -3,7 +3,6 @@ from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from app.services import tutor_service
 import pytest_asyncio
 from sqlalchemy import select
 
@@ -11,6 +10,7 @@ from app.models.audit import AuditLog
 from app.models.content import Lesson, Module
 from app.models.skill_profile import TopicMastery
 from app.models.user import User
+from app.services import tutor_service
 from app.services.moderation import _SAFE_FALLBACKS
 from app.services.tutor_service import (
     TutorInputTooLong,

@@ -197,7 +197,7 @@ async def chat(
     )
 
     # Kid-safe moderation seam
-    _mod = await moderate_output(raw_response, surface="tutor")
+    _mod = await moderate_output(raw_response, surface="tutor", language=user.language)
     filtered_response = _mod.text
     if not _mod.safe:
         log_guardrail_event(

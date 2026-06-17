@@ -185,6 +185,7 @@ async def generate_practice_quiz(
             _mod = await moderate_output(
                 " ".join([result["question"], *result["choices"], result["explanation"]]),
                 surface="quiz",
+                language=user.language,
             )
             if not _mod.safe:
                 session.add(AuditLog(

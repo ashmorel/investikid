@@ -12,7 +12,7 @@ from app.services.moderation import ModerationResult
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
-async def _passthrough_moderation(text, *, surface):
+async def _passthrough_moderation(text, *, surface, language="en"):
     """Safe pass-through: keeps coach tests independent of moderation's own
     LLM client, which has no API key in CI and would otherwise fail closed
     and strip the response/actions (real moderation runs in production)."""

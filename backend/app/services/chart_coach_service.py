@@ -149,7 +149,7 @@ async def chart_coach_chat(
         max_tokens=settings.tutor_max_response_tokens,
     )
 
-    _mod = await moderate_output(raw_response, surface="chart_coach")
+    _mod = await moderate_output(raw_response, surface="chart_coach", language=user.language)
     filtered_response = _mod.text
     if not _mod.safe:
         log_guardrail_event(

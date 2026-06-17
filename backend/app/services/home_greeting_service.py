@@ -68,7 +68,7 @@ async def generate_home_greeting(
     if not text:
         raise ValueError("empty greeting")
 
-    _mod = await moderate_output(text, surface="coach")
+    _mod = await moderate_output(text, surface="coach", language=language)
     if not _mod.safe:
         log_guardrail_event(
             action="output_block", surface="home_greeting",

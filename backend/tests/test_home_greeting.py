@@ -110,7 +110,7 @@ async def test_greeting_threads_language():
     safe_mod.safe = True
     safe_mod.text = "Bonjour Sam, prêt à apprendre ?"
 
-    async def fake_moderate(text, *, surface):
+    async def fake_moderate(text, *, surface, language="en"):
         return safe_mod
 
     with patch(

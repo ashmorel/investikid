@@ -259,7 +259,7 @@ async def get_news_summary(
 
     # Kid-safe moderation seam. session + current_user are in scope here, so an
     # AuditLog moderation_block row is written when the model output is unsafe.
-    _mod = await moderate_output(summary.strip(), surface="news_summary")
+    _mod = await moderate_output(summary.strip(), surface="news_summary", language=current_user.language)
     if not _mod.safe:
         log_guardrail_event(
             action="output_block", surface="news_summary",
@@ -335,7 +335,7 @@ async def get_stock_news_summary(
     # Kid-safe moderation seam. Best-effort: this endpoint has no DB session in
     # scope, so no AuditLog row is written here by design (unlike the
     # session-bearing news-summary/tutor/chart-coach surfaces).
-    _mod = await moderate_output(summary.strip(), surface="news_summary")
+    _mod = await moderate_output(summary.strip(), surface="news_summary", language=current_user.language)
     return NewsSummaryOut(summary=_mod.text, tickers_mentioned=[ticker])
 
 
@@ -408,7 +408,7 @@ async def get_chart_guide(
     # scope, so no AuditLog row is written here by design (unlike the
     # session-bearing news-summary/tutor/chart-coach surfaces). Shares the
     # news_summary surface since it returns the same child-facing NewsSummaryOut.
-    _mod = await moderate_output(summary.strip(), surface="news_summary")
+    _mod = await moderate_output(summary.strip(), surface="news_summary", language=current_user.language)
     return NewsSummaryOut(summary=_mod.text, tickers_mentioned=[ticker])
 
 
@@ -555,7 +555,7 @@ async def get_time_machine(
         # Kid-safe moderation seam. Best-effort: this endpoint has no DB
         # session in scope, so no AuditLog row is written here by design
         # (unlike the session-bearing news-summary/tutor/chart-coach surfaces).
-        _mod = await moderate_output(fun_fact, surface="time_machine")
+        _mod = await moderate_output(fun_fact, surface="time_machine", language=current_user.language)
         fun_fact = _mod.text
 
     return TimeMachineOut(ticker=ticker, periods=periods, fun_fact=fun_fact)

@@ -57,7 +57,7 @@ async def test_fail_closed_on_prefilter_exception(monkeypatch):
 
 
 async def test_fail_closed_on_escalation_error(monkeypatch):
-    monkeypatch.setattr(moderation, "_needs_escalation", lambda _t: True)
+    monkeypatch.setattr(moderation, "_needs_escalation", lambda _t, _l="en": True)
     async def boom(_text):
         raise TimeoutError("moderation model timed out")
     monkeypatch.setattr(moderation, "_model_moderation", boom)
@@ -68,7 +68,7 @@ async def test_fail_closed_on_escalation_error(monkeypatch):
 
 
 async def test_escalation_safe_verdict_passes_and_caches(monkeypatch):
-    monkeypatch.setattr(moderation, "_needs_escalation", lambda _t: True)
+    monkeypatch.setattr(moderation, "_needs_escalation", lambda _t, _l="en": True)
     calls = {"n": 0}
     async def ok(_text):
         calls["n"] += 1
@@ -137,15 +137,15 @@ async def test_genuine_financial_advice_still_blocked(advice):
 
 
 async def test_moderation_blocks_unsafe_spanish_output(monkeypatch):
-    """Spanish financial-advice text escalates via non-ASCII gate; mocked model returns UNSAFE."""
+    """Spanish financial-advice text escalates via language gate; mocked model returns UNSAFE."""
     async def unsafe_verdict(_text):
         return (False, "financial_advice")
 
     monkeypatch.setattr(moderation, "_model_moderation", unsafe_verdict)
 
-    # "Deberías" contains í — non-ASCII → real _needs_escalation returns True
-    spanish_unsafe = "Deberías comprar acciones de Apple ahora mismo."
-    r = await moderate_output(spanish_unsafe, surface="quiz")
+    # Accent-free Spanish: triggers the language gate (language="es"), not non-ASCII detection
+    spanish_unsafe = "Compra acciones de Apple ahora mismo."
+    r = await moderate_output(spanish_unsafe, surface="quiz", language="es")
 
     assert r.safe is False
     assert r.category == "financial_advice"
@@ -154,15 +154,15 @@ async def test_moderation_blocks_unsafe_spanish_output(monkeypatch):
 
 
 async def test_moderation_blocks_unsafe_chinese_output(monkeypatch):
-    """Chinese financial-advice text escalates via non-ASCII gate; mocked model returns UNSAFE."""
+    """Chinese financial-advice text escalates via language gate; mocked model returns UNSAFE."""
     async def unsafe_verdict(_text):
         return (False, "financial_advice")
 
     monkeypatch.setattr(moderation, "_model_moderation", unsafe_verdict)
 
-    # All Chinese characters are non-ASCII → real _needs_escalation returns True
+    # Triggers the language gate (language="zh-Hant"), not non-ASCII detection
     chinese_unsafe = "你现在应该马上买苹果股票。"
-    r = await moderate_output(chinese_unsafe, surface="quiz")
+    r = await moderate_output(chinese_unsafe, surface="quiz", language="zh-Hant")
 
     assert r.safe is False
     assert r.category == "financial_advice"
@@ -171,9 +171,9 @@ async def test_moderation_blocks_unsafe_chinese_output(monkeypatch):
 
 
 async def test_moderation_passes_safe_non_english_output(monkeypatch):
-    """Safe educational text in Spanish/Chinese escalates via non-ASCII gate; mocked model returns SAFE.
+    """Safe educational text in Spanish/Chinese escalates via language gate; mocked model returns SAFE.
 
-    Confirms non-ASCII text survives the round-trip with no encoding errors
+    Confirms non-English text survives the round-trip with no encoding errors
     and is returned verbatim when the model says safe.
     """
     async def safe_verdict(_text):
@@ -181,15 +181,14 @@ async def test_moderation_passes_safe_non_english_output(monkeypatch):
 
     monkeypatch.setattr(moderation, "_model_moderation", safe_verdict)
 
-    safe_texts = [
-        # Spanish: "Diversification means not putting all your eggs in one basket."
-        # Contains accented é → non-ASCII → escalates through the real gate.
-        "La diversificación significa no poner todos tus huevos en una sola cesta.",
-        # Chinese (Traditional): "Diversification means not putting all your eggs in one basket."
-        "分散投資的意思是不要把所有雞蛋放在同一個籃子裡。",
+    cases = [
+        # Spanish: escalates via language="es"
+        ("La diversificacion significa no poner todos tus huevos en una sola cesta.", "es"),
+        # Chinese (Traditional): escalates via language="zh-Hant"
+        ("分散投資的意思是不要把所有雞蛋放在同一個籃子裡。", "zh-Hant"),
     ]
-    for txt in safe_texts:
-        r = await moderate_output(txt, surface="tutor")
+    for txt, lang in cases:
+        r = await moderate_output(txt, surface="tutor", language=lang)
         assert r.safe is True, f"safe non-English text wrongly blocked: {txt!r}"
         assert r.text == txt
         assert r.category is None
@@ -200,19 +199,29 @@ async def test_moderation_passes_safe_non_english_output(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_needs_escalation_true_for_non_ascii():
-    """Non-ASCII text (Chinese, accented Spanish) must always escalate."""
-    # Chinese characters
-    assert _needs_escalation("你现在应该买股票") is True
-    # Spanish with accented vowel (í)
-    assert _needs_escalation("Deberías matarte") is True
+def test_needs_escalation_true_for_non_english_language():
+    """Any non-English language must always escalate, regardless of characters."""
+    # Non-English language code always escalates
+    assert _needs_escalation("anything", "es") is True
+    # Accent-free Spanish still escalates because language != "en"
+    assert _needs_escalation("Compra acciones ahora", "es") is True
+    # Chinese (Traditional) escalates
+    assert _needs_escalation("分散投資", "zh-Hant") is True
 
 
-def test_needs_escalation_false_for_plain_ascii_safe():
-    """Plain ASCII text without a review token must NOT escalate (cost preservation)."""
-    assert _needs_escalation("Buy this nice safe thing") is False
+def test_needs_escalation_false_for_plain_ascii_english():
+    """Plain ASCII English text without a review token must NOT escalate (cost preservation)."""
+    assert _needs_escalation("Buy this safe thing", "en") is False
+    # Default arg also works
+    assert _needs_escalation("Buy this safe thing") is False
 
 
 def test_needs_escalation_true_for_english_review_token():
-    """Existing English review-token behaviour is preserved."""
-    assert _needs_escalation("talk about weapon") is True
+    """English review-token behaviour is preserved."""
+    assert _needs_escalation("talk about weapon", "en") is True
+
+
+def test_needs_escalation_accent_free_non_english_not_overblocked_as_english():
+    """Accent-free Spanish text with language='es' escalates; same text with language='en' doesn't."""
+    assert _needs_escalation("Compra acciones ahora", "es") is True
+    assert _needs_escalation("Compra acciones ahora", "en") is False

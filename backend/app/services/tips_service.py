@@ -93,7 +93,7 @@ async def generate_generic_tips(*, language: str = "en") -> list[InvestingTipOut
         # has no DB session in scope, so no AuditLog row is written here by
         # design (unlike the session-bearing tutor/chart-coach/quiz surfaces).
         joined = " ".join(f"{t.title} {t.description}" for t in tips)
-        _mod = await moderate_output(joined, surface="tips")
+        _mod = await moderate_output(joined, surface="tips", language=language)
         if not _mod.safe:
             return _FALLBACK_TIPS
         if len(tips) >= 3:
@@ -171,7 +171,7 @@ async def generate_personalised_tips(
             for item in items
         ]
         joined = " ".join(f"{t.title} {t.description}" for t in tips)
-        _mod = await moderate_output(joined, surface="tips")
+        _mod = await moderate_output(joined, surface="tips", language=language)
         if not _mod.safe:
             return [], True
         _personal_cache[key] = (now, tips)
