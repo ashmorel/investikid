@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 from app.core.languages import SUPPORTED_LANGUAGES, is_supported_language
@@ -24,4 +23,4 @@ def test_frontend_registry_codes_match_backend():
     text = ts.read_text(encoding="utf-8")
     backend_codes = sorted(lang["code"] for lang in SUPPORTED_LANGUAGES)
     for code in backend_codes:
-        assert f"'{code}'" in text, f"frontend registry missing {code}"
+        assert f"code: '{code}'" in text, f"frontend registry missing {code}"

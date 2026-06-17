@@ -5,7 +5,7 @@ list in lockstep with frontend/src/i18n/languages.ts (a test enforces parity).
 """
 from __future__ import annotations
 
-SUPPORTED_LANGUAGES: list[dict] = [
+SUPPORTED_LANGUAGES: list[dict[str, str | bool]] = [
     {"code": "en", "endonym": "English", "available": True},
     {"code": "es", "endonym": "Español", "available": False},
     {"code": "fr", "endonym": "Français", "available": False},
