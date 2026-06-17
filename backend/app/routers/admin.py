@@ -70,6 +70,7 @@ from app.services.engagement_service import get_module_engagement
 from app.services.entitlements import set_premium
 from app.services.event_service import EVENT_KEY, set_event
 from app.services.level_service import premium_for_position
+from app.services.llm_client import probe_all_providers
 from app.services.moderation import moderate_output
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
@@ -754,3 +755,14 @@ async def admin_set_user_premium(
     await set_premium(session, user, value=payload.premium, actor="admin")
     await session.commit()
     return {"status": "ok", "premium": payload.premium}
+
+
+# ── LLM provider health probe ────────────────────────────────────────────────
+@router.get("/llm-status")
+async def llm_status() -> list[dict]:
+    """Ping each configured LLM provider with a trivial completion.
+
+    Returns per-provider ok/error status without exposing any API key material.
+    Admin-only (enforced by the router-level dependency).
+    """
+    return await probe_all_providers()

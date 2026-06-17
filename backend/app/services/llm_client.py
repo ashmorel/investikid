@@ -404,3 +404,77 @@ def get_strict_premium_client() -> LLMClient | None:
         model=settings.llm_premium_model,
         provider="openai-premium",
     )
+
+
+async def probe_provider(name: str) -> dict:
+    """Ping one provider with a tiny prompt; report ok/error. Never returns the key."""
+    entry = _PROVIDER_BUILDERS.get(name)
+    if entry is None:
+        return {"provider": name, "configured": False, "ok": False, "detail": "unknown provider"}
+    builder, key_getter = entry
+    api_key = key_getter()
+    if not api_key:
+        return {"provider": name, "configured": False, "ok": False, "detail": "no api key set"}
+    client = builder()
+    try:
+        await client.complete(
+            system_prompt="ping",
+            messages=[{"role": "user", "content": "Reply with: OK"}],
+            max_tokens=5,
+            temperature=0,
+        )
+        return {"provider": name, "configured": True, "ok": True, "detail": "responded"}
+    except Exception as exc:  # noqa: BLE001
+        raw = f"{type(exc).__name__}: {exc}"[:200]
+        # Scrub the API key from the error message — providers can echo it back in 401 bodies.
+        safe_detail = raw.replace(api_key, "[REDACTED]") if api_key else raw
+        return {
+            "provider": name,
+            "configured": True,
+            "ok": False,
+            "detail": safe_detail,
+        }
+
+
+async def probe_all_providers() -> list[dict]:
+    """Probe every provider used by the lite/standard tiers + the premium tier."""
+    names = ["gemini_flash_lite", "gemini_flash", "together"]
+    results = [await probe_provider(n) for n in names]
+    # premium (separate path — uses get_strict_premium_client)
+    premium = get_strict_premium_client()
+    if premium is None:
+        results.append(
+            {"provider": "premium", "configured": False, "ok": False, "detail": "no premium key set"}
+        )
+    else:
+        try:
+            await premium.complete(
+                system_prompt="ping",
+                messages=[{"role": "user", "content": "Reply with: OK"}],
+                max_tokens=5,
+                temperature=0,
+            )
+            results.append(
+                {
+                    "provider": "premium",
+                    "model": get_model_name("premium"),
+                    "configured": True,
+                    "ok": True,
+                    "detail": "responded",
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            raw = f"{type(exc).__name__}: {exc}"[:200]
+            # Scrub premium key from any error echoed back by the provider.
+            premium_key = settings.llm_premium_api_key
+            safe_detail = raw.replace(premium_key, "[REDACTED]") if premium_key else raw
+            results.append(
+                {
+                    "provider": "premium",
+                    "model": get_model_name("premium"),
+                    "configured": True,
+                    "ok": False,
+                    "detail": safe_detail,
+                }
+            )
+    return results
