@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import type { LanguageCode } from '../i18n/languages';
 
 // Must stay in sync with backend settings.privacy_notice_version.
 // No FE/BE shared config endpoint yet — update both sides when the version changes.
@@ -52,7 +53,7 @@ export const authApi = {
     }),
   biometricUnenroll: (device_id: string) =>
     apiFetch(`/auth/biometric/devices/${device_id}`, { method: 'DELETE' }),
-  updateLanguage: (language: string) =>
+  updateLanguage: (language: LanguageCode) =>
     apiFetch<Me>('/users/me/language', {
       method: 'PATCH',
       body: JSON.stringify({ language }),

@@ -32,6 +32,7 @@ export function useLanguage() {
       );
       try {
         await authApi.updateLanguage(lng); // server = source of truth
+        void qc.invalidateQueries({ queryKey: ['me'] });
       } catch {
         // keep the local change; server reconciles on next /me load
       }
