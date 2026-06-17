@@ -6,7 +6,7 @@ import { i18n, initI18n } from '../../src/i18n';
 
 function Probe() {
   const { t } = useTranslation();
-  return <span>{t('common.appName')}</span>;
+  return <span>{t('appName')}</span>;
 }
 
 describe('i18n init', () => {

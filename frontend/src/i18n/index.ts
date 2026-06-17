@@ -41,18 +41,30 @@ export async function initI18n(lng: LanguageCode): Promise<void> {
   if (lng !== 'en') {
     resources.en = await loadCatalog('en');
   }
-  // Separator convention: nsSeparator=':' (default), keySeparator='.' (default).
-  // Callers write feature-namespaced dotted keys, e.g. t('common.appName').
-  // i18next resolves this as: namespace=defaultNS ('common'), key path = common → appName.
-  // Catalog files therefore nest keys under their own namespace name:
-  //   common.json: { "common": { "appName": "..." } }
-  // This keeps call sites readable ("common.appName" not "appName") and lets
-  // future namespaces (e.g. 'home') be added as home.json with nested keys.
+  // ── Locked key convention ────────────────────────────────────────────────
+  // defaultNS = 'common'. Strings in common.json are accessed WITHOUT a prefix:
+  //   t('appName')            → common.json root key "appName"
+  //   t('language.label')     → common.json nested key language.label
+  //
+  // Feature namespaces are separate JSON files loaded on demand.  Components
+  // call `useTranslation('<ns>')` and use relative keys:
+  //   const { t } = useTranslation('home');
+  //   t('hero.title')         → home.json key hero.title
+  //
+  // Cross-namespace access uses the ns:key form (nsSeparator = ':'):
+  //   t('common:appName')     → common.json key appName, from any namespace
+  //
+  // keySeparator = '.' (default) — nested JSON objects use dot paths.
+  // nsSeparator  = ':' (default) — explicit namespace override prefix.
+  // Both are set explicitly below so the behaviour is visible at a glance.
+  // ─────────────────────────────────────────────────────────────────────────
   await i18n.use(initReactI18next).init({
     lng,
     fallbackLng: 'en',
     ns: [...NAMESPACES],
     defaultNS: 'common',
+    nsSeparator: ':',
+    keySeparator: '.',
     resources,
     interpolation: { escapeValue: false },
     returnNull: false,
