@@ -1,0 +1,425 @@
+{
+  "analytics": {
+    "pageTitle": "Analytics",
+    "dateRangeLabel": "Date range",
+    "loading": "Loading analytics…",
+    "error": "Could not load analytics. Try again shortly.",
+    "kpi": {
+      "activation": "Activation",
+      "heroTapThrough": "Hero tap-through",
+      "lessonsCompleted": "Lessons completed",
+      "digestsSent": "Digests sent",
+      "lastDays": "last {{days}} days",
+      "tapsAndViews": "{{taps}} taps / {{views}} home views",
+      "activatedSignups": "{{activated}} of {{signups}} signups did a lesson <24h"
+    },
+    "trialFunnel": {
+      "heading": "Trial funnel",
+      "paywallViews": "Paywall views",
+      "trialsStarted": "Trials started",
+      "trialsStartedSub": "Stripe only (v1)",
+      "subscriptions": "Subscriptions"
+    },
+    "cohorts": {
+      "heading": "Weekly signup cohorts (last 8 weeks)",
+      "noSignups": "No signups in the cohort window yet.",
+      "week": "Week",
+      "signups": "Signups",
+      "d7": "D7 retained",
+      "d30": "D30 retained"
+    },
+    "shortcuts": {
+      "heading": "Home shortcut taps",
+      "none": "None yet."
+    },
+    "footer": "First-party counts only — no third-party trackers. Raw events auto-delete after 13 months. /try demo and Apple/Google trials are not tracked in v1."
+  },
+  "dashboard": {
+    "heading": "Dashboard",
+    "contentOverview": "Content overview",
+    "cards": {
+      "modules": "Modules",
+      "lessons": "Lessons",
+      "badges": "Badges",
+      "challenges": "Challenges"
+    }
+  },
+  "layout": {
+    "loading": "Loading…"
+  },
+  "settings": {
+    "pageTitle": "Settings",
+    "loadError": "Failed to load settings. Refresh to try again.",
+    "alertEmails": {
+      "heading": "Alert emails",
+      "description": "Who gets notified when the AI helper is degraded or down.",
+      "addLabel": "Add email address",
+      "placeholder": "admin@example.com",
+      "addButton": "Add",
+      "noRecipients": "No alert recipients — alerts are currently off.",
+      "recipientsList": "Alert email recipients",
+      "removeButton": "Remove",
+      "removeAriaLabel": "Remove {{email}}",
+      "error": {
+        "empty": "Enter an email address.",
+        "invalid": "Not a valid email address.",
+        "duplicate": "Already in the list."
+      }
+    },
+    "seasonalEvent": {
+      "legend": "Seasonal event",
+      "title": "Title",
+      "titlePlaceholder": "Spooky Savings Week",
+      "emoji": "Emoji",
+      "bonusXp": "Bonus XP %",
+      "starts": "Starts",
+      "ends": "Ends",
+      "description": "Children see a banner on Home and lesson XP gets the bonus while the event is live. Save applies it; Clear removes it.",
+      "clearButton": "Clear event"
+    },
+    "save": "Save",
+    "saving": "Saving…",
+    "saveSuccess": "Settings saved.",
+    "saveErrorInvalid": "Invalid data — check emails and try again (max 10).",
+    "saveErrorGeneric": "Save failed. Please try again."
+  },
+  "sidebar": {
+    "title": "InvestiKid Admin",
+    "nav": "Admin navigation",
+    "items": {
+      "dashboard": "Dashboard",
+      "modules": "Modules",
+      "badges": "Badges",
+      "challenges": "Challenges",
+      "feedback": "Feedback",
+      "videoHealth": "Video health",
+      "analytics": "Analytics",
+      "settings": "Settings"
+    },
+    "backToApp": "← Back to App"
+  },
+  "badge": {
+    "editTitle": "Edit Badge",
+    "newTitle": "New Badge",
+    "loading": "Loading…",
+    "form": {
+      "name": "Name",
+      "description": "Description",
+      "icon": "Icon",
+      "conditionType": "Condition Type",
+      "value": "Value",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
+  },
+  "badgeList": {
+    "heading": "Badges",
+    "newButton": "+ New Badge",
+    "loading": "Loading...",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteTitle": "Delete \"{{name}}\"?",
+    "deleteMessage": "This badge will be permanently deleted. Deletion will fail if users have earned it."
+  },
+  "challenge": {
+    "editTitle": "Edit Challenge",
+    "newTitle": "New Challenge",
+    "loading": "Loading…",
+    "form": {
+      "title": "Title",
+      "description": "Description",
+      "type": "Type",
+      "scope": "Scope",
+      "personal": "Personal",
+      "groupCoop": "Group co-op",
+      "target": "Target",
+      "xp": "XP",
+      "linkedBadge": "Linked Badge (optional)",
+      "noBadge": "None",
+      "startsAt": "Starts At",
+      "endsAt": "Ends At",
+      "premiumOnly": "Premium only",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
+  },
+  "challengeList": {
+    "heading": "Challenges",
+    "newButton": "+ New Challenge",
+    "loading": "Loading...",
+    "active": "Active",
+    "expired": "Expired",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteTitle": "Delete \"{{title}}\"?",
+    "deleteMessage": "This challenge will be permanently deleted.",
+    "groupBadge": "Group",
+    "typeSummary": "{{type}} · target: {{target}} · {{xp}} XP"
+  },
+  "confirmDialog": {
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "feedbackList": {
+    "heading": "Feedback",
+    "filter": "Filter",
+    "filterAll": "All",
+    "filterBug": "Bug",
+    "filterFeature": "Feature",
+    "filterGeneral": "General",
+    "loading": "Loading…",
+    "error": "Failed to load feedback.",
+    "table": {
+      "date": "Date",
+      "user": "User",
+      "type": "Type",
+      "message": "Message",
+      "page": "Page"
+    },
+    "typeLabel": {
+      "Bug": "Bug",
+      "Feature": "Feature",
+      "General": "General"
+    },
+    "noFeedback": "No feedback yet.",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{total}}"
+  },
+  "draftReview": {
+    "generateHeading": "Generate lessons (AI)",
+    "conceptLabel": "Concept",
+    "countLabel": "Count",
+    "lessonTypesLabel": "Lesson types",
+    "generateButton": "Generate",
+    "generating": "Generating…",
+    "generatingStatus": "Generating lessons…",
+    "skipped": "{{count}} couldn't be generated — try regenerating.",
+    "draftReviewHeading": "Draft review",
+    "loadingDrafts": "Loading drafts…",
+    "noDrafts": "No drafts yet. Generate some above.",
+    "draft": {
+      "safe": "Safe ✓",
+      "flagged": "⚠ Flagged: {{category}}",
+      "editLabel": "Edit content (JSON)",
+      "save": "Save",
+      "cancel": "Cancel",
+      "approveLabel": "Approve draft",
+      "approveLabelBlocked": "Approve draft (blocked — flagged content)",
+      "approveTitle": "Approve this draft",
+      "approveTitleBlocked": "Approval is blocked while this draft is flagged",
+      "approveButton": "Approve",
+      "editButton": "Edit",
+      "regenerateButton": "Regenerate",
+      "rejectButton": "Reject"
+    },
+    "rejectTitle": "Reject draft?",
+    "rejectMessage": "This will discard the generated draft. This cannot be undone."
+  },
+  "lessonForm": {
+    "editTitle": "Edit Lesson",
+    "newTitle": "New Lesson",
+    "xpReward": "XP Reward",
+    "card": {
+      "title": "Title",
+      "body": "Body"
+    },
+    "quiz": {
+      "question": "Question",
+      "choices": "Choices",
+      "choicePlaceholder": "Choice {{number}}",
+      "markCorrectAriaLabel": "Mark choice {{number}} as correct",
+      "removeChoice": "Remove choice",
+      "addChoice": "+ Add Choice",
+      "explanation": "Explanation"
+    },
+    "scenario": {
+      "prompt": "Prompt",
+      "choices": "Choices",
+      "labelPlaceholder": "Label",
+      "outcomePlaceholder": "Outcome message",
+      "markCorrectAriaLabel": "Mark choice {{number}} as correct",
+      "removeChoice": "Remove choice",
+      "addChoice": "+ Add Choice"
+    },
+    "video": {
+      "sourceLabel": "Video source",
+      "youtube": "YouTube",
+      "uploaded": "Uploaded video",
+      "youtubeLabel": "YouTube URL or ID",
+      "youtubePlaceholder": "Paste a YouTube link or 11-character ID.",
+      "fileLabel": "Video file (MP4, ≤200 MB)",
+      "uploading": "Uploading… {{pct}}%",
+      "uploadedPreviewAriaLabel": "Uploaded video preview",
+      "captionLabel": "Caption",
+      "transcriptLabel": "Transcript",
+      "transcriptPlaceholder": "Full text of the video so the lesson is accessible (WCAG).",
+      "transcriptHelp": "A transcript is required for WCAG 2.2 AA — the child can open it under the video.",
+      "captionsAvailable": "Captions available on this video",
+      "uploadErrorMp4": "Please choose an MP4 file.",
+      "uploadErrorSize": "File too large (max 200 MB).",
+      "uploadErrorNotConfigured": "Video upload not configured.",
+      "uploadErrorRequired": "Please upload a video file first."
+    },
+    "mission": {
+      "enabledLabel": "Apply mission (simulator)",
+      "typeLabel": "Mission type",
+      "nLabel": "Number of stocks (N)",
+      "amountLabel": "Amount to invest",
+      "titleLabel": "Mission title",
+      "promptLabel": "Mission prompt",
+      "xpLabel": "Mission XP",
+      "cashLabel": "Mission cash reward (optional)",
+      "cashPlaceholder": "None"
+    },
+    "submit": "Update",
+    "create": "Create",
+    "cancel": "Cancel"
+  },
+  "levelForm": {
+    "editTitle": "Edit Level",
+    "addTitle": "Add Level",
+    "editAriaLabel": "Edit level",
+    "addAriaLabel": "Add level",
+    "titleLabel": "Title",
+    "orderLabel": "Order index",
+    "thresholdLabel": "Pass threshold (0–1)",
+    "iconLabel": "Icon",
+    "premiumLabel": "Premium",
+    "objectivesLabel": "Learning objectives (optional)",
+    "objectivePlaceholder": "e.g. Understand what a stock is",
+    "objectiveAriaLabel": "Objective {{number}}",
+    "removeObjective": "Remove",
+    "removeObjectiveAriaLabel": "Remove objective {{number}}",
+    "addObjective": "+ Add objective",
+    "contentSource": "Content source:",
+    "contentSourceValue": "authored",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "levelLessonList": {
+    "backToLevels": "← Back to levels",
+    "heading": "Lessons",
+    "addLesson": "+ Add Lesson",
+    "loading": "Loading...",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteTitle": "Delete lesson?",
+    "deleteMessage": "This will permanently delete this lesson."
+  },
+  "levelList": {
+    "backToModules": "← Back to modules",
+    "heading": "Levels",
+    "addLevel": "+ Add Level",
+    "loading": "Loading...",
+    "lessons": "{{count}} lessons",
+    "premium": "⭐ Premium",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteTitle": "Delete \"{{title}}\"?",
+    "deleteMessage": "This will permanently delete this level and all its lessons.",
+    "levelsLink": "Lessons"
+  },
+  "moduleEngagement": {
+    "loading": "Loading engagement…",
+    "unavailable": "Engagement data unavailable.",
+    "noData": "No engagement data yet — no learners have started this module.",
+    "heading": "Engagement",
+    "learnersStarted": "Learners started",
+    "completedModule": "Completed module",
+    "avgScore": "Avg score",
+    "tableCaption": "Per-lesson engagement for this module",
+    "colLesson": "Lesson",
+    "colViews": "Views",
+    "colCompleted": "Completed",
+    "colRate": "Rate",
+    "colAvgScore": "Avg score",
+    "colDropOff": "Drop-off"
+  },
+  "moduleForm": {
+    "editTitle": "Edit Module",
+    "newTitle": "New Module",
+    "loading": "Loading…",
+    "topicLabel": "Topic",
+    "titleLabel": "Title",
+    "iconLabel": "Icon",
+    "premiumLabel": "Premium",
+    "countriesLabel": "Countries (empty = global)",
+    "prerequisitesLabel": "Prerequisites (optional)",
+    "minAgeLabel": "Min Age",
+    "maxAgeLabel": "Max Age",
+    "agePlaceholder": "Any",
+    "ageHelp": "Leave empty for all ages",
+    "cashLabel": "Completion cash reward (optional)",
+    "cashPlaceholder": "None",
+    "standardsLabel": "Standards alignment (optional)",
+    "standardPlaceholder": {
+      "framework": "Framework",
+      "code": "Code",
+      "label": "Label"
+    },
+    "standardAriaLabel": {
+      "framework": "Standard {{number}} framework",
+      "code": "Standard {{number}} code",
+      "label": "Standard {{number}} label",
+      "remove": "Remove standard {{number}}"
+    },
+    "addStandard": "+ Add standard",
+    "removeStandard": "Remove",
+    "sourcesLabel": "Sources (optional)",
+    "sourcePlaceholder": {
+      "title": "Title",
+      "url": "https://…"
+    },
+    "sourceAriaLabel": {
+      "title": "Source {{number}} title",
+      "url": "Source {{number}} url",
+      "remove": "Remove source {{number}}"
+    },
+    "addSource": "+ Add source",
+    "removeSource": "Remove",
+    "lessonsHeading": "Lessons ({{count}})",
+    "addLesson": "+ Add Lesson",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteTitle": "Delete lesson?",
+    "deleteMessage": "This will permanently delete this lesson.",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "moduleList": {
+    "heading": "Modules",
+    "newButton": "+ New Module",
+    "loading": "Loading...",
+    "delete": "Delete",
+    "levelsLink": "Levels",
+    "editLink": "Edit",
+    "deleteTitle": "Delete \"{{title}}\"?",
+    "deleteMessage": "This will permanently delete the module and all its lessons.",
+    "premium": "⭐ Premium",
+    "lessonCount": "{{count}} lessons"
+  },
+  "videoHealth": {
+    "heading": "Video health",
+    "checkNow": "Check now",
+    "checking": "Checking…",
+    "loading": "Loading…",
+    "error": "Failed to load video health.",
+    "table": {
+      "module": "Module",
+      "lesson": "Lesson",
+      "youtubeId": "YouTube ID",
+      "status": "Status",
+      "checked": "Checked",
+      "edit": "Edit"
+    },
+    "statusLabel": {
+      "ok": "ok",
+      "dead": "unavailable",
+      "blocked": "embedding disabled",
+      "unknown": "unknown"
+    },
+    "editLink": "Edit",
+    "noVideos": "No video lessons."
+  }
+}

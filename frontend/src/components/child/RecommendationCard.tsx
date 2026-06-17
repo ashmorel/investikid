@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { RecommendationCategoryItem } from '@/api/ai';
 
 type Category = 'continue_learning' | 'practise_again' | 'something_new';
@@ -39,6 +40,7 @@ export function RecommendationCard({
   completedCount,
   totalCount,
 }: RecommendationCardProps) {
+  const { t } = useTranslation('child');
   const colors = CATEGORY_COLORS[category];
   const href = item.lesson_id
     ? `/lessons/${item.module_id}/${item.lesson_id}`
@@ -58,13 +60,13 @@ export function RecommendationCard({
 
       {category === 'continue_learning' && totalCount > 0 && (
         <>
-          <p className="text-slate-400 text-xs mt-1">{completedCount} of {totalCount}</p>
+          <p className="text-slate-400 text-xs mt-1">{t('recommendation.progressCount', { completed: completedCount, total: totalCount })}</p>
           <div
             role="progressbar"
             aria-valuenow={completedCount}
             aria-valuemin={0}
             aria-valuemax={totalCount}
-            aria-label={`${completedCount} of ${totalCount} lessons completed`}
+            aria-label={t('recommendation.progressAriaLabel', { completed: completedCount, total: totalCount })}
             className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-600"
           >
             <div

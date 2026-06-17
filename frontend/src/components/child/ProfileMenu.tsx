@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi, type Me } from '@/api/auth';
@@ -18,6 +19,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 import { RegionSwitcher } from '@/components/child/RegionSwitcher';
 import { CurrencySelector } from '@/components/child/CurrencySelector';
+import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { simulatorApi } from '@/api/simulator';
 import type { RegionCode } from '@/lib/region';
@@ -37,6 +39,7 @@ import { REMINDER } from '@/lib/reminderConfig';
 import { requestReminderPermission, syncStreakReminder } from '@/lib/streakReminder';
 
 export function ProfileMenu({ username }: { username: string }) {
+  const { t } = useTranslation('settings');
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: session } = useChildSession();
@@ -170,7 +173,7 @@ export function ProfileMenu({ username }: { username: string }) {
     <div className="space-y-4">
       <div className="space-y-1.5">
         <label htmlFor="profile-topic" className="text-sm font-medium">
-          Interest area
+          {t('interestArea')}
         </label>
         <select
           id="profile-topic"
@@ -184,17 +187,18 @@ export function ProfileMenu({ username }: { username: string }) {
         </select>
       </div>
       <div className="space-y-3 border-t border-line pt-4">
-        <p className="text-sm font-semibold text-muted-foreground">Preferences</p>
+        <p className="text-sm font-semibold text-muted-foreground">{t('preferences')}</p>
         <div className="space-y-1.5">
           {/* RegionSwitcher carries its own role="group" label, so this heading
               is decorative-only (aria-hidden) to avoid a double accessible name. */}
-          <span aria-hidden="true" className="text-sm font-medium">Learning region</span>
+          <span aria-hidden="true" className="text-sm font-medium">{t('learningRegion')}</span>
           <RegionSwitcher currentRegion={currentRegion} />
         </div>
         <CurrencySelector currentCurrency={currentCurrency} />
+        <LanguageSwitcher />
         <div className="space-y-1.5">
           <label className="flex min-h-[44px] items-center justify-between gap-3 text-sm font-medium">
-            <span>Sounds</span>
+            <span>{t('sounds.label')}</span>
             <input
               type="checkbox"
               checked={soundOn}
@@ -204,11 +208,11 @@ export function ProfileMenu({ username }: { username: string }) {
             />
           </label>
           <p id="sound-help" className="text-xs text-muted-foreground">
-            Fun little sound effects when you learn and trade. On by default.
+            {t('sounds.help')}
           </p>
         </div>
         <fieldset className="space-y-1.5">
-          <legend className="text-sm font-medium">Daily goal</legend>
+          <legend className="text-sm font-medium">{t('dailyGoal.legend')}</legend>
           <div role="radiogroup" aria-label="Daily goal size" className="flex gap-2">
             {GOAL_SIZES.map((g) => (
               <label
@@ -229,13 +233,13 @@ export function ProfileMenu({ username }: { username: string }) {
               </label>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">How much XP you aim for each day.</p>
+          <p className="text-xs text-muted-foreground">{t('dailyGoal.help')}</p>
         </fieldset>
         <Link
           to="/shop"
           className="flex min-h-[44px] w-full items-center justify-between rounded-md border border-line px-3 text-sm font-medium text-brand-700 hover:bg-brand-50"
         >
-          <span>Penny's Shop</span>
+          <span>{t('shop.label')}</span>
           <span className="font-bold" aria-label={`${progressData?.virtual_coins ?? 0} coins`}>
             <span aria-hidden="true">🪙 </span>{progressData?.virtual_coins ?? 0}
           </span>
@@ -245,19 +249,19 @@ export function ProfileMenu({ username }: { username: string }) {
           onClick={() => setConfirmReset(true)}
           className="min-h-[44px] w-full rounded-md border border-line px-3 text-sm font-medium text-brand-700 hover:bg-brand-50"
         >
-          Start fresh
+          {t('startFresh')}
         </button>
         <ConfirmDialog
           open={confirmReset}
-          title="Start fresh?"
-          message={`Start your practice portfolio over in ${currentCurrency}? This clears your current play holdings and history. Your XP and badges are safe.`}
+          title={t('resetConfirm.title')}
+          message={t('resetConfirm.message', { currency: currentCurrency })}
           onConfirm={() => resetPf.mutate()}
           onCancel={() => setConfirmReset(false)}
         />
         {isNativeApp() && (
           <div className="space-y-1.5 border-t border-line pt-3">
             <label className="flex items-center justify-between gap-3 text-sm font-medium">
-              <span>Daily streak reminder</span>
+              <span>{t('reminders.streak')}</span>
               <input
                 type="checkbox"
                 checked={reminderOn}
@@ -267,17 +271,17 @@ export function ProfileMenu({ username }: { username: string }) {
               />
             </label>
             <p id="reminder-help" className="text-xs text-muted-foreground">
-              A friendly evening nudge if your streak is about to end. Off by default.
+              {t('reminders.streakHelp')}
             </p>
             {reminderDenied && (
               <p id="reminder-denied" className="text-xs text-accent-700">
-                Turn on notifications for InvestiKid in your device Settings to use reminders.
+                {t('reminders.streakDenied')}
               </p>
             )}
             {parentPushEnabled && (
               <>
                 <label className="flex items-center justify-between gap-3 text-sm font-medium">
-                  <span>Streak alerts from InvestiKid</span>
+                  <span>{t('reminders.alerts')}</span>
                   <input
                     type="checkbox"
                     checked={pushOn}
@@ -287,11 +291,11 @@ export function ProfileMenu({ username }: { username: string }) {
                   />
                 </label>
                 <p id="push-help" className="text-xs text-muted-foreground">
-                  One short heads-up if your streak is about to end. Your grown-up turned this option on. Off by default.
+                  {t('reminders.alertsHelp')}
                 </p>
                 {pushDenied && (
                   <p id="push-denied" className="text-xs text-accent-700">
-                    Turn on notifications for InvestiKid in your device Settings to use alerts.
+                    {t('reminders.alertsDenied')}
                   </p>
                 )}
               </>
@@ -299,7 +303,7 @@ export function ProfileMenu({ username }: { username: string }) {
             {bioAllowed && bioAvailable && (
               <>
                 <label className="flex items-center justify-between gap-3 text-sm font-medium">
-                  <span>Sign in with Face ID</span>
+                  <span>{t('faceId.label')}</span>
                   <input
                     type="checkbox"
                     checked={bioOn}
@@ -309,7 +313,7 @@ export function ProfileMenu({ username }: { username: string }) {
                   />
                 </label>
                 <p id="bio-help" className="text-xs text-muted-foreground">
-                  Unlock InvestiKid with Face ID instead of your password. Your grown-up turned this on.
+                  {t('faceId.help')}
                 </p>
               </>
             )}
@@ -321,7 +325,7 @@ export function ProfileMenu({ username }: { username: string }) {
         disabled={save.isPending}
         onClick={() => save.mutate(topic === '' ? null : topic)}
       >
-        {save.isPending ? 'Saving…' : 'Save'}
+        {save.isPending ? t('saving') : t('save')}
       </Button>
     </div>
   );
@@ -339,35 +343,35 @@ export function ProfileMenu({ username }: { username: string }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={openEditor}>
-            Profile
+            {t('nav.profile')}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setFeedbackOpen(true)}>
-            Send Feedback
+            {t('nav.sendFeedback')}
           </DropdownMenuItem>
           {session?.is_admin && (
             <DropdownMenuItem onSelect={() => navigate('/admin')}>
-              Admin
+              {t('nav.admin')}
             </DropdownMenuItem>
           )}
           {session?.is_parent && (
             <DropdownMenuItem onSelect={() => void goToParentArea()}>
-              Parent area
+              {t('nav.parentArea')}
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => logout.mutate()}>Log out</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => logout.mutate()}>{t('nav.logOut')}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       {isMobile ? (
-        <BottomSheet open={open} onOpenChange={setOpen} title="Your interest area">
+        <BottomSheet open={open} onOpenChange={setOpen} title={t('dialog.title')}>
           {editorContent}
         </BottomSheet>
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Your interest area</DialogTitle>
+              <DialogTitle>{t('dialog.title')}</DialogTitle>
             </DialogHeader>
             {editorContent}
           </DialogContent>

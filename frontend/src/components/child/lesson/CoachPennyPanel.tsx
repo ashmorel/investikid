@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { aiApi, type TutorResponse } from '@/api/ai';
 import { Button } from '@/components/ui/button';
 
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export function CoachPennyPanel({ lessonId, onClose }: Props) {
+  const { t } = useTranslation('lessons');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [conversationId, setConversationId] = useState<string | undefined>();
@@ -44,13 +46,13 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
         <div className="flex items-center justify-between border-b border-brand-100 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">💡</span>
-            <span className="font-bold text-gray-900">Coach Penny</span>
+            <span className="font-bold text-gray-900">{t('coachPenny.title')}</span>
           </div>
           <div className="flex items-center gap-3">
             {remaining !== null && (
-              <span className="text-xs text-gray-400">{remaining} messages left</span>
+              <span className="text-xs text-gray-400">{t('coachPenny.messagesLeft', { count: remaining })}</span>
             )}
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+            <button onClick={onClose} aria-label={t('coachPenny.closeLabel')} className="text-gray-400 hover:text-gray-600 text-lg"><span aria-hidden="true">{t('coachPenny.closeIcon')}</span></button>
           </div>
         </div>
 
@@ -58,7 +60,7 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
         <div className="max-h-64 overflow-y-auto p-4 space-y-3">
           {messages.length === 0 && (
             <p className="text-sm text-gray-400 text-center">
-              Ask me anything about this lesson! 🎯
+              {t('coachPenny.emptyPrompt')}
             </p>
           )}
           {messages.map((m, i) => (
@@ -75,14 +77,14 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
           {sendMessage.isPending && (
             <div className="flex justify-start">
               <div className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-gray-400">
-                Thinking...
+                {t('coachPenny.thinking')}
               </div>
             </div>
           )}
           {sendMessage.isError && (
             <div className="flex justify-start" role="alert">
               <div className="rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700">
-                Coach Penny couldn't answer just now. Please try again in a moment.
+                {t('coachPenny.errorMessage')}
               </div>
             </div>
           )}
@@ -95,7 +97,7 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask Coach Penny..."
+            placeholder={t('coachPenny.inputPlaceholder')}
             maxLength={200}
             className="flex-1 rounded-xl border border-brand-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
             disabled={remaining === 0}
@@ -105,7 +107,7 @@ export function CoachPennyPanel({ lessonId, onClose }: Props) {
             disabled={!input.trim() || sendMessage.isPending || remaining === 0}
             className="bg-brand-gradient text-white rounded-xl px-4"
           >
-            Send
+            {t('coachPenny.sendButton')}
           </Button>
         </div>
       </div>

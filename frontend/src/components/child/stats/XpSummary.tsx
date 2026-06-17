@@ -1,4 +1,5 @@
 import { Flame, Star, TrendingUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { isStreakActive } from '@/lib/streak';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function XpSummary({ xp, streakCount, lastActivityDate, today }: Props) {
+  const { t } = useTranslation('child');
   const now = today ?? new Date();
   const level = Math.floor(xp / 100) + 1;
   const progress = xp % 100;
@@ -22,15 +24,15 @@ export function XpSummary({ xp, streakCount, lastActivityDate, today }: Props) {
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <TrendingUp className="h-4 w-4" />
-            Level
+            {t('xpSummary.levelLabel')}
           </div>
-          <p className="text-2xl font-bold">Level {level}</p>
+          <p className="text-2xl font-bold">{t('xpSummary.level', { level })}</p>
           <div
             role="progressbar"
             aria-valuenow={progress}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label="XP progress to next level"
+            aria-label={t('xpSummary.xpAriaLabel')}
             className="h-2 w-full rounded-full bg-muted"
           >
             <div
@@ -38,14 +40,14 @@ export function XpSummary({ xp, streakCount, lastActivityDate, today }: Props) {
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground">{progress}/100 XP to next level</p>
+          <p className="text-xs text-muted-foreground">{t('xpSummary.xpProgress', { progress })}</p>
         </div>
 
         {/* Total XP */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Star className="h-4 w-4" />
-            Total XP
+            {t('xpSummary.totalXpLabel')}
           </div>
           <p className="text-2xl font-bold">{xp}</p>
         </div>
@@ -54,16 +56,16 @@ export function XpSummary({ xp, streakCount, lastActivityDate, today }: Props) {
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Flame className="h-4 w-4" />
-            Streak
+            {t('xpSummary.streakLabel')}
           </div>
           <p
             className={cn('text-2xl font-bold', !active && 'opacity-50')}
-            aria-label={active ? 'streak active' : 'streak inactive'}
+            aria-label={active ? t('xpSummary.streakActiveAria') : t('xpSummary.streakInactiveAria')}
           >
-            {streakCount}-day
+            {t('xpSummary.streakDays', { count: streakCount })}
           </p>
           <p className="text-xs text-muted-foreground">
-            {active ? 'Keep it going!' : 'Complete a lesson to restart'}
+            {active ? t('xpSummary.streakActiveText') : t('xpSummary.streakInactiveText')}
           </p>
         </div>
       </div>

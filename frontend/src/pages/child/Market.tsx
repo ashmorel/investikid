@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, Search } from 'lucide-react';
@@ -104,6 +105,7 @@ function BrowseGroup({
 }
 
 export default function Market() {
+  const { t } = useTranslation('simulator');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -164,9 +166,9 @@ export default function Market() {
   if (isLoading && stocks.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
-        <BackButton to="/simulator" label="Simulator" />
+        <BackButton to="/simulator" label={t('market.backLabel')} />
         {online ? (
-          <p className="mt-2 text-sm text-muted-foreground">Loading stocks…</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('market.loading')}</p>
         ) : (
           <OfflineNotice className="mt-3" />
         )}
@@ -184,14 +186,14 @@ export default function Market() {
   const otherGroups = isSearching ? [] : groups.filter(([label]) => !selectedLabels.has(label));
   const otherCount = otherGroups.reduce((n, [, s]) => n + s.length, 0);
   // Curated featured lists read as "Popular …"; search results keep the plain label.
-  const browseTitle = (label: string) => (isSearching ? label : `Popular ${label}`);
+  const browseTitle = (label: string) => (isSearching ? label : `${t('market.popularPrefix')}${label}`);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6">
-      <BackButton to="/simulator" label="Simulator" />
+      <BackButton to="/simulator" label={t('market.backLabel')} />
       {!online && <OfflineNotice className="mt-3" />}
       <div className="mb-1 mt-2 flex items-center gap-2">
-        <h1 className="text-2xl font-semibold">Browse Stocks</h1>
+        <h1 className="text-2xl font-semibold">{t('market.heading')}</h1>
         <RegionSelector value={region} onChange={setSelectedRegion} />
         <button
           onClick={handleRefresh}
@@ -199,15 +201,15 @@ export default function Market() {
           className="ml-auto flex items-center gap-1.5 rounded-lg bg-brand-100 px-3 py-1.5 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-200 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          {refreshing ? 'Updating…' : 'Refresh prices'}
+          {refreshing ? t('market.refreshing') : t('market.refreshPrices')}
         </button>
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         {isSearching
-          ? `${stocks.length} result${stocks.length !== 1 ? 's' : ''} for "${debouncedQuery}"`
+          ? t(stocks.length !== 1 ? 'market.searchResultsPlural' : 'market.searchResults', { count: stocks.length, query: debouncedQuery })
           : query.trim().length === 1
-            ? 'Type one more character to search…'
-            : `${stocks.length} featured stocks — search to find any stock worldwide`}
+            ? t('market.searchTypeMore')
+            : t('market.featuredSummary', { count: stocks.length })}
       </p>
 
       <div className="relative mb-2">
@@ -215,8 +217,8 @@ export default function Market() {
         <input
           type="text"
           role="searchbox"
-          aria-label="Search stocks"
-          placeholder="Search any stock or company (e.g. Apple, Toyota, Samsung)…"
+          aria-label={t('market.searchLabel')}
+          placeholder={t('market.searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full rounded-lg border bg-white py-2.5 pl-10 pr-4 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-300"
@@ -229,7 +231,7 @@ export default function Market() {
       </div>
 
       <div aria-live="polite" className="sr-only">
-        {stocks.length} stocks available
+        {t('market.stocksAvailable', { count: stocks.length })}
       </div>
 
       {!isSearching && (
@@ -240,13 +242,13 @@ export default function Market() {
 
       {stocks.length === 0 && isSearching && searchFetching ? (
         <p role="status" className="mt-6 text-center text-sm text-muted-foreground">
-          Searching…
+          {t('market.searching')}
         </p>
       ) : stocks.length === 0 ? (
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {isSearching
-            ? `No stocks found for "${debouncedQuery}". Try a different name or ticker.`
-            : 'No stocks available.'}
+            ? t('market.noResultsSearch', { query: debouncedQuery })
+            : t('market.noStocks')}
         </p>
       ) : (
         <div className="mt-4 space-y-6">
@@ -254,7 +256,7 @@ export default function Market() {
             <BrowseGroup key={label} title={browseTitle(label)} stocks={groupStocks} />
           ))}
           {otherGroups.length > 0 && (
-            <SectionCard title="More markets" count={otherCount} collapsible defaultOpen={false}>
+            <SectionCard title={t('market.moreMarkets')} count={otherCount} collapsible defaultOpen={false}>
               <div className="space-y-6">
                 {otherGroups.map(([label, groupStocks]) => (
                   <BrowseGroup key={label} title={browseTitle(label)} stocks={groupStocks} headingLevel={3} />

@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { groupsApi, type GroupChallenges } from '@/api/groups';
 import { tierConfig, useAgeTier } from '@/lib/ageTier';
 
 /** Co-op group challenge progress (M9) — shown on Stats near the group boards. */
 export function GroupGoals() {
+  const { t } = useTranslation('child');
   const tier = useAgeTier();
   const emoji = tierConfig[tier].chipEmoji;
   const { data } = useQuery<GroupChallenges[] | null>({
@@ -16,11 +18,11 @@ export function GroupGoals() {
   if (blocks.length === 0) return null;
 
   return (
-    <section aria-label="Group goals" className="mt-4 space-y-3">
+    <section aria-label={t('groupGoals.ariaLabel')} className="mt-4 space-y-3">
       {blocks.map((block) => (
         <div key={block.group_id} className="rounded-2xl border border-brand-200 bg-white p-4">
           <h3 className="text-sm font-extrabold text-gray-900">
-            {emoji && <span aria-hidden="true">🎯 </span>}{block.group_name} — group goals
+            {emoji && <span aria-hidden="true">🎯 </span>}{block.group_name} {t('groupGoals.groupGoalsSuffix')}
           </h3>
           <ul className="mt-2 space-y-3">
             {block.challenges.map((ch) => {
@@ -31,7 +33,7 @@ export function GroupGoals() {
                     <p className="text-sm font-bold text-gray-800">{ch.title}</p>
                     <p className="text-xs font-semibold text-gray-600">
                       {ch.completed
-                        ? emoji ? 'Completed! 🎉' : 'Completed'
+                        ? emoji ? t('groupGoals.completed') : t('groupGoals.completedSimple')
                         : `${ch.group_progress} / ${ch.target_value}`}
                     </p>
                   </div>
@@ -41,7 +43,7 @@ export function GroupGoals() {
                     aria-valuenow={ch.group_progress}
                     aria-valuemin={0}
                     aria-valuemax={ch.target_value}
-                    aria-label={`${ch.title} group progress`}
+                    aria-label={t('groupGoals.progressAriaLabel', { title: ch.title })}
                   >
                     <div
                       className={`h-full rounded-full ${ch.completed ? 'bg-success-500' : 'bg-brand-gradient'}`}

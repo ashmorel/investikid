@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useNextLesson } from '@/hooks/useNextLesson';
 import { useChildSession } from '@/hooks/useChildSession';
 import { useProgress } from '@/hooks/useProgress';
@@ -13,6 +14,7 @@ import { track } from '@/lib/analytics';
 import { useEquippedAccessory } from '@/api/cosmetics';
 
 export default function HomeHero() {
+  const { t } = useTranslation('home');
   const next = useNextLesson();
   const { data: me } = useChildSession();
   const { data: progress } = useProgress();
@@ -72,37 +74,37 @@ export default function HomeHero() {
         ) : next.mode === 'caught_up' || !next.to ? (
           cfg.heroVariant === 'flat' ? (
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-5 text-gray-900 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wider opacity-90">All caught up</p>
-              <p className="mt-1 text-lg font-extrabold">You've finished everything for now!</p>
+              <p className="text-xs font-bold uppercase tracking-wider opacity-90">{t('hero.allCaughtUp')}</p>
+              <p className="mt-1 text-lg font-extrabold">{t('hero.allCaughtUpSub')}</p>
               <GradientButton
                 to={dueCount > 0 ? '/progress' : '/lessons'}
                 full
                 className="mt-4 !bg-none bg-brand-700 text-white shadow-none hover:bg-brand-800"
               >
-                {dueCount > 0 ? 'Review concepts' : 'Explore modules'}<span aria-hidden="true"> →</span>
+                {dueCount > 0 ? t('hero.reviewConcepts') : t('hero.exploreModules')}<span aria-hidden="true"> →</span>
               </GradientButton>
             </div>
           ) : (
             <div className="overflow-hidden rounded-3xl bg-brand-gradient p-5 text-white shadow-lg shadow-brand-600/30">
-              <p className="text-xs font-bold uppercase tracking-wider opacity-90"><span aria-hidden="true">🎉 </span>All caught up</p>
-              <p className="mt-1 text-lg font-extrabold">You've finished everything for now!</p>
+              <p className="text-xs font-bold uppercase tracking-wider opacity-90"><span aria-hidden="true">🎉 </span>{t('hero.allCaughtUp')}</p>
+              <p className="mt-1 text-lg font-extrabold">{t('hero.allCaughtUpSub')}</p>
               <GradientButton
                 to={dueCount > 0 ? '/progress' : '/lessons'}
                 full
                 className="mt-4 !bg-none bg-white text-brand-700 shadow-none hover:bg-brand-50"
               >
-                {dueCount > 0 ? 'Review concepts' : 'Explore modules'}<span aria-hidden="true"> →</span>
+                {dueCount > 0 ? t('hero.reviewConcepts') : t('hero.exploreModules')}<span aria-hidden="true"> →</span>
               </GradientButton>
             </div>
           )
         ) : (
           <HeroCard
             onCtaClick={() => track('home_cta_tap', { surface: 'hero' })}
-            eyebrow={next.mode === 'continue' ? (cfg.heroVariant === 'flat' ? 'Continue' : 'Continue learning') : 'Start here'}
+            eyebrow={next.mode === 'continue' ? (cfg.heroVariant === 'flat' ? t('hero.continue') : t('hero.continueLearning')) : t('hero.startHere')}
             icon={next.moduleIcon ?? '📈'}
-            title={next.lessonLabel ?? 'Your next lesson'}
+            title={next.lessonLabel ?? t('hero.nextLesson')}
             subtitle={next.moduleTitle ?? undefined}
-            cta={next.mode === 'continue' ? 'Continue' : 'Start lesson'}
+            cta={next.mode === 'continue' ? t('hero.continueCta') : t('hero.startLessonCta')}
             to={next.to!}
             variant={cfg.heroVariant}
           />

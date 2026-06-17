@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { parentApi } from '@/api/parent';
 import { parentAuthApi } from '@/api/parentAuth';
 import { socialIdToken } from '@/lib/socialLogin';
@@ -12,6 +13,7 @@ import { AuthPage } from '@/components/AuthPage';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ParentLogin() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [touched, setTouched] = useState(false);
@@ -32,9 +34,7 @@ export default function ParentLogin() {
       await parentAuthApi.oauthSignIn(provider, idToken, nonce);
       navigate('/parent');
     } catch {
-      setSocialError(
-        "We couldn't sign you in with that account. Ask your child to sign up with your email first, or use the email link below.",
-      );
+      setSocialError(t('parentLogin.socialError'));
     } finally {
       setSocialPending(null);
     }
@@ -42,19 +42,18 @@ export default function ParentLogin() {
 
   if (submit.isSuccess) {
     return (
-      <AuthPage title="Check your inbox">
+      <AuthPage title={t('parentLogin.success.title')}>
         <p className="text-sm text-muted-foreground">
-          If an InvestiKid account is linked to {email}, we've sent a sign-in link.
-          The link will expire in 15 minutes.
+          {t('parentLogin.success.message', { email })}
         </p>
       </AuthPage>
     );
   }
 
   return (
-    <AuthPage title="Parents' sign-in" subtitle="Manage your child's account.">
+    <AuthPage title={t('parentLogin.title')} subtitle={t('parentLogin.subtitle')}>
       <p className="text-sm text-muted-foreground">
-        Enter the email address you used when your child signed up.
+        {t('parentLogin.intro')}
       </p>
 
       {/* Social login buttons */}
@@ -66,7 +65,7 @@ export default function ParentLogin() {
           disabled={socialPending !== null}
           onClick={() => handleSocial('apple')}
         >
-          {socialPending === 'apple' ? 'Signing in…' : 'Continue with Apple'}
+          {socialPending === 'apple' ? t('parentLogin.signingIn') : t('parentLogin.continueWithApple')}
         </Button>
         <Button
           type="button"
@@ -75,7 +74,7 @@ export default function ParentLogin() {
           disabled={socialPending !== null}
           onClick={() => handleSocial('google')}
         >
-          {socialPending === 'google' ? 'Signing in…' : 'Continue with Google'}
+          {socialPending === 'google' ? t('parentLogin.signingIn') : t('parentLogin.continueWithGoogle')}
         </Button>
       </div>
 
@@ -88,7 +87,7 @@ export default function ParentLogin() {
       {/* Divider */}
       <div className="my-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-border" aria-hidden="true" />
-        <span className="text-xs text-muted-foreground">or</span>
+        <span className="text-xs text-muted-foreground">{t('parentLogin.or')}</span>
         <div className="h-px flex-1 bg-border" aria-hidden="true" />
       </div>
 
@@ -102,7 +101,7 @@ export default function ParentLogin() {
         }}
       >
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t('parentLogin.email')}</Label>
           <Input
             id="email" type="email" autoComplete="email"
             value={email}
@@ -110,10 +109,10 @@ export default function ParentLogin() {
             onBlur={() => setTouched(true)}
             aria-invalid={showError}
           />
-          {showError && <p className="text-xs text-destructive">Enter a valid email address.</p>}
+          {showError && <p className="text-xs text-destructive">{t('parentLogin.emailError')}</p>}
         </div>
         <Button type="submit" disabled={submit.isPending} className="w-full">
-          {submit.isPending ? 'Sending…' : 'Send sign-in link'}
+          {submit.isPending ? t('parentLogin.sending') : t('parentLogin.sendSignInLink')}
         </Button>
       </form>
     </AuthPage>

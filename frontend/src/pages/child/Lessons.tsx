@@ -1,4 +1,5 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { contentApi, type LessonSummary, type ModuleOut } from '@/api/content';
 import { ModuleCard } from '@/components/child/ModuleCard';
 import { RegionSwitcher } from '@/components/child/RegionSwitcher';
@@ -9,6 +10,7 @@ import { DEFAULT_TIER, densityGridGap, tierConfig } from '@/lib/ageTier';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 export default function Lessons() {
+  const { t } = useTranslation('lessons');
   const { open: openPaywall } = usePremiumPaywall();
 
   const { data: me } = useQuery<Me | null>({ queryKey: ['me'], queryFn: () => authApi.me(), staleTime: 60_000 });
@@ -48,18 +50,18 @@ export default function Lessons() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-extrabold text-gray-900">Modules</h1>
+        <h1 className="text-2xl font-extrabold text-gray-900">{t('modules.heading')}</h1>
         <RegionSwitcher currentRegion={currentRegion} />
       </div>
-      <p className="mt-1 text-sm text-gray-500">{modules.length} modules · {modules.reduce((acc, m) => acc + (lessonsByModuleId.get(m.id)?.length ?? 0), 0)} lessons</p>
+      <p className="mt-1 text-sm text-gray-500">{t('modules.summary', { moduleCount: modules.length, lessonCount: modules.reduce((acc, m) => acc + (lessonsByModuleId.get(m.id)?.length ?? 0), 0) })}</p>
       {modules.length > 0 && (() => {
         const started = modules.filter((m) => (lessonsByModuleId.get(m.id) ?? []).some((l) => l.completed)).length;
         const pct = Math.round((started / modules.length) * 100);
         return (
           <div className="mt-4 rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
             <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
-              <span>Your journey</span>
-              <span>{started} / {modules.length} modules started</span>
+              <span>{t('modules.journey.label')}</span>
+              <span>{t('modules.journey.started', { started, total: modules.length })}</span>
             </div>
             <div
               className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-brand-100"
@@ -67,7 +69,7 @@ export default function Lessons() {
               aria-valuenow={started}
               aria-valuemin={0}
               aria-valuemax={modules.length}
-              aria-label="Modules started"
+              aria-label={t('modules.journey.ariaLabel')}
             >
               <div className="h-full rounded-full bg-brand-gradient transition-all" style={{ width: `${pct}%` }} />
             </div>

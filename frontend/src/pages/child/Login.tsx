@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authApi, type Me } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { isNativeApp } from '@/lib/platform';
@@ -26,6 +27,7 @@ async function establishSession(): Promise<Me | null> {
 }
 
 export default function Login() {
+  const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function Login() {
         qc.setQueryData(['me'], me);
         navigate('/home', { replace: true });
       } else {
-        setError('Could not start your session. Please try again.');
+        setError(t('login.error.sessionFailed'));
       }
     },
     onError: (err) => {
@@ -60,48 +62,48 @@ export default function Login() {
           return;
         }
         if (err.status === 403) {
-          setError('Account access denied. Please contact your parent.');
+          setError(t('login.error.accountDenied'));
           return;
         }
-        setError('Email or password incorrect.');
+        setError(t('login.error.wrongCredentials'));
         return;
       }
-      setError('Something went wrong. Please try again.');
+      setError(t('login.error.generic'));
     },
   });
 
   return (
-    <AuthPage title="Welcome back!" subtitle="Let's keep learning.">
+    <AuthPage title={t('login.title')} subtitle={t('login.subtitle')}>
       <form
         className="space-y-3"
         onSubmit={(e) => { e.preventDefault(); setError(null); submit.mutate(); }}
       >
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t('login.fields.email')}</Label>
           <Input id="email" type="email" autoComplete="email" required
             value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t('login.fields.password')}</Label>
           <Input id="password" type="password" autoComplete="current-password" required
             value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <Button type="submit" disabled={submit.isPending} className="w-full">
-          {submit.isPending ? 'Signing in…' : 'Sign in'}
+          {submit.isPending ? t('login.signingIn') : t('login.signIn')}
         </Button>
       </form>
       <p className="mt-4 text-sm text-muted-foreground">
-        <Link to="/forgot-password" className="underline">Forgot password?</Link>
+        <Link to="/forgot-password" className="underline">{t('login.forgotPassword')}</Link>
       </p>
       <p className="mt-2 text-sm text-muted-foreground">
-        New to InvestiKid? <Link to="/signup" className="underline">Create an account</Link>.
+        {t('login.newToApp')} <Link to="/signup" className="underline">{t('login.createAccount')}</Link>.
       </p>
       <p className="mt-2 text-sm text-muted-foreground">
-        Curious? <Link to="/try" className="underline">Try a lesson first</Link> — no account needed.
+        {t('login.curious')} <Link to="/try" className="underline">{t('login.tryLesson')}</Link>{t('login.tryLessonSuffix')}
       </p>
       <p className="mt-2 text-sm text-muted-foreground">
-        Are you a parent? <Link to="/parent/login" className="font-medium text-brand-700 underline">Manage your child</Link>
+        {t('login.areYouParent')} <Link to="/parent/login" className="font-medium text-brand-700 underline">{t('login.manageChild')}</Link>
       </p>
     </AuthPage>
   );

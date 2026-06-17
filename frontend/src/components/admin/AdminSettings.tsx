@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAdminSettings, useUpdateAdminSettings } from '@/api/admin';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function AdminSettings() {
+  const { t } = useTranslation('admin');
   const { data, isLoading, isError: isLoadError } = useAdminSettings();
   const update = useUpdateAdminSettings();
 
@@ -39,15 +41,15 @@ export default function AdminSettings() {
   function handleAdd() {
     const trimmed = inputValue.trim();
     if (!trimmed) {
-      setInputError('Enter an email address.');
+      setInputError(t('settings.alertEmails.error.empty'));
       return;
     }
     if (!EMAIL_RE.test(trimmed)) {
-      setInputError('Not a valid email address.');
+      setInputError(t('settings.alertEmails.error.invalid'));
       return;
     }
     if (emails.includes(trimmed)) {
-      setInputError('Already in the list.');
+      setInputError(t('settings.alertEmails.error.duplicate'));
       return;
     }
     setEmails((prev) => [...prev, trimmed]);
@@ -87,30 +89,30 @@ export default function AdminSettings() {
   }
 
   if (isLoading) {
-    return <p className="p-6 text-muted-foreground">Loading settings…</p>;
+    return <p className="p-6 text-muted-foreground">{t('layout.loading')}</p>;
   }
 
   if (isLoadError) {
-    return <p className="p-6 text-danger-500">Failed to load settings. Refresh to try again.</p>;
+    return <p className="p-6 text-danger-500">{t('settings.loadError')}</p>;
   }
 
   return (
     <div className="p-6 text-ink">
-      <h1 className="mb-6 text-2xl font-bold text-ink">Settings</h1>
+      <h1 className="mb-6 text-2xl font-bold text-ink">{t('settings.pageTitle')}</h1>
 
       <section aria-labelledby="alert-emails-heading" className="max-w-xl">
         <h2 id="alert-emails-heading" className="mb-1 text-lg font-semibold text-ink">
-          Alert emails
+          {t('settings.alertEmails.heading')}
         </h2>
         <p className="mb-4 text-sm text-muted-foreground">
-          Who gets notified when the AI helper is degraded or down.
+          {t('settings.alertEmails.description')}
         </p>
 
         {/* Add email row */}
         <div className="mb-4 flex gap-2">
           <div className="flex-1">
             <label htmlFor="new-alert-email" className="mb-1 block text-sm text-muted-foreground">
-              Add email address
+              {t('settings.alertEmails.addLabel')}
             </label>
             <input
               id="new-alert-email"
@@ -118,7 +120,7 @@ export default function AdminSettings() {
               value={inputValue}
               onChange={(e) => { setInputValue(e.target.value); setInputError(''); }}
               onKeyDown={handleKeyDown}
-              placeholder="admin@example.com"
+              placeholder={t('settings.alertEmails.placeholder')}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-ink placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand-500"
               aria-describedby={inputError ? 'email-input-error' : undefined}
             />
@@ -134,7 +136,7 @@ export default function AdminSettings() {
               onClick={handleAdd}
               className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
-              Add
+              {t('settings.alertEmails.addButton')}
             </button>
           </div>
         </div>
@@ -142,10 +144,10 @@ export default function AdminSettings() {
         {/* Email list */}
         {emails.length === 0 ? (
           <p className="mb-4 rounded-md border border-line bg-card px-4 py-3 text-sm text-muted-foreground">
-            No alert recipients — alerts are currently off.
+            {t('settings.alertEmails.noRecipients')}
           </p>
         ) : (
-          <ul aria-label="Alert email recipients" className="mb-4 flex flex-col gap-2">
+          <ul aria-label={t('settings.alertEmails.recipientsList')} className="mb-4 flex flex-col gap-2">
             {emails.map((email) => (
               <li
                 key={email}
@@ -155,10 +157,10 @@ export default function AdminSettings() {
                 <button
                   type="button"
                   onClick={() => handleRemove(email)}
-                  aria-label={`Remove ${email}`}
+                  aria-label={t('settings.alertEmails.removeAriaLabel', { email })}
                   className="ml-3 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-brand-50 hover:text-danger-500 focus:outline-none focus:ring-1 focus:ring-danger-500"
                 >
-                  Remove
+                  {t('settings.alertEmails.removeButton')}
                 </button>
               </li>
             ))}
@@ -167,38 +169,38 @@ export default function AdminSettings() {
 
         {/* Seasonal event (M9) — deploy-free, lives in AppSetting */}
         <fieldset className="mb-4 rounded-md border border-line bg-card px-4 py-3">
-          <legend className="px-1 text-sm font-semibold text-ink">Seasonal event</legend>
+          <legend className="px-1 text-sm font-semibold text-ink">{t('settings.seasonalEvent.legend')}</legend>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1">
-              <label htmlFor="ev-title" className="mb-1 block text-sm text-ink">Title</label>
+              <label htmlFor="ev-title" className="mb-1 block text-sm text-ink">{t('settings.seasonalEvent.title')}</label>
               <input id="ev-title" value={eventTitle} maxLength={60} onChange={(e) => setEventTitle(e.target.value)}
-                placeholder="Spooky Savings Week"
+                placeholder={t('settings.seasonalEvent.titlePlaceholder')}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-ink" />
             </div>
             <div>
-              <label htmlFor="ev-emoji" className="mb-1 block text-sm text-ink">Emoji</label>
+              <label htmlFor="ev-emoji" className="mb-1 block text-sm text-ink">{t('settings.seasonalEvent.emoji')}</label>
               <input id="ev-emoji" value={eventEmoji} maxLength={8} onChange={(e) => setEventEmoji(e.target.value)}
                 placeholder="🎃" className="w-24 rounded-md border border-input bg-background px-3 py-2 text-sm text-ink" />
             </div>
             <div>
-              <label htmlFor="ev-bonus" className="mb-1 block text-sm text-ink">Bonus XP %</label>
+              <label htmlFor="ev-bonus" className="mb-1 block text-sm text-ink">{t('settings.seasonalEvent.bonusXp')}</label>
               <input id="ev-bonus" type="number" min={0} max={100} value={eventBonus}
                 onChange={(e) => setEventBonus(Number(e.target.value))}
                 className="w-24 rounded-md border border-input bg-background px-3 py-2 text-sm text-ink" />
             </div>
             <div>
-              <label htmlFor="ev-start" className="mb-1 block text-sm text-ink">Starts</label>
+              <label htmlFor="ev-start" className="mb-1 block text-sm text-ink">{t('settings.seasonalEvent.starts')}</label>
               <input id="ev-start" type="date" value={eventStart} onChange={(e) => setEventStart(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-ink" />
             </div>
             <div>
-              <label htmlFor="ev-end" className="mb-1 block text-sm text-ink">Ends</label>
+              <label htmlFor="ev-end" className="mb-1 block text-sm text-ink">{t('settings.seasonalEvent.ends')}</label>
               <input id="ev-end" type="date" value={eventEnd} onChange={(e) => setEventEnd(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-ink" />
             </div>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Children see a banner on Home and lesson XP gets the bonus while the event is live. Save applies it; Clear removes it.
+            {t('settings.seasonalEvent.description')}
           </p>
           <button
             type="button"
@@ -208,7 +210,7 @@ export default function AdminSettings() {
             }}
             className="mt-2 rounded-md border border-line px-3 py-1.5 text-xs text-muted-foreground hover:bg-brand-50"
           >
-            Clear event
+            {t('settings.seasonalEvent.clearButton')}
           </button>
         </fieldset>
 
@@ -220,20 +222,20 @@ export default function AdminSettings() {
             disabled={update.isPending}
             className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
-            {update.isPending ? 'Saving…' : 'Save'}
+            {update.isPending ? t('settings.saving') : t('settings.save')}
           </button>
 
           {update.isSuccess && (
             <p className="text-sm text-success-600" role="status">
-              Settings saved.
+              {t('settings.saveSuccess')}
             </p>
           )}
 
           {update.isError && (
             <p className="text-sm text-danger-500" role="alert">
               {(update.error as { status?: number })?.status === 422
-                ? 'Invalid data — check emails and try again (max 10).'
-                : 'Save failed. Please try again.'}
+                ? t('settings.saveErrorInvalid')
+                : t('settings.saveErrorGeneric')}
             </p>
           )}
         </div>

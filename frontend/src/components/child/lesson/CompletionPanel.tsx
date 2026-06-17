@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { useTranslation } from 'react-i18next';
 import type { LessonCompletionResult } from '@/api/content';
 import { StatChip } from '@/components/child/ui/StatChip';
 import { XpCountUp } from '@/components/child/ui/XpCountUp';
@@ -14,7 +15,8 @@ type Props = {
 };
 
 export function CompletionPanel({ result, onContinue }: Props) {
-  const heading = result.already_completed ? "You've already done this one" : 'Lesson complete!';
+  const { t } = useTranslation('lessons');
+  const heading = result.already_completed ? t('completion.alreadyDone') : t('completion.complete');
   const xpInLevel = result.total_xp % 100;
 
   // One-shot celebration on mount (juice pack, spec C). Ref-guarded so
@@ -48,16 +50,16 @@ export function CompletionPanel({ result, onContinue }: Props) {
 
       {result.daily_goal_met && (
         <p role="status" className="rounded-full bg-success-50 px-4 py-1.5 text-sm font-extrabold text-success-700">
-          <span aria-hidden="true">🎯 </span>Daily goal met — nice one!
+          <span aria-hidden="true">🎯 </span>{t('completion.dailyGoalMet')}
         </p>
       )}
 
-      <div className="text-2xl" aria-hidden="true">⭐ ⭐ ⭐</div>
+      <div className="text-2xl" aria-hidden="true">{t('completion.starsDecor')}</div>
 
       <div className="flex w-full gap-3">
-        <StatChip emoji="⭐" value={<XpCountUp value={result.xp_awarded} />} label="XP" />
-        <StatChip emoji="🏆" value={String(result.level)} label="Level" />
-        <StatChip emoji="🔥" value={String(result.streak_count)} label="Streak" />
+        <StatChip emoji="⭐" value={<XpCountUp value={result.xp_awarded} />} label={t('completion.xpLabel')} />
+        <StatChip emoji="🏆" value={String(result.level)} label={t('completion.levelLabel')} />
+        <StatChip emoji="🔥" value={String(result.streak_count)} label={t('completion.streakLabel')} />
       </div>
 
       <div className="w-full max-w-[240px]">
@@ -69,11 +71,11 @@ export function CompletionPanel({ result, onContinue }: Props) {
             transition={{ duration: 0.8, delay: 0.3 }}
           />
         </div>
-        <p className="mt-1 text-xs text-gray-500">{xpInLevel} / 100 XP to Level {result.level + 1}</p>
+        <p className="mt-1 text-xs text-gray-500">{t('completion.xpProgress', { xpInLevel, nextLevel: result.level + 1 })}</p>
       </div>
 
       <GradientButton full onClick={onContinue}>
-        Continue <span aria-hidden="true">→</span>
+        {t('completion.continue')} <span aria-hidden="true">→</span>
       </GradientButton>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { contentApi, type LessonOut, type LessonSummary, type LessonCompletionResult, type ModuleOut, type LevelOut } from '@/api/content';
 import { CardLesson } from '@/components/child/lesson/CardLesson';
 import { QuizLesson } from '@/components/child/lesson/QuizLesson';
@@ -21,6 +22,7 @@ export default function Lesson() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation('lessons');
   const [showPractice, setShowPractice] = useState(false);
   const [showPenny, setShowPenny] = useState(false);
   const completionInFlight = useRef(false);
@@ -59,7 +61,7 @@ export default function Lesson() {
       qc.invalidateQueries({ queryKey: ['module-levels', moduleId] });
     },
     onError: () => {
-      toast({ title: 'Could not save your progress', description: 'Try again.' });
+      toast({ title: t('lesson.saveError'), description: t('lesson.tryAgain') });
     },
     onSettled: () => {
       completionInFlight.current = false;
@@ -103,13 +105,13 @@ export default function Lesson() {
   }, [complete.isSuccess, showPractice, postCompleteDest, navigate]);
 
   if (lessonQ.isLoading) {
-    return <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6 text-sm text-muted-foreground">Loading…</div>;
+    return <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6 text-sm text-muted-foreground">{t('lesson.loading')}</div>;
   }
   if (lessonQ.isError || !lessonQ.data) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
-        <BackButton to={`/lessons/${moduleId ?? ''}/${levelId ?? ''}`} label="Lessons" />
-        <p className="mt-2">Lesson not found.</p>
+        <BackButton to={`/lessons/${moduleId ?? ''}/${levelId ?? ''}`} label={t('lesson.backLabel')} />
+        <p className="mt-2">{t('lesson.notFound')}</p>
       </div>
     );
   }
@@ -140,7 +142,7 @@ export default function Lesson() {
               onClick={() => setShowPractice(true)}
               className="text-sm text-brand-700 hover:text-brand-800 underline font-medium"
             >
-              🎯 Practice this topic
+              {t('lesson.practiceCta')}
             </button>
           </div>
         )}
@@ -151,12 +153,12 @@ export default function Lesson() {
   if (complete.isError) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6 space-y-4">
-        <p>Something went wrong saving your progress.</p>
+        <p>{t('lesson.saveError')}</p>
         <button
           type="button"
           className="rounded bg-primary px-3 py-1 text-sm text-primary-foreground"
           onClick={() => complete.reset()}
-        >Try again</button>
+        >{t('lesson.tryAgain')}</button>
       </div>
     );
   }

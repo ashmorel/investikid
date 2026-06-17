@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLevels, useDeleteLevel, useUpdateLevel } from '@/api/admin';
 import type { AdminLevel } from '@/api/admin';
 import OrderArrows from './OrderArrows';
@@ -7,6 +8,7 @@ import ConfirmDialog from './ConfirmDialog';
 import LevelForm from './LevelForm';
 
 export default function LevelList() {
+  const { t } = useTranslation('admin');
   const { moduleId = '' } = useParams<{ moduleId: string }>();
   const { data: levels = [], isLoading } = useLevels(moduleId);
   const deleteLevel = useDeleteLevel(moduleId);
@@ -27,24 +29,24 @@ export default function LevelList() {
     updateLevel.mutate({ id: neighbour.id, order_index: current.order_index });
   }
 
-  if (isLoading) return <p className="text-muted-foreground">Loading...</p>;
+  if (isLoading) return <p className="text-muted-foreground">{t('levelList.loading')}</p>;
 
   return (
     <div>
       <div className="mb-2">
         <Link to="/admin/modules" className="text-xs text-muted-foreground hover:text-ink">
-          ← Back to modules
+          {t('levelList.backToModules')}
         </Link>
       </div>
 
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-ink">Levels</h2>
+        <h2 className="text-xl font-semibold text-ink">{t('levelList.heading')}</h2>
         <button
           type="button"
           onClick={() => { setEditingLevel(null); setShowNewLevel(true); }}
           className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700"
         >
-          + Add Level
+          {t('levelList.addLevel')}
         </button>
       </div>
 
@@ -66,29 +68,29 @@ export default function LevelList() {
             <div className="flex-1">
               <div className="font-medium text-ink">{level.title}</div>
               <div className="text-xs text-muted-foreground">
-                {level.lesson_count} lessons
-                {level.is_premium && <span className="ml-1 text-accent-500">⭐ Premium</span>}
+                {t('levelList.lessons', { count: level.lesson_count })}
+                {level.is_premium && <span className="ml-1 text-accent-500">{t('levelList.premium')}</span>}
               </div>
             </div>
             <Link
               to={`/admin/modules/${moduleId}/levels/${level.id}/lessons`}
               className="text-xs text-brand-600 hover:text-brand-700"
             >
-              Lessons
+              {t('levelList.levelsLink')}
             </Link>
             <button
               type="button"
               onClick={() => { setEditingLevel(level); setShowNewLevel(false); }}
               className="text-xs text-brand-600 hover:text-brand-700"
             >
-              Edit
+              {t('levelList.edit')}
             </button>
             <button
               type="button"
               onClick={() => setDeleteTarget(level)}
               className="text-xs text-danger-500 hover:text-danger-400"
             >
-              Delete
+              {t('levelList.delete')}
             </button>
           </div>
         ))}
@@ -105,8 +107,8 @@ export default function LevelList() {
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title={`Delete "${deleteTarget?.title}"?`}
-        message="This will permanently delete this level and all its lessons."
+        title={t('levelList.deleteTitle', { title: deleteTarget?.title ?? '' })}
+        message={t('levelList.deleteMessage')}
         onConfirm={() => { if (deleteTarget) deleteLevel.mutate(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
       />

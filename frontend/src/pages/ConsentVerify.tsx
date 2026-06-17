@@ -1,6 +1,7 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { consentApi, type Decision } from '@/api/consent';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { ErrorBanner } from '@/components/ErrorBanner';
 import { AuthPage } from '@/components/AuthPage';
 
 export default function ConsentVerify() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
@@ -30,16 +32,16 @@ export default function ConsentVerify() {
 
   if (!token) {
     return (
-      <AuthPage title="That link didn't work" subtitle="Please use the approval link from your email.">
-        <ErrorBanner title="Invalid link" message="This link is missing its token." />
+      <AuthPage title={t('consentVerify.invalidLink.title')} subtitle={t('consentVerify.invalidLink.subtitle')}>
+        <ErrorBanner title={t('consentVerify.invalidLink.errorTitle')} message={t('consentVerify.invalidLink.errorMessage')} />
       </AuthPage>
     );
   }
 
   if (peek.isLoading) {
     return (
-      <AuthPage title="Checking the approval link...">
-        <p className="text-sm text-muted-foreground">This should only take a moment.</p>
+      <AuthPage title={t('consentVerify.loading.title')}>
+        <p className="text-sm text-muted-foreground">{t('consentVerify.loading.message')}</p>
       </AuthPage>
     );
   }
@@ -47,26 +49,26 @@ export default function ConsentVerify() {
   if (peek.isError) {
     const status = peek.error instanceof ApiError ? peek.error.status : 0;
     const message = status === 410
-      ? 'This link is invalid, expired, or already used.'
-      : 'Something went wrong. Please try again.';
+      ? t('consentVerify.linkUnavailable.errorExpired')
+      : t('consentVerify.linkUnavailable.errorGeneric');
     return (
-      <AuthPage title="Link unavailable" subtitle="This approval link may have already been used.">
-        <ErrorBanner title="Link unavailable" message={message} />
+      <AuthPage title={t('consentVerify.linkUnavailable.title')} subtitle={t('consentVerify.linkUnavailable.subtitle')}>
+        <ErrorBanner title={t('consentVerify.linkUnavailable.errorTitle')} message={message} />
       </AuthPage>
     );
   }
 
   if (done === 'approve') {
     return (
-      <AuthPage title="All set — thank you!">
-        <Success message="Your child can now sign in to InvestiKid." />
+      <AuthPage title={t('consentVerify.approved.title')}>
+        <Success message={t('consentVerify.approved.message')} />
       </AuthPage>
     );
   }
   if (done === 'decline') {
     return (
-      <AuthPage title="Decision recorded">
-        <Success message="The account will remain inactive." />
+      <AuthPage title={t('consentVerify.declined.title')}>
+        <Success message={t('consentVerify.declined.message')} />
       </AuthPage>
     );
   }
@@ -75,15 +77,16 @@ export default function ConsentVerify() {
   const decideError = decide.error instanceof ApiError ? decide.error : null;
 
   return (
-    <AuthPage title="Approve your child's account" subtitle="Review the request before your child signs in.">
+    <AuthPage title={t('consentVerify.review.title')} subtitle={t('consentVerify.review.subtitle')}>
       <p className="text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">{child.username}</span> ({child.age}, {child.country_code})
-        signed up for InvestiKid and listed you as their parent.
+        <span className="font-medium text-foreground">{child.username}</span>{' '}
+        ({child.age}, {child.country_code}){' '}
+        {t('consentVerify.review.childSuffix')}
       </p>
       {decideError && (
         <ErrorBanner
           className="mt-4"
-          title={decideError.status === 410 ? 'Link no longer valid' : 'Something went wrong'}
+          title={decideError.status === 410 ? t('consentVerify.review.errorLinkExpired') : t('consentVerify.review.errorGeneric')}
           message={decideError.detail}
         />
       )}
@@ -96,15 +99,15 @@ export default function ConsentVerify() {
           className="mt-1 h-4 w-4"
         />
         <label htmlFor="guardian-attest" className="text-sm text-foreground">
-          I confirm I am {child.username}'s parent or legal guardian and am over 18.
+          {t('consentVerify.review.attestLabel', { username: child.username })}
         </label>
       </div>
       <div className="mt-6 flex gap-3">
         <Button onClick={() => decide.mutate('approve')} disabled={!attested || decide.isPending}>
-          Approve
+          {t('consentVerify.review.approve')}
         </Button>
         <Button variant="outline" onClick={() => decide.mutate('decline')} disabled={decide.isPending}>
-          Decline
+          {t('consentVerify.review.decline')}
         </Button>
       </div>
     </AuthPage>

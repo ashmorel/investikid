@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function PortfolioChart({ history, variant = 'card' }: Props) {
+  const { t } = useTranslation('simulator');
   if (!Array.isArray(history) || history.length < 2) return null;
 
   const onGrad = variant === 'onGradient';
@@ -40,7 +42,7 @@ export function PortfolioChart({ history, variant = 'card' }: Props) {
       aria-label={summary}
     >
       {!onGrad && (
-        <h3 className="mb-3 text-sm font-semibold text-gray-700">Portfolio Value</h3>
+        <h3 className="mb-3 text-sm font-semibold text-gray-700">{t('portfolioChart.heading')}</h3>
       )}
       <ResponsiveContainer width="100%" height={200}>
         <AreaChart data={history}>

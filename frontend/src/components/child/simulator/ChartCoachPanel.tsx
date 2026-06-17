@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { simulatorApi, type ChartCoachResponse } from '@/api/simulator';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
+  const { t } = useTranslation('simulator');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [conversationId, setConversationId] = useState<string | undefined>();
@@ -57,21 +59,21 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
         <div className="flex items-center justify-between border-b border-brand-100 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">💡</span>
-            <span className="font-bold text-gray-900">Coach Penny</span>
-            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">{ticker} Chart</span>
+            <span className="font-bold text-gray-900">{t('chartCoach.name')}</span>
+            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">{t('chartCoach.chartLabel', { ticker })}</span>
           </div>
           <div className="flex items-center gap-3">
             {remaining !== null && (
-              <span className="text-xs text-gray-400">{remaining} messages left</span>
+              <span className="text-xs text-gray-400">{t('chartCoach.messagesLeft', { count: remaining })}</span>
             )}
-            <button onClick={onClose} className="text-lg text-gray-400 hover:text-gray-600">✕</button>
+            <button onClick={onClose} className="text-lg text-gray-400 hover:text-gray-600">{t('chartCoach.closeButton')}</button>
           </div>
         </div>
 
         <div className="max-h-64 space-y-3 overflow-y-auto p-4">
           {messages.length === 0 && (
             <p className="text-center text-sm text-gray-400">
-              Ask me anything about this {ticker} chart! 📊
+              {t('chartCoach.emptyPrompt', { ticker })}
             </p>
           )}
           {messages.map((m, i) => (
@@ -90,14 +92,14 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
           {sendMessage.isPending && (
             <div className="flex justify-start">
               <div className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-gray-400">
-                Thinking…
+                {t('chartCoach.thinking')}
               </div>
             </div>
           )}
           {sendMessage.isError && (
             <div className="flex justify-start">
               <div className="max-w-[80%] rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-600">
-                Something went wrong. Try sending your message again.
+                {t('chartCoach.error')}
               </div>
             </div>
           )}
@@ -110,7 +112,7 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about the chart…"
+            placeholder={t('chartCoach.placeholder')}
             maxLength={200}
             className="flex-1 rounded-xl border border-brand-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
             disabled={remaining === 0}
@@ -120,7 +122,7 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
             disabled={!input.trim() || sendMessage.isPending || remaining === 0}
             className="rounded-xl bg-brand-gradient px-4 text-white"
           >
-            Send
+            {t('chartCoach.send')}
           </Button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { EduTooltip } from './EduTooltip';
 import { formatCurrency } from '@/lib/currency';
@@ -25,29 +26,14 @@ type TradeFormProps = {
 
 type Step = 'input' | 'review' | 'reflection';
 
-const REFLECTION_REASONS = [
-  {
-    id: 'story',
-    label: "The company's story has changed",
-    response: 'A real reason to rethink — stories matter more than prices.',
-  },
-  {
-    id: 'cash',
-    label: 'I need the cash for something else',
-    response: 'Fair — needing money is a real reason.',
-  },
-  {
-    id: 'fear',
-    label: 'The price is falling and it scares me',
-    response:
-      "That's the one to watch: falling prices alone are often the worst reason to sell. Markets wobble; selling locks in the loss.",
-  },
-] as const;
+const REFLECTION_REASON_IDS = ['story', 'cash', 'fear'] as const;
+type ReflectionReasonId = typeof REFLECTION_REASON_IDS[number];
 
 export function TradeForm({
   ticker, exchange, price, currency, availableCash, ownedShares, avgBuyPrice,
   onSubmit, isSubmitting, submitError,
 }: TradeFormProps) {
+  const { t } = useTranslation('simulator');
   const isMobile = !useMediaQuery('(min-width: 768px)');
   const haptic = useHaptic();
   const online = useOnline();
@@ -55,7 +41,7 @@ export function TradeForm({
   const [shares, setShares] = useState('');
   const [step, setStep] = useState<Step>('input');
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [reflectionReason, setReflectionReason] = useState<string | null>(null);
+  const [reflectionReason, setReflectionReason] = useState<ReflectionReasonId | null>(null);
   const reflectionHeadingRef = useRef<HTMLParagraphElement>(null);
 
   const configQ = useQuery({
@@ -83,15 +69,15 @@ export function TradeForm({
   function handleReview() {
     setValidationError(null);
     if (sharesNum < 1) {
-      setValidationError('Enter at least 1 share');
+      setValidationError(t('tradeForm.validation.atLeastOneShare'));
       return;
     }
     if (side === 'buy' && totalCost + (fee ?? 0) > cashNum) {
-      setValidationError('Insufficient cash for this trade');
+      setValidationError(t('tradeForm.validation.insufficientCash'));
       return;
     }
     if (side === 'sell' && sharesNum > ownedNum) {
-      setValidationError('Insufficient shares');
+      setValidationError(t('tradeForm.validation.insufficientShares'));
       return;
     }
     setStep('review');
@@ -118,49 +104,48 @@ export function TradeForm({
 
   const feeLine = fee != null && sharesNum > 0 ? (
     <p className="text-muted-foreground">
-      Fee ({commissionPct}%): <span className="font-medium text-foreground">{formatCurrency(fee.toFixed(2), currency)}</span>
+      {t('tradeForm.feeLine', { pct: commissionPct, fee: formatCurrency(fee.toFixed(2), currency) })}
       {' · '}
       {side === 'buy' ? (
-        <>Total: <span className="font-medium text-foreground">{formatCurrency((totalCost + fee).toFixed(2), currency)}</span></>
+        <>{t('tradeForm.totalCost', { total: formatCurrency((totalCost + fee).toFixed(2), currency) })}</>
       ) : (
-        <>You&apos;ll receive ≈ <span className="font-medium text-foreground">{formatCurrency((totalCost - fee).toFixed(2), currency)}</span></>
+        <>{t('tradeForm.youReceive', { amount: formatCurrency((totalCost - fee).toFixed(2), currency) })}</>
       )}
     </p>
   ) : null;
 
   if (step === 'reflection') {
-    const chosen = REFLECTION_REASONS.find((r) => r.id === reflectionReason);
     const reflectionContent = (
       <div className="rounded-lg border bg-muted/50 p-4">
         <p ref={reflectionHeadingRef} tabIndex={-1} className="font-medium">
-          You&apos;d be selling at a loss. What&apos;s your reason?
+          {t('tradeForm.reflection.heading')}
         </p>
-        <div role="radiogroup" aria-label="Reason for selling" className="mt-3 flex flex-col gap-2">
-          {REFLECTION_REASONS.map((reason) => (
+        <div role="radiogroup" aria-label={t('tradeForm.reflection.reasonGroupLabel')} className="mt-3 flex flex-col gap-2">
+          {REFLECTION_REASON_IDS.map((reasonId) => (
             <button
-              key={reason.id}
+              key={reasonId}
               role="radio"
-              aria-checked={reflectionReason === reason.id}
-              onClick={() => setReflectionReason(reason.id)}
-              className={`rounded-md border px-3 py-2 text-left text-sm font-medium ${reflectionReason === reason.id ? 'border-brand-500 bg-brand-50 text-brand-700' : 'bg-background'}`}
+              aria-checked={reflectionReason === reasonId}
+              onClick={() => setReflectionReason(reasonId)}
+              className={`rounded-md border px-3 py-2 text-left text-sm font-medium ${reflectionReason === reasonId ? 'border-brand-500 bg-brand-50 text-brand-700' : 'bg-background'}`}
             >
-              {reason.label}
+              {t(`tradeForm.reflection.reason.${reasonId}.label`)}
             </button>
           ))}
         </div>
         <div aria-live="polite">
-          {chosen && <p className="mt-3 text-sm text-muted-foreground">{chosen.response}</p>}
+          {reflectionReason && <p className="mt-3 text-sm text-muted-foreground">{t(`tradeForm.reflection.reason.${reflectionReason}.response`)}</p>}
         </div>
         {submitError && (
           <p className="mt-2 text-sm text-danger-600">{submitError}</p>
         )}
         <div className="mt-4 flex gap-2">
-          {chosen && (
+          {reflectionReason && (
             <Button onClick={executeSubmit} disabled={isSubmitting || !online}>
-              {isSubmitting ? 'Submitting…' : 'Confirm sell'}
+              {isSubmitting ? t('tradeForm.reflection.submitting') : t('tradeForm.reflection.confirmSell')}
             </Button>
           )}
-          <Button variant="outline" onClick={handleBack} disabled={isSubmitting}>Cancel</Button>
+          <Button variant="outline" onClick={handleBack} disabled={isSubmitting}>{t('tradeForm.reflection.cancel')}</Button>
         </div>
       </div>
     );
@@ -170,7 +155,7 @@ export function TradeForm({
         <BottomSheet
           open
           onOpenChange={(open) => { if (!open) handleBack(); }}
-          title="Selling at a loss"
+          title={t('tradeForm.reflection.title')}
         >
           {reflectionContent}
         </BottomSheet>
@@ -185,17 +170,19 @@ export function TradeForm({
     const reviewContent = (
       <>
         <div className="rounded-lg border bg-muted/50 p-4">
-          <p className="font-medium">{side === 'buy' ? 'Buy' : 'Sell'} {sharesNum} shares of {ticker}</p>
+          <p className="font-medium">
+            {t(side === 'buy' ? 'tradeForm.review.buyShares' : 'tradeForm.review.sellShares', { count: sharesNum, ticker })}
+          </p>
           <div className="mt-2 space-y-1 text-sm">
-            <p>Price per share: {formatCurrency(price, currency)}</p>
-            <p>Total {side === 'buy' ? 'cost' : 'proceeds'}: {formatCurrency(totalCost.toFixed(2), currency)}</p>
+            <p>{t('tradeForm.review.pricePerShare', { price: formatCurrency(price, currency) })}</p>
+            <p>{t(side === 'buy' ? 'tradeForm.review.totalCost' : 'tradeForm.review.totalProceeds', { amount: formatCurrency(totalCost.toFixed(2), currency) })}</p>
             {feeLine}
-            <p>Cash after trade: {formatCurrency(cashAfter.toFixed(2), currency)}</p>
+            <p>{t('tradeForm.review.cashAfter', { amount: formatCurrency(cashAfter.toFixed(2), currency) })}</p>
           </div>
           <div className="mt-2">
             <EduTooltip
-              term="Review"
-              explanation="Always review your trades before confirming. In real investing, you can't undo a trade!"
+              term={t('tradeForm.review.tooltipTerm')}
+              explanation={t('tradeForm.review.tooltipExplanation')}
             />
           </div>
         </div>
@@ -205,9 +192,9 @@ export function TradeForm({
         {!online && <OfflineNotice className="mt-2" />}
         <div className="mt-4 flex gap-2">
           <Button onClick={handleConfirm} disabled={isSubmitting || !online}>
-            {isSubmitting ? 'Submitting…' : `Confirm ${side} of ${sharesNum} shares`}
+            {isSubmitting ? t('tradeForm.review.submitting') : t('tradeForm.review.confirm', { side, count: sharesNum })}
           </Button>
-          <Button variant="outline" onClick={handleBack} disabled={isSubmitting}>Go back</Button>
+          <Button variant="outline" onClick={handleBack} disabled={isSubmitting}>{t('tradeForm.review.goBack')}</Button>
         </div>
       </>
     );
@@ -217,7 +204,7 @@ export function TradeForm({
         <BottomSheet
           open
           onOpenChange={(open) => { if (!open) handleBack(); }}
-          title="Review Trade"
+          title={t('tradeForm.review.title')}
         >
           {reviewContent}
         </BottomSheet>
@@ -233,25 +220,25 @@ export function TradeForm({
 
   return (
     <div>
-      <div role="radiogroup" aria-label="Trade type" className="mb-4 flex gap-1">
+      <div role="radiogroup" aria-label={t('tradeForm.tradeTypeLabel')} className="mb-4 flex gap-1">
         <button
           role="radio"
           aria-checked={side === 'buy'}
-          aria-label="Buy"
+          aria-label={t('tradeForm.buy')}
           onClick={() => setSide('buy')}
           className={`rounded-md px-4 py-2 text-sm font-medium ${side === 'buy' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
         >
-          Buy
+          {t('tradeForm.buy')}
         </button>
         <button
           role="radio"
           aria-checked={side === 'sell'}
-          aria-label="Sell"
+          aria-label={t('tradeForm.sell')}
           disabled={!canSell}
           onClick={() => canSell && setSide('sell')}
           className={`rounded-md px-4 py-2 text-sm font-medium ${side === 'sell' ? 'bg-primary text-primary-foreground' : 'bg-muted'} ${!canSell ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          Sell
+          {t('tradeForm.sell')}
         </button>
       </div>
 
@@ -259,30 +246,32 @@ export function TradeForm({
         {side === 'buy' ? (
           <div className="flex flex-col gap-1">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Available cash</span>
+              <span className="text-muted-foreground">{t('tradeForm.availableCash')}</span>
               <span className="font-medium">{formatCurrency(availableCash, currency)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Price per share</span>
+              <span className="text-muted-foreground">{t('tradeForm.pricePerShare')}</span>
               <span className="font-medium">{formatCurrency(price, currency)}</span>
             </div>
             <div className="flex justify-between border-t pt-1">
-              <span className="text-muted-foreground">You can afford</span>
-              <span className="font-semibold text-success-700">{maxAffordable} {maxAffordable === 1 ? 'share' : 'shares'}</span>
+              <span className="text-muted-foreground">{t('tradeForm.youCanAfford')}</span>
+              <span className="font-semibold text-success-700">
+                {t(maxAffordable === 1 ? 'tradeForm.sharesAffordable' : 'tradeForm.sharesAffordablePlural', { count: maxAffordable })}
+              </span>
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-1">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Shares owned</span>
+              <span className="text-muted-foreground">{t('tradeForm.sharesOwned')}</span>
               <span className="font-medium">{ownedNum}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Price per share</span>
+              <span className="text-muted-foreground">{t('tradeForm.pricePerShare')}</span>
               <span className="font-medium">{formatCurrency(price, currency)}</span>
             </div>
             <div className="flex justify-between border-t pt-1">
-              <span className="text-muted-foreground">Value if sold</span>
+              <span className="text-muted-foreground">{t('tradeForm.valueIfSold')}</span>
               <span className="font-semibold text-success-700">{formatCurrency((ownedNum * priceNum).toFixed(2), currency)}</span>
             </div>
           </div>
@@ -291,7 +280,7 @@ export function TradeForm({
 
       <div className="mb-4">
         <label htmlFor="shares-input" className="mb-1 block text-sm font-medium">
-          Number of shares
+          {t('tradeForm.numberOfShares')}
         </label>
         <div className="flex gap-2">
           <input
@@ -308,9 +297,9 @@ export function TradeForm({
               variant="outline"
               size="sm"
               onClick={() => setShares(String(maxAffordable))}
-              aria-label="Max"
+              aria-label={t('tradeForm.maxButton')}
             >
-              Max
+              {t('tradeForm.maxButton')}
             </Button>
           )}
           {side === 'sell' && canSell && (
@@ -318,9 +307,9 @@ export function TradeForm({
               variant="outline"
               size="sm"
               onClick={() => setShares(String(ownedNum))}
-              aria-label="Max"
+              aria-label={t('tradeForm.maxButton')}
             >
-              Max
+              {t('tradeForm.maxButton')}
             </Button>
           )}
         </div>
@@ -329,12 +318,12 @@ export function TradeForm({
       {sharesNum > 0 && (
         <div className="mb-4 text-sm">
           <p className="text-muted-foreground">
-            {sharesNum} {sharesNum === 1 ? 'share' : 'shares'} × {formatCurrency(price, currency)} = <span className="font-medium text-foreground">{formatCurrency(totalCost.toFixed(2), currency)}</span>
+            {sharesNum} {t(sharesNum === 1 ? 'tradeForm.share' : 'tradeForm.shares')} × {formatCurrency(price, currency)} = <span className="font-medium text-foreground">{formatCurrency(totalCost.toFixed(2), currency)}</span>
           </p>
           {feeLine}
           {side === 'buy' && (
             <p className="text-muted-foreground">
-              Cash remaining: <span className={`font-medium ${cashNum - totalCost - (fee ?? 0) < 0 ? 'text-danger-600' : 'text-foreground'}`}>{formatCurrency((cashNum - totalCost - (fee ?? 0)).toFixed(2), currency)}</span>
+              {t('tradeForm.cashRemaining')} <span className={`font-medium ${cashNum - totalCost - (fee ?? 0) < 0 ? 'text-danger-600' : 'text-foreground'}`}>{formatCurrency((cashNum - totalCost - (fee ?? 0)).toFixed(2), currency)}</span>
             </p>
           )}
         </div>
@@ -348,7 +337,7 @@ export function TradeForm({
       )}
       {!online && <OfflineNotice className="mb-2" />}
 
-      <Button onClick={handleReview} disabled={!online}>Review trade</Button>
+      <Button onClick={handleReview} disabled={!online}>{t('tradeForm.reviewTrade')}</Button>
     </div>
   );
 }

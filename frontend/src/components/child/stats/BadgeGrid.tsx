@@ -1,5 +1,6 @@
 import { BookOpen, Flame, Lock, Star, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import type { BadgeDefinition, EarnedBadge } from '@/api/gamification';
 import { cn } from '@/lib/utils';
 
@@ -15,18 +16,6 @@ const CONDITION_ICONS: Record<string, React.ElementType> = {
   total_xp: Star,
 };
 
-function formatEarnedDate(iso: string): string {
-  const date = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / 86_400_000);
-
-  if (diffDays === 0) return 'Earned today';
-  if (diffDays === 1) return 'Earned yesterday';
-  if (diffDays < 30) return `Earned ${diffDays} days ago`;
-  return `Earned ${date.toLocaleDateString()}`;
-}
-
 const container = {
   hidden: {},
   show: { transition: { staggerChildren: 0.06 } },
@@ -38,7 +27,20 @@ const item = {
 };
 
 export function BadgeGrid({ allBadges, earnedBadges }: Props) {
+  const { t } = useTranslation('child');
   const earnedById = new Map(earnedBadges.map((b) => [b.id, b]));
+
+  function formatEarnedDate(iso: string): string {
+    const date = new Date(iso);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / 86_400_000);
+
+    if (diffDays === 0) return t('badges.earnedToday');
+    if (diffDays === 1) return t('badges.earnedYesterday');
+    if (diffDays < 30) return t('badges.earnedDaysAgo', { count: diffDays });
+    return t('badges.earnedOn', { date: date.toLocaleDateString() });
+  }
 
   return (
     <motion.div
@@ -50,7 +52,7 @@ export function BadgeGrid({ allBadges, earnedBadges }: Props) {
       {allBadges.map((badge) => {
         const earned = earnedById.get(badge.id);
         const Icon = CONDITION_ICONS[badge.condition_type] ?? Star;
-        const isNewlyEarned = earned && formatEarnedDate(earned.earned_at) === 'Earned today';
+        const isNewlyEarned = earned && formatEarnedDate(earned.earned_at) === t('badges.earnedToday');
 
         return (
           <motion.div
@@ -85,9 +87,9 @@ export function BadgeGrid({ allBadges, earnedBadges }: Props) {
                     {formatEarnedDate(earned.earned_at)}
                   </p>
                 ) : (
-                  <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground" aria-label="locked">
+                  <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground" aria-label={t('badges.locked')}>
                     <Lock className="h-3 w-3" />
-                    Locked
+                    {t('badges.locked')}
                   </div>
                 )}
               </div>

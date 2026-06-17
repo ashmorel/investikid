@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { parentApi, type ParentPreferences } from '@/api/parent';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
@@ -6,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 const PREFERENCES_KEY = ['parent-preferences'];
 
 export function NotificationPreferencesCard() {
+  const { t } = useTranslation('parent');
   const qc = useQueryClient();
   const { toast } = useToast();
 
@@ -21,8 +23,8 @@ export function NotificationPreferencesCard() {
     },
     onError: () =>
       toast({
-        title: "Couldn't update preferences",
-        description: 'Please try again.',
+        title: t('notificationPreferences.toast.errorTitle'),
+        description: t('notificationPreferences.toast.errorDesc'),
         variant: 'destructive',
       }),
   });
@@ -32,14 +34,14 @@ export function NotificationPreferencesCard() {
 
   return (
     <section className="mt-6 rounded-2xl border border-brand-100 bg-card p-4 text-foreground">
-      <h2 className="text-lg font-semibold">Email preferences</h2>
+      <h2 className="text-lg font-semibold">{t('notificationPreferences.heading')}</h2>
       <div className="mt-4 flex items-start justify-between gap-4">
         <div>
           <label htmlFor="sub-email-toggle" className="block text-sm font-medium">
-            Email me about my subscription
+            {t('notificationPreferences.subEmailLabel')}
           </label>
           <p id="sub-email-help" className="mt-1 text-sm text-muted-foreground">
-            Occasional reminders, like when a free trial is ending.
+            {t('notificationPreferences.subEmailHelp')}
           </p>
         </div>
         <Switch
@@ -53,10 +55,10 @@ export function NotificationPreferencesCard() {
       <div className="mt-4 flex items-start justify-between gap-4">
         <div>
           <label htmlFor="digest-email-toggle" className="block text-sm font-medium">
-            Weekly progress email
+            {t('notificationPreferences.digestLabel')}
           </label>
           <p id="digest-email-help" className="mt-1 text-sm text-muted-foreground">
-            A weekly summary of what your child learned.
+            {t('notificationPreferences.digestHelp')}
           </p>
         </div>
         <Switch
