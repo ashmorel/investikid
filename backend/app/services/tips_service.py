@@ -70,7 +70,7 @@ def learning_stage(completed_lessons: int) -> str:
 
 
 @llm_usage.surface("tips_generic")
-async def generate_generic_tips() -> list[InvestingTipOut]:
+async def generate_generic_tips(*, language: str = "en") -> list[InvestingTipOut]:
     cache_key = "global"
     now = time.time()
 
@@ -81,7 +81,7 @@ async def generate_generic_tips() -> list[InvestingTipOut]:
     try:
         llm = get_llm_client(tier="lite")
         raw = await llm.complete(
-            system_prompt=with_guardrail_preamble(_TIPS_PROMPT),
+            system_prompt=with_guardrail_preamble(_TIPS_PROMPT, language=language),
             messages=[{"role": "user", "content": "Generate 6 fresh investing tips for young learners."}],
             temperature=0.9,
             max_tokens=800,
@@ -140,6 +140,7 @@ async def generate_personalised_tips(
     stage: str,
     age: int,
     refresh: bool = False,
+    language: str = "en",
 ) -> tuple[list[InvestingTipOut], bool]:
     """2 holdings/level-tailored tips. Returns (tips, was_unsafe). was_unsafe is
     True only when the model output was moderated out (so the endpoint can write
@@ -158,7 +159,7 @@ async def generate_personalised_tips(
     try:
         llm = get_llm_client(tier="lite")
         raw = await llm.complete(
-            system_prompt=with_guardrail_preamble(_personal_prompt(holdings, stage, age)),
+            system_prompt=with_guardrail_preamble(_personal_prompt(holdings, stage, age), language=language),
             messages=[{"role": "user", "content": "Generate 2 personalised tips."}],
             temperature=0.8,
             max_tokens=400,

@@ -568,7 +568,7 @@ async def get_investing_tips(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    generic = await generate_generic_tips()
+    generic = await generate_generic_tips(language=current_user.language)
 
     portfolio = await session.scalar(
         select(Portfolio).where(Portfolio.user_id == current_user.id)
@@ -591,6 +591,7 @@ async def get_investing_tips(
 
     personalised, was_unsafe = await generate_personalised_tips(
         user_id=current_user.id, holdings=holdings, stage=stage, age=age, refresh=refresh,
+        language=current_user.language,
     )
     if was_unsafe:
         session.add(AuditLog(
