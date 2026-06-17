@@ -48,6 +48,27 @@ def _is_retryable(exc: Exception | None) -> bool:
     return "rate" in msg or "timeout" in msg or "503" in msg or "502" in msg or "429" in msg
 
 
+def _is_provider_auth_error(exc: LLMError) -> bool:
+    """True for 401/403 — a bad/misconfigured key on THIS provider.
+
+    The chain should advance to the next provider rather than failing the whole
+    request, because the error is specific to this provider's credentials, not
+    to the request itself.
+    """
+    cause = exc.__cause__
+    status = getattr(cause, "status_code", None) or getattr(cause, "status", None)
+    if isinstance(status, int) and status in (401, 403):
+        return True
+    msg = str(exc).lower()
+    return (
+        "401" in msg
+        or "403" in msg
+        or "unauthorized" in msg
+        or "invalid api key" in msg
+        or "invalid_api_key" in msg
+    )
+
+
 class LLMClient(Protocol):
     async def complete(
         self,
@@ -223,9 +244,10 @@ class FallbackLLMClient:
                     response_format=response_format,
                 )
             except LLMError as e:
-                if not e.retryable or i == len(self.clients) - 1:
+                should_fallback = e.retryable or _is_provider_auth_error(e)
+                if not should_fallback or i == len(self.clients) - 1:
                     raise
-                logger.warning("Provider %d failed (retryable), trying next: %s", i, e)
+                logger.warning("Provider %d failed (retryable/auth), trying next: %s", i, e)
                 last_error = e
                 _fire_failure_hook(str(e))
         raise last_error  # type: ignore[misc]  # unreachable if clients is non-empty
@@ -251,9 +273,10 @@ class FallbackLLMClient:
                     yield chunk
                 return
             except LLMError as e:
-                if not e.retryable or i == len(self.clients) - 1:
+                should_fallback = e.retryable or _is_provider_auth_error(e)
+                if not should_fallback or i == len(self.clients) - 1:
                     raise
-                logger.warning("Provider %d stream failed (retryable), trying next: %s", i, e)
+                logger.warning("Provider %d stream failed (retryable/auth), trying next: %s", i, e)
                 last_error = e
                 _fire_failure_hook(str(e))
         raise last_error  # type: ignore[misc]

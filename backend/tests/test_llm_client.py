@@ -350,3 +350,88 @@ def test_gemini_client_targets_gemini_base_url():
         # The underlying AsyncOpenAI client stores base_url; verify via provider + model
         assert gemini_client._provider == "gemini"
         assert gemini_client._model == "gemini-2.5-flash"
+
+
+async def test_fallback_falls_through_on_auth_error():
+    """A 401 (bad API key) on provider 0 should fall through to provider 1, not raise."""
+
+    class AuthError(Exception):
+        status_code = 401
+
+    err = LLMError("unauthorized", retryable=False)
+    err.__cause__ = AuthError()
+
+    bad = AsyncMock()
+    bad.complete = AsyncMock(side_effect=err)
+
+    good = AsyncMock()
+    good.complete = AsyncMock(return_value="ok")
+
+    client = FallbackLLMClient(clients=[bad, good])
+    result = await client.complete(
+        system_prompt="s",
+        messages=[{"role": "user", "content": "x"}],
+    )
+    assert result == "ok"
+    good.complete.assert_awaited_once()
+
+
+async def test_fallback_falls_through_on_403_auth_error():
+    """A 403 (forbidden/bad key) on provider 0 should fall through to provider 1."""
+
+    class ForbiddenError(Exception):
+        status_code = 403
+
+    err = LLMError("forbidden", retryable=False)
+    err.__cause__ = ForbiddenError()
+
+    bad = AsyncMock()
+    bad.complete = AsyncMock(side_effect=err)
+
+    good = AsyncMock()
+    good.complete = AsyncMock(return_value="fallback result")
+
+    client = FallbackLLMClient(clients=[bad, good])
+    result = await client.complete(
+        system_prompt="s",
+        messages=[{"role": "user", "content": "x"}],
+    )
+    assert result == "fallback result"
+    good.complete.assert_awaited_once()
+
+
+async def test_fallback_auth_error_on_last_provider_still_raises():
+    """A 401 on the last (only) provider must still propagate — no more fallbacks."""
+
+    class AuthError(Exception):
+        status_code = 401
+
+    err = LLMError("unauthorized", retryable=False)
+    err.__cause__ = AuthError()
+
+    only_bad = AsyncMock()
+    only_bad.complete = AsyncMock(side_effect=err)
+
+    client = FallbackLLMClient(clients=[only_bad])
+    with pytest.raises(LLMError, match="unauthorized"):
+        await client.complete(
+            system_prompt="s",
+            messages=[{"role": "user", "content": "x"}],
+        )
+
+
+async def test_fallback_non_auth_non_retryable_still_raises_immediately():
+    """A generic 400 (bad request, non-auth) on provider 0 must raise immediately
+    without trying provider 1 — this is the existing contract."""
+    bad = AsyncMock()
+    bad.complete = AsyncMock(side_effect=LLMError("bad request", retryable=False))
+    good = AsyncMock()
+    good.complete = AsyncMock(return_value="should not reach")
+
+    client = FallbackLLMClient(clients=[bad, good])
+    with pytest.raises(LLMError, match="bad request"):
+        await client.complete(
+            system_prompt="s",
+            messages=[{"role": "user", "content": "x"}],
+        )
+    good.complete.assert_not_awaited()
