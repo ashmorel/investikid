@@ -249,7 +249,7 @@ async def get_news_summary(
     llm = get_llm_client(tier="lite")
     try:
         summary = await llm.complete(
-            system_prompt=with_guardrail_preamble(system_prompt),
+            system_prompt=with_guardrail_preamble(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Here are today's headlines about my stocks:\n{headlines}"}],
             temperature=0.5,
             max_tokens=200,
@@ -259,7 +259,7 @@ async def get_news_summary(
 
     # Kid-safe moderation seam. session + current_user are in scope here, so an
     # AuditLog moderation_block row is written when the model output is unsafe.
-    _mod = await moderate_output(summary.strip(), surface="news_summary")
+    _mod = await moderate_output(summary.strip(), surface="news_summary", language=current_user.language)
     if not _mod.safe:
         log_guardrail_event(
             action="output_block", surface="news_summary",
@@ -324,7 +324,7 @@ async def get_stock_news_summary(
     llm = get_llm_client(tier="lite")
     try:
         summary = await llm.complete(
-            system_prompt=with_guardrail_preamble(system_prompt),
+            system_prompt=with_guardrail_preamble(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Recent news about {ticker}:\n{headlines}"}],
             temperature=0.5,
             max_tokens=200,
@@ -335,7 +335,7 @@ async def get_stock_news_summary(
     # Kid-safe moderation seam. Best-effort: this endpoint has no DB session in
     # scope, so no AuditLog row is written here by design (unlike the
     # session-bearing news-summary/tutor/chart-coach surfaces).
-    _mod = await moderate_output(summary.strip(), surface="news_summary")
+    _mod = await moderate_output(summary.strip(), surface="news_summary", language=current_user.language)
     return NewsSummaryOut(summary=_mod.text, tickers_mentioned=[ticker])
 
 
@@ -396,7 +396,7 @@ async def get_chart_guide(
     llm = get_llm_client(tier="standard")
     try:
         summary = await llm.complete(
-            system_prompt=with_guardrail_preamble(system_prompt),
+            system_prompt=with_guardrail_preamble(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Here's the chart data:\n{stats}"}],
             temperature=0.7,
             max_tokens=250,
@@ -408,7 +408,7 @@ async def get_chart_guide(
     # scope, so no AuditLog row is written here by design (unlike the
     # session-bearing news-summary/tutor/chart-coach surfaces). Shares the
     # news_summary surface since it returns the same child-facing NewsSummaryOut.
-    _mod = await moderate_output(summary.strip(), surface="news_summary")
+    _mod = await moderate_output(summary.strip(), surface="news_summary", language=current_user.language)
     return NewsSummaryOut(summary=_mod.text, tickers_mentioned=[ticker])
 
 
@@ -533,7 +533,8 @@ async def get_time_machine(
                     "Write ONE short, fun 'Did you know?' fact comparing the investment return to "
                     "something relatable for a young person (university fees, a car, a holiday, "
                     "a gaming setup, etc). Keep it to 1-2 sentences. Be encouraging but never "
-                    "give investment advice. Use the reader's perspective ('you' not 'they')."
+                    "give investment advice. Use the reader's perspective ('you' not 'they').",
+                    language=current_user.language,
                 ),
                 messages=[{
                     "role": "user",
@@ -554,7 +555,7 @@ async def get_time_machine(
         # Kid-safe moderation seam. Best-effort: this endpoint has no DB
         # session in scope, so no AuditLog row is written here by design
         # (unlike the session-bearing news-summary/tutor/chart-coach surfaces).
-        _mod = await moderate_output(fun_fact, surface="time_machine")
+        _mod = await moderate_output(fun_fact, surface="time_machine", language=current_user.language)
         fun_fact = _mod.text
 
     return TimeMachineOut(ticker=ticker, periods=periods, fun_fact=fun_fact)
@@ -568,7 +569,7 @@ async def get_investing_tips(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    generic = await generate_generic_tips()
+    generic = await generate_generic_tips(language=current_user.language)
 
     portfolio = await session.scalar(
         select(Portfolio).where(Portfolio.user_id == current_user.id)
@@ -591,6 +592,7 @@ async def get_investing_tips(
 
     personalised, was_unsafe = await generate_personalised_tips(
         user_id=current_user.id, holdings=holdings, stage=stage, age=age, refresh=refresh,
+        language=current_user.language,
     )
     if was_unsafe:
         session.add(AuditLog(

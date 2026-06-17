@@ -88,8 +88,11 @@ def _prefilter_category(text: str) -> str | None:
     return None
 
 
-def _needs_escalation(text: str) -> bool:
-    return bool(_REVIEW_TOKENS.search(text))
+def _needs_escalation(text: str, language: str = "en") -> bool:
+    # Escalate to the multilingual model classifier for: English text hitting the
+    # review tokens, OR any non-English output (the English-keyword prefilter
+    # cannot judge other languages, so all non-English must be model-checked).
+    return bool(_REVIEW_TOKENS.search(text)) or language != "en"
 
 
 @llm_usage.surface("moderation")
@@ -121,7 +124,7 @@ async def _model_moderation(text: str) -> tuple[bool, str | None]:
     return safe, (None if safe else (data.get("category") or "model_flagged"))
 
 
-async def moderate_output(text: str, *, surface: str) -> ModerationResult:
+async def moderate_output(text: str, *, surface: str, language: str = "en") -> ModerationResult:
     fallback = _fallback_for(surface)
     try:
         if not text or not text.strip():
@@ -129,7 +132,7 @@ async def moderate_output(text: str, *, surface: str) -> ModerationResult:
         cat = _prefilter_category(text)
         if cat is not None:
             return ModerationResult(False, cat, fallback)
-        if not _needs_escalation(text):
+        if not _needs_escalation(text, language):
             return ModerationResult(True, None, text)
         key = (hashlib.sha256(text.encode()).hexdigest(), surface)
         now = time.time()

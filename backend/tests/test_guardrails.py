@@ -107,3 +107,18 @@ def test_log_guardrail_event_none_category(caplog):
     with caplog.at_level(logging.INFO, logger="app.services.guardrails"):
         log_guardrail_event(action="redirect", surface="tutor", category=None, child_id=1)
     assert "category=none" in caplog.records[-1].getMessage()
+
+
+def test_preamble_english_is_unchanged_noop():
+    # Backward-compatible: default language and explicit "en" both equal the old output.
+    expected = f"{GUARDRAIL_PREAMBLE}\n\nSYS"
+    assert with_guardrail_preamble("SYS") == expected
+    assert with_guardrail_preamble("SYS", language="en") == expected
+
+
+def test_preamble_appends_language_directive_for_non_english():
+    out = with_guardrail_preamble("SYS", language="es")
+    assert GUARDRAIL_PREAMBLE in out      # safety preamble still present
+    assert "SYS" in out
+    assert "Spanish" in out               # directive appended
+    assert out.index("SYS") < out.index("Spanish")  # directive comes AFTER the surface prompt

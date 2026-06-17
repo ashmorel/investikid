@@ -1,10 +1,12 @@
 from datetime import date
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
 
 from app.core.security import hash_password
 from app.models.user import User, UserProgress
+from app.services import home_greeting_service
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -97,3 +99,38 @@ async def test_home_greeting_provider_failure_503(premium_client, monkeypatch):
     monkeypatch.setattr("app.routers.ai.generate_home_greeting", boom)
     r = await premium_client.post("/home-greeting", json=_BODY)
     assert r.status_code == 503
+
+
+async def test_greeting_threads_language():
+    """language= kwarg must be forwarded from generate_home_greeting to with_guardrail_preamble."""
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value="Bonjour Sam, prêt à apprendre ?")
+
+    safe_mod = MagicMock()
+    safe_mod.safe = True
+    safe_mod.text = "Bonjour Sam, prêt à apprendre ?"
+
+    async def fake_moderate(text, *, surface, language="en"):
+        return safe_mod
+
+    with patch(
+        "app.services.home_greeting_service.with_guardrail_preamble",
+        wraps=home_greeting_service.with_guardrail_preamble,
+    ) as spy, patch(
+        "app.services.home_greeting_service.get_llm_client",
+        return_value=mock_client,
+    ), patch(
+        "app.services.home_greeting_service.moderate_output",
+        side_effect=fake_moderate,
+    ):
+        await home_greeting_service.generate_home_greeting(
+            name="Sam",
+            mode="lesson",
+            lesson_label=None,
+            streak_count=1,
+            due_count=0,
+            tier="explorer",
+            language="fr",
+        )
+
+    assert spy.call_args.kwargs.get("language") == "fr"
