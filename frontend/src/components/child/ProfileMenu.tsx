@@ -18,6 +18,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 import { RegionSwitcher } from '@/components/child/RegionSwitcher';
 import { CurrencySelector } from '@/components/child/CurrencySelector';
+import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { simulatorApi } from '@/api/simulator';
 import type { RegionCode } from '@/lib/region';
@@ -192,6 +193,7 @@ export function ProfileMenu({ username }: { username: string }) {
           <RegionSwitcher currentRegion={currentRegion} />
         </div>
         <CurrencySelector currentCurrency={currentCurrency} />
+        <LanguageSwitcher />
         <div className="space-y-1.5">
           <label className="flex min-h-[44px] items-center justify-between gap-3 text-sm font-medium">
             <span>Sounds</span>

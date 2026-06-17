@@ -19,6 +19,7 @@ import { ErrorBanner } from '@/components/ErrorBanner';
 import { useToast } from '@/hooks/use-toast';
 import { FeedbackDialog } from '@/components/child/FeedbackDialog';
 import { SignInMethods } from '@/components/parent/SignInMethods';
+import { LanguageSwitcher } from '../components/settings/LanguageSwitcher';
 import { GroupsCard } from '@/components/parent/GroupsCard';
 import { NotificationPreferencesCard } from '@/components/parent/NotificationPreferencesCard';
 import { PremiumRequestsCard } from '@/components/parent/PremiumRequestsCard';
@@ -169,6 +170,10 @@ export default function ParentDashboard() {
         childrenList={(q.data ?? []).map((c: Child) => ({ user_id: c.user_id, username: c.username }))}
       />
       <SignInMethods />
+      <section className="mt-6 rounded-xl border border-line bg-card p-4">
+        <p className="mb-3 text-sm font-semibold text-muted-foreground">Preferences</p>
+        <LanguageSwitcher />
+      </section>
       <DeleteAccountCard />
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} audience="parent" />
     </main>
