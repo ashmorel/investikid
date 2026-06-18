@@ -128,7 +128,7 @@ async def _settle_group_challenge(
     the shared target and the group hasn't been settled, record the completion
     (race-safe) and reward every member exactly once (their UserChallenge
     completed_at is the per-member guard)."""
-    from app.services.xp_service import record_xp
+    from app.services.market_progress_service import award_xp
 
     group_ids = (await session.scalars(
         select(GroupMembership.group_id).where(GroupMembership.user_id == user_id)
@@ -171,5 +171,5 @@ async def _settle_group_challenge(
             muc.completed_at = now
             progress = await session.get(UserProgress, member_id)
             if progress is not None:
-                record_xp(progress, challenge.xp_reward)
+                await award_xp(session, progress, challenge.xp_reward)
         await session.flush()

@@ -36,6 +36,7 @@ from app.services.gamification_service import (
     update_challenge_progress,
 )
 from app.services.level_service import LevelStateInput, derive_level_states
+from app.services.market_progress_service import award_xp
 from app.services.mastery_service import record_mastery_if_earned
 from app.services.next_lesson_service import resolve_next_lesson
 from app.services.premium_config import premium_required_error
@@ -44,7 +45,6 @@ from app.services.skill_profile_service import (
     reinforce_concept,
     update_mastery_on_completion,
 )
-from app.services.xp_service import record_xp
 
 router = APIRouter(tags=["content"])
 
@@ -436,7 +436,7 @@ async def _award_completion(
         return 0, True, False
 
     awarded = amount if amount is not None else lesson.xp_reward
-    goal = record_xp(progress, awarded, today=today_local)
+    goal = await award_xp(session, progress, awarded, today=today_local)
     record_daily_activity(progress, today_local)
     return awarded, False, goal.goal_met_now
 

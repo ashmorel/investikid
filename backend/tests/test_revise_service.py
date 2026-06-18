@@ -223,7 +223,8 @@ async def test_list_modules_weak_first(db_session):
     assert {m["topic"] for m in mods} == {"stocks", "saving"}
 
 
-def test_award_revise_xp_is_daily_capped():
+@pytest.mark.asyncio(loop_scope="session")
+async def test_award_revise_xp_is_daily_capped(db_session):
     from datetime import date
 
     from app.services.revise_service import (
@@ -232,13 +233,19 @@ def test_award_revise_xp_is_daily_capped():
         award_revise_xp,
     )
 
+    user, _ = await _seed_user(db_session)
     p = UserProgress(
-        user_id=uuid.uuid4(), xp=0, xp_today=0, xp_today_date=None,
+        user_id=user.id, xp=0, xp_today=0, xp_today_date=None,
         virtual_coins=0, level=1, daily_goal_xp=30, revise_xp_today=0,
     )
+    db_session.add(p)
+    await db_session.flush()
     today = date(2026, 6, 16)
-    awarded = [(award_revise_xp(p, today) or None) for _ in range(7)]
-    amounts = [r.awarded if r else 0 for r in awarded]
+    results = []
+    for _ in range(7):
+        r = await award_revise_xp(db_session, p, today)
+        results.append(r or None)
+    amounts = [r.awarded if r else 0 for r in results]
     # cap 25, 5 XP each -> exactly 5 awards then 0
     assert amounts[:5] == [XP_PER_CORRECT] * 5
     assert amounts[5] == 0 and amounts[6] == 0

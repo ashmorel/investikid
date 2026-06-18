@@ -691,7 +691,7 @@ async def place_trade(
         await session.flush()
 
     today_local = datetime.now(UTC).date()
-    xp_awarded = award_trade_xp(progress, today_local)
+    xp_awarded = await award_trade_xp(session, progress, today_local)
     streak_extended = record_daily_activity(progress, today_local)
     completed_missions = await evaluate_apply_missions(
         session, current_user.id, progress, portfolio
