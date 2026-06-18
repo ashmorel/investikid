@@ -29,7 +29,7 @@ Let a child see and switch their learning market from the Home screen, browse al
 - **Currency-follows-market** — display stays on `user.currency_code` (deferred per C2).
 - **Unifying with the simulator's trading-region switcher** (`RegionSwitcher`/`content_region`) — that's a separate axis; left as-is.
 - **Parent-side market controls** and **un-enrolling** — deferred.
-- **Penny artwork** — use the existing Penny asset/component if one is referenced; otherwise a simple market badge for v1 (no new illustration work).
+- **New Penny artwork** — none. The coming-soon state reuses the existing `<Penny>` mascot component as-is (no new illustration work).
 
 ---
 
@@ -58,7 +58,7 @@ A screen listing all 10 markets from `useMarkets()` as cards (mirrors the Langua
 
 When the active market has `has_content === false`, the Home/Lessons content area renders a friendly panel instead of an (empty) curriculum:
 - Heading: "New lessons for *{market name}* are on the way!"; body explaining content is being built; a primary CTA **"Switch back to United Kingdom"** (resolve the content-ready market — GB — from `useMarkets()` where `has_content`) that calls `useSwitchMarket()`.
-- Penny asset if available; else a market badge. The Home chip still shows the chosen market so the child isn't stuck.
+- Use the existing **`<Penny>` mascot component** (`src/components/child/ui/Penny.tsx`; `size`/`mood`/`accessory` props, already sky-blue — e.g. `<Penny size={72} mood="thinking" />`) — the same mascot used in HomeHero/PennyFAB, so no new artwork. The Home chip still shows the chosen market so the child isn't stuck.
 - Gate: the Home page checks `active market.has_content` (from `useMarkets()`); if false, render `ComingSoonMarket` in place of the lesson/module content. The market chip + global engagement header stay visible.
 
 ### Unit 5 — Per-market progress display
