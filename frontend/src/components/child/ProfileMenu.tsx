@@ -40,6 +40,7 @@ import { requestReminderPermission, syncStreakReminder } from '@/lib/streakRemin
 
 export function ProfileMenu({ username }: { username: string }) {
   const { t } = useTranslation('settings');
+  const { t: tMarkets } = useTranslation('markets');
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: session } = useChildSession();
@@ -196,6 +197,14 @@ export function ProfileMenu({ username }: { username: string }) {
         </div>
         <CurrencySelector currentCurrency={currentCurrency} />
         <LanguageSwitcher />
+        <Link
+          to="/markets"
+          onClick={() => setOpen(false)}
+          className="flex min-h-[44px] w-full items-center justify-between rounded-md border border-line px-3 text-sm font-medium text-brand-700 hover:bg-brand-50"
+        >
+          <span>{tMarkets('settings.link')}</span>
+          <span aria-hidden="true">🌍</span>
+        </Link>
         <div className="space-y-1.5">
           <label className="flex min-h-[44px] items-center justify-between gap-3 text-sm font-medium">
             <span>{t('sounds.label')}</span>

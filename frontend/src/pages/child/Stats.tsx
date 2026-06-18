@@ -12,6 +12,7 @@ import { LeaderboardTable } from '@/components/child/stats/LeaderboardTable';
 import { useGroupLeaderboard } from '@/hooks/useGroupLeaderboard';
 import { GroupLeaderboard } from '@/components/child/stats/GroupLeaderboard';
 import { GroupGoals } from '@/components/child/stats/GroupGoals';
+import { MarketXpBreakdown } from '@/components/child/MarketXpBreakdown';
 
 function SectionSkeleton() {
   return <div className="h-32 animate-pulse rounded-2xl bg-muted" />;
@@ -45,6 +46,9 @@ export default function Stats() {
       {!progress.isLoading && progress.data ? (
         <p className="text-xs text-muted-foreground">{t('stats.streakFreeze')}</p>
       ) : null}
+
+      {/* Per-market XP breakdown */}
+      <MarketXpBreakdown />
 
       {/* Badges */}
       <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">

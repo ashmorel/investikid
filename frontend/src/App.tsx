@@ -16,6 +16,7 @@ import Level from '@/pages/child/Level';
 import Lesson from '@/pages/child/Lesson';
 import Simulator from '@/pages/child/Simulator';
 import Market from '@/pages/child/Market';
+import { Markets } from '@/pages/child/Markets';
 import Stock from '@/pages/child/Stock';
 import Stats from '@/pages/child/Stats';
 import Revise from '@/pages/child/Revise';
@@ -79,6 +80,7 @@ export default function App() {
           <Route path="/simulator" element={<Simulator />} />
           <Route path="/simulator/market" element={<Market />} />
           <Route path="/simulator/stock/:exchange/:ticker" element={<Stock />} />
+          <Route path="/markets" element={<Markets />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="/progress" element={<StrengthsGaps />} />
           <Route path="/revise" element={<Revise />} />
