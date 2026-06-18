@@ -12,6 +12,7 @@ export type Me = {
   dob: string;
   country_code: string;
   currency_code: string;
+  active_market_code?: string;
   language?: string;
   topic_path: string | null;
   content_region: string | null;
