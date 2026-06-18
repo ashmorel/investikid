@@ -47,6 +47,7 @@ async def get_strengths_and_gaps(
     mastery_by_topic = {tm.topic: tm for tm in mastery_rows}
 
     # Load weak concept counts per topic (unresolved only)
+    # TODO(C2b): filter WeakConcept by the child's active market once multi-market is user-visible
     weak_counts_result = await session.execute(
         select(WeakConcept.topic, func.count(WeakConcept.id))
         .where(WeakConcept.user_id == user_id, WeakConcept.resolved == False)  # noqa: E712
@@ -55,6 +56,7 @@ async def get_strengths_and_gaps(
     weak_counts: dict[str, int] = dict(weak_counts_result.all())
 
     # Load total concept counts per topic (all, including resolved)
+    # TODO(C2b): filter WeakConcept by the child's active market once multi-market is user-visible
     total_counts_result = await session.execute(
         select(WeakConcept.topic, func.count(WeakConcept.id))
         .where(WeakConcept.user_id == user_id)

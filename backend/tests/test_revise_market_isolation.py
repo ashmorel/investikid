@@ -7,12 +7,15 @@ and a wrong answer in US creates/increments a US row (not the GB row).
 """
 import uuid
 from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy import select
 
+from app.models.content import Lesson, LessonCompletion, Module
 from app.models.skill_profile import SpacedRepetitionItem, WeakConcept
 from app.models.user import User
+from app.services.revise_service import build_session
 from app.services.skill_profile_service import record_weak_concept, reinforce_concept
 from app.services.spaced_repetition_service import (
     get_due_count,
@@ -204,3 +207,67 @@ async def test_reinforce_concept_market_scoped(db_session):
 
     assert gb_refreshed.times_reinforced == 0, "GB row must not be touched by US reinforce"
     assert us_refreshed.times_reinforced == 1, "US row must be incremented"
+
+
+# ---------------------------------------------------------------------------
+# Test 6: Scheduled refresher in US must NOT suppress a GB refresher
+# ---------------------------------------------------------------------------
+
+def _quiz_payload(q):
+    return {"question": q, "choices": ["a", "b", "c"], "answer_index": 1,
+            "explanation": "because", "variant_rung": "core"}
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_us_scheduled_refresher_does_not_suppress_gb_refresher(db_session):
+    """A concept with a future SR review in market US must not suppress the same
+    concept offered as a refresher when the user's active market is GB."""
+    # User whose active market is GB
+    user = await _seed_user_with_market(
+        db_session, email="iso6@example.com", active_market="GB"
+    )
+
+    # Create a module + lesson for the shared concept
+    module = Module(
+        topic="investing", title="Investing", country_codes=[],
+        is_premium=False, order_index=0, icon="📊",
+    )
+    db_session.add(module)
+    await db_session.flush()
+
+    concept = "What is compound interest?"
+    lesson = Lesson(
+        module_id=module.id, type="quiz", xp_reward=10, order_index=0,
+        content_json={"question": concept, "choices": ["a", "b"], "answer_index": 0},
+    )
+    db_session.add(lesson)
+    await db_session.flush()
+
+    # The user has completed this lesson (makes it eligible as a GB refresher)
+    db_session.add(LessonCompletion(user_id=user.id, lesson_id=lesson.id))
+
+    # A WeakConcept row for market US with a FUTURE SR review (concept recently
+    # revised in US → should NOT suppress GB refresher after the fix)
+    us_wc = WeakConcept(
+        user_id=user.id, topic="investing", concept=concept,
+        resolved=True, market_code="US",
+    )
+    db_session.add(us_wc)
+    await db_session.flush()
+    db_session.add(SpacedRepetitionItem(
+        user_id=user.id, weak_concept_id=us_wc.id, ease_factor=2.5,
+        interval_days=3, repetition_count=1,
+        next_review_at=datetime.now(UTC) + timedelta(days=3),  # future → would suppress
+    ))
+    await db_session.flush()
+
+    mock_quiz = AsyncMock(side_effect=lambda *a, **k: _quiz_payload(k["concept"]))
+    with patch("app.services.revise_service.generate_practice_quiz", mock_quiz):
+        items = await build_session(db_session, user, module_id=None)
+
+    # The concept has a scheduled SR item in US, but the user's active market is GB.
+    # It must be offered as a GB refresher (not suppressed).
+    refresher_concepts = [i["concept"] for i in items if i["kind"] == "refresher"]
+    assert concept in refresher_concepts, (
+        "A US-scheduled refresher must not suppress the same concept as a GB refresher"
+    )

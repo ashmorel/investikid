@@ -206,6 +206,7 @@ async def build_session(
                 WeakConcept.user_id == user.id,
                 WeakConcept.topic == module.topic,
                 WeakConcept.concept == concept,
+                WeakConcept.market_code == user.active_market_code,
                 SpacedRepetitionItem.next_review_at > now,
             )
         )
