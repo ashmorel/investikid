@@ -27,6 +27,22 @@ async def engine():
     await eng.dispose()
 
 
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def seed_markets_once(engine):
+    """Seed the market catalog once per test session.
+
+    Market rows must exist before any User or Module can be inserted (FK).
+    Session-scoped so it runs once and persists for the lifetime of the test DB.
+    """
+    from app.seed.markets import seed_markets
+
+    async with engine.begin() as conn:
+        session = AsyncSession(bind=conn, expire_on_commit=False)
+        await seed_markets(session)
+        await session.commit()
+        await session.close()
+
+
 @pytest_asyncio.fixture
 async def db_session(engine):
     async with engine.connect() as conn:

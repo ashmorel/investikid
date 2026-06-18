@@ -21,6 +21,7 @@ class UserProfile(BaseModel):
     country_code: str
     currency_code: str
     language: str = "en"
+    home_market_code: str = "GB"
     topic_path: str | None
     content_region: str | None = None
     is_premium: bool

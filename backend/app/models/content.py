@@ -27,6 +27,9 @@ class Module(Base):
     country_codes: Mapped[list[str]] = mapped_column(
         ARRAY(String(2)), nullable=False, default=list
     )
+    market_code: Mapped[str] = mapped_column(
+        String(2), ForeignKey("markets.code"), nullable=False, default="GB", server_default="GB", index=True
+    )
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
     icon: Mapped[str] = mapped_column(String(10), nullable=False, server_default="📚")
