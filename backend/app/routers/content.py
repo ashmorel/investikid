@@ -365,7 +365,8 @@ async def complete_lesson(
                                        market_code=current_user.active_market_code)
         elif is_quiz and correct is True:
             concept = derive_lesson_title(lesson_type, lesson_content)
-            await reinforce_concept(session, current_user.id, topic, concept)
+            await reinforce_concept(session, current_user.id, topic, concept,
+                                    market_code=current_user.active_market_code)
 
     await grant_module_completion_cash(session, current_user.id, lesson.module_id)
 

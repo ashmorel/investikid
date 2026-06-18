@@ -45,9 +45,10 @@ def calculate_next_review(
 async def get_due_items(
     session: AsyncSession,
     user_id: uuid.UUID,
+    market_code: str = "GB",
 ) -> list[SpacedRepetitionItem]:
     """Return SR items due for review (next_review_at <= now) and not resolved,
-    most-overdue first."""
+    most-overdue first. Only considers weak concepts for the given market."""
     now = datetime.now(UTC)
     result = await session.scalars(
         select(SpacedRepetitionItem)
@@ -56,6 +57,7 @@ async def get_due_items(
             SpacedRepetitionItem.user_id == user_id,
             SpacedRepetitionItem.next_review_at <= now,
             WeakConcept.resolved == False,  # noqa: E712
+            WeakConcept.market_code == market_code,
         )
         .order_by(SpacedRepetitionItem.next_review_at.asc())
     )
@@ -65,8 +67,9 @@ async def get_due_items(
 async def get_due_count(
     session: AsyncSession,
     user_id: uuid.UUID,
+    market_code: str = "GB",
 ) -> int:
-    """Count of SR items due for review."""
+    """Count of SR items due for review for the given market."""
     now = datetime.now(UTC)
     count = await session.scalar(
         select(func.count(SpacedRepetitionItem.id))
@@ -75,6 +78,7 @@ async def get_due_count(
             SpacedRepetitionItem.user_id == user_id,
             SpacedRepetitionItem.next_review_at <= now,
             WeakConcept.resolved == False,  # noqa: E712
+            WeakConcept.market_code == market_code,
         )
     )
     return int(count or 0)
@@ -83,14 +87,16 @@ async def get_due_count(
 async def get_next_due_at(
     session: AsyncSession,
     user_id: uuid.UUID,
+    market_code: str = "GB",
 ) -> datetime | None:
-    """Earliest next_review_at for unresolved items (may be in the future)."""
+    """Earliest next_review_at for unresolved items in the given market (may be in the future)."""
     result = await session.scalar(
         select(func.min(SpacedRepetitionItem.next_review_at))
         .join(WeakConcept, WeakConcept.id == SpacedRepetitionItem.weak_concept_id)
         .where(
             SpacedRepetitionItem.user_id == user_id,
             WeakConcept.resolved == False,  # noqa: E712
+            WeakConcept.market_code == market_code,
         )
     )
     return result

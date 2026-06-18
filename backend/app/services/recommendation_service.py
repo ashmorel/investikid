@@ -276,7 +276,7 @@ async def get_recommendations(
     mastery_by_topic: dict[str, TopicMastery] = {tm.topic: tm for tm in mastery_rows}
 
     # Load due SR items to identify topics with due reviews
-    due_items = await get_due_items(session, user.id)
+    due_items = await get_due_items(session, user.id, market_code=user.active_market_code)
     # Map: topic -> list of weak concept names that are due
     from app.models.skill_profile import WeakConcept as WC
     due_concept_ids = {item.weak_concept_id for item in due_items}
@@ -284,7 +284,10 @@ async def get_recommendations(
     if due_concept_ids:
         concepts = (
             await session.scalars(
-                select(WC).where(WC.id.in_(due_concept_ids))
+                select(WC).where(
+                    WC.id.in_(due_concept_ids),
+                    WC.market_code == user.active_market_code,
+                )
             )
         ).all()
         for c in concepts:
@@ -404,8 +407,8 @@ async def get_recommendations(
     categories = _categorise_scored_modules(scored)
 
     # Build review summary
-    due_count = await get_due_count(session, user.id)
-    next_due = await get_next_due_at(session, user.id)
+    due_count = await get_due_count(session, user.id, market_code=user.active_market_code)
+    next_due = await get_next_due_at(session, user.id, market_code=user.active_market_code)
 
     return {
         "continue_learning": categories["continue_learning"],

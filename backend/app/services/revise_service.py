@@ -145,7 +145,7 @@ async def build_session(
     now = datetime.now(UTC)
 
     # 1) Weak-first: due SR items -> weak concepts (already ordered by due-ness).
-    due = await get_due_items(session, user.id)
+    due = await get_due_items(session, user.id, market_code=user.active_market_code)
     weak_ids = [d.weak_concept_id for d in due]
     if weak_ids:
         weaks = (await session.scalars(
