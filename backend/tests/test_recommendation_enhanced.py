@@ -12,13 +12,15 @@ from app.services.recommendation_service import (
 
 
 def _make_user(*, dob=date(2015, 1, 1), topic_path="stocks", country_code="GB",
-               home_market_code="GB", is_premium_val=False, profiling_enabled=True):
+               home_market_code="GB", active_market_code=None,
+               is_premium_val=False, profiling_enabled=True):
     user = MagicMock()
     user.id = uuid.uuid4()
     user.dob = dob
     user.topic_path = topic_path
     user.country_code = country_code
     user.home_market_code = home_market_code
+    user.active_market_code = active_market_code if active_market_code is not None else home_market_code
     user.content_region = None
     user.is_premium = is_premium_val
     user.profiling_enabled = profiling_enabled

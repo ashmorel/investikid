@@ -54,6 +54,7 @@ async def record_weak_concept(
     user_id: uuid.UUID,
     topic: str,
     concept: str,
+    market_code: str = "GB",
 ) -> None:
     """Record or increment a weak concept when a user gets a question wrong."""
     existing = await session.scalar(
@@ -61,6 +62,7 @@ async def record_weak_concept(
             WeakConcept.user_id == user_id,
             WeakConcept.topic == topic,
             WeakConcept.concept == concept,
+            WeakConcept.market_code == market_code,
         )
     )
     if existing:
@@ -73,6 +75,7 @@ async def record_weak_concept(
                 topic=topic,
                 concept=concept,
                 times_wrong=1,
+                market_code=market_code,
             )
         )
 
@@ -82,14 +85,19 @@ async def reinforce_concept(
     user_id: uuid.UUID,
     topic: str,
     concept: str,
+    market_code: str = "GB",
 ) -> None:
-    """Increment reinforcement count when user gets a previously-weak concept right."""
+    """Increment reinforcement count when user gets a previously-weak concept right.
+
+    Scoped to the given market so a right answer in market X only updates the X row.
+    """
     existing = await session.scalar(
         select(WeakConcept).where(
             WeakConcept.user_id == user_id,
             WeakConcept.topic == topic,
             WeakConcept.concept == concept,
             WeakConcept.resolved == False,  # noqa: E712
+            WeakConcept.market_code == market_code,
         )
     )
     if existing:

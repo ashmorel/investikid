@@ -231,7 +231,7 @@ async def coach_chat(
     # Gather learning context
     recs = await get_recommendations(session, user)
     gaps = await get_strengths_and_gaps(session, user.id)
-    due_count = await get_due_count(session, user.id)
+    due_count = await get_due_count(session, user.id, market_code=user.active_market_code)
 
     # Load module titles for action label resolution
     all_modules = (await session.scalars(select(Module))).all()

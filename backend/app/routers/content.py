@@ -36,6 +36,7 @@ from app.services.gamification_service import (
     update_challenge_progress,
 )
 from app.services.level_service import LevelStateInput, derive_level_states
+from app.services.market_progress_service import award_xp
 from app.services.mastery_service import record_mastery_if_earned
 from app.services.next_lesson_service import resolve_next_lesson
 from app.services.premium_config import premium_required_error
@@ -44,7 +45,6 @@ from app.services.skill_profile_service import (
     reinforce_concept,
     update_mastery_on_completion,
 )
-from app.services.xp_service import record_xp
 
 router = APIRouter(tags=["content"])
 
@@ -57,7 +57,7 @@ async def _get_accessible_module(
     module = await session.get(Module, module_id)
     if not module:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
-    if not is_module_in_market(module.market_code, current_user.home_market_code):
+    if not is_module_in_market(module.market_code, current_user.active_market_code):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     # Age gate uses the actual age from dob (NEVER the parent tier_override) and
     # mirrors the inaccessible-market behaviour: a plain 404, no content tease.
@@ -87,7 +87,7 @@ async def list_modules(
     user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
     out: list[ModuleOut] = []
     for m in modules:
-        if not is_module_in_market(m.market_code, current_user.home_market_code):
+        if not is_module_in_market(m.market_code, current_user.active_market_code):
             continue
         # Hidden, not teased: out-of-age modules never appear in the list
         # (actual age from dob — the parent tier_override must not unlock these).
@@ -361,10 +361,12 @@ async def complete_lesson(
 
         if is_quiz and correct is False:
             concept = derive_lesson_title(lesson_type, lesson_content)
-            await record_weak_concept(session, current_user.id, topic, concept)
+            await record_weak_concept(session, current_user.id, topic, concept,
+                                       market_code=current_user.active_market_code)
         elif is_quiz and correct is True:
             concept = derive_lesson_title(lesson_type, lesson_content)
-            await reinforce_concept(session, current_user.id, topic, concept)
+            await reinforce_concept(session, current_user.id, topic, concept,
+                                    market_code=current_user.active_market_code)
 
     await grant_module_completion_cash(session, current_user.id, lesson.module_id)
 
@@ -436,7 +438,7 @@ async def _award_completion(
         return 0, True, False
 
     awarded = amount if amount is not None else lesson.xp_reward
-    goal = record_xp(progress, awarded, today=today_local)
+    goal = await award_xp(session, progress, awarded, today=today_local)
     record_daily_activity(progress, today_local)
     return awarded, False, goal.goal_met_now
 

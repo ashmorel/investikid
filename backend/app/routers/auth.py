@@ -36,6 +36,7 @@ from app.services import biometric_service
 from app.services.compliance import resolve_policy
 from app.services.consent_service import age_in_years
 from app.services.email import get_email_sender
+from app.services.market_progress_service import ensure_enrolled
 from app.services.tokens import (
     CONSENT_AUDIENCE,
     CONSENT_EXPIRY,
@@ -160,6 +161,7 @@ async def register(
     await session.flush()
 
     session.add(UserProgress(user_id=user.id))
+    await ensure_enrolled(session, user.id, user.home_market_code)
     session.add(AuditLog(
         user_id=user.id,
         event_type="register",

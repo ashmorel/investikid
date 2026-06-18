@@ -52,6 +52,9 @@ class WeakConcept(Base):
     )
     topic: Mapped[str] = mapped_column(String(30), nullable=False)
     concept: Mapped[str] = mapped_column(String(200), nullable=False)
+    market_code: Mapped[str] = mapped_column(
+        String(2), ForeignKey("markets.code"), nullable=False, default="GB", server_default="GB", index=True
+    )
     times_wrong: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     times_reinforced: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     resolved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
