@@ -6,6 +6,7 @@ import { useProgress } from '@/hooks/useProgress';
 import { useRecommendations } from '@/api/ai';
 import { Button } from '@/components/ui/button';
 import HomeHero from '@/components/child/HomeHero';
+import { MarketChip } from '@/components/child/MarketChip';
 import { StatsCard } from '@/components/child/StatsCard';
 import { QuickLinksRow } from '@/components/child/home/QuickLinksRow';
 import { ReviseCard } from '@/components/child/home/ReviseCard';
@@ -44,6 +45,9 @@ export default function Home() {
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
       <h1 className="sr-only">{t('pageTitle')}</h1>
       <EventStrip />
+      <div className="mb-2 flex justify-end">
+        <MarketChip activeCode={me?.active_market_code ?? 'GB'} />
+      </div>
       <HomeHero />
 
       <div className="mt-4">
