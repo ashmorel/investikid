@@ -1,8 +1,10 @@
 {
   "chip": { "label": "Change learning market" },
+  "settings": { "link": "Learning market" },
   "picker": {
     "title": "Choose your market",
     "subtitle": "Pick where you want to learn about money. You can switch anytime.",
+    "back": "Home",
     "learning": "Learning",
     "comingSoon": "Coming soon"
   },
