@@ -17,12 +17,15 @@ async def test_award_xp_updates_global_and_active_market(db_session, user_with_m
         await db_session.flush()
     start = progress.xp
 
+    gb_before = await db_session.get(UserMarketProgress, (user.id, "GB"))
+    gb_start = gb_before.xp if gb_before is not None else 0
+
     await award_xp(db_session, progress, 25)
     await db_session.flush()
 
     assert progress.xp == start + 25
     gb = await db_session.get(UserMarketProgress, (user.id, "GB"))
-    assert gb is not None and gb.xp >= 25
+    assert gb is not None and gb.xp == gb_start + 25
 
 
 async def test_award_xp_invariant_across_two_markets(db_session, user_with_module):

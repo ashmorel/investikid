@@ -128,7 +128,7 @@ async def _settle_group_challenge(
     the shared target and the group hasn't been settled, record the completion
     (race-safe) and reward every member exactly once (their UserChallenge
     completed_at is the per-member guard)."""
-    from app.services.market_progress_service import award_xp
+    from app.services.market_progress_service import award_xp  # local import avoids a circular import (gamification ↔ market_progress)
 
     group_ids = (await session.scalars(
         select(GroupMembership.group_id).where(GroupMembership.user_id == user_id)
