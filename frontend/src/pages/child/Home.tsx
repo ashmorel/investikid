@@ -54,7 +54,7 @@ export default function Home() {
   // replacing) the global level/streak/coins shown in StatsCard.
   const activeMarketCode = activeMarket?.code ?? me?.active_market_code ?? 'GB';
   const activeMarketXp =
-    marketProgress?.markets.find((m) => m.market_code === activeMarketCode)?.xp ?? 0;
+    marketProgress?.markets?.find((m) => m.market_code === activeMarketCode)?.xp ?? 0;
 
   // Earned subset out of all badge definitions; hidden until both are loaded
   // and definitions exist.
