@@ -49,7 +49,7 @@ async def build_child_analytics(
     streak_count = progress.streak_count if progress else 0
 
     # 2. Lesson counts
-    # C1: all content is GB-only; use market gate (multi-market arrives in C2).
+    # TODO(C2): use child.home_market_code once multi-market lands
     lessons_total = await session.scalar(
         select(func.count(Lesson.id))
         .join(Module, Lesson.module_id == Module.id)
@@ -119,7 +119,7 @@ async def build_child_analytics(
     child_age = age_in_years(child.dob, date.today()) if child else 0
     modules_progress: list[ModuleProgressOut] = []
     for m in modules:
-        # C1: all content is GB-only; use market gate (multi-market arrives in C2).
+        # TODO(C2): use child.home_market_code once multi-market lands
         if not is_module_in_market(m.market_code, "GB"):
             continue
         if not is_module_premium_ok(module_is_premium=m.is_premium, is_premium_user=child_premium):

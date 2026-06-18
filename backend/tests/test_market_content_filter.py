@@ -2,8 +2,6 @@ import pytest
 
 from app.services.content_service import is_module_in_market, is_module_premium_ok
 
-pytestmark = pytest.mark.asyncio(loop_scope="session")
-
 
 def test_is_module_in_market():
     assert is_module_in_market("GB", "GB") is True
@@ -16,6 +14,7 @@ def test_is_module_premium_ok():
     assert is_module_premium_ok(module_is_premium=True, is_premium_user=True) is True
 
 
+@pytest.mark.asyncio(loop_scope="session")
 async def test_gb_user_sees_gb_modules_not_us(client, db_session):
     from app.models.content import Module
 
