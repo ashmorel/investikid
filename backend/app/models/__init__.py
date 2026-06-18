@@ -20,6 +20,7 @@ from app.models.generated_content import GeneratedContent  # noqa: F401
 from app.models.group import GroupMembership, LeaderboardGroup  # noqa: F401
 from app.models.lesson_draft import LessonDraft  # noqa: F401
 from app.models.market import Market  # noqa: F401
+from app.models.market_progress import UserMarketProgress  # noqa: F401
 from app.models.parent_identity import ParentIdentity  # noqa: F401
 from app.models.parent_preferences import ParentPreferences  # noqa: F401
 from app.models.parent_session import ParentSession  # noqa: F401
