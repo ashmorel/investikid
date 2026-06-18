@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.core.rate_limit import limiter
 from app.models.market import Market
 from app.models.market_progress import UserMarketProgress
 from app.models.user import User, UserProgress
@@ -20,11 +21,15 @@ class MarketOut(BaseModel):
     currency_code: str
     has_content: bool
     enrolled: bool
-    is_active: bool
+    is_selected: bool
 
 
 class SwitchMarketRequest(BaseModel):
     market_code: str
+
+
+class ActiveMarketResponse(BaseModel):
+    active_market_code: str
 
 
 @router.get("/markets", response_model=list[MarketOut])
@@ -53,14 +58,16 @@ async def list_markets(
             currency_code=m.currency_code,
             has_content=m.has_content,
             enrolled=m.code in enrolled,
-            is_active=m.code == current_user.active_market_code,
+            is_selected=m.code == current_user.active_market_code,
         )
         for m in markets
     ]
 
 
-@router.post("/me/active-market")
+@router.post("/me/active-market", response_model=ActiveMarketResponse)
+@limiter.limit("20/minute")
 async def switch_active_market(
+    request: Request,
     payload: SwitchMarketRequest,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -71,7 +78,7 @@ async def switch_active_market(
     current_user.active_market_code = payload.market_code
     await ensure_enrolled(session, current_user.id, payload.market_code)
     await session.commit()
-    return {"active_market_code": current_user.active_market_code}
+    return ActiveMarketResponse(active_market_code=current_user.active_market_code)
 
 
 class MarketProgressOut(BaseModel):
