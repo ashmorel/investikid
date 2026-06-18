@@ -1,0 +1,18 @@
+{
+  "chip": { "label": "Change learning market" },
+  "settings": { "link": "Learning market" },
+  "picker": {
+    "title": "Choose your market",
+    "subtitle": "Pick where you want to learn about money. You can switch anytime.",
+    "back": "Home",
+    "learning": "Learning",
+    "comingSoon": "Coming soon"
+  },
+  "comingSoon": {
+    "title": "New lessons for {{market}} are on the way!",
+    "body": "We're building this market's money lessons. In the meantime, keep learning in {{home}}.",
+    "switchBack": "Switch back to {{home}}"
+  },
+  "stats": { "byMarket": "XP by market" },
+  "home": { "marketXp": "XP in {{market}}" }
+}
