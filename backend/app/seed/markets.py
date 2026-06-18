@@ -29,6 +29,7 @@ async def seed_markets(session: AsyncSession) -> None:
             row.currency_code = m["currency_code"]
             row.default_language = m["default_language"]
             row.has_content = m["has_content"]
+            row.is_active = True
         else:
             session.add(Market(**m, is_active=True))
     await session.flush()

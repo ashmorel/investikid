@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy import select
 
-from app.seed.markets import MARKETS, seed_markets
 from app.models.market import Market
+from app.seed.markets import MARKETS, seed_markets
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
