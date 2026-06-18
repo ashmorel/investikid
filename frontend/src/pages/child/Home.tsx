@@ -7,6 +7,8 @@ import { useRecommendations } from '@/api/ai';
 import { Button } from '@/components/ui/button';
 import HomeHero from '@/components/child/HomeHero';
 import { MarketChip } from '@/components/child/MarketChip';
+import { ComingSoonMarket } from '@/components/child/ComingSoonMarket';
+import { useMarkets } from '@/hooks/useMarkets';
 import { StatsCard } from '@/components/child/StatsCard';
 import { QuickLinksRow } from '@/components/child/home/QuickLinksRow';
 import { ReviseCard } from '@/components/child/home/ReviseCard';
@@ -26,6 +28,7 @@ export default function Home() {
   const allBadges = useAllBadges();
   const earnedBadges = useBadges();
   const { data: portfolio } = usePortfolio();
+  const { data: markets } = useMarkets();
   const { data: me } = useQuery<Me | null>({
     queryKey: ['me'],
     queryFn: () => authApi.me(),
@@ -35,6 +38,14 @@ export default function Home() {
 
   const level = progress?.level ?? 1;
   const xp = progress?.xp ?? 0;
+
+  // The active market: backend marks it with is_selected; fall back to the
+  // user's active_market_code. When it has no content yet, swap the lesson /
+  // module surfaces for a friendly coming-soon panel (GB default is unaffected).
+  const activeMarket =
+    markets?.find((m) => m.is_selected) ??
+    markets?.find((m) => m.code === (me?.active_market_code ?? 'GB'));
+  const marketComingSoon = activeMarket != null && !activeMarket.has_content;
 
   // Earned subset out of all badge definitions; hidden until both are loaded
   // and definitions exist.
@@ -48,7 +59,7 @@ export default function Home() {
       <div className="mb-2 flex justify-end">
         <MarketChip activeCode={me?.active_market_code ?? 'GB'} />
       </div>
-      <HomeHero />
+      {!marketComingSoon && <HomeHero />}
 
       <div className="mt-4">
         <StatsCard
@@ -62,27 +73,35 @@ export default function Home() {
         />
       </div>
 
-      <ReviseCard />
+      {marketComingSoon ? (
+        <div className="mt-4">
+          <ComingSoonMarket marketName={activeMarket!.name} />
+        </div>
+      ) : (
+        <>
+          <ReviseCard />
 
-      <div className="mt-4">
-        <QuickLinksRow
-          portfolioValue={portfolio?.total_value ?? null}
-          currencyCode={portfolio?.currency_code ?? 'USD'}
-          reviewDue={recs?.review_summary.due_count ?? 0}
-          badgesEarned={badgesEarned}
-          badgesTotal={badgesTotal}
-        />
-      </div>
+          <div className="mt-4">
+            <QuickLinksRow
+              portfolioValue={portfolio?.total_value ?? null}
+              currencyCode={portfolio?.currency_code ?? 'USD'}
+              reviewDue={recs?.review_summary.due_count ?? 0}
+              badgesEarned={badgesEarned}
+              badgesTotal={badgesTotal}
+            />
+          </div>
 
-      <div className="mt-4">
-        <PremiumUpsellCard isPremium={me?.is_premium ?? false} />
-      </div>
+          <div className="mt-4">
+            <PremiumUpsellCard isPremium={me?.is_premium ?? false} />
+          </div>
 
-      <div className="mt-5">
-        <Button asChild className="bg-brand-gradient hover:brightness-110 text-white font-bold rounded-xl">
-          <Link to="/lessons">{t('browseAll')}</Link>
-        </Button>
-      </div>
+          <div className="mt-5">
+            <Button asChild className="bg-brand-gradient hover:brightness-110 text-white font-bold rounded-xl">
+              <Link to="/lessons">{t('browseAll')}</Link>
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
