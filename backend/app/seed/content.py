@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import Lesson, Level, Module
+from app.seed.markets import seed_markets
 from app.services.level_service import premium_for_position
 
 _MODULES = [
@@ -2618,6 +2619,7 @@ async def seed_modules_and_lessons(session: AsyncSession) -> None:
     slotted into their difficulty band by type (card → video → quiz → scenario)
     rather than appended at the end; lessons already present keep their relative
     order, so manual admin reordering survives re-seeding. Caller commits."""
+    await seed_markets(session)
     for spec in _MODULES:
         module = await session.scalar(
             select(Module).where(Module.topic == spec["topic"], Module.title == spec["title"])
