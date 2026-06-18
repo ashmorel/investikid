@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import HomeHero from '@/components/child/HomeHero';
 import { MarketChip } from '@/components/child/MarketChip';
 import { ComingSoonMarket } from '@/components/child/ComingSoonMarket';
-import { useMarkets } from '@/hooks/useMarkets';
+import { useMarkets, useMarketProgress } from '@/hooks/useMarkets';
+import { flagFor } from '@/lib/marketFlags';
 import { StatsCard } from '@/components/child/StatsCard';
 import { QuickLinksRow } from '@/components/child/home/QuickLinksRow';
 import { ReviseCard } from '@/components/child/home/ReviseCard';
@@ -22,6 +23,7 @@ import { EventStrip } from '@/components/child/home/EventStrip';
 
 export default function Home() {
   const { t } = useTranslation('home');
+  const { t: tMarkets } = useTranslation('markets');
   useEffect(() => trackOncePerSession('home_view'), []);
   const { data: progress } = useProgress();
   const { data: recs } = useRecommendations();
@@ -29,6 +31,7 @@ export default function Home() {
   const earnedBadges = useBadges();
   const { data: portfolio } = usePortfolio();
   const { data: markets } = useMarkets();
+  const { data: marketProgress } = useMarketProgress();
   const { data: me } = useQuery<Me | null>({
     queryKey: ['me'],
     queryFn: () => authApi.me(),
@@ -47,6 +50,12 @@ export default function Home() {
     markets?.find((m) => m.code === (me?.active_market_code ?? 'GB'));
   const marketComingSoon = activeMarket != null && !activeMarket.has_content;
 
+  // Additive per-market indicator: the active market's XP, alongside (not
+  // replacing) the global level/streak/coins shown in StatsCard.
+  const activeMarketCode = activeMarket?.code ?? me?.active_market_code ?? 'GB';
+  const activeMarketXp =
+    marketProgress?.markets.find((m) => m.market_code === activeMarketCode)?.xp ?? 0;
+
   // Earned subset out of all badge definitions; hidden until both are loaded
   // and definitions exist.
   const badgesTotal = allBadges.data && allBadges.data.length > 0 ? allBadges.data.length : null;
@@ -56,7 +65,17 @@ export default function Home() {
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
       <h1 className="sr-only">{t('pageTitle')}</h1>
       <EventStrip />
-      <div className="mb-2 flex justify-end">
+      <div className="mb-2 flex items-center justify-end gap-2">
+        {activeMarket != null && (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-xl border border-brand-100 bg-card px-3 py-2 text-sm font-semibold text-brand-700"
+            aria-label={`${activeMarketXp} ${tMarkets('home.marketXp', { market: activeMarket.name })}`}
+          >
+            <span aria-hidden="true">{flagFor(activeMarketCode)}</span>
+            <span className="font-bold">{activeMarketXp}</span>
+            <span aria-hidden="true" className="text-brand-400">XP</span>
+          </span>
+        )}
         <MarketChip activeCode={me?.active_market_code ?? 'GB'} />
       </div>
       {!marketComingSoon && <HomeHero />}
