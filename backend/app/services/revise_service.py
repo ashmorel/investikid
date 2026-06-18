@@ -121,6 +121,7 @@ async def list_revisable_modules(session: AsyncSession, user: User) -> list[dict
         .join(SpacedRepetitionItem, SpacedRepetitionItem.weak_concept_id == WeakConcept.id)
         .where(
             WeakConcept.user_id == user.id,
+            WeakConcept.market_code == user.active_market_code,
             SpacedRepetitionItem.user_id == user.id,
             SpacedRepetitionItem.next_review_at <= now,
             WeakConcept.resolved == False,  # noqa: E712
@@ -148,7 +149,10 @@ async def build_session(
     weak_ids = [d.weak_concept_id for d in due]
     if weak_ids:
         weaks = (await session.scalars(
-            select(WeakConcept).where(WeakConcept.id.in_(weak_ids))
+            select(WeakConcept).where(
+                WeakConcept.id.in_(weak_ids),
+                WeakConcept.market_code == user.active_market_code,
+            )
         )).all()
         by_id = {w.id: w for w in weaks}
         for d in due:  # preserve due order
@@ -188,6 +192,7 @@ async def build_session(
             select(WeakConcept.id).where(
                 WeakConcept.user_id == user.id, WeakConcept.topic == module.topic,
                 WeakConcept.concept == concept, WeakConcept.resolved == False,  # noqa: E712
+                WeakConcept.market_code == user.active_market_code,
             )
         )
         if is_weak:
@@ -259,12 +264,13 @@ async def record_answer(
             select(WeakConcept).where(
                 WeakConcept.user_id == user.id, WeakConcept.topic == data["topic"],
                 WeakConcept.concept == data["concept"],
+                WeakConcept.market_code == user.active_market_code,
             )
         )
         if wc is None:
             wc = WeakConcept(
                 user_id=user.id, topic=data["topic"], concept=data["concept"],
-                resolved=correct,
+                resolved=correct, market_code=user.active_market_code,
             )
             session.add(wc)
             await session.flush()

@@ -59,7 +59,7 @@ def _apply_hard_filters(
         return False
 
     # 5. Market filtering
-    if not is_module_in_market(module.market_code, user.home_market_code):
+    if not is_module_in_market(module.market_code, user.active_market_code):
         return False
 
     return True
@@ -444,7 +444,7 @@ async def _topic_path_seed(session: AsyncSession, user: User):
         # Basic accessibility check: premium and country
         if m.is_premium and not is_premium(user):
             continue
-        if not is_module_in_market(m.market_code, user.home_market_code):
+        if not is_module_in_market(m.market_code, user.active_market_code):
             continue
         lessons = (
             await session.scalars(

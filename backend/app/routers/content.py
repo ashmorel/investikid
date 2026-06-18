@@ -57,7 +57,7 @@ async def _get_accessible_module(
     module = await session.get(Module, module_id)
     if not module:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
-    if not is_module_in_market(module.market_code, current_user.home_market_code):
+    if not is_module_in_market(module.market_code, current_user.active_market_code):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     # Age gate uses the actual age from dob (NEVER the parent tier_override) and
     # mirrors the inaccessible-market behaviour: a plain 404, no content tease.
@@ -87,7 +87,7 @@ async def list_modules(
     user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
     out: list[ModuleOut] = []
     for m in modules:
-        if not is_module_in_market(m.market_code, current_user.home_market_code):
+        if not is_module_in_market(m.market_code, current_user.active_market_code):
             continue
         # Hidden, not teased: out-of-age modules never appear in the list
         # (actual age from dob — the parent tier_override must not unlock these).
@@ -361,7 +361,8 @@ async def complete_lesson(
 
         if is_quiz and correct is False:
             concept = derive_lesson_title(lesson_type, lesson_content)
-            await record_weak_concept(session, current_user.id, topic, concept)
+            await record_weak_concept(session, current_user.id, topic, concept,
+                                       market_code=current_user.active_market_code)
         elif is_quiz and correct is True:
             concept = derive_lesson_title(lesson_type, lesson_content)
             await reinforce_concept(session, current_user.id, topic, concept)

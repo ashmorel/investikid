@@ -24,7 +24,7 @@ async def resolve_next_lesson(session: AsyncSession, user: Any) -> NextLessonOut
     user_age = age_in_years(user.dob, date.today())
     modules = list(await session.scalars(select(Module).order_by(Module.order_index)))
     for m in modules:
-        if not is_module_in_market(m.market_code, user.home_market_code):
+        if not is_module_in_market(m.market_code, user.active_market_code):
             continue
         if not is_module_premium_ok(module_is_premium=m.is_premium, is_premium_user=is_premium(user)):
             continue

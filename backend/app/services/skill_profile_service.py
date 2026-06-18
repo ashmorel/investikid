@@ -54,6 +54,7 @@ async def record_weak_concept(
     user_id: uuid.UUID,
     topic: str,
     concept: str,
+    market_code: str = "GB",
 ) -> None:
     """Record or increment a weak concept when a user gets a question wrong."""
     existing = await session.scalar(
@@ -73,6 +74,7 @@ async def record_weak_concept(
                 topic=topic,
                 concept=concept,
                 times_wrong=1,
+                market_code=market_code,
             )
         )
 
