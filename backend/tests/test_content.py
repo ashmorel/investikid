@@ -27,10 +27,10 @@ async def _register_and_login(client, email="learner@example.com", username="lea
 
 
 async def _seed_modules(db_session):
-    gb_free = Module(topic="stocks", title="Stocks GB", country_codes=["GB"], is_premium=False, order_index=0)
-    us_free = Module(topic="stocks", title="Stocks US", country_codes=["US"], is_premium=False, order_index=1)
-    global_free = Module(topic="savings", title="Savings Global", country_codes=[], is_premium=False, order_index=2)
-    gb_premium = Module(topic="real_estate", title="REITs GB", country_codes=["GB"], is_premium=True, order_index=3)
+    gb_free = Module(topic="stocks", title="Stocks GB", country_codes=["GB"], is_premium=False, order_index=0, market_code="GB")
+    us_free = Module(topic="stocks", title="Stocks US", country_codes=["US"], is_premium=False, order_index=1, market_code="US")
+    global_free = Module(topic="savings", title="Savings Global", country_codes=[], is_premium=False, order_index=2, market_code="GB")
+    gb_premium = Module(topic="real_estate", title="REITs GB", country_codes=["GB"], is_premium=True, order_index=3, market_code="GB")
     db_session.add_all([gb_free, us_free, global_free, gb_premium])
     await db_session.commit()
     return gb_free, us_free, global_free, gb_premium

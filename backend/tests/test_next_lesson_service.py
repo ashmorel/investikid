@@ -90,3 +90,51 @@ async def test_partial_module_is_continue(client, db_session):
     assert result is not None
     assert result.lesson_id == made[0][1][1].id
     assert result.mode == "continue"
+
+
+async def test_gb_user_never_gets_us_market_lesson(client, db_session):
+    """Regression: market gate must exclude non-GB modules for GB users.
+
+    Without is_module_in_market() the resolver would return the US module
+    (order_index=0, first in iteration) rather than the GB module
+    (order_index=1). The test fails if the gate is reverted to the old
+    country_codes list check, because country_codes=[] was treated as
+    "global" and would let the US module through.
+    """
+    await _register(client, "nl5@example.com", "nl5user")
+    user = await _get_user(db_session, "nl5@example.com")
+    # US-market module comes first (order_index=0) — gate must skip it.
+    us_mod = Module(
+        topic="stocks",
+        title="US Module",
+        market_code="US",
+        country_codes=[],
+        is_premium=False,
+        order_index=0,
+        icon="🇺🇸",
+    )
+    db_session.add(us_mod)
+    await db_session.flush()
+    us_lv = Level(module_id=us_mod.id, title="US L0", order_index=0, is_premium=False, pass_threshold=0.7)
+    db_session.add(us_lv)
+    await db_session.flush()
+    us_lsn = Lesson(
+        module_id=us_mod.id, level_id=us_lv.id, type="card", order_index=0, xp_reward=10,
+        content_json={"title": "US Lesson", "body": "b"},
+    )
+    db_session.add(us_lsn)
+    await db_session.flush()
+
+    # GB-market module comes second (order_index=1) — gate must reach it.
+    gb_mod, gb_made = await _module(db_session, "GB Module", 1)
+    gb_lsn = gb_made[0][1][0]
+
+    result = await resolve_next_lesson(db_session, user)
+
+    assert result is not None, "Expected a GB lesson but got None"
+    assert result.lesson_id != us_lsn.id, (
+        "GB user was handed a US-market lesson — market gate is broken"
+    )
+    assert result.lesson_id == gb_lsn.id, (
+        f"Expected GB lesson {gb_lsn.id} but got {result.lesson_id}"
+    )

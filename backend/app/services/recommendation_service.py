@@ -9,7 +9,7 @@ from app.models.content import Lesson, LessonCompletion, Level, Module
 from app.models.skill_profile import TopicMastery
 from app.models.user import User
 from app.services.age_tier import age_in_years
-from app.services.content_service import content_region_for
+from app.services.content_service import is_module_in_market
 from app.services.entitlements import is_premium
 from app.services.level_service import LevelStateInput, first_actionable_lesson
 
@@ -58,8 +58,8 @@ def _apply_hard_filters(
     if module.is_premium and not user.is_premium:
         return False
 
-    # 5. Country filtering
-    if module.country_codes and content_region_for(user) not in module.country_codes:
+    # 5. Market filtering
+    if not is_module_in_market(module.market_code, user.home_market_code):
         return False
 
     return True
@@ -444,7 +444,7 @@ async def _topic_path_seed(session: AsyncSession, user: User):
         # Basic accessibility check: premium and country
         if m.is_premium and not is_premium(user):
             continue
-        if m.country_codes and content_region_for(user) not in m.country_codes:
+        if not is_module_in_market(m.market_code, user.home_market_code):
             continue
         lessons = (
             await session.scalars(

@@ -11,12 +11,14 @@ from app.services.recommendation_service import (
 )
 
 
-def _make_user(*, dob=date(2015, 1, 1), topic_path="stocks", country_code="GB", is_premium_val=False, profiling_enabled=True):
+def _make_user(*, dob=date(2015, 1, 1), topic_path="stocks", country_code="GB",
+               home_market_code="GB", is_premium_val=False, profiling_enabled=True):
     user = MagicMock()
     user.id = uuid.uuid4()
     user.dob = dob
     user.topic_path = topic_path
     user.country_code = country_code
+    user.home_market_code = home_market_code
     user.content_region = None
     user.is_premium = is_premium_val
     user.profiling_enabled = profiling_enabled
@@ -24,7 +26,7 @@ def _make_user(*, dob=date(2015, 1, 1), topic_path="stocks", country_code="GB", 
 
 
 def _make_module(*, topic="stocks", prerequisite_ids=None, min_age=None, max_age=None,
-                 is_premium=False, country_codes=None, order_index=0):
+                 is_premium=False, country_codes=None, market_code="GB", order_index=0):
     m = MagicMock()
     m.id = uuid.uuid4()
     m.topic = topic
@@ -34,6 +36,7 @@ def _make_module(*, topic="stocks", prerequisite_ids=None, min_age=None, max_age
     m.max_age = max_age
     m.is_premium = is_premium
     m.country_codes = country_codes or []
+    m.market_code = market_code
     m.order_index = order_index
     return m
 
@@ -92,19 +95,19 @@ class TestHardFilters:
         module = _make_module(is_premium=True)
         assert _apply_hard_filters(module, user, set(), set(), 11) is False
 
-    def test_excludes_wrong_country(self):
-        user = _make_user(country_code="US")
-        module = _make_module(country_codes=["GB", "DE"])
+    def test_excludes_wrong_market(self):
+        user = _make_user(home_market_code="GB")
+        module = _make_module(market_code="US")
         assert _apply_hard_filters(module, user, set(), set(), 11) is False
 
-    def test_includes_matching_country(self):
-        user = _make_user(country_code="GB")
-        module = _make_module(country_codes=["GB", "DE"])
+    def test_includes_matching_market(self):
+        user = _make_user(home_market_code="GB")
+        module = _make_module(market_code="GB")
         assert _apply_hard_filters(module, user, set(), set(), 11) is True
 
-    def test_includes_empty_country_list(self):
-        user = _make_user(country_code="US")
-        module = _make_module(country_codes=[])
+    def test_includes_same_market(self):
+        user = _make_user(home_market_code="US")
+        module = _make_module(market_code="US")
         assert _apply_hard_filters(module, user, set(), set(), 11) is True
 
 
