@@ -22,11 +22,11 @@ from app.schemas.content import (
 from app.services import product_analytics_service
 from app.services.age_tier import age_in_years
 from app.services.content_service import (
-    content_region_for,
     derive_lesson_title,
     grant_module_completion_cash,
-    is_module_accessible,
     is_module_age_ok,
+    is_module_in_market,
+    is_module_premium_ok,
     record_daily_activity,
 )
 from app.services.entitlements import is_premium
@@ -57,18 +57,14 @@ async def _get_accessible_module(
     module = await session.get(Module, module_id)
     if not module:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
-    country_ok = not module.country_codes or content_region_for(current_user) in module.country_codes
-    if not country_ok:
+    if not is_module_in_market(module.market_code, current_user.home_market_code):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     # Age gate uses the actual age from dob (NEVER the parent tier_override) and
-    # mirrors the inaccessible-country behaviour: a plain 404, no content tease.
+    # mirrors the inaccessible-market behaviour: a plain 404, no content tease.
     user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
     if not is_module_age_ok(user_age, module.min_age, module.max_age):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
-    if not is_module_accessible(
-        content_region_for(current_user), is_premium(current_user),
-        module.country_codes, module.is_premium,
-    ):
+    if not is_module_premium_ok(module_is_premium=module.is_premium, is_premium_user=is_premium(current_user)):
         raise premium_required_error("module", module.title)
     return module
 
@@ -91,17 +87,13 @@ async def list_modules(
     user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
     out: list[ModuleOut] = []
     for m in modules:
-        country_ok = not m.country_codes or content_region_for(current_user) in m.country_codes
-        if not country_ok:
+        if not is_module_in_market(m.market_code, current_user.home_market_code):
             continue
         # Hidden, not teased: out-of-age modules never appear in the list
         # (actual age from dob — the parent tier_override must not unlock these).
         if not is_module_age_ok(user_age, m.min_age, m.max_age):
             continue
-        accessible = is_module_accessible(
-            content_region_for(current_user), is_premium(current_user),
-            m.country_codes, m.is_premium,
-        )
+        accessible = is_module_premium_ok(module_is_premium=m.is_premium, is_premium_user=is_premium(current_user))
         out.append(ModuleOut(
             id=m.id, topic=m.topic, title=m.title,
             country_codes=m.country_codes, is_premium=m.is_premium,

@@ -49,6 +49,17 @@ def is_module_accessible(
     return country_ok and premium_ok
 
 
+def is_module_in_market(module_market_code: str, home_market_code: str) -> bool:
+    """C1 single-market gate: a module is in scope when it belongs to the user's
+    home market. (Multi-market enrollment arrives in Sub-project C2.)"""
+    return module_market_code == home_market_code
+
+
+def is_module_premium_ok(*, module_is_premium: bool, is_premium_user: bool) -> bool:
+    """Premium gate, decoupled from the (now market-based) region gate."""
+    return (not module_is_premium) or is_premium_user
+
+
 def is_module_age_ok(
     user_age: int,
     module_min_age: int | None,
