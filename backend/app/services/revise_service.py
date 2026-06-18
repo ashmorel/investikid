@@ -15,8 +15,9 @@ from app.models.user import User, UserProgress
 from app.services.ai_content_service import generate_practice_quiz
 from app.services.content_service import record_daily_activity
 from app.services.entitlements import is_premium
+from app.services.market_progress_service import award_xp
 from app.services.spaced_repetition_service import get_due_items, record_review
-from app.services.xp_service import XpResult, record_xp
+from app.services.xp_service import XpResult
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +121,7 @@ async def list_revisable_modules(session: AsyncSession, user: User) -> list[dict
         .join(SpacedRepetitionItem, SpacedRepetitionItem.weak_concept_id == WeakConcept.id)
         .where(
             WeakConcept.user_id == user.id,
+            WeakConcept.market_code == user.active_market_code,
             SpacedRepetitionItem.user_id == user.id,
             SpacedRepetitionItem.next_review_at <= now,
             WeakConcept.resolved == False,  # noqa: E712
@@ -143,11 +145,14 @@ async def build_session(
     now = datetime.now(UTC)
 
     # 1) Weak-first: due SR items -> weak concepts (already ordered by due-ness).
-    due = await get_due_items(session, user.id)
+    due = await get_due_items(session, user.id, market_code=user.active_market_code)
     weak_ids = [d.weak_concept_id for d in due]
     if weak_ids:
         weaks = (await session.scalars(
-            select(WeakConcept).where(WeakConcept.id.in_(weak_ids))
+            select(WeakConcept).where(
+                WeakConcept.id.in_(weak_ids),
+                WeakConcept.market_code == user.active_market_code,
+            )
         )).all()
         by_id = {w.id: w for w in weaks}
         for d in due:  # preserve due order
@@ -187,6 +192,7 @@ async def build_session(
             select(WeakConcept.id).where(
                 WeakConcept.user_id == user.id, WeakConcept.topic == module.topic,
                 WeakConcept.concept == concept, WeakConcept.resolved == False,  # noqa: E712
+                WeakConcept.market_code == user.active_market_code,
             )
         )
         if is_weak:
@@ -200,6 +206,7 @@ async def build_session(
                 WeakConcept.user_id == user.id,
                 WeakConcept.topic == module.topic,
                 WeakConcept.concept == concept,
+                WeakConcept.market_code == user.active_market_code,
                 SpacedRepetitionItem.next_review_at > now,
             )
         )
@@ -215,7 +222,9 @@ async def build_session(
     return items
 
 
-def award_revise_xp(progress: UserProgress, today) -> XpResult | None:
+async def award_revise_xp(
+    session: AsyncSession, progress: UserProgress, today
+) -> XpResult | None:
     """Award one correct answer's XP, capped per local day so repeatable
     refreshers can't farm XP/coins/streak (mirrors simulator award_trade_xp).
     Returns the XpResult, or None once the daily revise cap is reached."""
@@ -227,7 +236,7 @@ def award_revise_xp(progress: UserProgress, today) -> XpResult | None:
         return None
     awarded = min(XP_PER_CORRECT, remaining)
     progress.revise_xp_today += awarded
-    return record_xp(progress, awarded, today=today)
+    return await award_xp(session, progress, awarded, today=today)
 
 
 async def record_answer(
@@ -256,12 +265,13 @@ async def record_answer(
             select(WeakConcept).where(
                 WeakConcept.user_id == user.id, WeakConcept.topic == data["topic"],
                 WeakConcept.concept == data["concept"],
+                WeakConcept.market_code == user.active_market_code,
             )
         )
         if wc is None:
             wc = WeakConcept(
                 user_id=user.id, topic=data["topic"], concept=data["concept"],
-                resolved=correct,
+                resolved=correct, market_code=user.active_market_code,
             )
             session.add(wc)
             await session.flush()
@@ -278,7 +288,7 @@ async def record_answer(
             session.add(progress)
             await session.flush()
         today = datetime.now(UTC).date()
-        xp = award_revise_xp(progress, today)
+        xp = await award_revise_xp(session, progress, today)
         record_daily_activity(progress, today)
         if xp is not None:  # None once the daily revise XP cap is reached
             xp_awarded = xp.awarded

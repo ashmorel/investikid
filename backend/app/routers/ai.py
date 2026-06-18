@@ -87,6 +87,7 @@ async def practice_quiz(
                 WeakConcept.user_id == current_user.id,
                 WeakConcept.topic == module.topic,
                 WeakConcept.concept == concept,
+                WeakConcept.market_code == current_user.active_market_code,
             )
         )
         if weak:
