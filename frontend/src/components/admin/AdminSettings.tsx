@@ -17,12 +17,16 @@ export default function AdminSettings() {
   const [eventStart, setEventStart] = useState('');
   const [eventEnd, setEventEnd] = useState('');
   const [eventBonus, setEventBonus] = useState(0);
+  const [enrollBonus, setEnrollBonus] = useState(25);
+  const [completionBonus, setCompletionBonus] = useState(250);
   // Seed local state once data arrives; seeded ref avoids re-seeding on invalidate/refetch
   const seeded = useRef(false);
 
   useEffect(() => {
     if (data && !seeded.current) {
       setEmails(data.alert_emails);
+      setEnrollBonus(data.market_enroll_bonus_coins);
+      setCompletionBonus(data.market_completion_bonus_coins);
       if (data.seasonal_event) {
         /* eslint-disable react-hooks/set-state-in-effect -- one-shot, ref-guarded
            seeding of form fields from the fetched settings; mirrors the
@@ -67,6 +71,8 @@ export default function AdminSettings() {
   function handleSave() {
     update.mutate({
       alert_emails: emails,
+      market_enroll_bonus_coins: enrollBonus,
+      market_completion_bonus_coins: completionBonus,
       ...(eventTitle && eventStart && eventEnd
         ? {
             seasonal_event: {
@@ -166,6 +172,28 @@ export default function AdminSettings() {
             ))}
           </ul>
         )}
+
+        {/* Market reward bonuses (Sub-project D) — coins, live in AppSetting */}
+        <fieldset className="mb-4 rounded-md border border-line bg-card px-4 py-3">
+          <legend className="px-1 text-sm font-semibold text-ink">{t('settings.marketRewards.legend')}</legend>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="enroll-bonus" className="mb-1 block text-sm text-ink">{t('settings.marketRewards.enrollBonus')}</label>
+              <input id="enroll-bonus" type="number" min={0} value={enrollBonus}
+                onChange={(e) => setEnrollBonus(Number(e.target.value))}
+                className="w-32 rounded-md border border-input bg-background px-3 py-2 text-base text-ink" />
+            </div>
+            <div>
+              <label htmlFor="completion-bonus" className="mb-1 block text-sm text-ink">{t('settings.marketRewards.completionBonus')}</label>
+              <input id="completion-bonus" type="number" min={0} value={completionBonus}
+                onChange={(e) => setCompletionBonus(Number(e.target.value))}
+                className="w-32 rounded-md border border-input bg-background px-3 py-2 text-base text-ink" />
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t('settings.marketRewards.description')}
+          </p>
+        </fieldset>
 
         {/* Seasonal event (M9) — deploy-free, lives in AppSetting */}
         <fieldset className="mb-4 rounded-md border border-line bg-card px-4 py-3">

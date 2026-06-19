@@ -10,7 +10,7 @@ from app.models.market_progress import UserMarketProgress
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
 from app.services.content_service import compute_level
-from app.services.market_progress_service import ensure_enrolled
+from app.services.market_progress_service import ensure_enrolled, grant_enroll_reward
 
 router = APIRouter(tags=["markets"])
 
@@ -28,8 +28,15 @@ class SwitchMarketRequest(BaseModel):
     market_code: str
 
 
+class RewardGrantOut(BaseModel):
+    coins: int = 0
+    badge_name: str | None = None
+    badge_icon: str | None = None
+
+
 class ActiveMarketResponse(BaseModel):
     active_market_code: str
+    reward: RewardGrantOut = RewardGrantOut()
 
 
 @router.get("/markets", response_model=list[MarketOut])
@@ -77,8 +84,16 @@ async def switch_active_market(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "unknown market")
     current_user.active_market_code = payload.market_code
     await ensure_enrolled(session, current_user.id, payload.market_code)
+    grant = await grant_enroll_reward(session, current_user, payload.market_code)
     await session.commit()
-    return ActiveMarketResponse(active_market_code=current_user.active_market_code)
+    return ActiveMarketResponse(
+        active_market_code=current_user.active_market_code,
+        reward=RewardGrantOut(
+            coins=grant.coins,
+            badge_name=grant.badge_name,
+            badge_icon=grant.badge_icon,
+        ),
+    )
 
 
 class MarketProgressOut(BaseModel):

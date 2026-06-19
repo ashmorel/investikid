@@ -77,6 +77,12 @@
       "description": "Children see a banner on Home and lesson XP gets the bonus while the event is live. Save applies it; Clear removes it.",
       "clearButton": "Clear event"
     },
+    "marketRewards": {
+      "legend": "Market reward bonuses",
+      "enrollBonus": "Market enroll bonus (coins)",
+      "completionBonus": "Market completion bonus (coins)",
+      "description": "Coins awarded when a child enrolls in a new market and when they complete one. Save applies these."
+    },
     "save": "Save",
     "saving": "Saving…",
     "saveSuccess": "Settings saved.",

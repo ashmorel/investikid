@@ -16,6 +16,8 @@ import { ApplyMissionCTA } from '@/components/child/lesson/ApplyMissionCTA';
 import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
 import { useActiveMissions } from '@/hooks/useActiveMissions';
+import { useMarkets } from '@/hooks/useMarkets';
+import { formatRewardToast } from '@/lib/marketReward';
 
 export default function Lesson() {
   const { moduleId, levelId, lessonId } = useParams<{ moduleId: string; levelId: string; lessonId: string }>();
@@ -23,6 +25,8 @@ export default function Lesson() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation('lessons');
+  const { t: tMarkets } = useTranslation('markets');
+  const { data: markets } = useMarkets();
   const [showPractice, setShowPractice] = useState(false);
   const [showPenny, setShowPenny] = useState(false);
   const completionInFlight = useRef(false);
@@ -55,10 +59,16 @@ export default function Lesson() {
 
   const complete = useMutation<LessonCompletionResult | null, Error, number | null>({
     mutationFn: (score) => contentApi.completeLesson(lessonId!, score),
-    onSuccess: () => {
+    onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ['progress'] });
       qc.invalidateQueries({ queryKey: ['level-lessons', levelId] });
       qc.invalidateQueries({ queryKey: ['module-levels', moduleId] });
+      // Celebrate a market-completion reward, but only the first time through.
+      if (result && !result.already_completed) {
+        const marketName = (markets ?? []).find((m) => m.is_selected)?.name ?? '';
+        const msg = formatRewardToast(tMarkets, result.reward, marketName);
+        if (msg) toast({ description: msg });
+      }
     },
     onError: () => {
       toast({ title: t('lesson.saveError'), description: t('lesson.tryAgain') });

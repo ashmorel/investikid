@@ -75,6 +75,12 @@ class LessonCompletionRequest(BaseModel):
     score: float | None = None  # 0.0–1.0 for quizzes, None for card/video
 
 
+class RewardGrantOut(BaseModel):
+    coins: int = 0
+    badge_name: str | None = None
+    badge_icon: str | None = None
+
+
 class LessonCompletionResult(BaseModel):
     xp_awarded: int
     already_completed: bool
@@ -84,6 +90,7 @@ class LessonCompletionResult(BaseModel):
     streak_freezes: int = 0
     practice_available: bool = False
     daily_goal_met: bool = False  # True only when THIS completion crossed the daily goal
+    reward: RewardGrantOut = RewardGrantOut()
 
 
 class LevelOut(BaseModel):

@@ -4,7 +4,7 @@ import { CompletionPanel } from '@/components/child/lesson/CompletionPanel';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
-const baseResult = { xp_awarded: 25, already_completed: false, total_xp: 320, level: 4, streak_count: 5, streak_freezes: 0, practice_available: false };
+const baseResult = { xp_awarded: 25, already_completed: false, total_xp: 320, level: 4, streak_count: 5, streak_freezes: 0, practice_available: false, reward: { coins: 0, badge_name: null, badge_icon: null } };
 
 describe('CompletionPanel', () => {
   it('shows heading, xp awarded, level and streak', () => {

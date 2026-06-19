@@ -18,6 +18,7 @@ const BASE_RESULT = {
   streak_count: 3,
   streak_freezes: 0,
   practice_available: false,
+  reward: { coins: 0, badge_name: null, badge_icon: null },
 };
 
 function renderPanel(overrides = {}) {
