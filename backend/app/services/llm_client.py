@@ -47,6 +47,12 @@ def _is_openai_reasoning_model(model: str) -> bool:
 # starve-to-empty failure. Non-reasoning models keep the caller's max_tokens.
 _REASONING_MIN_COMPLETION_TOKENS = 12000
 
+# Reasoning effort for gpt-5/o-series. "minimal" ≈ 0 reasoning tokens → ~3-5x
+# faster + cheaper than the default; output stays valid for our simple,
+# brief-grounded, human-reviewed tasks. Critically, fast per-call latency keeps
+# sequential per-level lesson generation under the request timeout.
+_REASONING_EFFORT = "minimal"
+
 
 class LLMError(Exception):
     """Raised when an LLM call fails after retries."""
@@ -129,6 +135,11 @@ class OpenAIClient:
             # empty (see _REASONING_MIN_COMPLETION_TOKENS). Answer length stays
             # governed by the prompt, not this ceiling.
             kwargs["max_completion_tokens"] = max(max_tokens, _REASONING_MIN_COMPLETION_TOKENS)
+            # Minimal reasoning effort: this app's tasks (lessons, briefs, coach
+            # replies) are simple + brief-grounded + human-reviewed, so deep
+            # reasoning adds ~3-5x latency and reasoning-token cost for no quality
+            # gain — and slow per-call latency was timing out batch generation.
+            kwargs["reasoning_effort"] = _REASONING_EFFORT
             # temperature: only the default (1) is supported → omit entirely
         else:
             kwargs["max_tokens"] = max_tokens
