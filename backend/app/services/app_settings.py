@@ -11,6 +11,11 @@ _ALERT_EMAILS_KEY = "alert_emails"
 _STARTING_CASH_KEY = "simulator.starting_cash"
 _TRADE_COMMISSION_PCT_KEY = "simulator.trade_commission_pct"
 _DEFAULT_TRADE_COMMISSION_PCT = Decimal("1.0")
+
+_MARKET_ENROLL_BONUS_KEY = "market.enroll_bonus_coins"
+_MARKET_COMPLETION_BONUS_KEY = "market.completion_bonus_coins"
+_DEFAULT_MARKET_ENROLL_BONUS = 25
+_DEFAULT_MARKET_COMPLETION_BONUS = 250
 _DEFAULT_STARTING_CASH: dict[str, Decimal] = {
     "GBP": Decimal("1000.00"),
     "USD": Decimal("1000.00"),
@@ -69,6 +74,40 @@ async def set_starting_cash(session: AsyncSession, mapping: dict[str, Decimal]) 
     await set_setting(
         session, _STARTING_CASH_KEY, json.dumps({k: str(v) for k, v in mapping.items()})
     )
+
+
+async def _get_int_setting(session: AsyncSession, key: str, default: int) -> int:
+    raw = await get_setting(session, key)
+    if raw is not None:
+        try:
+            val = int(raw)
+            if val >= 0:
+                return val
+        except (TypeError, ValueError):
+            pass
+    return default
+
+
+async def get_market_enroll_bonus_coins(session: AsyncSession) -> int:
+    return await _get_int_setting(session, _MARKET_ENROLL_BONUS_KEY, _DEFAULT_MARKET_ENROLL_BONUS)
+
+
+async def set_market_enroll_bonus_coins(session: AsyncSession, coins: int) -> None:
+    if coins < 0:
+        raise ValueError("enroll bonus coins must be >= 0")
+    await set_setting(session, _MARKET_ENROLL_BONUS_KEY, str(coins))
+
+
+async def get_market_completion_bonus_coins(session: AsyncSession) -> int:
+    return await _get_int_setting(
+        session, _MARKET_COMPLETION_BONUS_KEY, _DEFAULT_MARKET_COMPLETION_BONUS
+    )
+
+
+async def set_market_completion_bonus_coins(session: AsyncSession, coins: int) -> None:
+    if coins < 0:
+        raise ValueError("completion bonus coins must be >= 0")
+    await set_setting(session, _MARKET_COMPLETION_BONUS_KEY, str(coins))
 
 
 async def get_trade_commission_pct(session: AsyncSession) -> Decimal:
