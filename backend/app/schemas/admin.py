@@ -84,6 +84,7 @@ class ModuleOut(BaseModel):
     icon: str
     is_premium: bool
     country_codes: list[str]
+    market_code: str = "GB"
     order_index: int
     lesson_count: int = 0
     prerequisite_ids: list[uuid.UUID] = []
@@ -189,8 +190,32 @@ class GenerateLessonsResponse(BaseModel):
     skipped: int
 
 
+class GenerateMarketLessonsRequest(BaseModel):
+    source_level_id: uuid.UUID
+
+
 class LessonDraftUpdate(BaseModel):
     content_json: dict
+
+
+# ── Market brief ────────────────────────────────────────────────────
+class MarketBriefOut(BaseModel):
+    market_code: str
+    brief_json: dict
+    status: str
+    model_used: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MarketBriefUpdate(BaseModel):
+    brief_json: dict
+
+
+class MarketScaffoldResult(BaseModel):
+    modules_created: int
+    levels_created: int
+    already_scaffolded: bool = False
 
 
 # ── Video presign ───────────────────────────────────────────────────

@@ -16,6 +16,8 @@ from app.models.content import Lesson, Level, Module
 from app.models.content_translation import ContentTranslation
 from app.models.gamification import Badge, Challenge, UserBadge
 from app.models.lesson_draft import LessonDraft
+from app.models.market import Market
+from app.models.market_brief import MarketBrief
 from app.models.user import User
 from app.models.video_asset import VideoAsset
 from app.models.video_health import VideoHealth
@@ -37,11 +39,15 @@ from app.schemas.admin import (
     CuratedTranslationRequest,
     GenerateLessonsRequest,
     GenerateLessonsResponse,
+    GenerateMarketLessonsRequest,
     LessonCreate,
     LessonDraftOut,
     LessonDraftUpdate,
     LessonOut,
     LessonUpdate,
+    MarketBriefOut,
+    MarketBriefUpdate,
+    MarketScaffoldResult,
     ModuleCreate,
     ModuleEngagementOut,
     ModuleOut,
@@ -61,6 +67,7 @@ from app.services import storage, video_health_service
 from app.services.admin_content_generation_service import (
     _concat_text,
     generate_level_lessons,
+    generate_market_level_lessons,
     regenerate_draft,
 )
 from app.services.app_settings import (
@@ -84,6 +91,8 @@ from app.services.entitlements import set_premium
 from app.services.event_service import EVENT_KEY, set_event
 from app.services.level_service import premium_for_position
 from app.services.llm_client import probe_all_providers
+from app.services.market_brief_service import generate_brief, require_verified_brief
+from app.services.market_scaffold_service import scaffold_market_from_gb
 from app.services.moderation import moderate_output
 from app.services.translation_service import translate_entity
 
@@ -153,6 +162,7 @@ async def list_modules(session: AsyncSession = Depends(get_session)):
         ModuleOut(
             id=m.id, topic=m.topic, title=m.title, icon=m.icon,
             is_premium=m.is_premium, country_codes=m.country_codes,
+            market_code=m.market_code,
             order_index=m.order_index, lesson_count=len(m.lessons),
             prerequisite_ids=m.prerequisite_ids, min_age=m.min_age, max_age=m.max_age,
             standards_alignment=m.standards_alignment, sources=m.sources,
@@ -184,6 +194,7 @@ async def create_module(payload: ModuleCreate, session: AsyncSession = Depends(g
     return ModuleOut(
         id=module.id, topic=module.topic, title=module.title, icon=module.icon,
         is_premium=module.is_premium, country_codes=module.country_codes,
+        market_code=module.market_code,
         order_index=module.order_index, lesson_count=0,
         prerequisite_ids=module.prerequisite_ids, min_age=module.min_age, max_age=module.max_age,
         completion_cash_reward=module.completion_cash_reward,
@@ -220,6 +231,7 @@ async def update_module(
     return ModuleOut(
         id=module.id, topic=module.topic, title=module.title, icon=module.icon,
         is_premium=module.is_premium, country_codes=module.country_codes,
+        market_code=module.market_code,
         order_index=module.order_index, lesson_count=len(module.lessons),
         prerequisite_ids=module.prerequisite_ids, min_age=module.min_age, max_age=module.max_age,
         completion_cash_reward=module.completion_cash_reward,
@@ -459,6 +471,34 @@ async def generate_level_lessons_endpoint(
     )
 
 
+@router.post("/levels/{level_id}/generate-market", response_model=GenerateLessonsResponse)
+@limiter.limit("5/minute")
+async def generate_market_level_lessons_endpoint(
+    request: Request,
+    level_id: uuid.UUID,
+    payload: GenerateMarketLessonsRequest,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    target_level = await session.get(Level, level_id)
+    if target_level is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
+    source_level = await session.get(Level, payload.source_level_id)
+    if source_level is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source level not found")
+    target_module = await session.get(Module, target_level.module_id)
+    if target_module is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
+    brief = await require_verified_brief(session, target_module.market_code)
+    result = await generate_market_level_lessons(
+        session, target_level, source_level=source_level, brief=brief,
+    )
+    return GenerateLessonsResponse(
+        created=[LessonDraftOut.model_validate(d) for d in result.created],
+        skipped=result.skipped,
+    )
+
+
 @router.get("/levels/{level_id}/drafts", response_model=list[LessonDraftOut])
 async def list_lesson_drafts(
     level_id: uuid.UUID, session: AsyncSession = Depends(get_session),
@@ -541,6 +581,107 @@ async def reject_lesson_draft(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
     await session.delete(draft)
     await session.commit()
+
+
+# ── Market briefs ───────────────────────────────────────────────────
+@router.post("/markets/{code}/brief/generate", response_model=MarketBriefOut)
+@limiter.limit("5/minute")
+async def generate_market_brief(
+    request: Request,
+    code: str,
+    session: AsyncSession = Depends(get_session),
+):
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    try:
+        brief = await generate_brief(session, market)
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY, detail="brief generation failed"
+        ) from exc
+    await session.commit()
+    return MarketBriefOut.model_validate(brief)
+
+
+@router.get("/markets/{code}/brief", response_model=MarketBriefOut)
+async def get_market_brief(code: str, session: AsyncSession = Depends(get_session)):
+    brief = await session.get(MarketBrief, code)
+    if brief is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brief not found")
+    return MarketBriefOut.model_validate(brief)
+
+
+@router.put("/markets/{code}/brief", response_model=MarketBriefOut)
+async def update_market_brief(
+    code: str,
+    payload: MarketBriefUpdate,
+    session: AsyncSession = Depends(get_session),
+):
+    brief = await session.get(MarketBrief, code)
+    if brief is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brief not found")
+    if not isinstance(payload.brief_json, dict):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="brief_json must be an object"
+        )
+    brief.brief_json = payload.brief_json
+    await session.commit()
+    return MarketBriefOut.model_validate(brief)
+
+
+@router.post("/markets/{code}/brief/verify", response_model=MarketBriefOut)
+async def verify_market_brief(code: str, session: AsyncSession = Depends(get_session)):
+    brief = await session.get(MarketBrief, code)
+    if brief is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brief not found")
+    brief.status = "verified"
+    await session.commit()
+    return MarketBriefOut.model_validate(brief)
+
+
+@router.post("/markets/{code}/scaffold", response_model=MarketScaffoldResult)
+@limiter.limit("5/minute")
+async def scaffold_market(
+    request: Request,
+    code: str,
+    session: AsyncSession = Depends(get_session),
+):
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    summary = await scaffold_market_from_gb(session, code)
+    return MarketScaffoldResult.model_validate(summary)
+
+
+@router.post("/markets/{code}/publish")
+async def publish_market(code: str, session: AsyncSession = Depends(get_session)):
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    lesson_count = await session.scalar(
+        select(func.count(Lesson.id))
+        .select_from(Lesson)
+        .join(Module, Module.id == Lesson.module_id)
+        .where(Module.market_code == code)
+    ) or 0
+    if lesson_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="market has no lessons to publish"
+        )
+    market.has_content = True
+    await session.commit()
+    return {"code": code, "has_content": True}
+
+
+@router.post("/markets/{code}/unpublish")
+async def unpublish_market(code: str, session: AsyncSession = Depends(get_session)):
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    market.has_content = False
+    await session.commit()
+    return {"code": code, "has_content": False}
 
 
 # ── Badges ──────────────────────────────────────────────────────────
