@@ -347,6 +347,8 @@ class AdminSettingsOut(BaseModel):
     alert_emails: list[str]
     starting_cash: dict[str, str] = {}
     trade_commission_pct: str = "1.0"
+    market_enroll_bonus_coins: int = 25
+    market_completion_bonus_coins: int = 250
     seasonal_event: dict | None = None
 
 
@@ -354,9 +356,18 @@ class AdminSettingsUpdate(BaseModel):
     alert_emails: list[EmailStr]
     starting_cash: dict[str, str] | None = None
     trade_commission_pct: str | None = None
+    market_enroll_bonus_coins: int | None = None
+    market_completion_bonus_coins: int | None = None
     # None = leave unchanged; explicit clear via clear_seasonal_event flag.
     seasonal_event: SeasonalEventIn | None = None
     clear_seasonal_event: bool = False
+
+    @field_validator("market_enroll_bonus_coins", "market_completion_bonus_coins")
+    @classmethod
+    def _non_negative_coins(cls, v: int | None) -> int | None:
+        if v is not None and v < 0:
+            raise ValueError("coin bonus must be >= 0")
+        return v
 
     @field_validator("trade_commission_pct")
     @classmethod
