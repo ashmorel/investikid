@@ -28,6 +28,22 @@ let levelsByModule: Record<string, Lvl[]> = {};
 const mockGenerateMarket = vi.fn();
 const idleMutation = { mutate: vi.fn(), isPending: false, isError: false, isSuccess: false, data: undefined, error: null as unknown };
 
+// Suggestion-flow mock state (driven per test).
+const mockSuggest = vi.fn();
+const mockCreateSuggestion = vi.fn();
+const mockGenerateNative = vi.fn();
+type Suggestion = {
+  title: string;
+  topic: string;
+  rationale: string;
+  action: 'add' | 'replace';
+  replaces: string | null;
+  suggested_concepts: string[];
+};
+let suggestData: Suggestion[] | undefined = undefined;
+let suggestState = { isPending: false, isError: false, isSuccess: false };
+let createResult: { module_id: string; level_id: string; suggested_concepts: string[] } | undefined = undefined;
+
 // Captures the levelId passed to the per-level hook factory so the test can
 // assert the generate-market mutation fires with { levelId, source_level_id }.
 vi.mock('@/api/admin', () => ({
@@ -41,6 +57,16 @@ vi.mock('@/api/admin', () => ({
   useGenerateMarketLessons: (levelId: string) => ({
     ...idleMutation,
     mutate: (sourceLevelId: string) => mockGenerateMarket({ levelId, source_level_id: sourceLevelId }),
+  }),
+  useSuggestModules: () => ({ ...idleMutation, ...suggestState, data: suggestData, mutate: mockSuggest }),
+  useCreateModuleFromSuggestion: () => ({
+    ...idleMutation,
+    data: createResult,
+    mutate: mockCreateSuggestion,
+  }),
+  useGenerateNativeLessons: (levelId: string) => ({
+    ...idleMutation,
+    mutate: (concepts: string[]) => mockGenerateNative({ levelId, concepts }),
   }),
   usePublishMarket: () => ({ ...idleMutation, mutate: mockPublish }),
   useUnpublishMarket: () => ({ ...idleMutation, mutate: mockUnpublish }),
@@ -65,6 +91,12 @@ beforeEach(() => {
   mockPublish.mockClear();
   mockUnpublish.mockClear();
   mockGenerateMarket.mockClear();
+  mockSuggest.mockClear();
+  mockCreateSuggestion.mockClear();
+  mockGenerateNative.mockClear();
+  suggestData = undefined;
+  suggestState = { isPending: false, isError: false, isSuccess: false };
+  createResult = undefined;
   marketsData = [
     { code: 'GB', name: 'United Kingdom', has_content: true },
     { code: 'US', name: 'United States', has_content: false },
@@ -136,5 +168,36 @@ describe('MarketContent', () => {
     await waitFor(() =>
       expect(mockGenerateMarket).toHaveBeenCalledWith({ levelId: 'us-lvl', source_level_id: 'gb-lvl' }),
     );
+  });
+
+  it('creates a module from a suggestion, then generates native lessons with its concepts', async () => {
+    briefData = { market_code: 'US', brief_json: { currency: 'USD' }, status: 'verified', model_used: 'm' };
+    suggestData = [
+      {
+        title: 'Sales tax basics',
+        topic: 'tax',
+        rationale: 'US has sales tax, not VAT.',
+        action: 'add',
+        replaces: null,
+        suggested_concepts: ['sales tax', 'receipts'],
+      },
+    ];
+    suggestState = { isPending: false, isError: false, isSuccess: true };
+    const first = render(<MarketContent />, { wrapper });
+
+    const createBtn = await screen.findByRole('button', { name: /create this module/i });
+    fireEvent.click(createBtn);
+    expect(mockCreateSuggestion).toHaveBeenCalledWith(suggestData[0]);
+    first.unmount();
+
+    // Drive the create result so the native-generate control appears.
+    createResult = { module_id: 'us-mod', level_id: 'us-lvl', suggested_concepts: ['sales tax', 'receipts'] };
+    render(<MarketContent />, { wrapper });
+    const genBtn = await screen.findByRole('button', { name: /^generate lessons$/i });
+    fireEvent.click(genBtn);
+    expect(mockGenerateNative).toHaveBeenCalledWith({
+      levelId: 'us-lvl',
+      concepts: ['sales tax', 'receipts'],
+    });
   });
 });

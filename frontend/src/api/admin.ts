@@ -322,6 +322,7 @@ export type LessonDraft = {
   moderation_safe: boolean;
   moderation_category: string | null;
   created_at: string;
+  adaptation_flags?: { uk_residue: string[]; suspect: boolean };
 };
 
 export type GenerateLessonsBody = { concept: string; count: number; types: ('card' | 'quiz' | 'scenario')[] };
@@ -720,6 +721,60 @@ export function useGenerateMarketLessons(levelId: string) {
       adminFetch<GenerateLessonsResult>(`/admin/levels/${levelId}/generate-market`, {
         method: 'POST',
         body: JSON.stringify({ source_level_id }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] }),
+  });
+}
+
+// ── Intelligent market suggestions (proactive module creation) ───────
+export type ModuleSuggestion = {
+  title: string;
+  topic: string;
+  rationale: string;
+  action: 'add' | 'replace';
+  replaces: string | null;
+  suggested_concepts: string[];
+};
+
+export type ModuleFromSuggestionResult = {
+  module_id: string;
+  level_id: string;
+  suggested_concepts: string[];
+};
+
+/** Ask the model for modules this market needs that the GB set lacks.
+ *  Requires a verified brief (backend 409s otherwise); returns [] on LLM failure. */
+export function useSuggestModules(code: string) {
+  return useMutation({
+    mutationFn: () =>
+      adminFetch<ModuleSuggestion[]>(`/admin/markets/${code}/module-suggestions`, { method: 'POST' }),
+  });
+}
+
+/** Create a Module + starter Level from a suggestion. */
+export function useCreateModuleFromSuggestion(code: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ title, topic, suggested_concepts, action, replaces }: ModuleSuggestion) =>
+      adminFetch<ModuleFromSuggestionResult>(`/admin/markets/${code}/modules/from-suggestion`, {
+        method: 'POST',
+        body: JSON.stringify({ title, topic, suggested_concepts, action, replaces }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
+      qc.invalidateQueries({ queryKey: ['markets'] });
+    },
+  });
+}
+
+/** Generate brief-grounded NATIVE drafts for a level from a list of concepts. */
+export function useGenerateNativeLessons(levelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (concepts: string[]) =>
+      adminFetch<GenerateLessonsResult>(`/admin/levels/${levelId}/generate-native`, {
+        method: 'POST',
+        body: JSON.stringify({ concepts }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] }),
   });

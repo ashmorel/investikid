@@ -12,9 +12,13 @@ import {
   useModules,
   useLevels,
   useGenerateMarketLessons,
+  useSuggestModules,
+  useCreateModuleFromSuggestion,
+  useGenerateNativeLessons,
   usePublishMarket,
   useUnpublishMarket,
   type AdminModule,
+  type ModuleSuggestion,
 } from '@/api/admin';
 
 /** Admin market-content workflow (Sub-project E2).
@@ -206,6 +210,17 @@ export default function MarketContent() {
             )}
           </section>
 
+          {/* Intelligent suggestions — proactive modules this market needs */}
+          {isVerified && (
+            <section aria-labelledby="suggest-heading" className="rounded-md border border-line bg-card px-4 py-3">
+              <h2 id="suggest-heading" className="mb-1 text-lg font-semibold text-ink">
+                {t('marketContent.suggest.heading')}
+              </h2>
+              <p className="mb-3 text-sm text-muted-foreground">{t('marketContent.suggest.description')}</p>
+              <ModuleSuggestions code={code} />
+            </section>
+          )}
+
           {/* Step 3 — Lessons (generate-market per level → existing draft-review flow) */}
           <section aria-labelledby="lessons-heading" className="rounded-md border border-line bg-card px-4 py-3">
             <h2 id="lessons-heading" className="mb-1 text-lg font-semibold text-ink">
@@ -378,6 +393,124 @@ function LevelGenerator({
             {t('marketContent.lessons.reviewLink')}
           </Link>
         </span>
+      )}
+    </li>
+  );
+}
+
+/** "Suggest modules" action: fetches model-proposed modules the market needs,
+ *  then renders each as a SuggestionCard that owns its create + native-generate. */
+function ModuleSuggestions({ code }: { code: string }) {
+  const { t } = useTranslation('admin');
+  const suggest = useSuggestModules(code);
+  const suggestions = suggest.data;
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => suggest.mutate()}
+        disabled={suggest.isPending}
+        className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+      >
+        {suggest.isPending ? t('marketContent.suggest.loading') : t('marketContent.suggest.action')}
+      </button>
+
+      {suggest.isError && (
+        <p className="mt-2 text-sm text-danger-500" role="alert">{t('marketContent.suggest.error')}</p>
+      )}
+
+      {suggest.isSuccess && suggestions && suggestions.length === 0 && (
+        <p className="mt-2 text-sm text-muted-foreground" role="status">{t('marketContent.suggest.none')}</p>
+      )}
+
+      {suggestions && suggestions.length > 0 && (
+        <ul className="mt-3 flex flex-col gap-3">
+          {suggestions.map((s, i) => (
+            <SuggestionCard key={`${s.title}-${i}`} code={code} suggestion={s} />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** One suggestion: shows its metadata, a "Create this module" action, then —
+ *  once created — a "Generate lessons" (native) trigger and a draft-review link.
+ *  Hooks are called unconditionally; the native hook binds to the created level
+ *  id once it exists (empty string disables it until then). */
+function SuggestionCard({ code, suggestion }: { code: string; suggestion: ModuleSuggestion }) {
+  const { t } = useTranslation('admin');
+  const create = useCreateModuleFromSuggestion(code);
+  const result = create.data;
+  const generate = useGenerateNativeLessons(result?.level_id ?? '');
+
+  return (
+    <li className="rounded-md border border-line px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-semibold text-ink">{suggestion.title}</span>
+        <span className="rounded bg-brand-100 px-2 py-0.5 text-xs text-brand-700">{suggestion.topic}</span>
+        {suggestion.action === 'replace' ? (
+          <span className="rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-900">
+            {t('marketContent.suggest.actionReplace')}
+            {suggestion.replaces ? ` — ${t('marketContent.suggest.replaces', { title: suggestion.replaces })}` : ''}
+          </span>
+        ) : (
+          <span className="rounded bg-success-100 px-2 py-0.5 text-xs text-success-800">
+            {t('marketContent.suggest.actionAdd')}
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">{suggestion.rationale}</p>
+
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+        {!result && (
+          <button
+            type="button"
+            onClick={() => create.mutate(suggestion)}
+            disabled={create.isPending}
+            className="min-h-[44px] rounded-md border border-line px-3 py-1 text-sm text-ink hover:bg-brand-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            {create.isPending ? t('marketContent.suggest.creating') : t('marketContent.suggest.create')}
+          </button>
+        )}
+        {create.isError && (
+          <span className="text-xs text-danger-500" role="alert">{t('marketContent.suggest.createError')}</span>
+        )}
+
+        {result && (
+          <>
+            <span className="text-xs text-success-600" role="status">{t('marketContent.suggest.created')}</span>
+            <button
+              type="button"
+              onClick={() => generate.mutate(result.suggested_concepts)}
+              disabled={generate.isPending}
+              className="min-h-[44px] rounded-md border border-line px-3 py-1 text-sm text-ink hover:bg-brand-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {generate.isPending
+                ? t('marketContent.suggest.generating')
+                : t('marketContent.suggest.generate')}
+            </button>
+          </>
+        )}
+      </div>
+
+      {result && generate.isError && (
+        <p className="mt-1 text-xs text-danger-500" role="alert">{t('marketContent.lessons.error')}</p>
+      )}
+      {result && generate.isSuccess && generate.data && (
+        <p className="mt-1 text-xs text-success-600" role="status">
+          {t('marketContent.suggest.generated', {
+            created: generate.data.created.length,
+            skipped: generate.data.skipped,
+          })}{' '}
+          <Link
+            to={`/admin/modules/${result.module_id}/levels/${result.level_id}/lessons`}
+            className="underline hover:text-success-700"
+          >
+            {t('marketContent.suggest.reviewLink')}
+          </Link>
+        </p>
       )}
     </li>
   );

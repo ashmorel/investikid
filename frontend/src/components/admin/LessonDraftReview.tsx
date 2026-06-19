@@ -104,6 +104,11 @@ function DraftCard({ draft, onApprove, onRegenerate, onReject, onSaveEdit }: Dra
             {t('draftReview.draft.flagged', { category: draft.moderation_category })}
           </span>
         )}
+        {draft.adaptation_flags?.suspect && (
+          <span className="rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-900" role="status">
+            {t('draftReview.adaptation.suspect', { terms: draft.adaptation_flags.uk_residue.join(', ') })}
+          </span>
+        )}
       </div>
 
       {editing ? (
