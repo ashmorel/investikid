@@ -651,6 +651,36 @@ async def scaffold_market(
     return MarketScaffoldResult.model_validate(summary)
 
 
+@router.post("/markets/{code}/publish")
+async def publish_market(code: str, session: AsyncSession = Depends(get_session)):
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    lesson_count = await session.scalar(
+        select(func.count(Lesson.id))
+        .select_from(Lesson)
+        .join(Module, Module.id == Lesson.module_id)
+        .where(Module.market_code == code)
+    ) or 0
+    if lesson_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="market has no lessons to publish"
+        )
+    market.has_content = True
+    await session.commit()
+    return {"code": code, "has_content": True}
+
+
+@router.post("/markets/{code}/unpublish")
+async def unpublish_market(code: str, session: AsyncSession = Depends(get_session)):
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    market.has_content = False
+    await session.commit()
+    return {"code": code, "has_content": False}
+
+
 # ── Badges ──────────────────────────────────────────────────────────
 @router.get("/badges", response_model=list[BadgeOut])
 async def list_badges(session: AsyncSession = Depends(get_session)):
