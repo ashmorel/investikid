@@ -27,6 +27,17 @@ vi.mock('@/api/admin', () => ({
     reset: mockReset,
     ...mutationState,
   }),
+  useGenerateTranslations: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    isSuccess: false,
+    data: undefined,
+  }),
+  useTranslationCoverage: () => ({
+    data: undefined,
+    isError: false,
+  }),
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {

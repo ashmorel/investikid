@@ -461,11 +461,13 @@ export interface AdminSettings {
   market_enroll_bonus_coins: number;
   market_completion_bonus_coins: number;
   seasonal_event?: SeasonalEvent | null;
+  enabled_content_languages: string[];
 }
 
-export type AdminSettingsUpdate = Omit<AdminSettings, 'market_enroll_bonus_coins' | 'market_completion_bonus_coins'> & {
+export type AdminSettingsUpdate = Omit<AdminSettings, 'market_enroll_bonus_coins' | 'market_completion_bonus_coins' | 'enabled_content_languages'> & {
   market_enroll_bonus_coins?: number;
   market_completion_bonus_coins?: number;
+  enabled_content_languages?: string[];
   clear_seasonal_event?: boolean;
 };
 
@@ -479,6 +481,47 @@ export function useUpdateAdminSettings() {
     mutationFn: (data: AdminSettingsUpdate) =>
       adminFetch<AdminSettings>('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'settings'] }),
+  });
+}
+
+// ── Content translations (E1) ──────────────────────────────────────
+export interface TranslationGenerateResult {
+  translated: number;
+  skipped_fresh: number;
+  failed: number;
+}
+
+export interface CoverageBucket {
+  active: number;
+  failed: number;
+  missing: number;
+}
+
+export interface TranslationCoverage {
+  language: string;
+  modules: CoverageBucket;
+  levels: CoverageBucket;
+  lessons: CoverageBucket;
+}
+
+/** Trigger a translation batch for a language (optionally scoped to a market).
+ *  Returns per-action counts. May be slow (calls the LLM per entity). */
+export function useGenerateTranslations() {
+  return useMutation({
+    mutationFn: ({ language, market_code }: { language: string; market_code?: string }) =>
+      adminFetch<TranslationGenerateResult>('/admin/translations/generate', {
+        method: 'POST',
+        body: JSON.stringify({ language, ...(market_code ? { market_code } : {}) }),
+      }),
+  });
+}
+
+/** Coverage (active/failed/missing per entity type) for a language. */
+export function useTranslationCoverage(language: string) {
+  return useQuery({
+    queryKey: ['admin', 'translation-coverage', language],
+    queryFn: () => adminFetch<TranslationCoverage>(`/admin/translations/coverage?language=${encodeURIComponent(language)}`),
+    enabled: !!language,
   });
 }
 
