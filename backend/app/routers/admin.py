@@ -91,7 +91,11 @@ from app.services.entitlements import set_premium
 from app.services.event_service import EVENT_KEY, set_event
 from app.services.level_service import premium_for_position
 from app.services.llm_client import probe_all_providers
-from app.services.market_brief_service import generate_brief, require_verified_brief
+from app.services.market_brief_service import (
+    BriefGenerationError,
+    generate_brief,
+    require_verified_brief,
+)
 from app.services.market_scaffold_service import scaffold_market_from_gb
 from app.services.moderation import moderate_output
 from app.services.translation_service import translate_entity
@@ -596,7 +600,7 @@ async def generate_market_brief(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
     try:
         brief = await generate_brief(session, market)
-    except (ValueError, json.JSONDecodeError) as exc:
+    except (BriefGenerationError, ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail="brief generation failed"
         ) from exc
