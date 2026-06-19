@@ -440,3 +440,35 @@ class VideoHealthItem(BaseModel):
 class VideoHealthCheckResult(BaseModel):
     summary: dict
     items: list[VideoHealthItem]
+
+
+# ── Content translations (i18n pipeline) ─────────────────────────────
+class TranslationGenerateRequest(BaseModel):
+    language: str
+    market_code: str | None = None
+
+
+class TranslationGenerateResult(BaseModel):
+    translated: int = 0
+    skipped_fresh: int = 0
+    failed: int = 0
+
+
+class CuratedTranslationRequest(BaseModel):
+    entity_type: str  # module|level|lesson
+    entity_id: uuid.UUID
+    language: str
+    translated_json: dict
+
+
+class CoverageBucket(BaseModel):
+    active: int = 0
+    failed: int = 0
+    missing: int = 0
+
+
+class TranslationCoverageOut(BaseModel):
+    language: str
+    modules: CoverageBucket
+    levels: CoverageBucket
+    lessons: CoverageBucket
