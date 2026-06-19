@@ -13,23 +13,26 @@ from app.services.market_scaffold_service import scaffold_market_from_gb
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
-def _adapted(title: str) -> str:
-    """The mocked adapter returns adapted titles/objectives for every source dict."""
-    return json.dumps(
-        {
-            "title": f"US {title}",
-            "conversation_prompt": "Adapted prompt for the US.",
-            "learning_objectives": ["Adapted objective."],
-        }
-    )
+def _batch_adapt(**kw) -> str:
+    """The mocked adapter: ONE call receives a JSON object mapping ids -> source
+    records; echo back the SAME ids with each record adapted (title prefixed 'US ').
+    Proves the titles came from the (batched) adapter, not copied from GB."""
+    sources = json.loads(kw["messages"][0]["content"])
+    out: dict = {}
+    for key, rec in sources.items():
+        adapted: dict = {"title": f"US {rec['title']}"}
+        if "conversation_prompt" in rec:
+            adapted["conversation_prompt"] = "Adapted prompt for the US."
+        if "learning_objectives" in rec:
+            adapted["learning_objectives"] = ["Adapted objective."]
+        out[key] = adapted
+    return json.dumps(out)
 
 
 def _mock_client():
     client = AsyncMock()
-    # The adapter is called once per module and once per level; each call asks the
-    # model to adapt one source dict. Returning a fixed adapted payload is enough to
-    # prove the titles came from the (mocked) adapter rather than being copied.
-    client.complete = AsyncMock(side_effect=lambda **kw: _adapted("Adapted"))
+    # The adapter now runs as a SINGLE batched call for the whole market.
+    client.complete = AsyncMock(side_effect=_batch_adapt)
     return client
 
 
@@ -165,3 +168,35 @@ async def test_scaffold_requires_verified_brief(db_session):
     with pytest.raises(HTTPException) as exc:
         await scaffold_market_from_gb(db_session, "US")
     assert exc.value.status_code == 409
+
+
+async def test_scaffold_makes_a_single_batched_llm_call(db_session):
+    # The whole market (every module + level) must be adapted in ONE call, not
+    # one-per-entity — otherwise the request runs for minutes and times out.
+    await _seed_gb(db_session)
+    await _verified_us_brief(db_session)
+    client = _mock_client()
+    with patch(
+        "app.services.market_scaffold_service.get_llm_client", return_value=client,
+    ):
+        await scaffold_market_from_gb(db_session, "US")
+    assert client.complete.await_count == 1
+
+
+async def test_scaffold_falls_back_to_gb_titles_on_llm_failure(db_session):
+    # If the single adapter call fails, scaffolding still completes with GB titles.
+    gb_mods = await _seed_gb(db_session)
+    await _verified_us_brief(db_session)
+    broken = AsyncMock()
+    broken.complete = AsyncMock(side_effect=RuntimeError("upstream down"))
+    with patch(
+        "app.services.market_scaffold_service.get_llm_client", return_value=broken,
+    ):
+        summary = await scaffold_market_from_gb(db_session, "US")
+    assert summary["modules_created"] == 2
+    us_titles = {
+        m.title for m in (await db_session.scalars(
+            select(Module).where(Module.market_code == "US")
+        )).all()
+    }
+    assert {m.title for m in gb_mods} == us_titles  # GB titles preserved on failure
