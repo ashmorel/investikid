@@ -23,6 +23,17 @@ def is_premium(user: User) -> bool:
     return user.is_premium
 
 
+def market_locked_for(user: User, market_code: str) -> bool:
+    """A free user may progress in only their started market. Premium → never
+    locked; free with no started market → nothing locked (first completion sets
+    it); free with a started market → every OTHER market is locked."""
+    if is_premium(user):
+        return False
+    if user.started_market_code is None:
+        return False
+    return market_code != user.started_market_code
+
+
 async def set_premium(
     session: AsyncSession, child: User, *, value: bool, actor: str
 ) -> bool:
