@@ -6,8 +6,8 @@ import { describe, expect, it, vi } from 'vitest';
 const switchMock = vi.fn().mockResolvedValue({ active_market_code: 'US' });
 vi.mock('../../../hooks/useMarkets', () => ({
   useMarkets: () => ({ data: [
-    { code: 'GB', name: 'United Kingdom', currency_code: 'GBP', has_content: true, enrolled: true, is_selected: true },
-    { code: 'US', name: 'United States', currency_code: 'USD', has_content: false, enrolled: false, is_selected: false },
+    { code: 'GB', name: 'United Kingdom', currency_code: 'GBP', has_content: true, enrolled: true, is_selected: true, locked: false },
+    { code: 'US', name: 'United States', currency_code: 'USD', has_content: false, enrolled: false, is_selected: false, locked: false },
   ] }),
   useSwitchMarket: () => ({ mutate: switchMock, isPending: false }),
 }));

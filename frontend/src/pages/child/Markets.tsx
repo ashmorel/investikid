@@ -56,6 +56,10 @@ export function Markets() {
                 <span className="ml-auto rounded-full bg-brand-100 px-2.5 py-0.5 text-sm font-semibold text-brand-700">
                   {t('picker.learning')}
                 </span>
+              ) : m.locked ? (
+                <span className="ml-auto rounded-full bg-brand-500 px-2.5 py-0.5 text-sm font-semibold text-white">
+                  {t('picker.premium')}
+                </span>
               ) : !m.has_content ? (
                 <span className="ml-auto rounded-full bg-gray-100 px-2.5 py-0.5 text-sm font-semibold text-muted-foreground">
                   {t('picker.comingSoon')}

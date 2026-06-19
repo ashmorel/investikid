@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import Lesson from '@/pages/child/Lesson';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
+vi.mock('@/hooks/usePremiumPaywall', () => ({ usePremiumPaywall: () => ({ open: vi.fn() }) }));
 
 beforeEach(() => vi.restoreAllMocks());
 

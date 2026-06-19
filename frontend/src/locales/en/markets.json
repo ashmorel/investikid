@@ -6,7 +6,13 @@
     "subtitle": "Pick where you want to learn about money. You can switch anytime.",
     "back": "Home",
     "learning": "Learning",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "premium": "Premium"
+  },
+  "unlock": {
+    "title": "Unlock all markets with Premium",
+    "body": "Free learners explore one market at a time. Go Premium to learn money skills across every country.",
+    "cta": "Unlock Premium"
   },
   "comingSoon": {
     "title": "New lessons for {{market}} are on the way!",
