@@ -349,6 +349,7 @@ class AdminSettingsOut(BaseModel):
     trade_commission_pct: str = "1.0"
     market_enroll_bonus_coins: int = 25
     market_completion_bonus_coins: int = 250
+    enabled_content_languages: list[str] = []
     seasonal_event: dict | None = None
 
 
@@ -358,6 +359,7 @@ class AdminSettingsUpdate(BaseModel):
     trade_commission_pct: str | None = None
     market_enroll_bonus_coins: int | None = None
     market_completion_bonus_coins: int | None = None
+    enabled_content_languages: list[str] | None = None
     # None = leave unchanged; explicit clear via clear_seasonal_event flag.
     seasonal_event: SeasonalEventIn | None = None
     clear_seasonal_event: bool = False

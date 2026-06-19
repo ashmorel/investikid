@@ -8,6 +8,8 @@ from app.models.app_setting import AppSetting
 
 _ALERT_EMAILS_KEY = "alert_emails"
 
+_CONTENT_LANGUAGES_KEY = "content_languages.enabled"
+
 _STARTING_CASH_KEY = "simulator.starting_cash"
 _TRADE_COMMISSION_PCT_KEY = "simulator.trade_commission_pct"
 _DEFAULT_TRADE_COMMISSION_PCT = Decimal("1.0")
@@ -53,6 +55,27 @@ async def get_alert_emails(session: AsyncSession) -> list[str]:
 
 async def set_alert_emails(session: AsyncSession, emails: list[str]) -> None:
     await set_setting(session, _ALERT_EMAILS_KEY, json.dumps(emails))
+
+
+async def get_enabled_content_languages(session: AsyncSession) -> list[str]:
+    raw = await get_setting(session, _CONTENT_LANGUAGES_KEY)
+    if raw:
+        try:
+            vals = json.loads(raw)
+            if isinstance(vals, list):
+                return [str(v) for v in vals]
+        except (ValueError, TypeError):
+            pass
+    return []
+
+
+async def set_enabled_content_languages(session: AsyncSession, langs: list[str]) -> None:
+    from app.core.languages import is_supported_language
+
+    for code in langs:
+        if code == "en" or not is_supported_language(code):
+            raise ValueError(f"unsupported content language {code!r}")
+    await set_setting(session, _CONTENT_LANGUAGES_KEY, json.dumps(langs))
 
 
 async def get_starting_cash(session: AsyncSession) -> dict[str, Decimal]:

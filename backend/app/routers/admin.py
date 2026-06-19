@@ -65,12 +65,14 @@ from app.services.admin_content_generation_service import (
 )
 from app.services.app_settings import (
     get_alert_emails,
+    get_enabled_content_languages,
     get_market_completion_bonus_coins,
     get_market_enroll_bonus_coins,
     get_setting,
     get_starting_cash,
     get_trade_commission_pct,
     set_alert_emails,
+    set_enabled_content_languages,
     set_market_completion_bonus_coins,
     set_market_enroll_bonus_coins,
     set_starting_cash,
@@ -647,6 +649,7 @@ async def get_settings(session: AsyncSession = Depends(get_session)):
     pct = await get_trade_commission_pct(session)
     enroll_bonus = await get_market_enroll_bonus_coins(session)
     completion_bonus = await get_market_completion_bonus_coins(session)
+    content_languages = await get_enabled_content_languages(session)
     raw_event = await get_setting(session, EVENT_KEY)
     return AdminSettingsOut(
         alert_emails=emails,
@@ -654,6 +657,7 @@ async def get_settings(session: AsyncSession = Depends(get_session)):
         trade_commission_pct=str(pct),
         market_enroll_bonus_coins=enroll_bonus,
         market_completion_bonus_coins=completion_bonus,
+        enabled_content_languages=content_languages,
         seasonal_event=json.loads(raw_event) if raw_event else None,
     )
 
@@ -671,6 +675,8 @@ async def update_settings(
         await set_market_enroll_bonus_coins(session, body.market_enroll_bonus_coins)
     if body.market_completion_bonus_coins is not None:
         await set_market_completion_bonus_coins(session, body.market_completion_bonus_coins)
+    if body.enabled_content_languages is not None:
+        await set_enabled_content_languages(session, body.enabled_content_languages)
     if body.clear_seasonal_event:
         await set_event(session, None)
     elif body.seasonal_event is not None:
@@ -686,6 +692,7 @@ async def update_settings(
     pct = await get_trade_commission_pct(session)
     enroll_bonus = await get_market_enroll_bonus_coins(session)
     completion_bonus = await get_market_completion_bonus_coins(session)
+    content_languages = await get_enabled_content_languages(session)
     raw_event = await get_setting(session, EVENT_KEY)
     return AdminSettingsOut(
         alert_emails=body.alert_emails,
@@ -693,6 +700,7 @@ async def update_settings(
         trade_commission_pct=str(pct),
         market_enroll_bonus_coins=enroll_bonus,
         market_completion_bonus_coins=completion_bonus,
+        enabled_content_languages=content_languages,
         seasonal_event=json.loads(raw_event) if raw_event else None,
     )
 
