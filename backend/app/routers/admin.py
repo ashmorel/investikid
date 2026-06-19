@@ -16,6 +16,8 @@ from app.models.content import Lesson, Level, Module
 from app.models.content_translation import ContentTranslation
 from app.models.gamification import Badge, Challenge, UserBadge
 from app.models.lesson_draft import LessonDraft
+from app.models.market import Market
+from app.models.market_brief import MarketBrief
 from app.models.user import User
 from app.models.video_asset import VideoAsset
 from app.models.video_health import VideoHealth
@@ -42,6 +44,8 @@ from app.schemas.admin import (
     LessonDraftUpdate,
     LessonOut,
     LessonUpdate,
+    MarketBriefOut,
+    MarketBriefUpdate,
     ModuleCreate,
     ModuleEngagementOut,
     ModuleOut,
@@ -84,6 +88,7 @@ from app.services.entitlements import set_premium
 from app.services.event_service import EVENT_KEY, set_event
 from app.services.level_service import premium_for_position
 from app.services.llm_client import probe_all_providers
+from app.services.market_brief_service import generate_brief
 from app.services.moderation import moderate_output
 from app.services.translation_service import translate_entity
 
@@ -541,6 +546,63 @@ async def reject_lesson_draft(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
     await session.delete(draft)
     await session.commit()
+
+
+# ── Market briefs ───────────────────────────────────────────────────
+@router.post("/markets/{code}/brief/generate", response_model=MarketBriefOut)
+@limiter.limit("5/minute")
+async def generate_market_brief(
+    request: Request,
+    code: str,
+    session: AsyncSession = Depends(get_session),
+):
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    try:
+        brief = await generate_brief(session, market)
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY, detail="brief generation failed"
+        ) from exc
+    await session.commit()
+    return MarketBriefOut.model_validate(brief)
+
+
+@router.get("/markets/{code}/brief", response_model=MarketBriefOut)
+async def get_market_brief(code: str, session: AsyncSession = Depends(get_session)):
+    brief = await session.get(MarketBrief, code)
+    if brief is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brief not found")
+    return MarketBriefOut.model_validate(brief)
+
+
+@router.put("/markets/{code}/brief", response_model=MarketBriefOut)
+async def update_market_brief(
+    code: str,
+    payload: MarketBriefUpdate,
+    session: AsyncSession = Depends(get_session),
+):
+    brief = await session.get(MarketBrief, code)
+    if brief is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brief not found")
+    if not isinstance(payload.brief_json, dict):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="brief_json must be an object"
+        )
+    brief.brief_json = payload.brief_json
+    await session.commit()
+    return MarketBriefOut.model_validate(brief)
+
+
+@router.post("/markets/{code}/brief/verify", response_model=MarketBriefOut)
+async def verify_market_brief(code: str, session: AsyncSession = Depends(get_session)):
+    brief = await session.get(MarketBrief, code)
+    if brief is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brief not found")
+    brief.status = "verified"
+    await session.commit()
+    return MarketBriefOut.model_validate(brief)
 
 
 # ── Badges ──────────────────────────────────────────────────────────

@@ -193,6 +193,20 @@ class LessonDraftUpdate(BaseModel):
     content_json: dict
 
 
+# ── Market brief ────────────────────────────────────────────────────
+class MarketBriefOut(BaseModel):
+    market_code: str
+    brief_json: dict
+    status: str
+    model_used: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MarketBriefUpdate(BaseModel):
+    brief_json: dict
+
+
 # ── Video presign ───────────────────────────────────────────────────
 class VideoPresignRequest(BaseModel):
     filename: str = Field(max_length=255)
