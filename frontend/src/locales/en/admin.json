@@ -47,6 +47,60 @@
   "layout": {
     "loading": "Loading…"
   },
+  "marketContent": {
+    "pageTitle": "Market content",
+    "intro": "Build a localized content wave for a market: generate and verify its financial brief, scaffold the module/level skeleton from GB, generate market-adapted lessons (reviewed via the draft screens), then publish.",
+    "marketLabel": "Market",
+    "sourceTag": "source",
+    "gbNote": "GB is the source market — its content is authored directly, not generated here. Pick another market to build a content wave.",
+    "brief": {
+      "heading": "1. Market brief",
+      "status": "Status",
+      "statusValue": {
+        "none": "No brief yet",
+        "draft": "Draft",
+        "verified": "Verified"
+      },
+      "generate": "Generate brief",
+      "generating": "Generating…",
+      "generateError": "Could not generate the brief. Try again shortly.",
+      "verify": "Verify brief",
+      "jsonLabel": "Brief facts (JSON) — review and correct before verifying",
+      "invalidJson": "Not valid JSON.",
+      "save": "Save brief",
+      "saved": "Saved"
+    },
+    "scaffold": {
+      "heading": "2. Scaffold from GB",
+      "description": "Create the market's module and level skeleton, adapted from GB. Lessons are generated separately.",
+      "action": "Scaffold from GB",
+      "running": "Scaffolding…",
+      "needsVerified": "Verify the brief first to enable scaffolding.",
+      "result": "Created {{modules}} modules and {{levels}} levels.",
+      "alreadyDone": "Already scaffolded — no changes made."
+    },
+    "lessons": {
+      "heading": "3. Generate lessons",
+      "description": "Generate market-adapted lesson drafts for each scaffolded level, grounded in the verified brief and its GB source level. Review and approve drafts on the level's lessons screen.",
+      "notScaffolded": "Scaffold the market first to list its modules and levels here.",
+      "noLevels": "This module has no levels yet.",
+      "noSource": "No matching GB source level — generation disabled.",
+      "generate": "Generate lessons (from GB)",
+      "generating": "Generating…",
+      "result": "Created {{created}}, skipped {{skipped}}.",
+      "reviewLink": "Review drafts",
+      "error": "Generation failed. Try again."
+    },
+    "publish": {
+      "heading": "4. Publish",
+      "live": "This market is live (children can see its content).",
+      "notLive": "This market is not yet live.",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "noLessons": "Cannot publish: this market has no lessons yet. Scaffold and generate lessons first.",
+      "error": "Could not update publish state. Try again shortly."
+    }
+  },
   "settings": {
     "pageTitle": "Settings",
     "loadError": "Failed to load settings. Refresh to try again.",
@@ -124,6 +178,7 @@
       "challenges": "Challenges",
       "feedback": "Feedback",
       "videoHealth": "Video health",
+      "marketContent": "Market content",
       "analytics": "Analytics",
       "settings": "Settings"
     },
