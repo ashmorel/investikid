@@ -641,3 +641,99 @@ export function useAnalyticsSummary(days: number) {
     queryFn: () => adminFetch<AnalyticsSummary>(`/admin/analytics/summary?days=${days}`),
   });
 }
+
+// ── Market content pipeline (E2) ───────────────────────────────────
+export interface MarketBrief {
+  market_code: string;
+  brief_json: Record<string, unknown>;
+  status: 'draft' | 'verified';
+  model_used: string;
+}
+
+export interface ScaffoldResult {
+  modules_created: number;
+  levels_created: number;
+  already_scaffolded?: boolean;
+}
+
+export interface MarketPublishResult {
+  code: string;
+  has_content: boolean;
+}
+
+/** The per-market human-verified brief that grounds content generation.
+ *  404 (no brief yet) surfaces as a query error; the UI treats it as absent. */
+export function useMarketBrief(code: string) {
+  return useQuery({
+    queryKey: ['admin', 'market-brief', code],
+    queryFn: () => adminFetch<MarketBrief>(`/admin/markets/${code}/brief`),
+    enabled: !!code,
+    retry: false,
+  });
+}
+
+export function useGenerateMarketBrief(code: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => adminFetch<MarketBrief>(`/admin/markets/${code}/brief/generate`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'market-brief', code] }),
+  });
+}
+
+export function useUpdateMarketBrief(code: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (brief_json: Record<string, unknown>) =>
+      adminFetch<MarketBrief>(`/admin/markets/${code}/brief`, { method: 'PUT', body: JSON.stringify({ brief_json }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'market-brief', code] }),
+  });
+}
+
+export function useVerifyMarketBrief(code: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => adminFetch<MarketBrief>(`/admin/markets/${code}/brief/verify`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'market-brief', code] }),
+  });
+}
+
+export function useScaffoldMarket(code: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => adminFetch<ScaffoldResult>(`/admin/markets/${code}/scaffold`, { method: 'POST' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
+      qc.invalidateQueries({ queryKey: ['markets'] });
+    },
+  });
+}
+
+/** Generate market-adapted drafts for a target level from a GB source level.
+ *  Drafts are then reviewed/approved via the existing per-level draft UI. */
+export function useGenerateMarketLessons(levelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (source_level_id: string) =>
+      adminFetch<GenerateLessonsResult>(`/admin/levels/${levelId}/generate-market`, {
+        method: 'POST',
+        body: JSON.stringify({ source_level_id }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] }),
+  });
+}
+
+export function usePublishMarket(code: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => adminFetch<MarketPublishResult>(`/admin/markets/${code}/publish`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['markets'] }),
+  });
+}
+
+export function useUnpublishMarket(code: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => adminFetch<MarketPublishResult>(`/admin/markets/${code}/unpublish`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['markets'] }),
+  });
+}
