@@ -30,6 +30,6 @@ describe('Markets picker', () => {
   it('tapping a market switches to it', () => {
     render(wrap());
     fireEvent.click(screen.getByText('United States'));
-    expect(switchMock).toHaveBeenCalledWith('US');
+    expect(switchMock).toHaveBeenCalledWith('US', expect.objectContaining({ onSuccess: expect.any(Function) }));
   });
 });

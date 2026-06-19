@@ -18,6 +18,7 @@ from app.schemas.content import (
     LevelOut,
     ModuleOut,
     NextLessonEnvelope,
+    RewardGrantOut,
 )
 from app.services import product_analytics_service
 from app.services.age_tier import age_in_years
@@ -36,7 +37,10 @@ from app.services.gamification_service import (
     update_challenge_progress,
 )
 from app.services.level_service import LevelStateInput, derive_level_states
-from app.services.market_progress_service import award_xp
+from app.services.market_progress_service import (
+    award_xp,
+    grant_market_completion_reward,
+)
 from app.services.mastery_service import record_mastery_if_earned
 from app.services.next_lesson_service import resolve_next_lesson
 from app.services.premium_config import premium_required_error
@@ -370,6 +374,15 @@ async def complete_lesson(
 
     await grant_module_completion_cash(session, current_user.id, lesson.module_id)
 
+    reward = RewardGrantOut()
+    if not already:
+        grant = await grant_market_completion_reward(
+            session, current_user, current_user.active_market_code
+        )
+        reward = RewardGrantOut(
+            coins=grant.coins, badge_name=grant.badge_name, badge_icon=grant.badge_icon
+        )
+
     await session.commit()
     await session.refresh(progress)
 
@@ -386,6 +399,7 @@ async def complete_lesson(
         streak_freezes=progress.streak_freezes,
         practice_available=practice_available,
         daily_goal_met=daily_goal_met,
+        reward=reward,
     )
 
 

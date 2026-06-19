@@ -458,10 +458,14 @@ export type SeasonalEvent = {
 
 export interface AdminSettings {
   alert_emails: string[];
+  market_enroll_bonus_coins: number;
+  market_completion_bonus_coins: number;
   seasonal_event?: SeasonalEvent | null;
 }
 
-export type AdminSettingsUpdate = AdminSettings & {
+export type AdminSettingsUpdate = Omit<AdminSettings, 'market_enroll_bonus_coins' | 'market_completion_bonus_coins'> & {
+  market_enroll_bonus_coins?: number;
+  market_completion_bonus_coins?: number;
   clear_seasonal_event?: boolean;
 };
 

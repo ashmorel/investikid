@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import type { RewardGrant } from './market';
 
 export type ModuleTopic = 'stocks' | 'savings' | 'real_estate' | 'budgeting' | 'risk' | 'crypto' | 'taxes' | 'debt' | 'entrepreneurship';
 
@@ -74,6 +75,7 @@ export type LessonCompletionResult = {
   streak_freezes: number;
   practice_available: boolean;
   daily_goal_met?: boolean;
+  reward: RewardGrant;
 };
 
 export type Progress = {
