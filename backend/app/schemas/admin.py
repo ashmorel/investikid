@@ -189,6 +189,10 @@ class GenerateLessonsResponse(BaseModel):
     skipped: int
 
 
+class GenerateMarketLessonsRequest(BaseModel):
+    source_level_id: uuid.UUID
+
+
 class LessonDraftUpdate(BaseModel):
     content_json: dict
 

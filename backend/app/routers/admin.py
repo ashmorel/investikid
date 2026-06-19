@@ -39,6 +39,7 @@ from app.schemas.admin import (
     CuratedTranslationRequest,
     GenerateLessonsRequest,
     GenerateLessonsResponse,
+    GenerateMarketLessonsRequest,
     LessonCreate,
     LessonDraftOut,
     LessonDraftUpdate,
@@ -65,6 +66,7 @@ from app.services import storage, video_health_service
 from app.services.admin_content_generation_service import (
     _concat_text,
     generate_level_lessons,
+    generate_market_level_lessons,
     regenerate_draft,
 )
 from app.services.app_settings import (
@@ -88,7 +90,7 @@ from app.services.entitlements import set_premium
 from app.services.event_service import EVENT_KEY, set_event
 from app.services.level_service import premium_for_position
 from app.services.llm_client import probe_all_providers
-from app.services.market_brief_service import generate_brief
+from app.services.market_brief_service import generate_brief, require_verified_brief
 from app.services.moderation import moderate_output
 from app.services.translation_service import translate_entity
 
@@ -457,6 +459,34 @@ async def generate_level_lessons_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
     result = await generate_level_lessons(
         session, level, concept=payload.concept, count=payload.count, types=payload.types,
+    )
+    return GenerateLessonsResponse(
+        created=[LessonDraftOut.model_validate(d) for d in result.created],
+        skipped=result.skipped,
+    )
+
+
+@router.post("/levels/{level_id}/generate-market", response_model=GenerateLessonsResponse)
+@limiter.limit("5/minute")
+async def generate_market_level_lessons_endpoint(
+    request: Request,
+    level_id: uuid.UUID,
+    payload: GenerateMarketLessonsRequest,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    target_level = await session.get(Level, level_id)
+    if target_level is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
+    source_level = await session.get(Level, payload.source_level_id)
+    if source_level is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source level not found")
+    target_module = await session.get(Module, target_level.module_id)
+    if target_module is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
+    brief = await require_verified_brief(session, target_module.market_code)
+    result = await generate_market_level_lessons(
+        session, target_level, source_level=source_level, brief=brief,
     )
     return GenerateLessonsResponse(
         created=[LessonDraftOut.model_validate(d) for d in result.created],
