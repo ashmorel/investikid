@@ -37,6 +37,17 @@ def _is_openai_reasoning_model(model: str) -> bool:
     return m.startswith("gpt-5") or m.startswith(("o1", "o3", "o4"))
 
 
+# Reasoning models (gpt-5 / o-series) spend tokens on INTERNAL reasoning that
+# count against max_completion_tokens BEFORE any visible output. A budget sized
+# only for the answer (e.g. 60–1200) is consumed entirely by reasoning, yielding
+# an EMPTY completion. So for reasoning models we floor the completion budget at
+# a value large enough to cover reasoning + a full answer (empirically ~6.5k of
+# reasoning + answer for the largest surface). Unused tokens are not billed, and
+# actual answer length stays governed by the prompt — this only prevents the
+# starve-to-empty failure. Non-reasoning models keep the caller's max_tokens.
+_REASONING_MIN_COMPLETION_TOKENS = 12000
+
+
 class LLMError(Exception):
     """Raised when an LLM call fails after retries."""
 
@@ -114,7 +125,10 @@ class OpenAIClient:
         all_messages = [{"role": "system", "content": system_prompt}, *messages]
         kwargs: dict = {"model": self._model, "messages": all_messages}
         if _is_openai_reasoning_model(self._model):
-            kwargs["max_completion_tokens"] = max_tokens
+            # Floor the budget so internal reasoning can't starve the answer to
+            # empty (see _REASONING_MIN_COMPLETION_TOKENS). Answer length stays
+            # governed by the prompt, not this ceiling.
+            kwargs["max_completion_tokens"] = max(max_tokens, _REASONING_MIN_COMPLETION_TOKENS)
             # temperature: only the default (1) is supported → omit entirely
         else:
             kwargs["max_tokens"] = max_tokens

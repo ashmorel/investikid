@@ -96,7 +96,11 @@ class Settings(BaseSettings):
     tutor_max_messages_premium: int = 12
     tutor_rate_limit_per_hour: int = 10
     tutor_max_input_chars: int = 200
-    tutor_max_response_tokens: int = 150
+    # Output ceiling for Coach/tutor/chart-coach answers. Conciseness is enforced
+    # by the prompts ("under 100 words", age-appropriate); this is only an anti-
+    # truncation margin so a concise answer never gets cut off mid-sentence. 150
+    # was below a ~100-word answer's token need, truncating responses.
+    tutor_max_response_tokens: int = 300
 
     model_config = SettingsConfigDict(
         env_file=".env",

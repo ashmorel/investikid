@@ -33,6 +33,61 @@ async def test_openai_client_complete():
         mock_instance.chat.completions.create.assert_awaited_once()
 
 
+async def test_reasoning_model_floors_completion_tokens():
+    # A reasoning model (gpt-5*) must get a generous max_completion_tokens floor
+    # so internal reasoning can't starve the answer to empty. A small requested
+    # max_tokens (e.g. 150) is floored; temperature is omitted.
+    from app.services.llm_client import _REASONING_MIN_COMPLETION_TOKENS
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "ok"
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        MockOpenAI.return_value = mock_instance
+        client = OpenAIClient(api_key="k", model="gpt-5-mini")
+        await client.complete(system_prompt="s", messages=[{"role": "user", "content": "hi"}],
+                              max_tokens=150)
+        kwargs = mock_instance.chat.completions.create.await_args.kwargs
+        assert kwargs["max_completion_tokens"] == _REASONING_MIN_COMPLETION_TOKENS
+        assert "max_tokens" not in kwargs
+        assert "temperature" not in kwargs
+
+
+async def test_reasoning_model_respects_larger_request():
+    from app.services.llm_client import _REASONING_MIN_COMPLETION_TOKENS
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "ok"
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        MockOpenAI.return_value = mock_instance
+        client = OpenAIClient(api_key="k", model="gpt-5-mini")
+        big = _REASONING_MIN_COMPLETION_TOKENS + 5000
+        await client.complete(system_prompt="s", messages=[{"role": "user", "content": "hi"}],
+                              max_tokens=big)
+        assert mock_instance.chat.completions.create.await_args.kwargs["max_completion_tokens"] == big
+
+
+async def test_non_reasoning_model_keeps_max_tokens():
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "ok"
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        MockOpenAI.return_value = mock_instance
+        client = OpenAIClient(api_key="k", model="gpt-4o")
+        await client.complete(system_prompt="s", messages=[{"role": "user", "content": "hi"}],
+                              max_tokens=150, temperature=0.3)
+        kwargs = mock_instance.chat.completions.create.await_args.kwargs
+        assert kwargs["max_tokens"] == 150
+        assert "max_completion_tokens" not in kwargs
+
+
 async def test_anthropic_client_complete():
     mock_response = MagicMock()
     mock_response.content = [MagicMock()]
@@ -454,6 +509,8 @@ async def test_openai_complete_reasoning_model_uses_max_completion_tokens():
         mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
         MockOpenAI.return_value = mock_instance
 
+        from app.services.llm_client import _REASONING_MIN_COMPLETION_TOKENS
+
         client = OpenAIClient(api_key="test-key", model="gpt-5-mini")
         result = await client.complete(
             system_prompt="You are helpful.",
@@ -463,7 +520,8 @@ async def test_openai_complete_reasoning_model_uses_max_completion_tokens():
         )
         assert result == "reasoning answer"
         call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        assert call_kwargs["max_completion_tokens"] == 800
+        # 800 is below the reasoning floor → floored so reasoning can't starve output.
+        assert call_kwargs["max_completion_tokens"] == _REASONING_MIN_COMPLETION_TOKENS
         assert "max_tokens" not in call_kwargs
         assert "temperature" not in call_kwargs
 
