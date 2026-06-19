@@ -56,6 +56,14 @@ def _system_prompt(
             f"structure and age level identical. Do not copy GB-specific names, regulators or "
             f"currency. Source lesson: {source_text}"
         )
+    elif brief is not None and source_text is None:
+        prompt += (
+            f"\n\nWrite this as a MARKET-NATIVE lesson for the market '{module.market_code}', "
+            f"grounded in these verified market facts: {json.dumps(brief, ensure_ascii=False)}. "
+            f"Use the market's real products, regulators, currency and age-appropriate local "
+            f"examples. This is NOT a UK lesson — do not reference UK-specific products, "
+            f"regulators or currency."
+        )
     return prompt
 
 
@@ -134,6 +142,28 @@ async def generate_level_lessons(session: AsyncSession, level, *, concept: str, 
         lesson_type = types[i % len(types)]
         draft = await _generate_one(session, level=level, module=module, concept=concept,
                                     lesson_type=lesson_type)
+        if draft is None:
+            result.skipped += 1
+        else:
+            result.created.append(draft)
+    await session.commit()
+    return result
+
+
+async def generate_native_level_lessons(session: AsyncSession, level, *, brief, concepts,
+                                        types: list[str] | None = None) -> GenerationResult:
+    """Generate market-NATIVE lessons (brief-grounded, no GB source) for ``level``,
+    one per concept. The caller passes a verified brief.
+    """
+    module = await session.get(Module, level.module_id)
+    type_cycle = types or ["card", "quiz"]
+    result = GenerationResult()
+    for i, concept in enumerate(concepts):
+        draft = await _generate_one(
+            session, level=level, module=module, concept=concept,
+            lesson_type=type_cycle[i % len(type_cycle)],
+            brief=brief.brief_json, source_text=None,
+        )
         if draft is None:
             result.skipped += 1
         else:

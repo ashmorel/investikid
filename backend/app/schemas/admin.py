@@ -172,6 +172,11 @@ class GenerateLessonsRequest(BaseModel):
     types: list[Literal["card", "quiz", "scenario"]] = Field(min_length=1)
 
 
+class AdaptationFlags(BaseModel):
+    uk_residue: list[str] = []
+    suspect: bool = False
+
+
 class LessonDraftOut(BaseModel):
     id: uuid.UUID
     level_id: uuid.UUID
@@ -181,6 +186,7 @@ class LessonDraftOut(BaseModel):
     moderation_safe: bool
     moderation_category: str | None = None
     created_at: datetime
+    adaptation_flags: AdaptationFlags = Field(default_factory=AdaptationFlags)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -192,6 +198,11 @@ class GenerateLessonsResponse(BaseModel):
 
 class GenerateMarketLessonsRequest(BaseModel):
     source_level_id: uuid.UUID
+
+
+class GenerateNativeLessonsRequest(BaseModel):
+    concepts: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(min_length=1, max_length=8)
+    types: list[Literal["card", "quiz", "scenario"]] | None = None
 
 
 class LessonDraftUpdate(BaseModel):
@@ -216,6 +227,31 @@ class MarketScaffoldResult(BaseModel):
     modules_created: int
     levels_created: int
     already_scaffolded: bool = False
+
+
+class ModuleSuggestion(BaseModel):
+    title: str
+    topic: str = ""
+    rationale: str = ""
+    action: str = "add"
+    replaces: str | None = None
+    suggested_concepts: list[str] = Field(default_factory=list)
+
+
+class CuratedModuleSuggestion(BaseModel):
+    """Lenient inbound shape — the frontend forwards a suggester item verbatim."""
+
+    title: str = Field(min_length=1, max_length=200)
+    topic: str = Field(default="", max_length=30)
+    suggested_concepts: list[str] = Field(default_factory=list)
+    action: str = "add"
+    replaces: str | None = None
+
+
+class ModuleFromSuggestionResult(BaseModel):
+    module_id: uuid.UUID
+    level_id: uuid.UUID
+    suggested_concepts: list[str] = Field(default_factory=list)
 
 
 # ── Video presign ───────────────────────────────────────────────────
