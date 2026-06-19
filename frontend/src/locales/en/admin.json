@@ -91,6 +91,25 @@
       "reviewLink": "Review drafts",
       "error": "Generation failed. Try again."
     },
+    "suggest": {
+      "heading": "Intelligent suggestions",
+      "description": "Let the model propose modules this market needs that the UK set lacks. Create one in a click, then generate market-native lessons for it.",
+      "action": "Suggest modules",
+      "loading": "Thinking…",
+      "none": "No suggestions right now. Try again shortly.",
+      "error": "Could not get suggestions. Try again shortly.",
+      "actionAdd": "Add",
+      "actionReplace": "Replace",
+      "replaces": "replaces {{title}}",
+      "create": "Create this module",
+      "creating": "Creating…",
+      "created": "Module created.",
+      "generate": "Generate lessons",
+      "generating": "Generating…",
+      "generated": "Created {{created}}, skipped {{skipped}}.",
+      "reviewLink": "Review drafts",
+      "createError": "Could not create the module. Try again."
+    },
     "publish": {
       "heading": "4. Publish",
       "live": "This market is live (children can see its content).",
@@ -298,6 +317,9 @@
       "editButton": "Edit",
       "regenerateButton": "Regenerate",
       "rejectButton": "Reject"
+    },
+    "adaptation": {
+      "suspect": "⚠ May not be fully adapted ({{terms}})"
     },
     "rejectTitle": "Reject draft?",
     "rejectMessage": "This will discard the generated draft. This cannot be undone."

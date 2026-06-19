@@ -23,6 +23,7 @@ from app.models.video_asset import VideoAsset
 from app.models.video_health import VideoHealth
 from app.routers.admin_auth import get_current_admin
 from app.schemas.admin import (
+    AdaptationFlags,
     AdminLevelCreate,
     AdminLevelOut,
     AdminLevelUpdate,
@@ -36,10 +37,12 @@ from app.schemas.admin import (
     ChallengeOut,
     ChallengeUpdate,
     CoverageBucket,
+    CuratedModuleSuggestion,
     CuratedTranslationRequest,
     GenerateLessonsRequest,
     GenerateLessonsResponse,
     GenerateMarketLessonsRequest,
+    GenerateNativeLessonsRequest,
     LessonCreate,
     LessonDraftOut,
     LessonDraftUpdate,
@@ -50,7 +53,9 @@ from app.schemas.admin import (
     MarketScaffoldResult,
     ModuleCreate,
     ModuleEngagementOut,
+    ModuleFromSuggestionResult,
     ModuleOut,
+    ModuleSuggestion,
     ModuleUpdate,
     ReorderRequest,
     TranslationCoverageOut,
@@ -68,6 +73,7 @@ from app.services.admin_content_generation_service import (
     _concat_text,
     generate_level_lessons,
     generate_market_level_lessons,
+    generate_native_level_lessons,
     regenerate_draft,
 )
 from app.services.app_settings import (
@@ -85,6 +91,7 @@ from app.services.app_settings import (
     set_starting_cash,
     set_trade_commission_pct,
 )
+from app.services.content_adaptation_check import find_uk_residue
 from app.services.content_i18n import extract_bundle, source_hash, validate_bundle
 from app.services.engagement_service import get_module_engagement
 from app.services.entitlements import set_premium
@@ -96,6 +103,7 @@ from app.services.market_brief_service import (
     generate_brief,
     require_verified_brief,
 )
+from app.services.market_module_suggester import suggest_modules
 from app.services.market_scaffold_service import scaffold_market_from_gb
 from app.services.moderation import moderate_output
 from app.services.translation_service import translate_entity
@@ -503,6 +511,31 @@ async def generate_market_level_lessons_endpoint(
     )
 
 
+@router.post("/levels/{level_id}/generate-native", response_model=GenerateLessonsResponse)
+@limiter.limit("5/minute")
+async def generate_native_level_lessons_endpoint(
+    request: Request,
+    level_id: uuid.UUID,
+    payload: GenerateNativeLessonsRequest,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    level = await session.get(Level, level_id)
+    if level is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
+    module = await session.get(Module, level.module_id)
+    if module is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
+    brief = await require_verified_brief(session, module.market_code)
+    result = await generate_native_level_lessons(
+        session, level, brief=brief, concepts=payload.concepts, types=payload.types,
+    )
+    return GenerateLessonsResponse(
+        created=[LessonDraftOut.model_validate(d) for d in result.created],
+        skipped=result.skipped,
+    )
+
+
 @router.get("/levels/{level_id}/drafts", response_model=list[LessonDraftOut])
 async def list_lesson_drafts(
     level_id: uuid.UUID, session: AsyncSession = Depends(get_session),
@@ -510,7 +543,14 @@ async def list_lesson_drafts(
     rows = (await session.scalars(
         select(LessonDraft).where(LessonDraft.level_id == level_id).order_by(LessonDraft.created_at)
     )).all()
-    return [LessonDraftOut.model_validate(d) for d in rows]
+
+    def _draft_out(d):
+        residue = find_uk_residue(_concat_text(d.content_json or {}))
+        out = LessonDraftOut.model_validate(d)
+        out.adaptation_flags = AdaptationFlags(uk_residue=residue, suspect=bool(residue))
+        return out
+
+    return [_draft_out(d) for d in rows]
 
 
 @router.put("/lesson-drafts/{draft_id}", response_model=LessonDraftOut)
@@ -656,6 +696,59 @@ async def scaffold_market(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
     summary = await scaffold_market_from_gb(session, code)
     return MarketScaffoldResult.model_validate(summary)
+
+
+@router.post("/markets/{code}/module-suggestions", response_model=list[ModuleSuggestion])
+@limiter.limit("5/minute")
+async def market_module_suggestions(
+    request: Request,
+    code: str,
+    session: AsyncSession = Depends(get_session),
+):
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    suggestions = await suggest_modules(session, market)
+    return [ModuleSuggestion(**s) for s in suggestions]
+
+
+@router.post(
+    "/markets/{code}/modules/from-suggestion", response_model=ModuleFromSuggestionResult
+)
+@limiter.limit("5/minute")
+async def create_module_from_suggestion(
+    request: Request,
+    code: str,
+    body: CuratedModuleSuggestion,
+    session: AsyncSession = Depends(get_session),
+):
+    """One-click scaffold: create a new module + one starter level (no lessons) in
+    the given market from a curated suggester item. No auto-publish, no auto-delete."""
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    max_order = await session.scalar(
+        select(func.max(Module.order_index)).where(Module.market_code == code)
+    )
+    module = Module(
+        topic=(body.topic or "general")[:30],
+        title=body.title,
+        country_codes=[],
+        market_code=code,
+        is_premium=False,
+        order_index=(max_order or -1) + 1,
+        prerequisite_ids=[],
+    )
+    session.add(module)
+    await session.flush()
+    level = Level(module_id=module.id, title="Level 1", order_index=0, is_premium=False)
+    session.add(level)
+    await session.commit()
+    return ModuleFromSuggestionResult(
+        module_id=module.id,
+        level_id=level.id,
+        suggested_concepts=body.suggested_concepts,
+    )
 
 
 @router.post("/markets/{code}/publish")

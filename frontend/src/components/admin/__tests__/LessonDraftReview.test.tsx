@@ -21,6 +21,11 @@ const FLAGGED = {
   moderation_safe: false,
   moderation_category: 'violence',
 };
+const UK_RESIDUE = {
+  ...SAFE,
+  id: 'r1',
+  adaptation_flags: { uk_residue: ['£', 'ISA'], suspect: true },
+};
 
 const approveMutate = vi.fn();
 const updateMutate = vi.fn();
@@ -29,7 +34,7 @@ const rejectMutate = vi.fn();
 const generateMutate = vi.fn();
 
 vi.mock('@/api/admin', () => ({
-  useLevelDrafts: () => ({ data: [SAFE, FLAGGED], isLoading: false }),
+  useLevelDrafts: () => ({ data: [SAFE, FLAGGED, UK_RESIDUE], isLoading: false }),
   useGenerateLevelLessons: () => ({ mutate: generateMutate, isPending: false }),
   useApproveDraft: () => ({ mutate: approveMutate, isPending: false }),
   useUpdateDraft: () => ({ mutate: updateMutate, isPending: false }),
@@ -89,6 +94,16 @@ describe('LessonDraftReview', () => {
     const safeCard = screen.getByTestId('draft-s1');
     await user.click(within(safeCard).getByRole('button', { name: /regenerate/i }));
     expect(regenerateMutate).toHaveBeenCalledWith('s1');
+  });
+
+  it('draft with UK residue shows the adaptation badge; safe draft does not', () => {
+    renderReview();
+    const residueCard = screen.getByTestId('draft-r1');
+    expect(within(residueCard).getByText(/may not be fully adapted/i)).toBeInTheDocument();
+    expect(within(residueCard).getByText(/ISA/)).toBeInTheDocument();
+
+    const safeCard = screen.getByTestId('draft-s1');
+    expect(within(safeCard).queryByText(/may not be fully adapted/i)).not.toBeInTheDocument();
   });
 
   it('has no axe violations', async () => {
