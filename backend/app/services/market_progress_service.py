@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import date
 
 from sqlalchemy import select
@@ -10,6 +11,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.market_progress import UserMarketProgress
 from app.models.user import User, UserProgress
 from app.services.xp_service import XpResult, record_xp
+
+
+@dataclass
+class RewardGrant:
+    coins: int = 0
+    badge_name: str | None = None
+    badge_icon: str | None = None
+
+    @property
+    def is_empty(self) -> bool:
+        return self.coins == 0 and self.badge_name is None
 
 
 async def _add_market_xp(session: AsyncSession, user_id: uuid.UUID, market_code: str, amount: int) -> None:
@@ -59,3 +71,28 @@ async def ensure_enrolled(session: AsyncSession, user_id: uuid.UUID, market_code
             session.add(UserMarketProgress(user_id=user_id, market_code=market_code, xp=0))
     except IntegrityError:
         pass
+
+
+async def grant_enroll_reward(
+    session: AsyncSession, user: User, market_code: str
+) -> RewardGrant:
+    """One-time coin bonus the first time a user enrolls in a NON-home market.
+    Idempotent via enroll_rewarded_at; the home market never qualifies."""
+    if market_code == user.home_market_code:
+        return RewardGrant()
+    row = await session.get(UserMarketProgress, (user.id, market_code))
+    if row is None or row.enroll_rewarded_at is not None:
+        return RewardGrant()
+    from datetime import UTC, datetime
+
+    from app.services.app_settings import get_market_enroll_bonus_coins
+
+    coins = await get_market_enroll_bonus_coins(session)
+    progress = await session.get(UserProgress, user.id)
+    if progress is None:
+        progress = UserProgress(user_id=user.id)
+        session.add(progress)
+        await session.flush()
+    progress.virtual_coins = (progress.virtual_coins or 0) + coins
+    row.enroll_rewarded_at = datetime.now(UTC)
+    return RewardGrant(coins=coins)
