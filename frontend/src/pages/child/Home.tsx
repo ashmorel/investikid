@@ -14,6 +14,7 @@ import { StatsCard } from '@/components/child/StatsCard';
 import { QuickLinksRow } from '@/components/child/home/QuickLinksRow';
 import { ReviseCard } from '@/components/child/home/ReviseCard';
 import { PremiumUpsellCard } from '@/components/child/PremiumUpsellCard';
+import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useAllBadges } from '@/hooks/useAllBadges';
 import { useBadges } from '@/hooks/useBadges';
@@ -24,6 +25,7 @@ import { EventStrip } from '@/components/child/home/EventStrip';
 export default function Home() {
   const { t } = useTranslation('home');
   const { t: tMarkets } = useTranslation('markets');
+  const { open: openPaywall } = usePremiumPaywall();
   useEffect(() => trackOncePerSession('home_view'), []);
   const { data: progress } = useProgress();
   const { data: recs } = useRecommendations();
@@ -49,6 +51,12 @@ export default function Home() {
     markets?.find((m) => m.is_selected) ??
     markets?.find((m) => m.code === (me?.active_market_code ?? 'GB'));
   const marketComingSoon = activeMarket != null && !activeMarket.has_content;
+  // A free user may only progress in their started market; the backend marks
+  // every other market `locked`. When the active market is locked, surface a
+  // Premium-unlock panel above the lesson content (the completion endpoint also
+  // hard-gates with a 403). GB default users are never locked, so this is inert
+  // for them.
+  const marketLocked = activeMarket != null && activeMarket.locked;
 
   // Additive per-market indicator: the active market's XP, alongside (not
   // replacing) the global level/streak/coins shown in StatsCard.
@@ -98,6 +106,20 @@ export default function Home() {
         </div>
       ) : (
         <>
+          {marketLocked && (
+            <div className="mt-4 rounded-2xl border border-brand-200 bg-brand-50 p-4">
+              <h2 className="text-base font-extrabold text-brand-800">{tMarkets('unlock.title')}</h2>
+              <p className="mt-1 text-sm text-brand-700">{tMarkets('unlock.body')}</p>
+              <button
+                type="button"
+                onClick={() => openPaywall({ kind: 'home', label: activeMarket!.name })}
+                className="mt-3 min-h-[44px] rounded-xl bg-brand-gradient px-4 py-2 text-sm font-bold text-white hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+              >
+                {tMarkets('unlock.cta')}
+              </button>
+            </div>
+          )}
+
           <ReviseCard />
 
           <div className="mt-4">

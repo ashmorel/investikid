@@ -7,6 +7,7 @@ export type MarketSummary = {
   has_content: boolean;
   enrolled: boolean;
   is_selected: boolean;
+  locked: boolean;
 };
 
 export type MarketProgress = {
