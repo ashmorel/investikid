@@ -200,6 +200,11 @@ class GenerateMarketLessonsRequest(BaseModel):
     source_level_id: uuid.UUID
 
 
+class GenerateNativeLessonsRequest(BaseModel):
+    concepts: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(min_length=1, max_length=8)
+    types: list[Literal["card", "quiz", "scenario"]] | None = None
+
+
 class LessonDraftUpdate(BaseModel):
     content_json: dict
 

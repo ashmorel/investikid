@@ -41,6 +41,7 @@ from app.schemas.admin import (
     GenerateLessonsRequest,
     GenerateLessonsResponse,
     GenerateMarketLessonsRequest,
+    GenerateNativeLessonsRequest,
     LessonCreate,
     LessonDraftOut,
     LessonDraftUpdate,
@@ -69,6 +70,7 @@ from app.services.admin_content_generation_service import (
     _concat_text,
     generate_level_lessons,
     generate_market_level_lessons,
+    generate_native_level_lessons,
     regenerate_draft,
 )
 from app.services.app_settings import (
@@ -498,6 +500,31 @@ async def generate_market_level_lessons_endpoint(
     brief = await require_verified_brief(session, target_module.market_code)
     result = await generate_market_level_lessons(
         session, target_level, source_level=source_level, brief=brief,
+    )
+    return GenerateLessonsResponse(
+        created=[LessonDraftOut.model_validate(d) for d in result.created],
+        skipped=result.skipped,
+    )
+
+
+@router.post("/levels/{level_id}/generate-native", response_model=GenerateLessonsResponse)
+@limiter.limit("5/minute")
+async def generate_native_level_lessons_endpoint(
+    request: Request,
+    level_id: uuid.UUID,
+    payload: GenerateNativeLessonsRequest,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    level = await session.get(Level, level_id)
+    if level is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
+    module = await session.get(Module, level.module_id)
+    if module is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
+    brief = await require_verified_brief(session, module.market_code)
+    result = await generate_native_level_lessons(
+        session, level, brief=brief, concepts=payload.concepts, types=payload.types,
     )
     return GenerateLessonsResponse(
         created=[LessonDraftOut.model_validate(d) for d in result.created],
