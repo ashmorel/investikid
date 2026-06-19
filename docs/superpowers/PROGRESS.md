@@ -1,5 +1,11 @@
 # Yasmin's Choice rebrand — programme progress & resume guide
 
+> **⚠ Archive (rebrand era).** The current go-forward tracker is
+> **[`docs/MASTER-BACKLOG.md`](../MASTER-BACKLOG.md)** — start there for what's
+> outstanding and what's live (incl. the market-leader M3–M9 track, SP-Bio Face ID,
+> and the localization + multi-market programme through E2.1). This file remains the
+> record for the **rebrand programme** specifically.
+>
 > **Cross-tool resume note.** This file is the single source of truth for where the
 > "Yasmin's Choice" rebrand programme stands, so any agent (Claude Code, Codex,
 > Cursor) can pick it up. Each sub-project follows: **design spec → implementation

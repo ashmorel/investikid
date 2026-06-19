@@ -1,9 +1,11 @@
 # InvestiKid — Master Backlog
 
-**Updated:** 2026-06-16
+**Updated:** 2026-06-20
 **Purpose:** the single go-forward list of what's left. Strategic context + per-M
 detail live in [`docs/2026-06-12-market-leader-roadmap.md`](2026-06-12-market-leader-roadmap.md);
-this is the actionable tracker. Update it as items ship.
+this is the actionable tracker. Update it as items ship — **and update it (plus any
+relevant `docs/superpowers/PROGRESS.md` / roadmap entry) immediately after every push
+to `main`, as part of shipping.**
 
 **Owner legend:** 👤 you (human) · ⚙️ operator (console/config, no code) ·
 💻 code (dev) · 🤔 decision.
@@ -27,6 +29,7 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 - **Cron hardening** — ✅ in prod 2026-06-16 (`video-health-cron` per-endpoint isolation + retries + corrected default URL; validated by manual run).
 - **Frontend Dependabot — 0 open** — ✅ 2026-06-16 (vite/form-data/@babel/core patched within Vite 6, then **Vite 6→7** major upgrade shipped to prod; the 2 remaining esbuild alerts dismissed as `not_used` — Deno-install-path #17 and Windows-dev-server #22, neither reachable in our Node/Vite/macOS-Linux setup).
 - **Revision / spaced-repetition ("Revise")** — ✅ shipped to prod 2026-06-16 (home card + Revise tab/hub + capped-5 weak-first sessions with mastered-concept refreshers; LLM-generated cached/moderated questions; per-correct XP feeds the daily goal/streak; wrong refresher re-enters the SR loop; reuses the existing SR engine — **no migration**; WCAG 2.2 AA, vitest-axe).
+- **Localization + multi-market programme** — ✅ **ENGINEERING COMPLETE, all live in prod** (2026-06-17 → 2026-06-20). Global rollout engine across 10 markets (GB/US/AU/CA/IE/ES/FR/DE/HK/SG) + 6 UI languages (en/es/fr/de/zh-Hant/zh-Hans). Sub-projects, each spec'd/planned/TDD'd/promoted: **0** Gemini model lineup (lite=Flash-Lite, standard=Flash, premium+verifier=gpt-5-mini, Together fallback) · **A** i18n foundation (`users.language`, react-i18next, no-literal-string lint) · **B** AI replies in the user's language (+ multilingual moderation) · **C1** `Market` entity + market-based content gating · **C2a** per-market progress (`UserMarketProgress`, switchable active market, invariant-safe XP) · **C2b** multi-market kids' UI (picker, switcher, per-market home/stats, coming-soon) · **D** cross-market rewards (coins + "Market Mastered" badges) · **E1** content-translation pipeline (stored, moderated, curated-overridable) · **multi-market premium gate** (free users get ONE started market; premium unlocks all) · **E2** per-market content-wave pipeline (verified `MarketBrief` → scaffold from GB → market-grounded generation → review → publish) · **E2.1** intelligent market content (UK-residue adaptation guard on drafts + model-proposed market-specific modules with one-click create + market-native generation). Ships **INERT** for current users (everyone on GB); the gate/new markets only bite once an operator publishes non-GB content. Specs/plans: `docs/superpowers/{specs,plans}/2026-06-1[7-9]-*`. **Remaining = operator content production** (see post-launch bets) — no localization engineering outstanding.
 
 ---
 
@@ -65,7 +68,7 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
 - **School/teacher packaging** (highest-margin hedge) — start with 2–3 teacher chats during beta, zero code.
 - **Android / Play Store launch** — billing built; needs device-QA matrix + listing.
-- **Regional curriculum depth** — AU/CA localised content next.
+- **Regional curriculum depth** — the **engine is built and live** (localization + multi-market programme, incl. the E2/E2.1 per-market content pipeline). What remains is **operator content production**: per empty market run brief → verify → (suggest/scaffold) → generate → expert-review → publish, then enable content languages via E1. This is a content/ops effort on shipped tooling, not new code.
 - **AI Coach proactivity** — weekly personalised "your plan this week," premium-gated.
 - **R2 self-hosted video** — parked; YouTube covers lessons. Enable Cloudflare R2 (5 env vars) only if/when self-hosted video is wanted; upload-size enforcement already in place.
 
@@ -78,3 +81,7 @@ Non-trivial work runs the superpowers pipeline: **brainstorm → spec
 gated promotion** (`testing → staging → main`; prod DB-snapshot ask before any
 migration). Operational items (M1/M2/M5/M10/M11/M12) are runbooks/checklists with
 little-to-no code. Mark items off here as they ship.
+
+**After every push to `main`, update the progress docs as part of the same task** —
+move the shipped item into "Live in prod" here, and refresh `docs/superpowers/PROGRESS.md`
+and the relevant roadmap entry. Shipping isn't done until the trackers reflect it.
