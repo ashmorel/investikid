@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { contentApi, type LessonOut, type LessonSummary, type LessonCompletionResult, type ModuleOut, type LevelOut } from '@/api/content';
+import { ApiError } from '@/api/client';
 import { CardLesson } from '@/components/child/lesson/CardLesson';
 import { QuizLesson } from '@/components/child/lesson/QuizLesson';
 import { ScenarioLesson } from '@/components/child/lesson/ScenarioLesson';
@@ -16,6 +17,7 @@ import { ApplyMissionCTA } from '@/components/child/lesson/ApplyMissionCTA';
 import { BackButton } from '@/components/child/BackButton';
 import { MachineTranslatedBadge } from '@/components/child/MachineTranslatedBadge';
 import { useToast } from '@/hooks/use-toast';
+import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 import { useActiveMissions } from '@/hooks/useActiveMissions';
 import { useMarkets } from '@/hooks/useMarkets';
 import { formatRewardToast } from '@/lib/marketReward';
@@ -25,6 +27,7 @@ export default function Lesson() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { open: openPaywall } = usePremiumPaywall();
   const { t } = useTranslation('lessons');
   const { t: tMarkets } = useTranslation('markets');
   const { data: markets } = useMarkets();
@@ -71,7 +74,12 @@ export default function Lesson() {
         if (msg) toast({ description: msg });
       }
     },
-    onError: () => {
+    onError: (err) => {
+      if (err instanceof ApiError && err.code === 'premium_required') {
+        const label = (err.context as { label?: string } | undefined)?.label ?? t('lesson.premiumContent');
+        openPaywall({ kind: 'home', label });
+        return;
+      }
       toast({ title: t('lesson.saveError'), description: t('lesson.tryAgain') });
     },
     onSettled: () => {

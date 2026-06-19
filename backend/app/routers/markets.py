@@ -10,6 +10,7 @@ from app.models.market_progress import UserMarketProgress
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
 from app.services.content_service import compute_level
+from app.services.entitlements import market_locked_for
 from app.services.market_progress_service import ensure_enrolled, grant_enroll_reward
 
 router = APIRouter(tags=["markets"])
@@ -22,6 +23,7 @@ class MarketOut(BaseModel):
     has_content: bool
     enrolled: bool
     is_selected: bool
+    locked: bool = False
 
 
 class SwitchMarketRequest(BaseModel):
@@ -66,6 +68,7 @@ async def list_markets(
             has_content=m.has_content,
             enrolled=m.code in enrolled,
             is_selected=m.code == current_user.active_market_code,
+            locked=market_locked_for(current_user, m.code),
         )
         for m in markets
     ]
