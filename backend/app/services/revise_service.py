@@ -13,6 +13,11 @@ from app.models.content import Lesson, LessonCompletion, Module
 from app.models.skill_profile import SpacedRepetitionItem, WeakConcept
 from app.models.user import User, UserProgress
 from app.services.ai_content_service import generate_practice_quiz
+from app.services.content_localize import (
+    language_active,
+    load_translations,
+    localize_fields,
+)
 from app.services.content_service import record_daily_activity
 from app.services.entitlements import is_premium
 from app.services.market_progress_service import award_xp
@@ -129,8 +134,22 @@ async def list_revisable_modules(session: AsyncSession, user: User) -> list[dict
         .group_by(WeakConcept.topic)
     )).all()
     due_by_topic = {t: int(c) for t, c in rows}
+
+    lang = user.language
+    active = await language_active(session, lang)
+    module_translations = (
+        await load_translations(session, "module", [m.id for m in modules], lang)
+        if active else {}
+    )
+
+    def _title(m: Module) -> str:
+        if not active:
+            return m.title
+        fields, _ = localize_fields("module", {"title": m.title}, module_translations.get(m.id))
+        return fields["title"]
+
     out = [{
-        "module_id": str(m.id), "title": m.title, "icon": m.icon,
+        "module_id": str(m.id), "title": _title(m), "icon": m.icon,
         "topic": m.topic, "due_weak_count": due_by_topic.get(m.topic, 0),
     } for m in modules]
     out.sort(key=lambda d: (-d["due_weak_count"], d["title"]))  # weak-first
