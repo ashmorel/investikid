@@ -47,6 +47,7 @@ from app.schemas.admin import (
     LessonUpdate,
     MarketBriefOut,
     MarketBriefUpdate,
+    MarketScaffoldResult,
     ModuleCreate,
     ModuleEngagementOut,
     ModuleOut,
@@ -91,6 +92,7 @@ from app.services.event_service import EVENT_KEY, set_event
 from app.services.level_service import premium_for_position
 from app.services.llm_client import probe_all_providers
 from app.services.market_brief_service import generate_brief, require_verified_brief
+from app.services.market_scaffold_service import scaffold_market_from_gb
 from app.services.moderation import moderate_output
 from app.services.translation_service import translate_entity
 
@@ -633,6 +635,20 @@ async def verify_market_brief(code: str, session: AsyncSession = Depends(get_ses
     brief.status = "verified"
     await session.commit()
     return MarketBriefOut.model_validate(brief)
+
+
+@router.post("/markets/{code}/scaffold", response_model=MarketScaffoldResult)
+@limiter.limit("5/minute")
+async def scaffold_market(
+    request: Request,
+    code: str,
+    session: AsyncSession = Depends(get_session),
+):
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    summary = await scaffold_market_from_gb(session, code)
+    return MarketScaffoldResult.model_validate(summary)
 
 
 # ── Badges ──────────────────────────────────────────────────────────

@@ -211,6 +211,12 @@ class MarketBriefUpdate(BaseModel):
     brief_json: dict
 
 
+class MarketScaffoldResult(BaseModel):
+    modules_created: int
+    levels_created: int
+    already_scaffolded: bool = False
+
+
 # ── Video presign ───────────────────────────────────────────────────
 class VideoPresignRequest(BaseModel):
     filename: str = Field(max_length=255)
