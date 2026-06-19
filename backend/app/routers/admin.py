@@ -37,6 +37,7 @@ from app.schemas.admin import (
     ChallengeOut,
     ChallengeUpdate,
     CoverageBucket,
+    CuratedModuleSuggestion,
     CuratedTranslationRequest,
     GenerateLessonsRequest,
     GenerateLessonsResponse,
@@ -52,6 +53,7 @@ from app.schemas.admin import (
     MarketScaffoldResult,
     ModuleCreate,
     ModuleEngagementOut,
+    ModuleFromSuggestionResult,
     ModuleOut,
     ModuleSuggestion,
     ModuleUpdate,
@@ -708,6 +710,45 @@ async def market_module_suggestions(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
     suggestions = await suggest_modules(session, market)
     return [ModuleSuggestion(**s) for s in suggestions]
+
+
+@router.post(
+    "/markets/{code}/modules/from-suggestion", response_model=ModuleFromSuggestionResult
+)
+@limiter.limit("5/minute")
+async def create_module_from_suggestion(
+    request: Request,
+    code: str,
+    body: CuratedModuleSuggestion,
+    session: AsyncSession = Depends(get_session),
+):
+    """One-click scaffold: create a new module + one starter level (no lessons) in
+    the given market from a curated suggester item. No auto-publish, no auto-delete."""
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    max_order = await session.scalar(
+        select(func.max(Module.order_index)).where(Module.market_code == code)
+    )
+    module = Module(
+        topic=(body.topic or "general")[:30],
+        title=body.title,
+        country_codes=[],
+        market_code=code,
+        is_premium=False,
+        order_index=(max_order or -1) + 1,
+        prerequisite_ids=[],
+    )
+    session.add(module)
+    await session.flush()
+    level = Level(module_id=module.id, title="Level 1", order_index=0, is_premium=False)
+    session.add(level)
+    await session.commit()
+    return ModuleFromSuggestionResult(
+        module_id=module.id,
+        level_id=level.id,
+        suggested_concepts=body.suggested_concepts,
+    )
 
 
 @router.post("/markets/{code}/publish")

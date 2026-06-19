@@ -238,6 +238,22 @@ class ModuleSuggestion(BaseModel):
     suggested_concepts: list[str] = Field(default_factory=list)
 
 
+class CuratedModuleSuggestion(BaseModel):
+    """Lenient inbound shape — the frontend forwards a suggester item verbatim."""
+
+    title: str = Field(min_length=1, max_length=200)
+    topic: str = Field(default="", max_length=30)
+    suggested_concepts: list[str] = Field(default_factory=list)
+    action: str = "add"
+    replaces: str | None = None
+
+
+class ModuleFromSuggestionResult(BaseModel):
+    module_id: uuid.UUID
+    level_id: uuid.UUID
+    suggested_concepts: list[str] = Field(default_factory=list)
+
+
 # ── Video presign ───────────────────────────────────────────────────
 class VideoPresignRequest(BaseModel):
     filename: str = Field(max_length=255)
