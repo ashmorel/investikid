@@ -83,6 +83,36 @@ async def test_require_verified_brief(db_session):
     assert got.status == "verified"
 
 
+async def test_generate_brief_retries_then_succeeds(admin_client):
+    # First LLM call raises (transient), second returns a valid brief → 200.
+    flaky = AsyncMock()
+    flaky.complete = AsyncMock(side_effect=[RuntimeError("upstream 503"), BRIEF])
+    with patch("app.services.market_brief_service.get_llm_client", return_value=flaky):
+        resp = await admin_client.post("/admin/markets/CA/brief/generate")
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["brief_json"]["currency"] == "USD"
+    assert flaky.complete.await_count == 2
+
+
+async def test_generate_brief_empty_response_retries(admin_client):
+    # An empty completion is treated as a failure and retried.
+    flaky = AsyncMock()
+    flaky.complete = AsyncMock(side_effect=["", BRIEF])
+    with patch("app.services.market_brief_service.get_llm_client", return_value=flaky):
+        resp = await admin_client.post("/admin/markets/IE/brief/generate")
+    assert resp.status_code == 200, resp.text
+    assert flaky.complete.await_count == 2
+
+
+async def test_generate_brief_persistent_failure_returns_502(admin_client):
+    # Every attempt raises → BriefGenerationError → clean 502 (not an opaque 500).
+    broken = AsyncMock()
+    broken.complete = AsyncMock(side_effect=RuntimeError("auth failed"))
+    with patch("app.services.market_brief_service.get_llm_client", return_value=broken):
+        resp = await admin_client.post("/admin/markets/AU/brief/generate")
+    assert resp.status_code == 502, resp.text
+
+
 async def test_generate_unknown_market_404(admin_client):
     with patch("app.services.market_brief_service.get_llm_client", return_value=_mock_client()):
         resp = await admin_client.post("/admin/markets/ZZ/brief/generate")
