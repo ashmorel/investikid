@@ -229,6 +229,15 @@ class MarketScaffoldResult(BaseModel):
     already_scaffolded: bool = False
 
 
+class ModuleSuggestion(BaseModel):
+    title: str
+    topic: str = ""
+    rationale: str = ""
+    action: str = "add"
+    replaces: str | None = None
+    suggested_concepts: list[str] = Field(default_factory=list)
+
+
 # ── Video presign ───────────────────────────────────────────────────
 class VideoPresignRequest(BaseModel):
     filename: str = Field(max_length=255)

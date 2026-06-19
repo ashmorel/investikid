@@ -53,6 +53,7 @@ from app.schemas.admin import (
     ModuleCreate,
     ModuleEngagementOut,
     ModuleOut,
+    ModuleSuggestion,
     ModuleUpdate,
     ReorderRequest,
     TranslationCoverageOut,
@@ -100,6 +101,7 @@ from app.services.market_brief_service import (
     generate_brief,
     require_verified_brief,
 )
+from app.services.market_module_suggester import suggest_modules
 from app.services.market_scaffold_service import scaffold_market_from_gb
 from app.services.moderation import moderate_output
 from app.services.translation_service import translate_entity
@@ -692,6 +694,20 @@ async def scaffold_market(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
     summary = await scaffold_market_from_gb(session, code)
     return MarketScaffoldResult.model_validate(summary)
+
+
+@router.post("/markets/{code}/module-suggestions", response_model=list[ModuleSuggestion])
+@limiter.limit("5/minute")
+async def market_module_suggestions(
+    request: Request,
+    code: str,
+    session: AsyncSession = Depends(get_session),
+):
+    market = await session.get(Market, code)
+    if market is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
+    suggestions = await suggest_modules(session, market)
+    return [ModuleSuggestion(**s) for s in suggestions]
 
 
 @router.post("/markets/{code}/publish")
