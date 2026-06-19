@@ -83,6 +83,31 @@
       "completionBonus": "Market completion bonus (coins)",
       "description": "Coins awarded when a child enrolls in a new market and when they complete one. Save applies these."
     },
+    "contentLanguages": {
+      "legend": "Content languages",
+      "description": "Languages children can read authored content in. Only enabled languages serve stored translations; the rest fall back to English.",
+      "save": "Save content languages",
+      "saved": "Content languages saved.",
+      "saveError": "Could not save content languages. Try again."
+    },
+    "translations": {
+      "legend": "Translations",
+      "languageLabel": "Language",
+      "generate": "Generate translations",
+      "generating": "Generating…",
+      "generateDescription": "Translate authored content into the selected language. May take a while; runs the AI translator per item.",
+      "result": "Translated {{translated}}, skipped {{skipped}}, failed {{failed}}.",
+      "generateError": "Generation failed. Try again.",
+      "coverageHeading": "Coverage",
+      "loadCoverage": "Load coverage",
+      "coverageError": "Could not load coverage.",
+      "entityModules": "Modules",
+      "entityLevels": "Levels",
+      "entityLessons": "Lessons",
+      "colActive": "Active",
+      "colFailed": "Failed",
+      "colMissing": "Missing"
+    },
     "save": "Save",
     "saving": "Saving…",
     "saveSuccess": "Settings saved.",

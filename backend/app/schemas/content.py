@@ -44,6 +44,7 @@ class ModuleOut(BaseModel):
     locked: bool = False
     standards_alignment: list[StandardRef] | None = None
     sources: list[SourceRef] | None = None
+    machine_translated: bool = False
 
 
 class LessonOut(BaseModel):
@@ -57,6 +58,7 @@ class LessonOut(BaseModel):
     order_index: int
     completed: bool = False
     locked: bool = False
+    machine_translated: bool = False
 
 
 class LessonSummary(BaseModel):
@@ -69,6 +71,7 @@ class LessonSummary(BaseModel):
     xp_reward: int
     order_index: int
     completed: bool = False
+    machine_translated: bool = False
 
 
 class LessonCompletionRequest(BaseModel):

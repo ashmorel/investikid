@@ -7,6 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.content import Lesson, LessonCompletion, Level, Module
 from app.schemas.content import NextLessonOut
 from app.services.age_tier import age_in_years
+from app.services.content_localize import (
+    language_active,
+    load_translations,
+    localize_fields,
+)
 from app.services.content_service import (
     derive_lesson_title,
     is_module_age_ok,
@@ -22,6 +27,8 @@ async def resolve_next_lesson(session: AsyncSession, user: Any) -> NextLessonOut
     or None when genuinely caught up. Reuses derive_level_states so locking and
     completion match the level screens exactly."""
     user_age = age_in_years(user.dob, date.today())
+    lang = user.language
+    active = await language_active(session, lang)
     modules = list(await session.scalars(select(Module).order_by(Module.order_index)))
     for m in modules:
         if not is_module_in_market(m.market_code, user.active_market_code):
@@ -78,10 +85,20 @@ async def resolve_next_lesson(session: AsyncSession, user: Any) -> NextLessonOut
             target = next((lsn for lsn in level_lessons if lsn.id not in completed_ids), None)
             if target is None:
                 continue
+            module_title = m.title
+            lesson_content = target.content_json or {}
+            if active:
+                mod_tr = await load_translations(session, "module", [m.id], lang)
+                fields, _ = localize_fields("module", {"title": m.title}, mod_tr.get(m.id))
+                module_title = fields["title"]
+                lsn_tr = await load_translations(session, "lesson", [target.id], lang)
+                lesson_content, _ = localize_fields(
+                    "lesson", lesson_content, lsn_tr.get(target.id)
+                )
             return NextLessonOut(
-                module_id=m.id, module_title=m.title, module_icon=m.icon,
+                module_id=m.id, module_title=module_title, module_icon=m.icon,
                 level_id=lv.id, lesson_id=target.id,
-                lesson_title=derive_lesson_title(target.type, target.content_json or {}),
+                lesson_title=derive_lesson_title(target.type, lesson_content),
                 mode="continue" if module_has_completion else "start",
             )
     return None

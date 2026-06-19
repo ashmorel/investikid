@@ -22,6 +22,11 @@ from app.schemas.content import (
 )
 from app.services import product_analytics_service
 from app.services.age_tier import age_in_years
+from app.services.content_localize import (
+    language_active,
+    load_translations,
+    localize_fields,
+)
 from app.services.content_service import (
     derive_lesson_title,
     grant_module_completion_cash,
@@ -89,6 +94,14 @@ async def list_modules(
     result = await session.scalars(select(Module).order_by(Module.order_index))
     modules = result.all()
     user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
+
+    lang = current_user.language
+    active = await language_active(session, lang)
+    module_translations = (
+        await load_translations(session, "module", [m.id for m in modules], lang)
+        if active else {}
+    )
+
     out: list[ModuleOut] = []
     for m in modules:
         if not is_module_in_market(m.market_code, current_user.active_market_code):
@@ -98,11 +111,19 @@ async def list_modules(
         if not is_module_age_ok(user_age, m.min_age, m.max_age):
             continue
         accessible = is_module_premium_ok(module_is_premium=m.is_premium, is_premium_user=is_premium(current_user))
+        title = m.title
+        machine_translated = False
+        if active:
+            fields, machine_translated = localize_fields(
+                "module", {"title": m.title}, module_translations.get(m.id)
+            )
+            title = fields["title"]
         out.append(ModuleOut(
-            id=m.id, topic=m.topic, title=m.title,
+            id=m.id, topic=m.topic, title=title,
             country_codes=m.country_codes, is_premium=m.is_premium,
             order_index=m.order_index, icon=m.icon, locked=not accessible,
             standards_alignment=m.standards_alignment, sources=m.sources,
+            machine_translated=machine_translated,
         ))
     pref = current_user.topic_path
     if pref and pref in {m.topic for m in modules}:
@@ -134,17 +155,31 @@ async def list_lessons(
     else:
         completed_ids = set()
 
-    return [
-        LessonSummary(
+    lang = current_user.language
+    active = await language_active(session, lang)
+    lesson_translations = (
+        await load_translations(session, "lesson", [lesson.id for lesson in lessons], lang)
+        if active else {}
+    )
+
+    summaries: list[LessonSummary] = []
+    for lesson in lessons:
+        content_json = lesson.content_json or {}
+        machine_translated = False
+        if active:
+            content_json, machine_translated = localize_fields(
+                "lesson", content_json, lesson_translations.get(lesson.id)
+            )
+        summaries.append(LessonSummary(
             id=lesson.id,
             type=lesson.type,
-            title=derive_lesson_title(lesson.type, lesson.content_json or {}),
+            title=derive_lesson_title(lesson.type, content_json),
             xp_reward=lesson.xp_reward,
             order_index=lesson.order_index,
             completed=lesson.id in completed_ids,
-        )
-        for lesson in lessons
-    ]
+            machine_translated=machine_translated,
+        ))
+    return summaries
 
 
 async def _get_accessible_level(level_id, current_user, session) -> Level:
@@ -237,15 +272,29 @@ async def list_level_lessons(
                 LessonCompletion.lesson_id.in_([lsn.id for lsn in lessons]),
             )
         ))
-    return [
-        LessonSummary(
+    lang = current_user.language
+    active = await language_active(session, lang)
+    lesson_translations = (
+        await load_translations(session, "lesson", [lsn.id for lsn in lessons], lang)
+        if active else {}
+    )
+
+    summaries: list[LessonSummary] = []
+    for lsn in lessons:
+        content_json = lsn.content_json or {}
+        machine_translated = False
+        if active:
+            content_json, machine_translated = localize_fields(
+                "lesson", content_json, lesson_translations.get(lsn.id)
+            )
+        summaries.append(LessonSummary(
             id=lsn.id, type=lsn.type,
-            title=derive_lesson_title(lsn.type, lsn.content_json or {}),
+            title=derive_lesson_title(lsn.type, content_json),
             xp_reward=lsn.xp_reward, order_index=lsn.order_index,
             completed=lsn.id in completed_ids,
-        )
-        for lsn in lessons
-    ]
+            machine_translated=machine_translated,
+        ))
+    return summaries
 
 
 @router.get("/lessons/{lesson_id}", response_model=LessonOut)
@@ -266,10 +315,21 @@ async def get_lesson(
             LessonCompletion.lesson_id == lesson.id,
         )
     )
+
+    content_json = lesson.content_json
+    machine_translated = False
+    lang = current_user.language
+    if await language_active(session, lang):
+        translations = await load_translations(session, "lesson", [lesson.id], lang)
+        content_json, machine_translated = localize_fields(
+            "lesson", lesson.content_json or {}, translations.get(lesson.id)
+        )
+
     return LessonOut(
         id=lesson.id, module_id=lesson.module_id, type=lesson.type,
-        content_json=lesson.content_json, xp_reward=lesson.xp_reward,
+        content_json=content_json, xp_reward=lesson.xp_reward,
         order_index=lesson.order_index, completed=completed is not None, locked=False,
+        machine_translated=machine_translated,
     )
 
 

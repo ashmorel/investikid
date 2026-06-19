@@ -26,6 +26,7 @@ export type ModuleOut = {
   order_index: number;
   icon: string;
   locked: boolean;
+  machine_translated?: boolean;
 };
 
 export type LessonSummary = {
@@ -35,6 +36,7 @@ export type LessonSummary = {
   xp_reward: number;
   order_index: number;
   completed: boolean;
+  machine_translated?: boolean;
 };
 
 export type LessonOut = {
@@ -46,6 +48,7 @@ export type LessonOut = {
   order_index: number;
   completed: boolean;
   locked: boolean;
+  machine_translated?: boolean;
 };
 
 export type LevelState = 'in_progress' | 'completed' | 'locked';

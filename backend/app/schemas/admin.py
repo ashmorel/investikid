@@ -349,6 +349,7 @@ class AdminSettingsOut(BaseModel):
     trade_commission_pct: str = "1.0"
     market_enroll_bonus_coins: int = 25
     market_completion_bonus_coins: int = 250
+    enabled_content_languages: list[str] = []
     seasonal_event: dict | None = None
 
 
@@ -358,6 +359,7 @@ class AdminSettingsUpdate(BaseModel):
     trade_commission_pct: str | None = None
     market_enroll_bonus_coins: int | None = None
     market_completion_bonus_coins: int | None = None
+    enabled_content_languages: list[str] | None = None
     # None = leave unchanged; explicit clear via clear_seasonal_event flag.
     seasonal_event: SeasonalEventIn | None = None
     clear_seasonal_event: bool = False
@@ -440,3 +442,35 @@ class VideoHealthItem(BaseModel):
 class VideoHealthCheckResult(BaseModel):
     summary: dict
     items: list[VideoHealthItem]
+
+
+# ── Content translations (i18n pipeline) ─────────────────────────────
+class TranslationGenerateRequest(BaseModel):
+    language: str
+    market_code: str | None = None
+
+
+class TranslationGenerateResult(BaseModel):
+    translated: int = 0
+    skipped_fresh: int = 0
+    failed: int = 0
+
+
+class CuratedTranslationRequest(BaseModel):
+    entity_type: str  # module|level|lesson
+    entity_id: uuid.UUID
+    language: str
+    translated_json: dict
+
+
+class CoverageBucket(BaseModel):
+    active: int = 0
+    failed: int = 0
+    missing: int = 0
+
+
+class TranslationCoverageOut(BaseModel):
+    language: str
+    modules: CoverageBucket
+    levels: CoverageBucket
+    lessons: CoverageBucket

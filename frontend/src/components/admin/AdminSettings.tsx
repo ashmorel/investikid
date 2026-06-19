@@ -1,15 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAdminSettings, useUpdateAdminSettings } from '@/api/admin';
+import {
+  useAdminSettings,
+  useUpdateAdminSettings,
+  useGenerateTranslations,
+  useTranslationCoverage,
+} from '@/api/admin';
+import { SUPPORTED_LANGUAGES } from '@/i18n/languages';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CONTENT_LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES.filter((l) => l.code !== 'en');
 
 export default function AdminSettings() {
   const { t } = useTranslation('admin');
   const { data, isLoading, isError: isLoadError } = useAdminSettings();
   const update = useUpdateAdminSettings();
+  const generate = useGenerateTranslations();
 
   const [emails, setEmails] = useState<string[]>([]);
+  const [contentLanguages, setContentLanguages] = useState<string[]>([]);
+  const [genLanguage, setGenLanguage] = useState<string>(CONTENT_LANGUAGE_OPTIONS[0]?.code ?? '');
+  const [coverageLanguage, setCoverageLanguage] = useState<string>('');
+  const coverageQ = useTranslationCoverage(coverageLanguage);
   const [inputValue, setInputValue] = useState('');
   const [inputError, setInputError] = useState('');
   const [eventTitle, setEventTitle] = useState('');
@@ -27,6 +39,7 @@ export default function AdminSettings() {
       setEmails(data.alert_emails);
       setEnrollBonus(data.market_enroll_bonus_coins);
       setCompletionBonus(data.market_completion_bonus_coins);
+      setContentLanguages(data.enabled_content_languages ?? []);
       if (data.seasonal_event) {
         /* eslint-disable react-hooks/set-state-in-effect -- one-shot, ref-guarded
            seeding of form fields from the fetched settings; mirrors the
@@ -85,6 +98,22 @@ export default function AdminSettings() {
           }
         : {}),
     });
+  }
+
+  function toggleContentLanguage(code: string) {
+    setContentLanguages((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+    );
+    update.reset();
+  }
+
+  function handleSaveContentLanguages() {
+    update.mutate({ alert_emails: emails, enabled_content_languages: contentLanguages });
+  }
+
+  function handleGenerate() {
+    if (!genLanguage) return;
+    generate.mutate({ language: genLanguage });
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -193,6 +222,127 @@ export default function AdminSettings() {
           <p className="mt-2 text-xs text-muted-foreground">
             {t('settings.marketRewards.description')}
           </p>
+        </fieldset>
+
+        {/* Content languages (E1) — kill-switch for serving stored translations */}
+        <fieldset className="mb-4 rounded-md border border-line bg-card px-4 py-3">
+          <legend className="px-1 text-sm font-semibold text-ink">{t('settings.contentLanguages.legend')}</legend>
+          <p className="mb-3 text-xs text-muted-foreground">{t('settings.contentLanguages.description')}</p>
+          <div className="flex flex-wrap gap-3">
+            {CONTENT_LANGUAGE_OPTIONS.map((lang) => (
+              <label key={lang.code} className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  checked={contentLanguages.includes(lang.code)}
+                  onChange={() => toggleContentLanguage(lang.code)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <span>{lang.endonym} ({lang.code})</span>
+              </label>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveContentLanguages}
+            disabled={update.isPending}
+            className="mt-3 rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            {t('settings.contentLanguages.save')}
+          </button>
+        </fieldset>
+
+        {/* Translations (E1) — generate batches + coverage view */}
+        <fieldset className="mb-4 rounded-md border border-line bg-card px-4 py-3">
+          <legend className="px-1 text-sm font-semibold text-ink">{t('settings.translations.legend')}</legend>
+          <p className="mb-3 text-xs text-muted-foreground">{t('settings.translations.generateDescription')}</p>
+          <div className="mb-2 flex items-end gap-2">
+            <div>
+              <label htmlFor="gen-language" className="mb-1 block text-sm text-ink">{t('settings.translations.languageLabel')}</label>
+              <select
+                id="gen-language"
+                value={genLanguage}
+                onChange={(e) => setGenLanguage(e.target.value)}
+                className="rounded-md border border-input bg-background px-3 py-2 text-base text-ink"
+              >
+                {CONTENT_LANGUAGE_OPTIONS.map((lang) => (
+                  <option key={lang.code} value={lang.code}>{lang.endonym} ({lang.code})</option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={generate.isPending || !genLanguage}
+              className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {generate.isPending ? t('settings.translations.generating') : t('settings.translations.generate')}
+            </button>
+          </div>
+          {generate.isSuccess && generate.data && (
+            <p className="text-sm text-success-600" role="status">
+              {t('settings.translations.result', {
+                translated: generate.data.translated,
+                skipped: generate.data.skipped_fresh,
+                failed: generate.data.failed,
+              })}
+            </p>
+          )}
+          {generate.isError && (
+            <p className="text-sm text-danger-500" role="alert">{t('settings.translations.generateError')}</p>
+          )}
+
+          <h3 className="mt-4 mb-2 text-sm font-semibold text-ink">{t('settings.translations.coverageHeading')}</h3>
+          <div className="mb-2 flex items-end gap-2">
+            <div>
+              <label htmlFor="cov-language" className="mb-1 block text-sm text-ink">{t('settings.translations.languageLabel')}</label>
+              <select
+                id="cov-language"
+                value={coverageLanguage}
+                onChange={(e) => setCoverageLanguage(e.target.value)}
+                className="rounded-md border border-input bg-background px-3 py-2 text-base text-ink"
+              >
+                {CONTENT_LANGUAGE_OPTIONS.map((lang) => (
+                  <option key={lang.code} value={lang.code}>{lang.endonym} ({lang.code})</option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCoverageLanguage((c) => c || CONTENT_LANGUAGE_OPTIONS[0]?.code || '')}
+              className="rounded-md border border-line px-4 py-2 text-sm text-ink hover:bg-brand-50"
+            >
+              {t('settings.translations.loadCoverage')}
+            </button>
+          </div>
+          {coverageQ.isError && (
+            <p className="text-sm text-danger-500" role="alert">{t('settings.translations.coverageError')}</p>
+          )}
+          {coverageQ.data && (
+            <table className="mt-2 w-full text-sm text-ink">
+              <thead>
+                <tr className="text-left text-muted-foreground">
+                  <th className="py-1 pr-4" scope="col">{coverageQ.data.language}</th>
+                  <th className="py-1 pr-4" scope="col">{t('settings.translations.colActive')}</th>
+                  <th className="py-1 pr-4" scope="col">{t('settings.translations.colFailed')}</th>
+                  <th className="py-1" scope="col">{t('settings.translations.colMissing')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {([
+                  ['entityModules', coverageQ.data.modules],
+                  ['entityLevels', coverageQ.data.levels],
+                  ['entityLessons', coverageQ.data.lessons],
+                ] as const).map(([labelKey, bucket]) => (
+                  <tr key={labelKey} className="border-t border-line">
+                    <th className="py-1 pr-4 text-left font-medium" scope="row">{t(`settings.translations.${labelKey}`)}</th>
+                    <td className="py-1 pr-4">{bucket.active}</td>
+                    <td className="py-1 pr-4">{bucket.failed}</td>
+                    <td className="py-1">{bucket.missing}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </fieldset>
 
         {/* Seasonal event (M9) — deploy-free, lives in AppSetting */}
