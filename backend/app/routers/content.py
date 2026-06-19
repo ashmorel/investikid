@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.models.content import Lesson, LessonCompletion, LessonView, Level, LevelMastery, Module
+from app.models.market import Market
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
 from app.schemas.content import (
@@ -35,7 +36,7 @@ from app.services.content_service import (
     is_module_premium_ok,
     record_daily_activity,
 )
-from app.services.entitlements import is_premium
+from app.services.entitlements import is_premium, market_locked_for
 from app.services.event_service import boosted_xp, get_active_event
 from app.services.gamification_service import (
     evaluate_and_award_badges,
@@ -369,6 +370,16 @@ async def complete_lesson(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
 
     module = await _get_accessible_module(lesson.module_id, current_user, session)
+
+    # Multi-market premium gate: a free user may progress in only one market.
+    # The first-ever completion claims their started market; thereafter a locked
+    # (different-market) completion 403s BEFORE any award / side-effect.
+    if current_user.started_market_code is None:
+        current_user.started_market_code = module.market_code
+    elif market_locked_for(current_user, module.market_code):
+        market = await session.get(Market, module.market_code)
+        raise premium_required_error("market", market.name if market else module.market_code)
+
     # Capture scalar attributes early before session expires ORM objects
     topic = module.topic
     module_id = module.id
