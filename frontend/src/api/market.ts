@@ -15,11 +15,17 @@ export type MarketProgress = {
   level: number;
 };
 
+export type RewardGrant = {
+  coins: number;
+  badge_name: string | null;
+  badge_icon: string | null;
+};
+
 export const marketApi = {
   list: () => apiFetch<MarketSummary[]>('/markets'),
   progress: () => apiFetch<MarketProgress>('/me/markets'),
   switch: (market_code: string) =>
-    apiFetch<{ active_market_code: string }>('/me/active-market', {
+    apiFetch<{ active_market_code: string; reward: RewardGrant }>('/me/active-market', {
       method: 'POST',
       body: JSON.stringify({ market_code }),
     }),

@@ -1,25 +1,30 @@
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { BackButton } from '@/components/child/BackButton';
+import { useToast } from '@/hooks/use-toast';
 import { useMarkets, useSwitchMarket } from '@/hooks/useMarkets';
 import { flagFor } from '@/lib/marketFlags';
+import { formatRewardToast } from '@/lib/marketReward';
 
 export function Markets() {
   const { t } = useTranslation('markets');
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { data: markets } = useMarkets();
   const switchMarket = useSwitchMarket();
 
-  // The hook already invalidates the market-scoped content queries on success;
-  // once the switch lands we drop the child back to Home so they see the new market.
-  useEffect(() => {
-    if (switchMarket.isSuccess) navigate('/');
-  }, [switchMarket.isSuccess, navigate]);
-
   function choose(code: string, isSelected: boolean) {
     if (isSelected) return; // already learning here — nothing to switch
-    switchMarket.mutate(code);
+    const marketName = (markets ?? []).find((m) => m.code === code)?.name ?? code;
+    switchMarket.mutate(code, {
+      // The hook already invalidates the market-scoped content queries on success;
+      // celebrate any enroll reward, then drop the child back to Home for the new market.
+      onSuccess: (data) => {
+        const msg = formatRewardToast(t, data?.reward, marketName);
+        if (msg) toast({ description: msg });
+        navigate('/');
+      },
+    });
   }
 
   return (

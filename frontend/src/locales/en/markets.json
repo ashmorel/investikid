@@ -14,5 +14,9 @@
     "switchBack": "Switch back to {{home}}"
   },
   "stats": { "byMarket": "XP by market" },
-  "home": { "marketXp": "XP in {{market}}" }
+  "home": { "marketXp": "XP in {{market}}" },
+  "reward": {
+    "enroll": "🎉 +{{coins}} coins for exploring {{market}}!",
+    "completion": "🏆 Market mastered! +{{coins}} coins for finishing {{market}}!"
+  }
 }
