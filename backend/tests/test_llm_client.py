@@ -51,8 +51,23 @@ async def test_reasoning_model_floors_completion_tokens():
                               max_tokens=150)
         kwargs = mock_instance.chat.completions.create.await_args.kwargs
         assert kwargs["max_completion_tokens"] == _REASONING_MIN_COMPLETION_TOKENS
+        assert kwargs["reasoning_effort"] == "minimal"
         assert "max_tokens" not in kwargs
         assert "temperature" not in kwargs
+
+
+async def test_non_reasoning_model_omits_reasoning_effort():
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "ok"
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        MockOpenAI.return_value = mock_instance
+        client = OpenAIClient(api_key="k", model="gpt-4o")
+        await client.complete(system_prompt="s", messages=[{"role": "user", "content": "hi"}],
+                              max_tokens=150)
+        assert "reasoning_effort" not in mock_instance.chat.completions.create.await_args.kwargs
 
 
 async def test_reasoning_model_respects_larger_request():
