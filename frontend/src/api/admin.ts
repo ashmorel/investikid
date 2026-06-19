@@ -27,6 +27,9 @@ export interface AdminModule {
   icon: string;
   is_premium: boolean;
   country_codes: string[];
+  /** Owning market; the API defaults it to GB. Optional so create payloads
+   *  (which never set it) still satisfy `Omit<AdminModule, …>`. */
+  market_code?: string;
   order_index: number;
   lesson_count: number;
   prerequisite_ids: string[];

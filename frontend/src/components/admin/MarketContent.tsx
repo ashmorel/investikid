@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { marketApi, type MarketSummary } from '@/api/market';
 import {
   useMarketBrief,
@@ -8,8 +9,12 @@ import {
   useUpdateMarketBrief,
   useVerifyMarketBrief,
   useScaffoldMarket,
+  useModules,
+  useLevels,
+  useGenerateMarketLessons,
   usePublishMarket,
   useUnpublishMarket,
+  type AdminModule,
 } from '@/api/admin';
 
 /** Admin market-content workflow (Sub-project E2).
@@ -40,6 +45,15 @@ export default function MarketContent() {
   const brief = briefQ.data;
   const isVerified = brief?.status === 'verified';
   const hasContent = !!selected?.has_content;
+
+  // Modules for the lesson-generation step. The scaffold tags each new module
+  // with `market_code=code` and preserves GB's `topic`/`order_index`, so we map
+  // a market module to its GB source by matching (topic, order_index).
+  const allModules = useModules().data ?? [];
+  const marketModules = allModules
+    .filter((m) => m.market_code === code)
+    .sort((a, b) => a.order_index - b.order_index);
+  const gbModules = allModules.filter((m) => m.market_code === 'GB');
 
   // Editable JSON buffer, re-seeded from the loaded brief whenever the market
   // changes or a fresh brief arrives; preserves edits between unrelated renders.
@@ -192,12 +206,29 @@ export default function MarketContent() {
             )}
           </section>
 
-          {/* Step 3 — Lessons (existing draft-review flow) */}
+          {/* Step 3 — Lessons (generate-market per level → existing draft-review flow) */}
           <section aria-labelledby="lessons-heading" className="rounded-md border border-line bg-card px-4 py-3">
             <h2 id="lessons-heading" className="mb-1 text-lg font-semibold text-ink">
               {t('marketContent.lessons.heading')}
             </h2>
-            <p className="text-sm text-muted-foreground">{t('marketContent.lessons.description')}</p>
+            <p className="mb-3 text-sm text-muted-foreground">{t('marketContent.lessons.description')}</p>
+            {marketModules.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t('marketContent.lessons.notScaffolded')}</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {marketModules.map((mod) => {
+                  const gbModule = matchGbModule(gbModules, mod);
+                  return (
+                    <ModuleLessons
+                      key={mod.id}
+                      module={mod}
+                      gbModule={gbModule}
+                      canGenerate={isVerified}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* Step 4 — Publish */}
@@ -237,5 +268,117 @@ export default function MarketContent() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Match a market module to its GB source by the fields the scaffold preserves
+ *  (topic + order_index). Returns the GB module or undefined if no robust
+ *  single match exists (so the caller can disable generation, not guess). */
+function matchGbModule(gbModules: AdminModule[], marketModule: AdminModule): AdminModule | undefined {
+  const matches = gbModules.filter(
+    (g) => g.topic === marketModule.topic && g.order_index === marketModule.order_index,
+  );
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+/** One scaffolded market module: lists its levels, each with a generate-market
+ *  trigger wired to the matched GB source level. */
+function ModuleLessons({
+  module: mod,
+  gbModule,
+  canGenerate,
+}: {
+  module: AdminModule;
+  gbModule: AdminModule | undefined;
+  canGenerate: boolean;
+}) {
+  const { t } = useTranslation('admin');
+  const levels = useLevels(mod.id).data ?? [];
+  const gbLevels = useLevels(gbModule?.id ?? '').data ?? [];
+  const sortedLevels = [...levels].sort((a, b) => a.order_index - b.order_index);
+
+  return (
+    <div className="rounded-md border border-line px-3 py-2">
+      <h3 className="mb-2 text-sm font-semibold text-ink">{mod.title}</h3>
+      {sortedLevels.length === 0 ? (
+        <p className="text-xs text-muted-foreground">{t('marketContent.lessons.noLevels')}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {sortedLevels.map((lvl) => {
+            // Within a module, market level[j] ↔ GB level[j] by order_index.
+            const gbMatches = gbModule
+              ? gbLevels.filter((g) => g.order_index === lvl.order_index)
+              : [];
+            const sourceLevel = gbMatches.length === 1 ? gbMatches[0] : undefined;
+            return (
+              <LevelGenerator
+                key={lvl.id}
+                moduleId={mod.id}
+                levelId={lvl.id}
+                levelTitle={lvl.title}
+                sourceLevelId={sourceLevel?.id}
+                canGenerate={canGenerate}
+              />
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** A single level row with its "Generate lessons (from GB)" trigger. Disabled
+ *  unless the brief is verified and a unique GB source level matched. */
+function LevelGenerator({
+  moduleId,
+  levelId,
+  levelTitle,
+  sourceLevelId,
+  canGenerate,
+}: {
+  moduleId: string;
+  levelId: string;
+  levelTitle: string;
+  sourceLevelId: string | undefined;
+  canGenerate: boolean;
+}) {
+  const { t } = useTranslation('admin');
+  const generate = useGenerateMarketLessons(levelId);
+  const enabled = canGenerate && !!sourceLevelId && !generate.isPending;
+
+  return (
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <span className="text-sm text-ink">{levelTitle}</span>
+      <button
+        type="button"
+        onClick={() => sourceLevelId && generate.mutate(sourceLevelId)}
+        disabled={!enabled}
+        className="rounded-md border border-line px-3 py-1 text-xs text-ink hover:bg-brand-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+      >
+        {generate.isPending
+          ? t('marketContent.lessons.generating')
+          : t('marketContent.lessons.generate')}
+      </button>
+      {!sourceLevelId && (
+        <span className="text-xs text-muted-foreground">{t('marketContent.lessons.noSource')}</span>
+      )}
+      {generate.isError && (
+        <span className="text-xs text-danger-500" role="alert">{t('marketContent.lessons.error')}</span>
+      )}
+      {generate.isSuccess && generate.data && (
+        <span className="text-xs text-success-600" role="status">
+          {t('marketContent.lessons.result', {
+            created: generate.data.created.length,
+            skipped: generate.data.skipped,
+          })}{' '}
+          <Link
+            to={`/admin/modules/${moduleId}/levels/${levelId}/lessons`}
+            className="underline hover:text-success-700"
+          >
+            {t('marketContent.lessons.reviewLink')}
+          </Link>
+        </span>
+      )}
+    </li>
   );
 }

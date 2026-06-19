@@ -81,7 +81,15 @@
     },
     "lessons": {
       "heading": "3. Generate lessons",
-      "description": "Open a scaffolded level in Modules → Levels → Lessons and use the per-level draft tools to generate market-adapted lessons, then review and approve each draft."
+      "description": "Generate market-adapted lesson drafts for each scaffolded level, grounded in the verified brief and its GB source level. Review and approve drafts on the level's lessons screen.",
+      "notScaffolded": "Scaffold the market first to list its modules and levels here.",
+      "noLevels": "This module has no levels yet.",
+      "noSource": "No matching GB source level — generation disabled.",
+      "generate": "Generate lessons (from GB)",
+      "generating": "Generating…",
+      "result": "Created {{created}}, skipped {{skipped}}.",
+      "reviewLink": "Review drafts",
+      "error": "Generation failed. Try again."
     },
     "publish": {
       "heading": "4. Publish",
