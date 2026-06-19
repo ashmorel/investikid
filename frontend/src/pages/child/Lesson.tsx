@@ -14,6 +14,7 @@ import { CoachPennyPanel } from '@/components/child/lesson/CoachPennyPanel';
 import { LessonChrome } from '@/components/child/lesson/LessonChrome';
 import { ApplyMissionCTA } from '@/components/child/lesson/ApplyMissionCTA';
 import { BackButton } from '@/components/child/BackButton';
+import { MachineTranslatedBadge } from '@/components/child/MachineTranslatedBadge';
 import { useToast } from '@/hooks/use-toast';
 import { useActiveMissions } from '@/hooks/useActiveMissions';
 import { useMarkets } from '@/hooks/useMarkets';
@@ -198,6 +199,11 @@ export default function Lesson() {
         xpReward={lesson.xp_reward}
         onBack={() => navigate(-1)}
       />
+      {lesson.machine_translated && (
+        <div className="mb-2">
+          <MachineTranslatedBadge />
+        </div>
+      )}
       {lesson.type === 'card' && <CardLesson contentJson={lesson.content_json as { title?: string; body?: string }} onComplete={onComplete} illustration={illustration} completing={complete.isPending} />}
       {lesson.type === 'quiz' && <QuizLesson contentJson={lesson.content_json as { question: string; choices: string[]; answer_index: number; explanation: string }} onComplete={onComplete} illustration={illustration} onShowPenny={() => setShowPenny(true)} completing={complete.isPending} />}
       {lesson.type === 'scenario' && <ScenarioLesson contentJson={lesson.content_json as { prompt: string; choices: { label: string; outcome: string }[]; correct_index: number }} onComplete={onComplete} illustration={illustration} onShowPenny={() => setShowPenny(true)} completing={complete.isPending} />}
