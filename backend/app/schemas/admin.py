@@ -172,6 +172,11 @@ class GenerateLessonsRequest(BaseModel):
     types: list[Literal["card", "quiz", "scenario"]] = Field(min_length=1)
 
 
+class AdaptationFlags(BaseModel):
+    uk_residue: list[str] = []
+    suspect: bool = False
+
+
 class LessonDraftOut(BaseModel):
     id: uuid.UUID
     level_id: uuid.UUID
@@ -181,6 +186,7 @@ class LessonDraftOut(BaseModel):
     moderation_safe: bool
     moderation_category: str | None = None
     created_at: datetime
+    adaptation_flags: AdaptationFlags = Field(default_factory=AdaptationFlags)
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -23,6 +23,7 @@ from app.models.video_asset import VideoAsset
 from app.models.video_health import VideoHealth
 from app.routers.admin_auth import get_current_admin
 from app.schemas.admin import (
+    AdaptationFlags,
     AdminLevelCreate,
     AdminLevelOut,
     AdminLevelUpdate,
@@ -85,6 +86,7 @@ from app.services.app_settings import (
     set_starting_cash,
     set_trade_commission_pct,
 )
+from app.services.content_adaptation_check import find_uk_residue
 from app.services.content_i18n import extract_bundle, source_hash, validate_bundle
 from app.services.engagement_service import get_module_engagement
 from app.services.entitlements import set_premium
@@ -510,7 +512,14 @@ async def list_lesson_drafts(
     rows = (await session.scalars(
         select(LessonDraft).where(LessonDraft.level_id == level_id).order_by(LessonDraft.created_at)
     )).all()
-    return [LessonDraftOut.model_validate(d) for d in rows]
+
+    def _draft_out(d):
+        residue = find_uk_residue(_concat_text(d.content_json or {}))
+        out = LessonDraftOut.model_validate(d)
+        out.adaptation_flags = AdaptationFlags(uk_residue=residue, suspect=bool(residue))
+        return out
+
+    return [_draft_out(d) for d in rows]
 
 
 @router.put("/lesson-drafts/{draft_id}", response_model=LessonDraftOut)
