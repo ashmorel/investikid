@@ -35,6 +35,33 @@ def _challenges_for_week() -> list[dict]:
     ]
 
 
+_MARKET_BADGES = [
+    ("GB", "United Kingdom", "🇬🇧"), ("US", "United States", "🇺🇸"),
+    ("AU", "Australia", "🇦🇺"), ("CA", "Canada", "🇨🇦"),
+    ("IE", "Ireland", "🇮🇪"), ("ES", "Spain", "🇪🇸"),
+    ("FR", "France", "🇫🇷"), ("DE", "Germany", "🇩🇪"),
+    ("HK", "Hong Kong", "🇭🇰"), ("SG", "Singapore", "🇸🇬"),
+]
+
+
+async def seed_market_badges(session: AsyncSession) -> None:
+    """Idempotent. One 'Market Mastered: <name>' badge per market, keyed by name."""
+    for code, name, flag in _MARKET_BADGES:
+        badge_name = f"Market Mastered: {name}"
+        existing = await session.scalar(select(Badge).where(Badge.name == badge_name))
+        if existing is None:
+            session.add(Badge(
+                name=badge_name,
+                description=f"Finish all the {name} money lessons",
+                icon_url=flag,
+                condition_type="market_completed",
+                condition_value=0,
+                market_code=code,
+            ))
+        elif existing.market_code != code:
+            existing.market_code = code
+
+
 async def seed_badges_and_challenges(session: AsyncSession) -> None:
     """Idempotent. Badges keyed by name; challenges keyed by (title, starts_at)."""
     for spec in _BADGES:

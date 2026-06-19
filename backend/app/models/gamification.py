@@ -17,6 +17,9 @@ class Badge(Base):
     icon_url: Mapped[str] = mapped_column(Text, nullable=False)
     condition_type: Mapped[str] = mapped_column(String(50), nullable=False)
     condition_value: Mapped[int] = mapped_column(Integer, nullable=False)
+    market_code: Mapped[str | None] = mapped_column(
+        String(2), ForeignKey("markets.code"), nullable=True
+    )
 
 
 class UserBadge(Base):
