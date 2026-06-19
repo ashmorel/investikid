@@ -46,7 +46,8 @@
     "saveError": "Something went wrong saving your progress.",
     "tryAgain": "Try again",
     "practiceCta": "🎯 Practice this topic",
-    "backLabel": "Lessons"
+    "backLabel": "Lessons",
+    "premiumContent": "this content"
   },
 
   "card": {
