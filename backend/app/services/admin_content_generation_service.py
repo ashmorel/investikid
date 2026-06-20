@@ -253,7 +253,7 @@ async def generate_module_market_lessons(
             gb_by_order.setdefault(src_order, []).append(src_id)
 
     summary = {"levels": [], "generated": 0, "skipped_populated": 0,
-               "skipped_no_source": 0, "errored": 0}
+               "skipped_has_drafts": 0, "skipped_no_source": 0, "errored": 0}
     for level_id, order_index in target_levels:
         entry = {"level_id": str(level_id), "status": "", "created": 0, "skipped": 0}
         src_ids = gb_by_order.get(order_index, [])
@@ -263,12 +263,22 @@ async def generate_module_market_lessons(
             summary["levels"].append(entry)
             continue
         if not include_populated:
-            count = await session.scalar(
+            lesson_n = await session.scalar(
                 select(func.count(Lesson.id)).where(Lesson.level_id == level_id)
             )
-            if count:
+            if lesson_n:
                 entry["status"] = "skipped_populated"
                 summary["skipped_populated"] += 1
+                summary["levels"].append(entry)
+                continue
+            # Also skip a level that already has drafts waiting for review, so
+            # re-running the batch doesn't stack duplicate drafts on it.
+            draft_n = await session.scalar(
+                select(func.count(LessonDraft.id)).where(LessonDraft.level_id == level_id)
+            )
+            if draft_n:
+                entry["status"] = "skipped_has_drafts"
+                summary["skipped_has_drafts"] += 1
                 summary["levels"].append(entry)
                 continue
         try:

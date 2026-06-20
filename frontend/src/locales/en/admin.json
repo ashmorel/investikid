@@ -99,7 +99,7 @@
     "batch": {
       "generateAllLevels": "Generate all levels",
       "generateAllMarket": "Generate all",
-      "includePopulated": "Include levels that already have lessons",
+      "includePopulated": "Include levels that already have lessons or pending drafts",
       "progress": "Generating module {{i}} of {{n}}…",
       "moduleResult": "{{generated}} generated, {{skipped}} skipped",
       "moduleFailed": "Failed — try again",

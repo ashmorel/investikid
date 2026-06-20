@@ -36,6 +36,7 @@ type ModuleBatchResult = {
   levels: { level_id: string; status: string; created: number; skipped: number }[];
   generated: number;
   skipped_populated: number;
+  skipped_has_drafts: number;
   skipped_no_source: number;
   errored: number;
 };
@@ -43,6 +44,7 @@ const emptyBatch: ModuleBatchResult = {
   levels: [],
   generated: 0,
   skipped_populated: 0,
+  skipped_has_drafts: 0,
   skipped_no_source: 0,
   errored: 0,
 };

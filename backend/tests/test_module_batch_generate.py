@@ -136,6 +136,35 @@ async def test_include_populated_generates_all(db_session):
     assert await _draft_count(db_session, us_levels[1].id) >= 1
 
 
+async def test_skip_levels_with_pending_drafts(db_session):
+    """Re-running a batch must NOT stack duplicate drafts: a level that already
+    has pending drafts (but no published lessons) is skipped."""
+    await _seed_gb_module(db_session)
+    us_module, us_levels = await _seed_us_module(db_session, populate_first=False)
+    us_brief = MarketBrief(market_code="US", brief_json=US_BRIEF, status="verified")
+    db_session.add(us_brief)
+    # level[0] already has a pending draft from an earlier run; level[1] is empty.
+    db_session.add(LessonDraft(
+        level_id=us_levels[0].id, type="card",
+        content_json={"title": "old", "body": "from a prior run"}, concept="c",
+        model_used="t", moderation_safe=True, moderation_category=None,
+    ))
+    await db_session.flush()
+
+    mock_client, p_client, p_mod = _llm_patches()
+    with p_client, p_mod:
+        summary = await generate_module_market_lessons(
+            db_session, us_module, brief=us_brief, include_populated=False,
+        )
+
+    assert summary["generated"] == 1
+    assert summary["skipped_has_drafts"] == 1
+    assert summary["skipped_populated"] == 0
+    # level[0] keeps its single existing draft (not stacked); level[1] generated.
+    assert await _draft_count(db_session, us_levels[0].id) == 1
+    assert await _draft_count(db_session, us_levels[1].id) >= 1
+
+
 async def test_no_gb_source_skips_all(db_session):
     # US module with no GB match (topic/order_index that doesn't exist in GB).
     us_module, us_levels = await _seed_us_module(
@@ -170,7 +199,8 @@ async def test_endpoint_returns_summary(admin_client, db_session):
         )
     assert resp.status_code == 200, resp.text
     body = resp.json()
-    for key in ("generated", "skipped_populated", "skipped_no_source", "errored", "levels"):
+    for key in ("generated", "skipped_populated", "skipped_has_drafts",
+                "skipped_no_source", "errored", "levels"):
         assert key in body
     assert body["generated"] == 1
     assert body["skipped_populated"] == 1

@@ -124,7 +124,8 @@ export default function MarketContent() {
               title: mod.title,
               ok: true,
               generated: res.generated,
-              skipped: res.skipped_populated + res.skipped_no_source,
+              skipped:
+                res.skipped_populated + res.skipped_has_drafts + res.skipped_no_source,
             });
             setResults([...acc]);
             break;
@@ -442,7 +443,10 @@ function ModuleLessons({
           <span className="text-xs text-success-600" role="status">
             {t('marketContent.batch.moduleResult', {
               generated: batch.data.generated,
-              skipped: batch.data.skipped_populated + batch.data.skipped_no_source,
+              skipped:
+                batch.data.skipped_populated +
+                batch.data.skipped_has_drafts +
+                batch.data.skipped_no_source,
             })}
           </span>
         )}
