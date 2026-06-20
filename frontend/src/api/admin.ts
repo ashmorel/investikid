@@ -363,6 +363,10 @@ export function useApproveDraft(levelId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] });
       qc.invalidateQueries({ queryKey: ['admin', 'level-lessons', levelId] });
+      // The Market Content per-level "published" badge reads lesson_count from
+      // the levels query — refresh it so the count updates without a page reload.
+      qc.invalidateQueries({ queryKey: ['admin', 'levels'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
     },
   });
 }
@@ -380,6 +384,7 @@ export function useApproveDrafts(levelId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] });
       qc.invalidateQueries({ queryKey: ['admin', 'level-lessons', levelId] });
+      qc.invalidateQueries({ queryKey: ['admin', 'levels'] });
       qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
     },
   });
@@ -762,7 +767,10 @@ export function useGenerateModuleLessons(moduleId: string) {
     mutationFn: (include_populated: boolean) =>
       adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-market`,
         { method: 'POST', body: JSON.stringify({ include_populated }) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'modules'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'levels'] });
+    },
   });
 }
 
