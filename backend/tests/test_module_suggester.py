@@ -116,3 +116,30 @@ async def test_module_suggestions_malformed_llm_returns_empty(admin_client, db_s
 
     assert resp.status_code == 200, resp.text
     assert resp.json() == []
+
+
+async def test_module_suggestions_unwraps_nonstandard_object_key(admin_client, db_session):
+    """`response_format="json"` forces the model to wrap its array in an OBJECT.
+    The model may use ANY key (not just `modules`/`suggestions`) — the suggester
+    must still find the list rather than silently returning []."""
+    await _seed_gb_module(db_session)
+    await _seed_us_market(db_session)
+    db_session.add(MarketBrief(market_code="US", brief_json=US_BRIEF, status="verified"))
+    await db_session.flush()
+
+    wrapped = json.dumps({"proposed_modules": [
+        {"title": "529 College Savings", "topic": "saving",
+         "rationale": "US tax-advantaged education savings.",
+         "action": "add", "replaces": None,
+         "suggested_concepts": ["What is a 529", "Tax benefits"]},
+    ]})
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=wrapped)
+    with patch("app.services.market_module_suggester.get_llm_client",
+               return_value=mock_client):
+        resp = await admin_client.post("/admin/markets/US/module-suggestions")
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert len(body) == 1
+    assert body[0]["title"] == "529 College Savings"

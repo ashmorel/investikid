@@ -40,7 +40,10 @@ async def suggest_modules(session: AsyncSession, market: Market) -> list[dict]:
         if isinstance(parsed, list):
             items = parsed
         elif isinstance(parsed, dict):
-            items = parsed.get("modules", parsed.get("suggestions", []))
+            # `response_format="json"` forces an OBJECT wrapper, and the model may
+            # use any key for the array (modules / suggestions / proposed_modules
+            # / …). Take the first list value rather than guessing key names.
+            items = next((v for v in parsed.values() if isinstance(v, list)), [])
         else:
             items = []
         out: list[dict] = []
