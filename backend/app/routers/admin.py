@@ -44,6 +44,7 @@ from app.schemas.admin import (
     GenerateLessonsRequest,
     GenerateLessonsResponse,
     GenerateMarketLessonsRequest,
+    GenerateModuleMarketRequest,
     GenerateNativeLessonsRequest,
     LessonCreate,
     LessonDraftOut,
@@ -75,6 +76,7 @@ from app.services.admin_content_generation_service import (
     _concat_text,
     generate_level_lessons,
     generate_market_level_lessons,
+    generate_module_market_lessons,
     generate_native_level_lessons,
     regenerate_draft,
 )
@@ -511,6 +513,24 @@ async def generate_market_level_lessons_endpoint(
     return GenerateLessonsResponse(
         created=[LessonDraftOut.model_validate(d) for d in result.created],
         skipped=result.skipped,
+    )
+
+
+@router.post("/modules/{module_id}/generate-market")
+@limiter.limit("5/minute")
+async def generate_module_market_lessons_endpoint(
+    request: Request,
+    module_id: uuid.UUID,
+    payload: GenerateModuleMarketRequest,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    module = await session.get(Module, module_id)
+    if module is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
+    brief = await require_verified_brief(session, module.market_code)
+    return await generate_module_market_lessons(
+        session, module, brief=brief, include_populated=payload.include_populated,
     )
 
 
