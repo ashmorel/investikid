@@ -195,6 +195,12 @@ async def generate_market_level_lessons(session: AsyncSession, target_level, *,
     )).all()
     result = GenerationResult()
     for src in source_lessons:
+        # Only card/quiz/scenario are LLM-generatable. A GB level can also hold a
+        # `video` lesson (curated YouTube) — skip those rather than crash trying
+        # to build a prompt schema for a type we can't generate.
+        if src.type not in _SCHEMA_HINT:
+            result.skipped += 1
+            continue
         draft = await _generate_one(
             session,
             level=target_level,

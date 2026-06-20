@@ -93,6 +93,48 @@ async def test_market_generation_grounds_on_brief_and_gb_source(db_session):
     assert "ISA savings in pounds" in system_prompt
 
 
+async def test_market_generation_skips_non_generatable_video_lessons(db_session):
+    """A GB level can contain a `video` lesson (curated YouTube, not LLM-
+    generatable). Market generation must SKIP it, not crash with KeyError."""
+    module = Module(
+        topic="savings", title="GB Mixed", country_codes=[], is_premium=False,
+        order_index=902, icon="💷", market_code="GB", min_age=10, max_age=14,
+    )
+    db_session.add(module)
+    await db_session.flush()
+    gb_level = Level(module_id=module.id, title="GB Mixed L1", order_index=0,
+                     is_premium=False, pass_threshold=0.7)
+    db_session.add(gb_level)
+    await db_session.flush()
+    db_session.add_all([
+        Lesson(module_id=module.id, level_id=gb_level.id, type="video",
+               xp_reward=0, order_index=0,
+               content_json={"caption": "Watch", "youtube_id": "abc123"}),
+        Lesson(module_id=module.id, level_id=gb_level.id, type="card",
+               xp_reward=0, order_index=1,
+               content_json={"title": "Saving", "body": "Save your £."}),
+    ])
+    us_level = await _seed_us_level(db_session)
+    us_brief = MarketBrief(market_code="US", brief_json=US_BRIEF, status="verified")
+    db_session.add(us_brief)
+    await db_session.flush()
+
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=US_CARD)
+    with patch("app.services.admin_content_generation_service.get_llm_client",
+               return_value=mock_client), \
+         patch("app.services.admin_content_generation_service.moderate_output",
+               AsyncMock(return_value=ModerationResult(safe=True, category=None, text="x"))):
+        result = await generate_market_level_lessons(
+            db_session, us_level, source_level=gb_level, brief=us_brief,
+        )
+
+    # The video lesson is skipped; only the card is generated (no KeyError).
+    assert result.skipped == 1
+    assert len(result.created) == 1
+    assert mock_client.complete.await_count == 1
+
+
 async def test_generate_market_endpoint_blocks_unverified_brief(admin_client, db_session):
     gb_level, _ = await _seed_gb_level_with_lesson(db_session)
     us_level = await _seed_us_level(db_session)
