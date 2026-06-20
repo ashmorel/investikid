@@ -62,6 +62,16 @@
     "sent": "We've let your grown-up know! 🎉"
   },
 
+  "parentalGate": {
+    "title": "Ask a grown-up",
+    "subtitle": "Get a grown-up to solve this so they can approve.",
+    "questionLabel": "What is {{prompt}}?",
+    "answerLabel": "Answer",
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "tryAgain": "Not quite — ask your grown-up to help."
+  },
+
   "feedback": {
     "title": "Send feedback",
     "typeLabel": "Type",
