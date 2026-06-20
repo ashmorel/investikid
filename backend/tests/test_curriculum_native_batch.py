@@ -18,7 +18,10 @@ US_BRIEF = {"currency": "USD", "regulators": ["SEC"]}
 
 def _llm():
     client = AsyncMock()
-    client.complete = AsyncMock(return_value=json.dumps({"title": "Saving up", "body": "Plan your dollars."}))
+    card = {"title": "Saving up", "body": "Plan your dollars."}
+    quiz = {"question": "What is saving?", "choices": ["Spending it", "Keeping money for later", "Borrowing"],
+            "answer_index": 1, "explanation": "Saving means keeping money for later."}
+    client.complete = AsyncMock(side_effect=[json.dumps(card), json.dumps(quiz)])
     return (client,
             patch("app.services.admin_content_generation_service.get_llm_client", return_value=client),
             patch("app.services.admin_content_generation_service.moderate_output",

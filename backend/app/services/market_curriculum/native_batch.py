@@ -57,7 +57,7 @@ async def generate_market_native(
             level = await session.get(Level, level_id)
             result = await generate_native_level_lessons(
                 session, level, brief=brief, concepts=concepts,
-                types=["card"], complexity_tier=node.get("complexity_tier"),
+                complexity_tier=node.get("complexity_tier"),
             )
             entry.update(status="generated", created=len(result.created))
             summary["generated"] += 1
