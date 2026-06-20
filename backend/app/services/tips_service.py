@@ -5,6 +5,7 @@ from app.schemas.simulator import InvestingTipOut
 from app.services import llm_usage
 from app.services.guardrails import with_guardrail_preamble
 from app.services.llm_client import get_llm_client
+from app.services.llm_json import extract_json_list
 from app.services.moderation import moderate_output
 
 _FALLBACK_TIPS = [
@@ -87,8 +88,8 @@ async def generate_generic_tips(*, language: str = "en") -> list[InvestingTipOut
             max_tokens=800,
             response_format="json",
         )
-        items = json.loads(raw)
-        tips = [InvestingTipOut(**item) for item in items]
+        items = extract_json_list(json.loads(raw))
+        tips = [InvestingTipOut(**item) for item in items if isinstance(item, dict)]
         # Kid-safe moderation of generated tips. Best-effort: this service
         # has no DB session in scope, so no AuditLog row is written here by
         # design (unlike the session-bearing tutor/chart-coach/quiz surfaces).
@@ -165,10 +166,11 @@ async def generate_personalised_tips(
             max_tokens=400,
             response_format="json",
         )
-        items = json.loads(raw)[:2]
+        items = extract_json_list(json.loads(raw))[:2]
         tips = [
             InvestingTipOut(**{k: v for k, v in item.items() if k != "personalised"}, personalised=True)
             for item in items
+            if isinstance(item, dict)
         ]
         joined = " ".join(f"{t.title} {t.description}" for t in tips)
         _mod = await moderate_output(joined, surface="tips", language=language)
