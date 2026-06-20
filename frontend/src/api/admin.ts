@@ -367,6 +367,24 @@ export function useApproveDraft(levelId: string) {
   });
 }
 
+export type ApproveDraftsResult = { approved: number; replaced: number; skipped_unsafe: number };
+
+/** Level-level commit: approve all moderation-safe drafts. When `replace`, the
+ *  backend atomically deletes the level's published lessons first (one txn). */
+export function useApproveDrafts(levelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (replace: boolean) =>
+      adminFetch<ApproveDraftsResult>(`/admin/levels/${levelId}/approve-drafts`,
+        { method: 'POST', body: JSON.stringify({ replace }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] });
+      qc.invalidateQueries({ queryKey: ['admin', 'level-lessons', levelId] });
+      qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
+    },
+  });
+}
+
 export function useRegenerateDraft(levelId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -724,6 +742,35 @@ export function useGenerateMarketLessons(levelId: string) {
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] }),
   });
+}
+
+// ── Per-module batch generation (every level, GB sources resolved server-side) ─
+export type ModuleBatchResult = {
+  levels: { level_id: string; status: string; created: number; skipped: number }[];
+  generated: number;
+  skipped_populated: number;
+  skipped_no_source: number;
+  errored: number;
+};
+
+/** Generate market-adapted drafts for EVERY level of a module in one batch
+ *  (GB sources resolved server-side). Skips levels that already have lessons
+ *  unless `include_populated`. Rate-limited 5/min (one call per module). */
+export function useGenerateModuleLessons(moduleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (include_populated: boolean) =>
+      adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-market`,
+        { method: 'POST', body: JSON.stringify({ include_populated }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'modules'] }),
+  });
+}
+
+/** Plain (hook-free) variant for the market-wide sequential runner, where the
+ *  module list is dynamic and we can't call a hook per module. */
+export function generateModuleLessons(moduleId: string, include_populated: boolean) {
+  return adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-market`,
+    { method: 'POST', body: JSON.stringify({ include_populated }) });
 }
 
 // ── Intelligent market suggestions (proactive module creation) ───────

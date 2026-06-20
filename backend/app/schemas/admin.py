@@ -200,6 +200,10 @@ class GenerateMarketLessonsRequest(BaseModel):
     source_level_id: uuid.UUID
 
 
+class GenerateModuleMarketRequest(BaseModel):
+    include_populated: bool = False
+
+
 class GenerateNativeLessonsRequest(BaseModel):
     concepts: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(min_length=1, max_length=8)
     types: list[Literal["card", "quiz", "scenario"]] | None = None
@@ -535,3 +539,13 @@ class TranslationCoverageOut(BaseModel):
     modules: CoverageBucket
     levels: CoverageBucket
     lessons: CoverageBucket
+
+
+class ApproveDraftsRequest(BaseModel):
+    replace: bool = False
+
+
+class ApproveDraftsResult(BaseModel):
+    approved: int
+    replaced: int
+    skipped_unsafe: int
