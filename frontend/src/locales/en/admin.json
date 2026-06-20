@@ -92,6 +92,7 @@
       "error": "Generation failed. Try again.",
       "published": "{{count}} published",
       "noneYet": "No lessons yet",
+      "reviewDrafts": "Review {{count}} draft(s)",
       "regenerateReplace": "Regenerate (replace)",
       "regenerateReplaceConfirm": "This level has {{count}} published lesson(s). Generate new drafts now; when you approve them on the review screen you can replace the old ones."
     },

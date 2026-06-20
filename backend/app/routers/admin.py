@@ -366,12 +366,12 @@ async def reorder_lessons(
 
 
 # ── Levels ──────────────────────────────────────────────────────────
-def _level_out(level: Level, lesson_count: int) -> AdminLevelOut:
+def _level_out(level: Level, lesson_count: int, draft_count: int = 0) -> AdminLevelOut:
     return AdminLevelOut(
         id=level.id, module_id=level.module_id, title=level.title,
         order_index=level.order_index, is_premium=level.is_premium,
         pass_threshold=level.pass_threshold, content_source=level.content_source,
-        icon=level.icon, lesson_count=lesson_count,
+        icon=level.icon, lesson_count=lesson_count, draft_count=draft_count,
         learning_objectives=level.learning_objectives,
     )
 
@@ -386,7 +386,10 @@ async def admin_list_levels(module_id: uuid.UUID, session: AsyncSession = Depend
         n = await session.scalar(
             select(func.count()).select_from(Lesson).where(Lesson.level_id == lv.id)
         )
-        out.append(_level_out(lv, n or 0))
+        d = await session.scalar(
+            select(func.count()).select_from(LessonDraft).where(LessonDraft.level_id == lv.id)
+        )
+        out.append(_level_out(lv, n or 0, d or 0))
     return out
 
 
