@@ -755,6 +755,7 @@ export type ModuleBatchResult = {
   levels: { level_id: string; status: string; created: number; skipped: number }[];
   generated: number;
   skipped_populated: number;
+  skipped_has_drafts: number;
   skipped_no_source: number;
   errored: number;
 };
