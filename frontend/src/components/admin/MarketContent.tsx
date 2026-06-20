@@ -23,6 +23,7 @@ import {
   type AdminModule,
   type ModuleSuggestion,
 } from '@/api/admin';
+import CurriculumPanel from './CurriculumPanel';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -180,6 +181,9 @@ export default function MarketContent() {
 
       {code && code !== 'GB' && (
         <div className="flex max-w-2xl flex-col gap-6">
+          {/* Curriculum panel */}
+          <CurriculumPanel marketCode={code} />
+
           {/* Step 1 — Brief */}
           <section aria-labelledby="brief-heading" className="rounded-md border border-line bg-card px-4 py-3">
             <h2 id="brief-heading" className="mb-1 text-lg font-semibold text-ink">

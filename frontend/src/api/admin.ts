@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from './client';
+import { apiFetch, ApiError } from './client';
 
 // ── Types ──────────────────────────────────────────────────────────
 export interface AdminStats {
@@ -850,5 +850,76 @@ export function useUnpublishMarket(code: string) {
   return useMutation({
     mutationFn: () => adminFetch<MarketPublishResult>(`/admin/markets/${code}/unpublish`, { method: 'POST' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['markets'] }),
+  });
+}
+
+// ── Curriculum engine (Task 8) ─────────────────────────────────────
+export type CurriculumLevelNode = {
+  title: string;
+  order_index: number;
+  complexity_tier: number;
+  learning_objective: string;
+  concepts: string[];
+  backbone_keys: string[];
+  level_id?: string | null;
+};
+
+export type CurriculumModuleNode = {
+  topic: string;
+  title: string;
+  icon: string;
+  min_age: number;
+  max_age: number;
+  order_index: number;
+  levels: CurriculumLevelNode[];
+};
+
+export type CurriculumCoverage = {
+  ok: boolean;
+  missing_backbone: string[];
+  spans_all_tiers: boolean;
+  regressions: string[];
+};
+
+export type CurriculumDesign = {
+  proposal_id: string;
+  proposal: { market_code: string; modules: CurriculumModuleNode[] };
+  coverage: CurriculumCoverage;
+};
+
+export function useCurriculum(marketCode: string) {
+  return useQuery({
+    queryKey: ['admin', 'curriculum', marketCode],
+    queryFn: async (): Promise<CurriculumDesign | null> => {
+      try {
+        return await adminFetch<CurriculumDesign>(`/admin/markets/${marketCode}/curriculum`);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) return null;
+        throw err;
+      }
+    },
+    enabled: !!marketCode,
+  });
+}
+
+export function useDesignCurriculum(marketCode: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      adminFetch<CurriculumDesign>(`/admin/markets/${marketCode}/curriculum/design`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'curriculum', marketCode] }),
+  });
+}
+
+export function useAcceptCurriculum(marketCode: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      adminFetch<{ modules: number; levels: number }>(`/admin/markets/${marketCode}/curriculum/accept`, { method: 'POST' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'curriculum', marketCode] });
+      qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'levels'] });
+    },
   });
 }
