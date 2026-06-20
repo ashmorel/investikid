@@ -83,6 +83,7 @@ export interface AdminLevel {
   content_source: string;
   icon: string;
   lesson_count: number;
+  draft_count: number;
   learning_objectives?: string[] | null;
 }
 

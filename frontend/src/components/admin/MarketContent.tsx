@@ -464,6 +464,7 @@ function ModuleLessons({
                 levelId={lvl.id}
                 levelTitle={lvl.title}
                 lessonCount={lvl.lesson_count}
+                draftCount={lvl.draft_count}
                 sourceLevelId={sourceLevel?.id}
                 canGenerate={canGenerate}
               />
@@ -482,6 +483,7 @@ function LevelGenerator({
   levelId,
   levelTitle,
   lessonCount,
+  draftCount,
   sourceLevelId,
   canGenerate,
 }: {
@@ -489,6 +491,7 @@ function LevelGenerator({
   levelId: string;
   levelTitle: string;
   lessonCount: number;
+  draftCount: number;
   sourceLevelId: string | undefined;
   canGenerate: boolean;
 }) {
@@ -525,6 +528,14 @@ function LevelGenerator({
             ? t('marketContent.lessons.regenerateReplace')
             : t('marketContent.lessons.generate')}
       </button>
+      {draftCount > 0 && (
+        <Link
+          to={`/admin/modules/${moduleId}/levels/${levelId}/lessons`}
+          className="text-xs font-medium text-brand-600 underline hover:text-brand-700"
+        >
+          {t('marketContent.lessons.reviewDrafts', { count: draftCount })}
+        </Link>
+      )}
       {!sourceLevelId && (
         <span className="text-xs text-muted-foreground">{t('marketContent.lessons.noSource')}</span>
       )}

@@ -15,7 +15,7 @@ const mockUnpublish = vi.fn();
 type MarketSummary = { code: string; name: string; has_content: boolean };
 type Brief = { market_code: string; brief_json: Record<string, unknown>; status: string; model_used: string };
 type Mod = { id: string; topic: string; title: string; market_code: string; order_index: number };
-type Lvl = { id: string; module_id: string; title: string; order_index: number; lesson_count: number };
+type Lvl = { id: string; module_id: string; title: string; order_index: number; lesson_count: number; draft_count?: number };
 
 let marketsData: MarketSummary[] = [
   { code: 'GB', name: 'United Kingdom', has_content: true },
@@ -224,6 +224,24 @@ describe('MarketContent', () => {
     render(<MarketContent />, { wrapper });
     expect(await screen.findByText('3 published')).toBeInTheDocument();
     expect(screen.getByText('No lessons yet')).toBeInTheDocument();
+  });
+
+  it('shows a "Review N drafts" link on a level that has pending drafts', async () => {
+    briefData = { market_code: 'US', brief_json: { currency: 'USD' }, status: 'verified', model_used: 'm' };
+    modulesData = [
+      { id: 'gb-mod', topic: 'saving', title: 'Saving', market_code: 'GB', order_index: 0 },
+      { id: 'us-mod', topic: 'saving', title: 'Saving (US)', market_code: 'US', order_index: 0 },
+    ];
+    levelsByModule = {
+      'gb-mod': [{ id: 'gb-lvl', module_id: 'gb-mod', title: 'Basics', order_index: 0, lesson_count: 0 }],
+      'us-mod': [
+        // generated-but-not-approved: 5 drafts, 0 published lessons
+        { id: 'us-lvl', module_id: 'us-mod', title: 'Basics (US)', order_index: 0, lesson_count: 0, draft_count: 5 },
+      ],
+    };
+    render(<MarketContent />, { wrapper });
+    const link = await screen.findByRole('link', { name: /review 5 draft/i });
+    expect(link).toHaveAttribute('href', '/admin/modules/us-mod/levels/us-lvl/lessons');
   });
 
   it('per-module "Generate all levels" runs the module batch (include_populated false)', async () => {
