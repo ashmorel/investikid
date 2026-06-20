@@ -140,6 +140,10 @@
       "tier2": "developing",
       "tier3": "advanced"
     },
+    "review": {
+      "heading": "Review drafts",
+      "close": "Close"
+    },
     "publish": {
       "heading": "4. Publish",
       "live": "This market is live (children can see its content).",

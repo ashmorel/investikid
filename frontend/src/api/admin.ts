@@ -757,6 +757,7 @@ export type ModuleBatchResult = {
   skipped_populated: number;
   skipped_has_drafts: number;
   skipped_no_source: number;
+  skipped_no_concepts: number;
   errored: number;
 };
 
@@ -767,7 +768,7 @@ export function useGenerateModuleLessons(moduleId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (include_populated: boolean) =>
-      adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-market`,
+      adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-native-batch`,
         { method: 'POST', body: JSON.stringify({ include_populated }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
@@ -779,7 +780,7 @@ export function useGenerateModuleLessons(moduleId: string) {
 /** Plain (hook-free) variant for the market-wide sequential runner, where the
  *  module list is dynamic and we can't call a hook per module. */
 export function generateModuleLessons(moduleId: string, include_populated: boolean) {
-  return adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-market`,
+  return adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-native-batch`,
     { method: 'POST', body: JSON.stringify({ include_populated }) });
 }
 
