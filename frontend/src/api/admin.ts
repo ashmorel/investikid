@@ -367,6 +367,24 @@ export function useApproveDraft(levelId: string) {
   });
 }
 
+export type ApproveDraftsResult = { approved: number; replaced: number; skipped_unsafe: number };
+
+/** Level-level commit: approve all moderation-safe drafts. When `replace`, the
+ *  backend atomically deletes the level's published lessons first (one txn). */
+export function useApproveDrafts(levelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (replace: boolean) =>
+      adminFetch<ApproveDraftsResult>(`/admin/levels/${levelId}/approve-drafts`,
+        { method: 'POST', body: JSON.stringify({ replace }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'level-drafts', levelId] });
+      qc.invalidateQueries({ queryKey: ['admin', 'level-lessons', levelId] });
+      qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
+    },
+  });
+}
+
 export function useRegenerateDraft(levelId: string) {
   const qc = useQueryClient();
   return useMutation({

@@ -162,12 +162,17 @@ describe('MarketContent', () => {
       'gb-mod': [{ id: 'gb-lvl', module_id: 'gb-mod', title: 'Basics', order_index: 0, lesson_count: 0 }],
       'us-mod': [{ id: 'us-lvl', module_id: 'us-mod', title: 'Basics (US)', order_index: 0, lesson_count: 3 }],
     };
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<MarketContent />, { wrapper });
-    const btn = await screen.findByRole('button', { name: /generate lessons \(from gb\)/i });
+    // The US level already has 3 published lessons, so the button is a
+    // "Regenerate (replace)" heads-up that confirms before generating.
+    const btn = await screen.findByRole('button', { name: /regenerate \(replace\)/i });
     fireEvent.click(btn);
+    expect(confirmSpy).toHaveBeenCalled();
     await waitFor(() =>
       expect(mockGenerateMarket).toHaveBeenCalledWith({ levelId: 'us-lvl', source_level_id: 'gb-lvl' }),
     );
+    confirmSpy.mockRestore();
   });
 
   it('shows a published-lesson badge per level based on lesson_count', async () => {

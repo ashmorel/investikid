@@ -376,13 +376,22 @@ function LevelGenerator({
       )}
       <button
         type="button"
-        onClick={() => sourceLevelId && generate.mutate(sourceLevelId)}
+        onClick={() => {
+          if (!sourceLevelId) return;
+          if (lessonCount > 0 &&
+            !window.confirm(t('marketContent.lessons.regenerateReplaceConfirm', { count: lessonCount }))) {
+            return;
+          }
+          generate.mutate(sourceLevelId);
+        }}
         disabled={!enabled}
         className="rounded-md border border-line px-3 py-1 text-xs text-ink hover:bg-brand-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
       >
         {generate.isPending
           ? t('marketContent.lessons.generating')
-          : t('marketContent.lessons.generate')}
+          : lessonCount > 0
+            ? t('marketContent.lessons.regenerateReplace')
+            : t('marketContent.lessons.generate')}
       </button>
       {!sourceLevelId && (
         <span className="text-xs text-muted-foreground">{t('marketContent.lessons.noSource')}</span>

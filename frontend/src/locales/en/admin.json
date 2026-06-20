@@ -91,7 +91,9 @@
       "reviewLink": "Review drafts",
       "error": "Generation failed. Try again.",
       "published": "{{count}} published",
-      "noneYet": "No lessons yet"
+      "noneYet": "No lessons yet",
+      "regenerateReplace": "Regenerate (replace)",
+      "regenerateReplaceConfirm": "This level has {{count}} published lesson(s). Generate new drafts now; when you approve them on the review screen you can replace the old ones."
     },
     "suggest": {
       "heading": "Intelligent suggestions",
@@ -324,7 +326,12 @@
       "suspect": "⚠ May not be fully adapted ({{terms}})"
     },
     "rejectTitle": "Reject draft?",
-    "rejectMessage": "This will discard the generated draft. This cannot be undone."
+    "rejectMessage": "This will discard the generated draft. This cannot be undone.",
+    "approveAll": "Approve all",
+    "publishReplace": "Publish & replace existing ({{count}})",
+    "replaceConfirmTitle": "Replace published lessons?",
+    "replaceConfirmMessage": "This deletes the {{count}} published lesson(s) for this level and replaces them with the approved drafts.",
+    "approveResult": "Published {{approved}} lesson(s); replaced {{replaced}}; skipped {{skipped}} (failed moderation)."
   },
   "lessonForm": {
     "editTitle": "Edit Lesson",
