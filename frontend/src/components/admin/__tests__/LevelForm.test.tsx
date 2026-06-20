@@ -50,7 +50,7 @@ describe('LevelForm', () => {
     const existing = {
       id: 'lvl-1', module_id: 'mod-1', title: 'Beginner', order_index: 0,
       is_premium: false, pass_threshold: 0.7, content_source: 'authored', icon: '🔰',
-      lesson_count: 3, learning_objectives: ['Spot a stock', 'Read a price chart'],
+      lesson_count: 3, draft_count: 0, learning_objectives: ['Spot a stock', 'Read a price chart'],
     };
     render(<LevelForm moduleId="mod-1" existing={existing} nextOrderIndex={1} onClose={vi.fn()} />, { wrapper });
     expect(screen.getByDisplayValue('Spot a stock')).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('LevelForm', () => {
     const existing = {
       id: 'lvl-1', module_id: 'mod-1', title: 'Beginner', order_index: 0,
       is_premium: false, pass_threshold: 0.7, content_source: 'authored', icon: '🔰',
-      lesson_count: 3, learning_objectives: ['Spot a stock'],
+      lesson_count: 3, draft_count: 0, learning_objectives: ['Spot a stock'],
     };
     render(<LevelForm moduleId="mod-1" existing={existing} nextOrderIndex={1} onClose={vi.fn()} />, { wrapper });
 
@@ -85,7 +85,7 @@ describe('LevelForm', () => {
     const existing = {
       id: 'lvl-1', module_id: 'mod-1', title: 'Beginner', order_index: 0,
       is_premium: false, pass_threshold: 0.7, content_source: 'authored', icon: '🔰',
-      lesson_count: 3, learning_objectives: ['Spot a stock'],
+      lesson_count: 3, draft_count: 0, learning_objectives: ['Spot a stock'],
     };
     render(<LevelForm moduleId="mod-1" existing={existing} nextOrderIndex={1} onClose={vi.fn()} />, { wrapper });
 

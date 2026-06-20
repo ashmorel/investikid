@@ -390,6 +390,7 @@ class AdminLevelOut(BaseModel):
     content_source: str
     icon: str
     lesson_count: int = 0
+    draft_count: int = 0
     learning_objectives: list[str] | None = None
 
 
