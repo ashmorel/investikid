@@ -219,7 +219,8 @@ async def test_webhook_checkout_completed(mock_router_stripe, mock_ws_stripe, cl
     mock_router_stripe.Webhook.construct_event.return_value = event_payload
     mock_ws_stripe.Subscription.retrieve.return_value = MagicMock(
         status="trialing",
-        current_period_end=1748476800,
+        # 2099-01-01: future so the freshness guard treats the row as active.
+        current_period_end=4070908800,
         cancel_at_period_end=False,
     )
 
@@ -267,7 +268,7 @@ async def test_webhook_subscription_updated_cancel(mock_stripe, client, db_sessi
             "object": {
                 "id": "sub_cancelup",
                 "status": "active",
-                "current_period_end": 1748476800,
+                "current_period_end": 4070908800,  # 2099-01-01: future, active per freshness guard
                 "cancel_at_period_end": True,
             }
         },
@@ -407,7 +408,7 @@ async def test_webhook_idempotent(mock_stripe, client, db_session):
             "object": {
                 "id": "sub_idem",
                 "status": "active",
-                "current_period_end": 1748476800,
+                "current_period_end": 4070908800,  # 2099-01-01: future, active per freshness guard
                 "cancel_at_period_end": False,
             }
         },
