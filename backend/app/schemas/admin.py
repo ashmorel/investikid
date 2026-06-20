@@ -535,3 +535,13 @@ class TranslationCoverageOut(BaseModel):
     modules: CoverageBucket
     levels: CoverageBucket
     lessons: CoverageBucket
+
+
+class ApproveDraftsRequest(BaseModel):
+    replace: bool = False
+
+
+class ApproveDraftsResult(BaseModel):
+    approved: int
+    replaced: int
+    skipped_unsafe: int

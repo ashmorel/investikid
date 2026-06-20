@@ -30,6 +30,8 @@ from app.schemas.admin import (
     AdminSettingsOut,
     AdminSettingsUpdate,
     ApplyMissionOut,
+    ApproveDraftsRequest,
+    ApproveDraftsResult,
     BadgeCreate,
     BadgeOut,
     BadgeUpdate,
@@ -96,6 +98,7 @@ from app.services.content_i18n import extract_bundle, source_hash, validate_bund
 from app.services.engagement_service import get_module_engagement
 from app.services.entitlements import set_premium
 from app.services.event_service import EVENT_KEY, set_event
+from app.services.lesson_approval_service import approve_level_drafts
 from app.services.level_service import premium_for_position
 from app.services.llm_client import probe_all_providers
 from app.services.market_brief_service import (
@@ -597,6 +600,18 @@ async def approve_lesson_draft(
     await session.commit()
     await session.refresh(lesson)
     return await _lesson_out(session, lesson)
+
+
+@router.post("/levels/{level_id}/approve-drafts", response_model=ApproveDraftsResult)
+async def approve_level_drafts_endpoint(
+    level_id: uuid.UUID,
+    payload: ApproveDraftsRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    level = await session.get(Level, level_id)
+    if level is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
+    return ApproveDraftsResult(**await approve_level_drafts(session, level, replace=payload.replace))
 
 
 @router.post("/lesson-drafts/{draft_id}/regenerate", response_model=LessonDraftOut)
