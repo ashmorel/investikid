@@ -35,7 +35,7 @@ describe('Signup step 1', () => {
     expect(screen.getByRole('heading', { name: /let's get you set up/i })).toBeInTheDocument();
     await fillDob('2015-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'GB');
-    expect(screen.getByText(/parent's email will be required/i)).toBeInTheDocument();
+    expect(screen.getByText(/rule where you live/i)).toBeInTheDocument();
   });
 
   it('shows over-threshold banner for US 14', async () => {
@@ -49,7 +49,7 @@ describe('Signup step 1', () => {
     renderPage();
     await fillDob('2012-01-01');
     await userEvent.selectOptions(screen.getByLabelText(/country/i), 'IE');
-    expect(screen.getByText(/parent's email will be required/i)).toBeInTheDocument();
+    expect(screen.getByText(/rule where you live/i)).toBeInTheDocument();
   });
 
   it('Next is disabled until both fields filled', async () => {

@@ -48,4 +48,20 @@ export const billingApi = {
       { method: 'POST', body: JSON.stringify(body) }),
 
   accountToken: () => apiFetch<{ token: string }>('/billing/account-token'),
+
+  childAppleAccountToken: () =>
+    apiFetch<{ token: string }>('/billing/child/apple/account-token'),
+
+  childGoogleAccountToken: () =>
+    apiFetch<{ token: string }>('/billing/child/account-token'),
+
+  childPlans: () => apiFetch<PlansResponse>('/billing/child/plans'),
+
+  childAppleVerify: (jws: string) =>
+    apiFetch<{ status: string } | null>('/billing/child/apple/verify',
+      { method: 'POST', body: JSON.stringify({ jws }) }),
+
+  childGoogleVerify: (body: { purchaseToken: string; productId: string }) =>
+    apiFetch<{ status: string } | null>('/billing/child/google/verify',
+      { method: 'POST', body: JSON.stringify(body) }),
 };

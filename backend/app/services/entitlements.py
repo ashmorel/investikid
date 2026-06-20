@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit import AuditLog
@@ -13,6 +13,14 @@ from app.models.user import User
 ACTIVE_SUBSCRIPTION_STATUSES = frozenset(
     {"active", "trialing", "in_grace_period", "past_due"}
 )
+
+
+def household_key(user: User) -> str:
+    """The billing household scope for a user: the parent email when present,
+    else the user's own email (a self-managed teen is their own household).
+    Lowercased to match household_token's normalization."""
+    raw = user.parent_email or user.email or ""
+    return raw.strip().lower()
 
 
 def is_premium(user: User) -> bool:
@@ -96,7 +104,12 @@ async def recompute_household_premium(
     now = datetime.now(UTC)
     entitled = any(_row_entitles(r, now) for r in rows)
     children = (await session.scalars(
-        select(User).where(User.parent_email == parent_email)
+        select(User).where(
+            or_(
+                User.parent_email == parent_email,
+                and_(User.parent_email.is_(None), User.email == parent_email),
+            )
+        )
     )).all()
     for child in children:
         await set_premium(session, child, value=entitled, actor="billing:recompute")
