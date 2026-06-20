@@ -59,5 +59,12 @@
     "ariaLabel": "Seasonal event: {{title}}",
     "ariaLabelWithBonus": "Seasonal event: {{title}}, {{pct}} percent bonus XP",
     "xpBonus": " — +{{pct}}% XP!"
+  },
+
+  "streakNudge": {
+    "title": "Never miss your streak",
+    "body": "Get a friendly daily reminder so your streak keeps growing.",
+    "enable": "Enable reminders",
+    "dismiss": "Not now"
   }
 }
