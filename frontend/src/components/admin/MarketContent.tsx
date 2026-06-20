@@ -331,6 +331,7 @@ function ModuleLessons({
                 moduleId={mod.id}
                 levelId={lvl.id}
                 levelTitle={lvl.title}
+                lessonCount={lvl.lesson_count}
                 sourceLevelId={sourceLevel?.id}
                 canGenerate={canGenerate}
               />
@@ -348,12 +349,14 @@ function LevelGenerator({
   moduleId,
   levelId,
   levelTitle,
+  lessonCount,
   sourceLevelId,
   canGenerate,
 }: {
   moduleId: string;
   levelId: string;
   levelTitle: string;
+  lessonCount: number;
   sourceLevelId: string | undefined;
   canGenerate: boolean;
 }) {
@@ -364,6 +367,13 @@ function LevelGenerator({
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <span className="text-sm text-ink">{levelTitle}</span>
+      {lessonCount > 0 ? (
+        <span className="rounded bg-success-100 px-2 py-0.5 text-xs text-success-700">
+          {t('marketContent.lessons.published', { count: lessonCount })}
+        </span>
+      ) : (
+        <span className="text-xs text-muted-foreground">{t('marketContent.lessons.noneYet')}</span>
+      )}
       <button
         type="button"
         onClick={() => sourceLevelId && generate.mutate(sourceLevelId)}

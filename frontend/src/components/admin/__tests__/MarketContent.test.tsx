@@ -15,7 +15,7 @@ const mockUnpublish = vi.fn();
 type MarketSummary = { code: string; name: string; has_content: boolean };
 type Brief = { market_code: string; brief_json: Record<string, unknown>; status: string; model_used: string };
 type Mod = { id: string; topic: string; title: string; market_code: string; order_index: number };
-type Lvl = { id: string; module_id: string; title: string; order_index: number };
+type Lvl = { id: string; module_id: string; title: string; order_index: number; lesson_count: number };
 
 let marketsData: MarketSummary[] = [
   { code: 'GB', name: 'United Kingdom', has_content: true },
@@ -159,8 +159,8 @@ describe('MarketContent', () => {
       { id: 'us-mod', topic: 'saving', title: 'Saving (US)', market_code: 'US', order_index: 0 },
     ];
     levelsByModule = {
-      'gb-mod': [{ id: 'gb-lvl', module_id: 'gb-mod', title: 'Basics', order_index: 0 }],
-      'us-mod': [{ id: 'us-lvl', module_id: 'us-mod', title: 'Basics (US)', order_index: 0 }],
+      'gb-mod': [{ id: 'gb-lvl', module_id: 'gb-mod', title: 'Basics', order_index: 0, lesson_count: 0 }],
+      'us-mod': [{ id: 'us-lvl', module_id: 'us-mod', title: 'Basics (US)', order_index: 0, lesson_count: 3 }],
     };
     render(<MarketContent />, { wrapper });
     const btn = await screen.findByRole('button', { name: /generate lessons \(from gb\)/i });
@@ -168,6 +168,27 @@ describe('MarketContent', () => {
     await waitFor(() =>
       expect(mockGenerateMarket).toHaveBeenCalledWith({ levelId: 'us-lvl', source_level_id: 'gb-lvl' }),
     );
+  });
+
+  it('shows a published-lesson badge per level based on lesson_count', async () => {
+    briefData = { market_code: 'US', brief_json: { currency: 'USD' }, status: 'verified', model_used: 'm' };
+    modulesData = [
+      { id: 'gb-mod', topic: 'saving', title: 'Saving', market_code: 'GB', order_index: 0 },
+      { id: 'us-mod', topic: 'saving', title: 'Saving (US)', market_code: 'US', order_index: 0 },
+    ];
+    levelsByModule = {
+      'gb-mod': [
+        { id: 'gb-lvl-a', module_id: 'gb-mod', title: 'Basics', order_index: 0, lesson_count: 0 },
+        { id: 'gb-lvl-b', module_id: 'gb-mod', title: 'More', order_index: 1, lesson_count: 0 },
+      ],
+      'us-mod': [
+        { id: 'us-lvl-a', module_id: 'us-mod', title: 'Basics (US)', order_index: 0, lesson_count: 3 },
+        { id: 'us-lvl-b', module_id: 'us-mod', title: 'More (US)', order_index: 1, lesson_count: 0 },
+      ],
+    };
+    render(<MarketContent />, { wrapper });
+    expect(await screen.findByText('3 published')).toBeInTheDocument();
+    expect(screen.getByText('No lessons yet')).toBeInTheDocument();
   });
 
   it('creates a module from a suggestion, then generates native lessons with its concepts', async () => {

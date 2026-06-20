@@ -89,7 +89,9 @@
       "generating": "Generating…",
       "result": "Created {{created}}, skipped {{skipped}}.",
       "reviewLink": "Review drafts",
-      "error": "Generation failed. Try again."
+      "error": "Generation failed. Try again.",
+      "published": "{{count}} published",
+      "noneYet": "No lessons yet"
     },
     "suggest": {
       "heading": "Intelligent suggestions",
