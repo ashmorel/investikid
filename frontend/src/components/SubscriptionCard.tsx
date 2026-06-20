@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { isAndroid, isNativeApp } from '@/lib/platform';
 import { StoreKit } from '@/lib/storekit';
 import { PlayBilling } from '@/lib/playBilling';
+import { runNativePurchase } from '@/lib/nativePurchase';
 
 const APPLE_MANAGE_URL = 'https://apps.apple.com/account/subscriptions';
 const PLAY_MANAGE_URL = 'https://play.google.com/store/account/subscriptions';
@@ -126,24 +127,22 @@ export function SubscriptionCard() {
   const refreshStatus = () => qc.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
 
   const subscribe = useMutation({
-    mutationFn: async () => {
-      const account = await billingApi.appleAccountToken();
-      if (!account) throw new Error('Could not start purchase.');
-      const result = await StoreKit.purchase({
+    mutationFn: () =>
+      runNativePurchase({
+        platform: 'ios',
         productId: appleProductId,
-        appAccountToken: account.token,
-      });
-      if (result.jws) {
-        await billingApi.appleVerify(result.jws);
-        return { verified: true as const };
-      }
-      return { pending: Boolean(result.pending) };
-    },
+        getAppleToken: async () => {
+          const account = await billingApi.appleAccountToken();
+          if (!account) throw new Error('Could not start purchase.');
+          return account.token;
+        },
+        verifyApple: (jws) => billingApi.appleVerify(jws).then(() => undefined),
+      }),
     onMutate: () => setNote(null),
     onSuccess: async (res) => {
-      if ('verified' in res && res.verified) {
+      if (res.status === 'active') {
         await refreshStatus();
-      } else if ('pending' in res && res.pending) {
+      } else if (res.status === 'pending') {
         setNote(t('subscription.note.purchasePending'));
       }
     },
@@ -177,27 +176,23 @@ export function SubscriptionCard() {
 
   // --- Native (Play Billing / Android) ---
   const subscribeAndroid = useMutation({
-    mutationFn: async () => {
-      const account = await billingApi.accountToken();
-      if (!account) throw new Error('Could not start purchase.');
-      const result = await PlayBilling.purchase({
+    mutationFn: () =>
+      runNativePurchase({
+        platform: 'android',
         productId: playProductId,
-        obfuscatedAccountId: account.token,
-      });
-      if (result.purchaseToken) {
-        await billingApi.googleVerify({
-          purchaseToken: result.purchaseToken,
-          productId: playProductId,
-        });
-        return { verified: true as const };
-      }
-      return { pending: Boolean(result.pending) };
-    },
+        getGoogleToken: async () => {
+          const account = await billingApi.accountToken();
+          if (!account) throw new Error('Could not start purchase.');
+          return account.token;
+        },
+        verifyGoogle: (purchaseToken, productId) =>
+          billingApi.googleVerify({ purchaseToken, productId }).then(() => undefined),
+      }),
     onMutate: () => setNote(null),
     onSuccess: async (res) => {
-      if ('verified' in res && res.verified) {
+      if (res.status === 'active') {
         await refreshStatus();
-      } else if ('pending' in res && res.pending) {
+      } else if (res.status === 'pending') {
         setNote(t('subscription.note.purchasePending'));
       }
     },
