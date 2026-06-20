@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useLevelDrafts,
+  useLevelLessons,
   useGenerateLevelLessons,
   useApproveDraft,
+  useApproveDrafts,
   useUpdateDraft,
   useRegenerateDraft,
   useRejectDraft,
@@ -193,8 +195,11 @@ interface LessonDraftReviewProps {
 export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
   const { t } = useTranslation('admin');
   const { data: drafts = [], isLoading } = useLevelDrafts(levelId);
+  const { data: lessons = [] } = useLevelLessons(levelId);
+  const publishedCount = lessons.length;
   const generate = useGenerateLevelLessons(levelId);
   const approve = useApproveDraft(levelId);
+  const approveDrafts = useApproveDrafts(levelId);
   const update = useUpdateDraft(levelId);
   const regenerate = useRegenerateDraft(levelId);
   const reject = useRejectDraft(levelId);
@@ -207,6 +212,7 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
     scenario: false,
   });
   const [rejectTarget, setRejectTarget] = useState<LessonDraft | null>(null);
+  const [confirmReplace, setConfirmReplace] = useState(false);
 
   function toggleType(t: LessonDraft['type']) {
     setTypes((prev) => ({ ...prev, [t]: !prev[t] }));
@@ -300,6 +306,35 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
         <p className="text-sm text-muted-foreground">{t('draftReview.noDrafts')}</p>
       ) : (
         <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => approveDrafts.mutate(false)}
+              disabled={approveDrafts.isPending}
+              className="min-h-[44px] rounded-md bg-success-600 px-4 py-2 text-sm text-white hover:bg-success-500 disabled:opacity-50"
+            >
+              {t('draftReview.approveAll')}
+            </button>
+            {publishedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setConfirmReplace(true)}
+                disabled={approveDrafts.isPending}
+                className="min-h-[44px] rounded-md bg-danger-600 px-4 py-2 text-sm text-white hover:bg-danger-500 disabled:opacity-50"
+              >
+                {t('draftReview.publishReplace', { count: publishedCount })}
+              </button>
+            )}
+          </div>
+          {approveDrafts.isSuccess && approveDrafts.data && (
+            <p role="status" className="text-sm text-success-700">
+              {t('draftReview.approveResult', {
+                approved: approveDrafts.data.approved,
+                replaced: approveDrafts.data.replaced,
+                skipped: approveDrafts.data.skipped_unsafe,
+              })}
+            </p>
+          )}
           {drafts.map((draft) => (
             <DraftCard
               key={draft.id}
@@ -322,6 +357,17 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
           setRejectTarget(null);
         }}
         onCancel={() => setRejectTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmReplace}
+        title={t('draftReview.replaceConfirmTitle')}
+        message={t('draftReview.replaceConfirmMessage', { count: publishedCount })}
+        onConfirm={() => {
+          approveDrafts.mutate(true);
+          setConfirmReplace(false);
+        }}
+        onCancel={() => setConfirmReplace(false)}
       />
     </section>
   );

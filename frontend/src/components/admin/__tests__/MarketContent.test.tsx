@@ -15,7 +15,7 @@ const mockUnpublish = vi.fn();
 type MarketSummary = { code: string; name: string; has_content: boolean };
 type Brief = { market_code: string; brief_json: Record<string, unknown>; status: string; model_used: string };
 type Mod = { id: string; topic: string; title: string; market_code: string; order_index: number };
-type Lvl = { id: string; module_id: string; title: string; order_index: number };
+type Lvl = { id: string; module_id: string; title: string; order_index: number; lesson_count: number };
 
 let marketsData: MarketSummary[] = [
   { code: 'GB', name: 'United Kingdom', has_content: true },
@@ -27,6 +27,27 @@ let modulesData: Mod[] = [];
 let levelsByModule: Record<string, Lvl[]> = {};
 const mockGenerateMarket = vi.fn();
 const idleMutation = { mutate: vi.fn(), isPending: false, isError: false, isSuccess: false, data: undefined, error: null as unknown };
+
+// Batch-generation runners (Task 5). `mockGenerateModuleHook` captures the
+// moduleId + include_populated arg from the per-module hook mutation;
+// `mockGenerateModuleFn` stands in for the plain helper used by the
+// market-wide sequential runner. Default: resolve an empty batch result.
+type ModuleBatchResult = {
+  levels: { level_id: string; status: string; created: number; skipped: number }[];
+  generated: number;
+  skipped_populated: number;
+  skipped_no_source: number;
+  errored: number;
+};
+const emptyBatch: ModuleBatchResult = {
+  levels: [],
+  generated: 0,
+  skipped_populated: 0,
+  skipped_no_source: 0,
+  errored: 0,
+};
+const mockGenerateModuleHook = vi.fn();
+const mockGenerateModuleFn = vi.fn((_id: string, _incl: boolean) => Promise.resolve(emptyBatch));
 
 // Suggestion-flow mock state (driven per test).
 const mockSuggest = vi.fn();
@@ -58,6 +79,12 @@ vi.mock('@/api/admin', () => ({
     ...idleMutation,
     mutate: (sourceLevelId: string) => mockGenerateMarket({ levelId, source_level_id: sourceLevelId }),
   }),
+  useGenerateModuleLessons: (moduleId: string) => ({
+    ...idleMutation,
+    mutate: (include_populated: boolean) => mockGenerateModuleHook({ moduleId, include_populated }),
+  }),
+  generateModuleLessons: (moduleId: string, include_populated: boolean) =>
+    mockGenerateModuleFn(moduleId, include_populated),
   useSuggestModules: () => ({ ...idleMutation, ...suggestState, data: suggestData, mutate: mockSuggest }),
   useCreateModuleFromSuggestion: () => ({
     ...idleMutation,
@@ -91,6 +118,9 @@ beforeEach(() => {
   mockPublish.mockClear();
   mockUnpublish.mockClear();
   mockGenerateMarket.mockClear();
+  mockGenerateModuleHook.mockClear();
+  mockGenerateModuleFn.mockClear();
+  mockGenerateModuleFn.mockResolvedValue(emptyBatch);
   mockSuggest.mockClear();
   mockCreateSuggestion.mockClear();
   mockGenerateNative.mockClear();
@@ -159,15 +189,74 @@ describe('MarketContent', () => {
       { id: 'us-mod', topic: 'saving', title: 'Saving (US)', market_code: 'US', order_index: 0 },
     ];
     levelsByModule = {
-      'gb-mod': [{ id: 'gb-lvl', module_id: 'gb-mod', title: 'Basics', order_index: 0 }],
-      'us-mod': [{ id: 'us-lvl', module_id: 'us-mod', title: 'Basics (US)', order_index: 0 }],
+      'gb-mod': [{ id: 'gb-lvl', module_id: 'gb-mod', title: 'Basics', order_index: 0, lesson_count: 0 }],
+      'us-mod': [{ id: 'us-lvl', module_id: 'us-mod', title: 'Basics (US)', order_index: 0, lesson_count: 3 }],
     };
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<MarketContent />, { wrapper });
-    const btn = await screen.findByRole('button', { name: /generate lessons \(from gb\)/i });
+    // The US level already has 3 published lessons, so the button is a
+    // "Regenerate (replace)" heads-up that confirms before generating.
+    const btn = await screen.findByRole('button', { name: /regenerate \(replace\)/i });
     fireEvent.click(btn);
+    expect(confirmSpy).toHaveBeenCalled();
     await waitFor(() =>
       expect(mockGenerateMarket).toHaveBeenCalledWith({ levelId: 'us-lvl', source_level_id: 'gb-lvl' }),
     );
+    confirmSpy.mockRestore();
+  });
+
+  it('shows a published-lesson badge per level based on lesson_count', async () => {
+    briefData = { market_code: 'US', brief_json: { currency: 'USD' }, status: 'verified', model_used: 'm' };
+    modulesData = [
+      { id: 'gb-mod', topic: 'saving', title: 'Saving', market_code: 'GB', order_index: 0 },
+      { id: 'us-mod', topic: 'saving', title: 'Saving (US)', market_code: 'US', order_index: 0 },
+    ];
+    levelsByModule = {
+      'gb-mod': [
+        { id: 'gb-lvl-a', module_id: 'gb-mod', title: 'Basics', order_index: 0, lesson_count: 0 },
+        { id: 'gb-lvl-b', module_id: 'gb-mod', title: 'More', order_index: 1, lesson_count: 0 },
+      ],
+      'us-mod': [
+        { id: 'us-lvl-a', module_id: 'us-mod', title: 'Basics (US)', order_index: 0, lesson_count: 3 },
+        { id: 'us-lvl-b', module_id: 'us-mod', title: 'More (US)', order_index: 1, lesson_count: 0 },
+      ],
+    };
+    render(<MarketContent />, { wrapper });
+    expect(await screen.findByText('3 published')).toBeInTheDocument();
+    expect(screen.getByText('No lessons yet')).toBeInTheDocument();
+  });
+
+  it('per-module "Generate all levels" runs the module batch (include_populated false)', async () => {
+    briefData = { market_code: 'US', brief_json: { currency: 'USD' }, status: 'verified', model_used: 'm' };
+    modulesData = [
+      { id: 'gb-mod', topic: 'saving', title: 'Saving', market_code: 'GB', order_index: 0 },
+      { id: 'us-mod', topic: 'saving', title: 'Saving (US)', market_code: 'US', order_index: 0 },
+    ];
+    levelsByModule = {
+      'gb-mod': [{ id: 'gb-lvl', module_id: 'gb-mod', title: 'Basics', order_index: 0, lesson_count: 0 }],
+      'us-mod': [{ id: 'us-lvl', module_id: 'us-mod', title: 'Basics (US)', order_index: 0, lesson_count: 0 }],
+    };
+    render(<MarketContent />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: /generate all levels/i }));
+    await waitFor(() =>
+      expect(mockGenerateModuleHook).toHaveBeenCalledWith({ moduleId: 'us-mod', include_populated: false }),
+    );
+  });
+
+  it('market-wide "Generate all" runs each module batch sequentially (one call per module)', async () => {
+    briefData = { market_code: 'US', brief_json: { currency: 'USD' }, status: 'verified', model_used: 'm' };
+    modulesData = [
+      { id: 'gb-mod', topic: 'saving', title: 'Saving', market_code: 'GB', order_index: 0 },
+      { id: 'us-mod', topic: 'saving', title: 'Saving (US)', market_code: 'US', order_index: 0 },
+    ];
+    levelsByModule = {
+      'gb-mod': [{ id: 'gb-lvl', module_id: 'gb-mod', title: 'Basics', order_index: 0, lesson_count: 0 }],
+      'us-mod': [{ id: 'us-lvl', module_id: 'us-mod', title: 'Basics (US)', order_index: 0, lesson_count: 0 }],
+    };
+    render(<MarketContent />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: /^generate all$/i }));
+    await waitFor(() => expect(mockGenerateModuleFn).toHaveBeenCalledTimes(1));
+    expect(mockGenerateModuleFn).toHaveBeenCalledWith('us-mod', false);
   });
 
   it('creates a module from a suggestion, then generates native lessons with its concepts', async () => {

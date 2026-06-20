@@ -4,7 +4,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit import AuditLog
@@ -216,3 +216,76 @@ async def generate_market_level_lessons(session: AsyncSession, target_level, *,
             result.created.append(draft)
     await session.commit()
     return result
+
+
+async def _gb_source_module(session, target_module: Module) -> Module | None:
+    """Resolve the GB source module for a market module by the fields the scaffold
+    preserves (topic + order_index). Returns None unless exactly one match."""
+    rows = (await session.scalars(
+        select(Module).where(
+            Module.market_code == "GB",
+            Module.topic == target_module.topic,
+            Module.order_index == target_module.order_index,
+        )
+    )).all()
+    return rows[0] if len(rows) == 1 else None
+
+
+async def generate_module_market_lessons(
+    session, target_module, *, brief, include_populated: bool
+) -> dict:
+    """Generate market drafts for every level in ``target_module``, resolving each
+    level's GB source by order_index. Skips levels that already have lessons unless
+    ``include_populated``. Best-effort per level (one failure never aborts the rest)."""
+    gb_module = await _gb_source_module(session, target_module)
+    # Capture identity as plain values up front: a per-level rollback (below)
+    # expires ORM objects, so the loop must NOT touch attributes of cached
+    # Level instances afterward — it re-`session.get`s fresh objects instead.
+    target_levels = (await session.execute(
+        select(Level.id, Level.order_index)
+        .where(Level.module_id == target_module.id).order_by(Level.order_index)
+    )).all()
+    gb_by_order: dict[int, list] = {}
+    if gb_module is not None:
+        for src_id, src_order in (await session.execute(
+            select(Level.id, Level.order_index).where(Level.module_id == gb_module.id)
+        )).all():
+            gb_by_order.setdefault(src_order, []).append(src_id)
+
+    summary = {"levels": [], "generated": 0, "skipped_populated": 0,
+               "skipped_no_source": 0, "errored": 0}
+    for level_id, order_index in target_levels:
+        entry = {"level_id": str(level_id), "status": "", "created": 0, "skipped": 0}
+        src_ids = gb_by_order.get(order_index, [])
+        if len(src_ids) != 1:
+            entry["status"] = "skipped_no_source"
+            summary["skipped_no_source"] += 1
+            summary["levels"].append(entry)
+            continue
+        if not include_populated:
+            count = await session.scalar(
+                select(func.count(Lesson.id)).where(Lesson.level_id == level_id)
+            )
+            if count:
+                entry["status"] = "skipped_populated"
+                summary["skipped_populated"] += 1
+                summary["levels"].append(entry)
+                continue
+        try:
+            target_level = await session.get(Level, level_id)
+            source_level = await session.get(Level, src_ids[0])
+            result = await generate_market_level_lessons(
+                session, target_level, source_level=source_level, brief=brief,
+            )
+            entry.update(status="generated", created=len(result.created), skipped=result.skipped)
+            summary["generated"] += 1
+        except Exception as exc:  # noqa: BLE001 — one level must not abort the module
+            # Discard the failed level's flushed-but-uncommitted drafts so they
+            # can't ride the NEXT level's commit into the DB. Safe to roll back:
+            # the next iteration re-fetches its levels via session.get.
+            await session.rollback()
+            logger.warning("module batch gen failed for level %s: %s", level_id, exc)
+            entry["status"] = "error"
+            summary["errored"] += 1
+        summary["levels"].append(entry)
+    return summary
