@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.models.user import User
 from app.routers.parent_auth import get_current_parent
+from app.routers.users import get_current_user
 from app.schemas.apple_billing import (
     AppleAccountTokenResponse,
     AppleVerifyRequest,
@@ -34,10 +35,44 @@ from app.services.billing_service import (
     create_portal_session,
     get_subscription_status,
 )
+from app.services.entitlements import household_key
 from app.services.plan_catalog import PLANS, apple_product_id, google_product_id
 from app.services.webhook_service import dispatch_webhook_event
 
 router = APIRouter(prefix="/billing", tags=["billing"])
+
+
+def _plans_for_currency(currency: str) -> PlansResponse:
+    """Build the plan catalog response for a resolved display currency,
+    falling back to USD when the currency has no display strings."""
+    if currency not in next(iter(PLANS.values()))["display"]:
+        currency = "USD"
+    return PlansResponse(
+        currency=currency,
+        plans=[
+            PlanOut(
+                plan=name,
+                interval=spec["interval"],
+                display_price=spec["display"][currency],
+                savings_pct=spec["savings_pct"],
+                apple_product_id=apple_product_id(name),
+                google_product_id=google_product_id(name),
+            )
+            for name, spec in PLANS.items()
+        ],
+    )
+
+
+def _child_scope(user: User) -> str:
+    """Billing household scope for a child-authed request. Fails closed when a
+    user has neither parent_email nor email (should not happen)."""
+    key = household_key(user)
+    if not key:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="no billing household for this account",
+        )
+    return key
 
 
 @router.post("/checkout", response_model=CheckoutResponse)
@@ -67,22 +102,7 @@ async def list_plans(
             .limit(1)
         )
     ) or "USD"
-    if currency not in next(iter(PLANS.values()))["display"]:
-        currency = "USD"
-    return PlansResponse(
-        currency=currency,
-        plans=[
-            PlanOut(
-                plan=name,
-                interval=spec["interval"],
-                display_price=spec["display"][currency],
-                savings_pct=spec["savings_pct"],
-                apple_product_id=apple_product_id(name),
-                google_product_id=google_product_id(name),
-            )
-            for name, spec in PLANS.items()
-        ],
-    )
+    return _plans_for_currency(currency)
 
 
 @router.post("/portal", response_model=PortalResponse)
@@ -160,6 +180,64 @@ async def google_verify(
         await google_billing_service.verify_purchase(
             session,
             parent_email=parent_email,
+            purchase_token=payload.purchaseToken,
+            product_id=payload.productId,
+        )
+    except google_billing_service.GoogleBillingError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return GoogleVerifyResponse()
+
+
+# --- Child-authed mirrors -------------------------------------------------
+# Same verify services as the parent endpoints; only the auth dependency and
+# scope source differ (household_key(child) instead of the parent's email),
+# so a child can drive a native StoreKit/Play Billing purchase.
+
+
+@router.get("/child/apple/account-token", response_model=AppleAccountTokenResponse)
+async def child_apple_account_token(user: User = Depends(get_current_user)):
+    return AppleAccountTokenResponse(
+        token=apple_billing_service.household_token(_child_scope(user))
+    )
+
+
+@router.get("/child/account-token", response_model=AccountTokenResponse)
+async def child_account_token(user: User = Depends(get_current_user)):
+    return AccountTokenResponse(
+        token=apple_billing_service.household_token(_child_scope(user))
+    )
+
+
+@router.get("/child/plans", response_model=PlansResponse)
+async def child_list_plans(user: User = Depends(get_current_user)):
+    return _plans_for_currency(user.currency_code or "USD")
+
+
+@router.post("/child/apple/verify", response_model=AppleVerifyResponse)
+async def child_apple_verify(
+    payload: AppleVerifyRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        await apple_billing_service.verify_transaction(
+            session, parent_email=_child_scope(user), jws=payload.jws
+        )
+    except apple_billing_service.AppleBillingError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return AppleVerifyResponse()
+
+
+@router.post("/child/google/verify", response_model=GoogleVerifyResponse)
+async def child_google_verify(
+    payload: GoogleVerifyRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        await google_billing_service.verify_purchase(
+            session,
+            parent_email=_child_scope(user),
             purchase_token=payload.purchaseToken,
             product_id=payload.productId,
         )
