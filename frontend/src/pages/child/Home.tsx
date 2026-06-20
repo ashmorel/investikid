@@ -11,6 +11,7 @@ import { ComingSoonMarket } from '@/components/child/ComingSoonMarket';
 import { useMarkets, useMarketProgress } from '@/hooks/useMarkets';
 import { flagFor } from '@/lib/marketFlags';
 import { StatsCard } from '@/components/child/StatsCard';
+import StreakReminderNudge from '@/components/child/StreakReminderNudge';
 import { QuickLinksRow } from '@/components/child/home/QuickLinksRow';
 import { ReviseCard } from '@/components/child/home/ReviseCard';
 import { PremiumUpsellCard } from '@/components/child/PremiumUpsellCard';
@@ -99,6 +100,8 @@ export default function Home() {
           xpToday={progress?.xp_today ?? 0}
         />
       </div>
+
+      <StreakReminderNudge />
 
       {marketComingSoon ? (
         <div className="mt-4">

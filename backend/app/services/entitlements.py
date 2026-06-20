@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -69,6 +71,20 @@ async def set_premium(
     return True
 
 
+def _row_entitles(row: Subscription, now: datetime) -> bool:
+    """A subscription row entitles only if its status is active AND its period
+    has not passed. A null period (providers that don't populate it) still
+    entitles — the daily reconcile re-pulls those from the provider."""
+    if row.status not in ACTIVE_SUBSCRIPTION_STATUSES:
+        return False
+    cpe = row.current_period_end
+    if cpe is None:
+        return True
+    if cpe.tzinfo is None:
+        cpe = cpe.replace(tzinfo=UTC)
+    return cpe > now
+
+
 async def recompute_household_premium(
     session: AsyncSession, parent_email: str
 ) -> None:
@@ -77,7 +93,8 @@ async def recompute_household_premium(
     rows = (await session.scalars(
         select(Subscription).where(Subscription.parent_email == parent_email)
     )).all()
-    entitled = any(r.status in ACTIVE_SUBSCRIPTION_STATUSES for r in rows)
+    now = datetime.now(UTC)
+    entitled = any(_row_entitles(r, now) for r in rows)
     children = (await session.scalars(
         select(User).where(User.parent_email == parent_email)
     )).all()
