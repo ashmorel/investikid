@@ -550,3 +550,10 @@ class ApproveDraftsResult(BaseModel):
     approved: int
     replaced: int
     skipped_unsafe: int
+
+
+# ── Curriculum design ────────────────────────────────────────────────
+class CurriculumDesignOut(BaseModel):
+    proposal_id: str
+    proposal: dict
+    coverage: dict

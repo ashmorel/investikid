@@ -41,6 +41,7 @@ from app.schemas.admin import (
     CoverageBucket,
     CuratedModuleSuggestion,
     CuratedTranslationRequest,
+    CurriculumDesignOut,
     GenerateLessonsRequest,
     GenerateLessonsResponse,
     GenerateMarketLessonsRequest,
@@ -107,6 +108,13 @@ from app.services.market_brief_service import (
     BriefGenerationError,
     generate_brief,
     require_verified_brief,
+)
+from app.services.market_curriculum.designer import CurriculumDesignError, design_curriculum
+from app.services.market_curriculum.native_batch import generate_market_native
+from app.services.market_curriculum.proposal_service import (
+    accept_proposal,
+    get_active_proposal,
+    save_proposal,
 )
 from app.services.market_module_suggester import suggest_modules
 from app.services.market_scaffold_service import scaffold_market_from_gb
@@ -1198,3 +1206,76 @@ async def llm_status() -> list[dict]:
     Admin-only (enforced by the router-level dependency).
     """
     return await probe_all_providers()
+
+
+# ── Curriculum design ────────────────────────────────────────────────
+@router.post("/markets/{market_code}/curriculum/design", response_model=CurriculumDesignOut)
+@limiter.limit("5/minute")
+async def design_market_curriculum_endpoint(
+    request: Request, market_code: str,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    brief = await require_verified_brief(session, market_code)
+    try:
+        proposal, report = await design_curriculum(market_code, brief.brief_json)
+    except CurriculumDesignError:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY,
+                            detail="Could not design a curriculum, try again")
+    row = await save_proposal(session, proposal, report)
+    await session.commit()
+    return CurriculumDesignOut(proposal_id=str(row.id), proposal=row.proposal_json,
+                               coverage=row.coverage_json)
+
+
+@router.get("/markets/{market_code}/curriculum", response_model=CurriculumDesignOut)
+async def get_market_curriculum_endpoint(
+    market_code: str,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    row = await get_active_proposal(session, market_code)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No curriculum")
+    return CurriculumDesignOut(proposal_id=str(row.id), proposal=row.proposal_json,
+                               coverage=row.coverage_json)
+
+
+@router.post("/markets/{market_code}/curriculum/accept")
+async def accept_market_curriculum_endpoint(
+    market_code: str,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    row = await get_active_proposal(session, market_code)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No curriculum")
+    try:
+        result = await accept_proposal(session, row)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    await session.commit()
+    return result
+
+
+@router.post("/modules/{module_id}/generate-native-batch")
+@limiter.limit("5/minute")
+async def generate_native_batch_endpoint(
+    request: Request, module_id: uuid.UUID,
+    payload: GenerateModuleMarketRequest,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    module = await session.get(Module, module_id)
+    if module is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
+    brief = await require_verified_brief(session, module.market_code)
+    proposal_row = await get_active_proposal(session, module.market_code)
+    if proposal_row is None or proposal_row.status != "accepted":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="No accepted curriculum for this market")
+    summary = await generate_market_native(
+        session, module, brief=brief, proposal_row=proposal_row,
+        include_populated=payload.include_populated)
+    await session.commit()
+    return summary
