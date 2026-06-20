@@ -36,6 +36,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/internal/weekly-digest/run",
     "/internal/analytics-retention/run",
     "/internal/push-streak-risk/run",
+    "/internal/subscriptions/reconcile",
     "/parent/auth/oauth/google",
     "/parent/auth/oauth/apple",
 })
