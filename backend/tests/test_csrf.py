@@ -91,6 +91,15 @@ async def test_refresh_without_csrf_header_rejected(client):
     assert resp.status_code == 403
 
 
+async def test_reconcile_cron_endpoint_is_csrf_exempt(client):
+    # The cron caller sends X-Cron-Secret, not a CSRF token. The endpoint must be
+    # CSRF-exempt so the request reaches the cron-secret check (503 unconfigured /
+    # 401 bad secret) rather than being rejected at the CSRF layer (403).
+    resp = await client.post("/internal/subscriptions/reconcile", headers={})
+    assert resp.status_code != 403
+    assert resp.status_code in (401, 503)
+
+
 async def test_native_origin_bypasses_csrf(client):
     # Capacitor native app origin: cannot read the csrf cookie to echo it, and
     # the origin is unforgeable by a browser — so it bypasses CSRF.
