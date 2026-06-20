@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from './client';
+import { apiFetch, ApiError } from './client';
 
 // ── Types ──────────────────────────────────────────────────────────
 export interface AdminStats {
@@ -757,6 +757,7 @@ export type ModuleBatchResult = {
   skipped_populated: number;
   skipped_has_drafts: number;
   skipped_no_source: number;
+  skipped_no_concepts: number;
   errored: number;
 };
 
@@ -767,7 +768,7 @@ export function useGenerateModuleLessons(moduleId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (include_populated: boolean) =>
-      adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-market`,
+      adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-native-batch`,
         { method: 'POST', body: JSON.stringify({ include_populated }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
@@ -779,7 +780,7 @@ export function useGenerateModuleLessons(moduleId: string) {
 /** Plain (hook-free) variant for the market-wide sequential runner, where the
  *  module list is dynamic and we can't call a hook per module. */
 export function generateModuleLessons(moduleId: string, include_populated: boolean) {
-  return adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-market`,
+  return adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-native-batch`,
     { method: 'POST', body: JSON.stringify({ include_populated }) });
 }
 
@@ -850,5 +851,76 @@ export function useUnpublishMarket(code: string) {
   return useMutation({
     mutationFn: () => adminFetch<MarketPublishResult>(`/admin/markets/${code}/unpublish`, { method: 'POST' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['markets'] }),
+  });
+}
+
+// ── Curriculum engine (Task 8) ─────────────────────────────────────
+export type CurriculumLevelNode = {
+  title: string;
+  order_index: number;
+  complexity_tier: number;
+  learning_objective: string;
+  concepts: string[];
+  backbone_keys: string[];
+  level_id?: string | null;
+};
+
+export type CurriculumModuleNode = {
+  topic: string;
+  title: string;
+  icon: string;
+  min_age: number;
+  max_age: number;
+  order_index: number;
+  levels: CurriculumLevelNode[];
+};
+
+export type CurriculumCoverage = {
+  ok: boolean;
+  missing_backbone: string[];
+  spans_all_tiers: boolean;
+  regressions: string[];
+};
+
+export type CurriculumDesign = {
+  proposal_id: string;
+  proposal: { market_code: string; modules: CurriculumModuleNode[] };
+  coverage: CurriculumCoverage;
+};
+
+export function useCurriculum(marketCode: string) {
+  return useQuery({
+    queryKey: ['admin', 'curriculum', marketCode],
+    queryFn: async (): Promise<CurriculumDesign | null> => {
+      try {
+        return await adminFetch<CurriculumDesign>(`/admin/markets/${marketCode}/curriculum`);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) return null;
+        throw err;
+      }
+    },
+    enabled: !!marketCode,
+  });
+}
+
+export function useDesignCurriculum(marketCode: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      adminFetch<CurriculumDesign>(`/admin/markets/${marketCode}/curriculum/design`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'curriculum', marketCode] }),
+  });
+}
+
+export function useAcceptCurriculum(marketCode: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      adminFetch<{ modules: number; levels: number }>(`/admin/markets/${marketCode}/curriculum/accept`, { method: 'POST' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'curriculum', marketCode] });
+      qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'levels'] });
+    },
   });
 }

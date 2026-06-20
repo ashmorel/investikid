@@ -22,6 +22,7 @@ from app.models.group import GroupMembership, LeaderboardGroup  # noqa: F401
 from app.models.lesson_draft import LessonDraft  # noqa: F401
 from app.models.market import Market  # noqa: F401
 from app.models.market_brief import MarketBrief  # noqa: F401
+from app.models.market_curriculum import MarketCurriculumProposal  # noqa: F401
 from app.models.market_progress import UserMarketProgress  # noqa: F401
 from app.models.parent_identity import ParentIdentity  # noqa: F401
 from app.models.parent_preferences import ParentPreferences  # noqa: F401

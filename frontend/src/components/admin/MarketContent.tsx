@@ -12,7 +12,6 @@ import {
   useScaffoldMarket,
   useModules,
   useLevels,
-  useGenerateMarketLessons,
   useGenerateModuleLessons,
   generateModuleLessons,
   useSuggestModules,
@@ -23,6 +22,8 @@ import {
   type AdminModule,
   type ModuleSuggestion,
 } from '@/api/admin';
+import CurriculumPanel from './CurriculumPanel';
+import InlineDraftReview from './InlineDraftReview';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -67,7 +68,6 @@ export default function MarketContent() {
   const marketModules = allModules
     .filter((m) => m.market_code === code)
     .sort((a, b) => a.order_index - b.order_index);
-  const gbModules = allModules.filter((m) => m.market_code === 'GB');
 
   // Editable JSON buffer, re-seeded from the loaded brief whenever the market
   // changes or a fresh brief arrives; preserves edits between unrelated renders.
@@ -125,7 +125,7 @@ export default function MarketContent() {
               ok: true,
               generated: res.generated,
               skipped:
-                res.skipped_populated + res.skipped_has_drafts + res.skipped_no_source,
+                res.skipped_populated + res.skipped_has_drafts + (res.skipped_no_source ?? 0) + (res.skipped_no_concepts ?? 0),
             });
             setResults([...acc]);
             break;
@@ -180,6 +180,9 @@ export default function MarketContent() {
 
       {code && code !== 'GB' && (
         <div className="flex max-w-2xl flex-col gap-6">
+          {/* Curriculum panel */}
+          <CurriculumPanel marketCode={code} />
+
           {/* Step 1 — Brief */}
           <section aria-labelledby="brief-heading" className="rounded-md border border-line bg-card px-4 py-3">
             <h2 id="brief-heading" className="mb-1 text-lg font-semibold text-ink">
@@ -339,18 +342,14 @@ export default function MarketContent() {
                   )}
                 </div>
 
-                {marketModules.map((mod) => {
-                  const gbModule = matchGbModule(gbModules, mod);
-                  return (
-                    <ModuleLessons
-                      key={mod.id}
-                      module={mod}
-                      gbModule={gbModule}
-                      canGenerate={isVerified}
-                      includePopulated={includePopulated}
-                    />
-                  );
-                })}
+                {marketModules.map((mod) => (
+                  <ModuleLessons
+                    key={mod.id}
+                    module={mod}
+                    canGenerate={isVerified}
+                    includePopulated={includePopulated}
+                  />
+                ))}
               </div>
             )}
           </section>
@@ -395,34 +394,21 @@ export default function MarketContent() {
   );
 }
 
-/** Match a market module to its GB source by the fields the scaffold preserves
- *  (topic + order_index). Returns the GB module or undefined if no robust
- *  single match exists (so the caller can disable generation, not guess). */
-function matchGbModule(gbModules: AdminModule[], marketModule: AdminModule): AdminModule | undefined {
-  const matches = gbModules.filter(
-    (g) => g.topic === marketModule.topic && g.order_index === marketModule.order_index,
-  );
-  return matches.length === 1 ? matches[0] : undefined;
-}
-
-/** One scaffolded market module: lists its levels, each with a generate-market
- *  trigger wired to the matched GB source level. */
+/** One scaffolded market module: lists its levels with batch generation controls. */
 function ModuleLessons({
   module: mod,
-  gbModule,
   canGenerate,
   includePopulated,
 }: {
   module: AdminModule;
-  gbModule: AdminModule | undefined;
   canGenerate: boolean;
   includePopulated: boolean;
 }) {
   const { t } = useTranslation('admin');
   const levels = useLevels(mod.id).data ?? [];
-  const gbLevels = useLevels(gbModule?.id ?? '').data ?? [];
   const sortedLevels = [...levels].sort((a, b) => a.order_index - b.order_index);
   const batch = useGenerateModuleLessons(mod.id);
+  const [expandedLevelId, setExpandedLevelId] = useState<string | null>(null);
 
   return (
     <div className="rounded-md border border-line px-3 py-2">
@@ -446,7 +432,8 @@ function ModuleLessons({
               skipped:
                 batch.data.skipped_populated +
                 batch.data.skipped_has_drafts +
-                batch.data.skipped_no_source,
+                (batch.data.skipped_no_source ?? 0) +
+                (batch.data.skipped_no_concepts ?? 0),
             })}
           </span>
         )}
@@ -455,110 +442,66 @@ function ModuleLessons({
         <p className="text-xs text-muted-foreground">{t('marketContent.lessons.noLevels')}</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {sortedLevels.map((lvl) => {
-            // Within a module, market level[j] ↔ GB level[j] by order_index.
-            const gbMatches = gbModule
-              ? gbLevels.filter((g) => g.order_index === lvl.order_index)
-              : [];
-            const sourceLevel = gbMatches.length === 1 ? gbMatches[0] : undefined;
-            return (
-              <LevelGenerator
-                key={lvl.id}
-                moduleId={mod.id}
-                levelId={lvl.id}
-                levelTitle={lvl.title}
-                lessonCount={lvl.lesson_count}
-                draftCount={lvl.draft_count}
-                sourceLevelId={sourceLevel?.id}
-                canGenerate={canGenerate}
-              />
-            );
-          })}
+          {sortedLevels.map((lvl) => (
+            <LevelGenerator
+              key={lvl.id}
+              levelId={lvl.id}
+              levelTitle={lvl.title}
+              lessonCount={lvl.lesson_count}
+              draftCount={lvl.draft_count}
+              expanded={expandedLevelId === lvl.id}
+              onToggleReview={() =>
+                setExpandedLevelId((prev) => (prev === lvl.id ? null : lvl.id))
+              }
+            />
+          ))}
         </ul>
       )}
     </div>
   );
 }
 
-/** A single level row with its "Generate lessons (from GB)" trigger. Disabled
- *  unless the brief is verified and a unique GB source level matched. */
+/** A single level row with an inline "Review N draft(s)" toggle. */
 function LevelGenerator({
-  moduleId,
   levelId,
   levelTitle,
   lessonCount,
   draftCount,
-  sourceLevelId,
-  canGenerate,
+  expanded,
+  onToggleReview,
 }: {
-  moduleId: string;
   levelId: string;
   levelTitle: string;
   lessonCount: number;
   draftCount: number;
-  sourceLevelId: string | undefined;
-  canGenerate: boolean;
+  expanded: boolean;
+  onToggleReview: () => void;
 }) {
   const { t } = useTranslation('admin');
-  const generate = useGenerateMarketLessons(levelId);
-  const enabled = canGenerate && !!sourceLevelId && !generate.isPending;
 
   return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <span className="text-sm text-ink">{levelTitle}</span>
-      {lessonCount > 0 ? (
-        <span className="rounded bg-success-100 px-2 py-0.5 text-xs text-success-700">
-          {t('marketContent.lessons.published', { count: lessonCount })}
-        </span>
-      ) : (
-        <span className="text-xs text-muted-foreground">{t('marketContent.lessons.noneYet')}</span>
-      )}
-      <button
-        type="button"
-        onClick={() => {
-          if (!sourceLevelId) return;
-          if (lessonCount > 0 &&
-            !window.confirm(t('marketContent.lessons.regenerateReplaceConfirm', { count: lessonCount }))) {
-            return;
-          }
-          generate.mutate(sourceLevelId);
-        }}
-        disabled={!enabled}
-        className="rounded-md border border-line px-3 py-1 text-xs text-ink hover:bg-brand-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
-      >
-        {generate.isPending
-          ? t('marketContent.lessons.generating')
-          : lessonCount > 0
-            ? t('marketContent.lessons.regenerateReplace')
-            : t('marketContent.lessons.generate')}
-      </button>
-      {draftCount > 0 && (
-        <Link
-          to={`/admin/modules/${moduleId}/levels/${levelId}/lessons`}
-          className="text-xs font-medium text-brand-600 underline hover:text-brand-700"
-        >
-          {t('marketContent.lessons.reviewDrafts', { count: draftCount })}
-        </Link>
-      )}
-      {!sourceLevelId && (
-        <span className="text-xs text-muted-foreground">{t('marketContent.lessons.noSource')}</span>
-      )}
-      {generate.isError && (
-        <span className="text-xs text-danger-500" role="alert">{t('marketContent.lessons.error')}</span>
-      )}
-      {generate.isSuccess && generate.data && (
-        <span className="text-xs text-success-600" role="status">
-          {t('marketContent.lessons.result', {
-            created: generate.data.created.length,
-            skipped: generate.data.skipped,
-          })}{' '}
-          <Link
-            to={`/admin/modules/${moduleId}/levels/${levelId}/lessons`}
-            className="underline hover:text-success-700"
+    <li className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="text-sm text-ink">{levelTitle}</span>
+        {lessonCount > 0 ? (
+          <span className="rounded bg-success-100 px-2 py-0.5 text-xs text-success-700">
+            {t('marketContent.lessons.published', { count: lessonCount })}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">{t('marketContent.lessons.noneYet')}</span>
+        )}
+        {draftCount > 0 && (
+          <button
+            type="button"
+            onClick={onToggleReview}
+            className="text-xs font-medium text-brand-600 underline hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
-            {t('marketContent.lessons.reviewLink')}
-          </Link>
-        </span>
+            {t('marketContent.lessons.reviewDrafts', { count: draftCount })}
+          </button>
+        )}
+      </div>
+      {expanded && (
+        <InlineDraftReview levelId={levelId} onClose={onToggleReview} />
       )}
     </li>
   );
