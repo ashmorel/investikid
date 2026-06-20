@@ -744,6 +744,35 @@ export function useGenerateMarketLessons(levelId: string) {
   });
 }
 
+// ── Per-module batch generation (every level, GB sources resolved server-side) ─
+export type ModuleBatchResult = {
+  levels: { level_id: string; status: string; created: number; skipped: number }[];
+  generated: number;
+  skipped_populated: number;
+  skipped_no_source: number;
+  errored: number;
+};
+
+/** Generate market-adapted drafts for EVERY level of a module in one batch
+ *  (GB sources resolved server-side). Skips levels that already have lessons
+ *  unless `include_populated`. Rate-limited 5/min (one call per module). */
+export function useGenerateModuleLessons(moduleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (include_populated: boolean) =>
+      adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-market`,
+        { method: 'POST', body: JSON.stringify({ include_populated }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'modules'] }),
+  });
+}
+
+/** Plain (hook-free) variant for the market-wide sequential runner, where the
+ *  module list is dynamic and we can't call a hook per module. */
+export function generateModuleLessons(moduleId: string, include_populated: boolean) {
+  return adminFetch<ModuleBatchResult>(`/admin/modules/${moduleId}/generate-market`,
+    { method: 'POST', body: JSON.stringify({ include_populated }) });
+}
+
 // ── Intelligent market suggestions (proactive module creation) ───────
 export type ModuleSuggestion = {
   title: string;

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { marketApi, type MarketSummary } from '@/api/market';
+import { ApiError } from '@/api/client';
 import {
   useMarketBrief,
   useGenerateMarketBrief,
@@ -12,6 +13,8 @@ import {
   useModules,
   useLevels,
   useGenerateMarketLessons,
+  useGenerateModuleLessons,
+  generateModuleLessons,
   useSuggestModules,
   useCreateModuleFromSuggestion,
   useGenerateNativeLessons,
@@ -20,6 +23,13 @@ import {
   type AdminModule,
   type ModuleSuggestion,
 } from '@/api/admin';
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Per-module result row for the market-wide runner. */
+type RunnerResult =
+  | { title: string; ok: true; generated: number; skipped: number }
+  | { title: string; ok: false };
 
 /** Admin market-content workflow (Sub-project E2).
  *  Pick a non-GB market → generate/edit/verify its brief → scaffold the
@@ -84,6 +94,57 @@ export default function MarketContent() {
   }
 
   const publishError = (publish.error as { status?: number } | null)?.status;
+
+  // ── Market-wide batch runner ──────────────────────────────────────
+  // Run each module's per-module batch SEQUENTIALLY (await before the next) to
+  // respect the 5/min rate limit. On 429 back off 13s and retry the same
+  // module; on any other failure, record it and move on. Refresh module markers
+  // (lesson counts) at the end.
+  const qc = useQueryClient();
+  const [includePopulated, setIncludePopulated] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<{ i: number; n: number } | null>(null);
+  const [results, setResults] = useState<RunnerResult[]>([]);
+
+  async function handleGenerateAll() {
+    setRunning(true);
+    setResults([]);
+    const acc: RunnerResult[] = [];
+    try {
+      for (let i = 0; i < marketModules.length; i++) {
+        setProgress({ i: i + 1, n: marketModules.length });
+        const mod = marketModules[i];
+        // Per-module inner loop: retry the SAME module on a 429 up to a cap, so a
+        // persistently rate-limited module can't loop forever; then record it as
+        // failed and the outer loop moves on.
+        for (let attempt = 0; ; attempt++) {
+          try {
+            const res = await generateModuleLessons(mod.id, includePopulated);
+            acc.push({
+              title: mod.title,
+              ok: true,
+              generated: res.generated,
+              skipped: res.skipped_populated + res.skipped_no_source,
+            });
+            setResults([...acc]);
+            break;
+          } catch (e) {
+            if (e instanceof ApiError && e.status === 429 && attempt < 3) {
+              await sleep(13000);
+              continue; // retry this module
+            }
+            acc.push({ title: mod.title, ok: false });
+            setResults([...acc]);
+            break;
+          }
+        }
+      }
+    } finally {
+      setRunning(false);
+      setProgress(null);
+      qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
+    }
+  }
 
   return (
     <div className="p-6 text-ink">
@@ -231,6 +292,51 @@ export default function MarketContent() {
               <p className="text-sm text-muted-foreground">{t('marketContent.lessons.notScaffolded')}</p>
             ) : (
               <div className="flex flex-col gap-4">
+                {/* Market-wide batch runner */}
+                <div className="flex flex-col gap-2 rounded-md border border-line bg-background px-3 py-2">
+                  <label className="flex items-center gap-2 text-sm text-ink">
+                    <input
+                      type="checkbox"
+                      checked={includePopulated}
+                      onChange={(e) => setIncludePopulated(e.target.checked)}
+                      disabled={running}
+                      className="h-4 w-4"
+                    />
+                    {t('marketContent.batch.includePopulated')}
+                  </label>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleGenerateAll}
+                      disabled={running || !isVerified}
+                      className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    >
+                      {running ? t('marketContent.batch.running') : t('marketContent.batch.generateAllMarket')}
+                    </button>
+                  </div>
+                  {progress && (
+                    <p className="text-sm text-muted-foreground" role="status">
+                      {t('marketContent.batch.progress', { i: progress.i, n: progress.n })}
+                    </p>
+                  )}
+                  {!running && results.length > 0 && (
+                    <ul className="flex flex-col gap-1" role="status">
+                      {results.map((r, i) => (
+                        <li key={`${r.title}-${i}`} className="text-xs text-ink">
+                          <span className="font-medium">{r.title}</span>{': '}
+                          {r.ok ? (
+                            <span className="text-success-600">
+                              {t('marketContent.batch.moduleResult', { generated: r.generated, skipped: r.skipped })}
+                            </span>
+                          ) : (
+                            <span className="text-danger-500">{t('marketContent.batch.moduleFailed')}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
                 {marketModules.map((mod) => {
                   const gbModule = matchGbModule(gbModules, mod);
                   return (
@@ -239,6 +345,7 @@ export default function MarketContent() {
                       module={mod}
                       gbModule={gbModule}
                       canGenerate={isVerified}
+                      includePopulated={includePopulated}
                     />
                   );
                 })}
@@ -302,19 +409,43 @@ function ModuleLessons({
   module: mod,
   gbModule,
   canGenerate,
+  includePopulated,
 }: {
   module: AdminModule;
   gbModule: AdminModule | undefined;
   canGenerate: boolean;
+  includePopulated: boolean;
 }) {
   const { t } = useTranslation('admin');
   const levels = useLevels(mod.id).data ?? [];
   const gbLevels = useLevels(gbModule?.id ?? '').data ?? [];
   const sortedLevels = [...levels].sort((a, b) => a.order_index - b.order_index);
+  const batch = useGenerateModuleLessons(mod.id);
 
   return (
     <div className="rounded-md border border-line px-3 py-2">
-      <h3 className="mb-2 text-sm font-semibold text-ink">{mod.title}</h3>
+      <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h3 className="text-sm font-semibold text-ink">{mod.title}</h3>
+        <button
+          type="button"
+          onClick={() => batch.mutate(includePopulated)}
+          disabled={!canGenerate || batch.isPending}
+          className="rounded-md border border-line px-3 py-1 text-xs text-ink hover:bg-brand-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        >
+          {batch.isPending ? t('marketContent.batch.running') : t('marketContent.batch.generateAllLevels')}
+        </button>
+        {batch.isError && (
+          <span className="text-xs text-danger-500" role="alert">{t('marketContent.batch.moduleFailed')}</span>
+        )}
+        {batch.isSuccess && batch.data && (
+          <span className="text-xs text-success-600" role="status">
+            {t('marketContent.batch.moduleResult', {
+              generated: batch.data.generated,
+              skipped: batch.data.skipped_populated + batch.data.skipped_no_source,
+            })}
+          </span>
+        )}
+      </div>
       {sortedLevels.length === 0 ? (
         <p className="text-xs text-muted-foreground">{t('marketContent.lessons.noLevels')}</p>
       ) : (

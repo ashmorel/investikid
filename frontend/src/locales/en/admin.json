@@ -95,6 +95,16 @@
       "regenerateReplace": "Regenerate (replace)",
       "regenerateReplaceConfirm": "This level has {{count}} published lesson(s). Generate new drafts now; when you approve them on the review screen you can replace the old ones."
     },
+    "batch": {
+      "generateAllLevels": "Generate all levels",
+      "generateAllMarket": "Generate all",
+      "includePopulated": "Include levels that already have lessons",
+      "progress": "Generating module {{i}} of {{n}}…",
+      "moduleResult": "{{generated}} generated, {{skipped}} skipped",
+      "moduleFailed": "Failed — try again",
+      "running": "Generating…",
+      "done": "Done."
+    },
     "suggest": {
       "heading": "Intelligent suggestions",
       "description": "Let the model propose modules this market needs that the UK set lacks. Create one in a click, then generate market-native lessons for it.",
