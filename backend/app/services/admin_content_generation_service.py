@@ -17,6 +17,12 @@ from app.services.moderation import moderate_output
 
 logger = logging.getLogger(__name__)
 
+_TIER_DEPTH = {
+    1: "Write at a FOUNDATIONAL level: first exposure, one concrete idea, very simple.",
+    2: "Write at a DEVELOPING level: build on the basics, introduce the mechanics and a trade-off.",
+    3: "Write at an ADVANCED level: apply and combine ideas, with nuance and a real decision.",
+}
+
 _SCHEMA_HINT = {
     "card": '{"title": str, "body": str}',
     "quiz": '{"question": str, "choices": [str, str, ...(2-5)], "answer_index": int, "explanation": str}',
@@ -37,6 +43,7 @@ def _system_prompt(
     *,
     brief: dict | None = None,
     source_text: str | None = None,
+    complexity_tier: int | None = None,
 ) -> str:
     age = f"ages {module.min_age}-{module.max_age}" if module.min_age else "children 8-16"
     prompt = (
@@ -64,6 +71,8 @@ def _system_prompt(
             f"examples. This is NOT a UK lesson — do not reference UK-specific products, "
             f"regulators or currency."
         )
+        if complexity_tier in _TIER_DEPTH:
+            prompt += " " + _TIER_DEPTH[complexity_tier]
     return prompt
 
 
@@ -82,9 +91,11 @@ def _concat_text(parsed: dict) -> str:
 
 @llm_usage.surface("admin_content_gen")
 async def _generate_one(session, *, level, module, concept: str, lesson_type: str,
-                        brief: dict | None = None, source_text: str | None = None):
+                        brief: dict | None = None, source_text: str | None = None,
+                        complexity_tier: int | None = None):
     client = get_llm_client("premium")
-    system = _system_prompt(lesson_type, module, level, brief=brief, source_text=source_text)
+    system = _system_prompt(lesson_type, module, level, brief=brief, source_text=source_text,
+                            complexity_tier=complexity_tier)
     user = f"Create a {lesson_type} lesson teaching: {concept}."
     parsed = None
     for attempt in range(2):
@@ -151,7 +162,8 @@ async def generate_level_lessons(session: AsyncSession, level, *, concept: str, 
 
 
 async def generate_native_level_lessons(session: AsyncSession, level, *, brief, concepts,
-                                        types: list[str] | None = None) -> GenerationResult:
+                                        types: list[str] | None = None,
+                                        complexity_tier: int | None = None) -> GenerationResult:
     """Generate market-NATIVE lessons (brief-grounded, no GB source) for ``level``,
     one per concept. The caller passes a verified brief.
     """
@@ -162,7 +174,7 @@ async def generate_native_level_lessons(session: AsyncSession, level, *, brief, 
         draft = await _generate_one(
             session, level=level, module=module, concept=concept,
             lesson_type=type_cycle[i % len(type_cycle)],
-            brief=brief.brief_json, source_text=None,
+            brief=brief.brief_json, source_text=None, complexity_tier=complexity_tier,
         )
         if draft is None:
             result.skipped += 1
