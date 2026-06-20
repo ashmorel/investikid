@@ -2,12 +2,18 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChallengeList } from '@/components/child/stats/ChallengeList';
 import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 import type { ChallengeOut } from '@/api/gamification';
 
 function renderWithPaywall(ui: ReactElement) {
-  return render(<PremiumPaywallProvider>{ui}</PremiumPaywallProvider>);
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <PremiumPaywallProvider>{ui}</PremiumPaywallProvider>
+    </QueryClientProvider>,
+  );
 }
 
 const challenges: ChallengeOut[] = [

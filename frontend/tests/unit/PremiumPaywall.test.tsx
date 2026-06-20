@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PremiumPaywallProvider, usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 function Trigger() {
@@ -14,7 +15,8 @@ describe('PremiumPaywall', () => {
 
   it('opens with benefits and requests unlock', async () => {
     (globalThis.fetch as any).mockResolvedValue(new Response(JSON.stringify({ status: 'sent' }), { status: 200 }));
-    render(<PremiumPaywallProvider><Trigger /></PremiumPaywallProvider>);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={qc}><PremiumPaywallProvider><Trigger /></PremiumPaywallProvider></QueryClientProvider>);
     await userEvent.click(screen.getByText('lock'));
     expect(await screen.findByText(/premium unlocks/i)).toBeInTheDocument();
     expect(screen.getByText(/coach penny/i)).toBeInTheDocument();
