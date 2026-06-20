@@ -143,6 +143,7 @@ export default function MarketContent() {
       setRunning(false);
       setProgress(null);
       qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'levels'] });
     }
   }
 
