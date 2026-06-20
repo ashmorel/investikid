@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.content import Module
 from app.models.market import Market
 from app.services.llm_client import get_llm_client
+from app.services.llm_json import extract_json_list
 from app.services.market_brief_service import require_verified_brief
 
 logger = logging.getLogger(__name__)
@@ -36,16 +37,7 @@ async def suggest_modules(session: AsyncSession, market: Market) -> list[dict]:
             messages=[{"role": "user", "content": f"Suggest modules for {market.name}."}],
             temperature=0.4, max_tokens=1500, response_format="json",
         )
-        parsed = json.loads(raw)
-        if isinstance(parsed, list):
-            items = parsed
-        elif isinstance(parsed, dict):
-            # `response_format="json"` forces an OBJECT wrapper, and the model may
-            # use any key for the array (modules / suggestions / proposed_modules
-            # / …). Take the first list value rather than guessing key names.
-            items = next((v for v in parsed.values() if isinstance(v, list)), [])
-        else:
-            items = []
+        items = extract_json_list(json.loads(raw))
         out: list[dict] = []
         for it in items:
             if isinstance(it, dict) and isinstance(it.get("title"), str):
