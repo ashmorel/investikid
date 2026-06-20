@@ -59,7 +59,13 @@
     "mayBeLater": "Maybe later",
     "noParent": "Ask a grown-up to set up Premium for you. 💛",
     "alreadySent": "We already told your grown-up today 👍",
-    "sent": "We've let your grown-up know! 🎉"
+    "sent": "We've let your grown-up know! 🎉",
+    "getPremium": "Get premium",
+    "unlocked": "You're all set — premium unlocked! 🎉",
+    "askedGrownup": "We asked your grown-up to approve it 👍",
+    "working": "One moment…",
+    "askGrownupLink": "or ask a grown-up to set it up",
+    "purchaseError": "Something went wrong. Try again."
   },
 
   "parentalGate": {
