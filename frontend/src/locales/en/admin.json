@@ -132,6 +132,7 @@
       "designing": "Designing…",
       "regenerate": "Regenerate",
       "accept": "Accept",
+      "accepting": "Accepting…",
       "accepted": "Curriculum accepted — modules and levels updated.",
       "coverageOk": "Coverage complete",
       "coverageGap": "Missing: {{key}}",

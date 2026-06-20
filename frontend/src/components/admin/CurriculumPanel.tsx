@@ -151,7 +151,7 @@ export default function CurriculumPanel({ marketCode }: { marketCode: string }) 
           className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           {accept.isPending
-            ? t('marketContent.curriculum.designing')
+            ? t('marketContent.curriculum.accepting')
             : t('marketContent.curriculum.accept')}
         </button>
         <button
