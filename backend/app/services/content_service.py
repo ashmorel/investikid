@@ -55,6 +55,13 @@ def is_module_in_market(module_market_code: str, home_market_code: str) -> bool:
     return module_market_code == home_market_code
 
 
+def is_module_visible(module, active_market_code: str) -> bool:
+    """Child-facing visibility: a module is shown only when it is published AND
+    in the user's active market. Staged (unpublished) modules — built by the
+    curriculum engine before an atomic publish — are invisible to children."""
+    return bool(module.published) and is_module_in_market(module.market_code, active_market_code)
+
+
 def is_module_premium_ok(*, module_is_premium: bool, is_premium_user: bool) -> bool:
     """Premium gate, decoupled from the (now market-based) region gate."""
     return (not module_is_premium) or is_premium_user
