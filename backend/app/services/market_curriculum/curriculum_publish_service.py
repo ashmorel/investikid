@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import func, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import Lesson, Module
@@ -25,13 +25,15 @@ async def publish_market_curriculum(session: AsyncSession, market_code: str) -> 
     if not staged_ids:
         raise ValueError("accepted curriculum has no materialised modules")
 
-    # Guard: every staged module must have at least one lesson.
-    for mid in staged_ids:
-        n_lessons = await session.scalar(
-            select(func.count(Lesson.id)).where(Lesson.module_id == mid)
-        )
-        if not n_lessons:
-            raise ValueError("review and approve lessons before publishing")
+    # Guard: every staged module must have at least one lesson. One grouped
+    # query — a staged id absent from the result has zero lessons.
+    with_lessons = set((await session.execute(
+        select(Lesson.module_id)
+        .where(Lesson.module_id.in_(staged_ids))
+        .group_by(Lesson.module_id)
+    )).scalars().all())
+    if any(mid not in with_lessons for mid in staged_ids):
+        raise ValueError("review and approve lessons before publishing")
 
     # Retire the currently-live modules for this market (excluding the staged set).
     retired = (await session.execute(

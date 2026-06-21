@@ -189,7 +189,7 @@ export default function MarketContent() {
           {hasCurriculum && (
             <section aria-labelledby="publish-curriculum-heading" className="rounded-md border border-line bg-card px-4 py-3">
               <h2 id="publish-curriculum-heading" className="mb-1 text-lg font-semibold text-ink">
-                {t('marketContent.publishCurriculum.action')}
+                {t('marketContent.publishCurriculum.heading')}
               </h2>
               <button
                 type="button"
@@ -211,8 +211,7 @@ export default function MarketContent() {
               )}
               {publishCurriculum.isError && (
                 <p className="mt-2 text-sm text-danger-500" role="alert">
-                  {(publishCurriculum.error as { message?: string } | null)?.message ??
-                    String(publishCurriculum.error)}
+                  {t('marketContent.publishCurriculum.error')}
                 </p>
               )}
               <ConfirmDialog

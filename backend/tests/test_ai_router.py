@@ -106,3 +106,34 @@ async def test_tutor_chat_endpoint(auth_client):
     assert "response" in data
     assert "conversation_id" in data
     assert "messages_remaining" in data
+
+
+async def test_practice_and_tutor_reject_unpublished_lesson(auth_client, db_session):
+    """A child holding a lesson_id whose module is unpublished (e.g. a retired
+    curriculum after a live-market regeneration) must be rejected from both
+    practice and tutor — they gate on is_module_visible like the content routes."""
+    client, user, _module, _quiz = auth_client
+    staged_module = Module(
+        topic="stocks", title="Staged module", country_codes=[],
+        is_premium=False, order_index=99, icon="📈", published=False,
+    )
+    db_session.add(staged_module)
+    await db_session.flush()
+    staged_quiz = Lesson(
+        module_id=staged_module.id, type="quiz", xp_reward=25, order_index=0,
+        content_json={
+            "question": "Q", "choices": ["A", "B"], "answer_index": 0, "explanation": "E",
+        },
+    )
+    db_session.add(staged_quiz)
+    await db_session.flush()
+
+    r1 = await client.post(
+        f"/lessons/{staged_quiz.id}/practice", json={"wrong_answer_index": 0}
+    )
+    assert r1.status_code == 404
+
+    r2 = await client.post(
+        "/tutor/chat", json={"lesson_id": str(staged_quiz.id), "message": "hi"}
+    )
+    assert r2.status_code == 404
