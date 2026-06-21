@@ -76,6 +76,14 @@ export default function MarketContent() {
   const marketModules = allModules
     .filter((m) => m.market_code === code)
     .sort((a, b) => a.order_index - b.order_index);
+  // Lesson generation/review operates on the curriculum being built. For a LIVE
+  // market being regenerated (has_content), that's the staged (unpublished) new
+  // modules — so the operator doesn't see the existing live curriculum here. For
+  // an empty market it's all its modules (the old scaffold flow leaves them
+  // published=true, so no filtering).
+  const lessonModules = selected?.has_content
+    ? marketModules.filter((m) => m.published === false)
+    : marketModules;
 
   // Editable JSON buffer, re-seeded from the loaded brief whenever the market
   // changes or a fresh brief arrives; preserves edits between unrelated renders.
@@ -119,9 +127,9 @@ export default function MarketContent() {
     setResults([]);
     const acc: RunnerResult[] = [];
     try {
-      for (let i = 0; i < marketModules.length; i++) {
-        setProgress({ i: i + 1, n: marketModules.length });
-        const mod = marketModules[i];
+      for (let i = 0; i < lessonModules.length; i++) {
+        setProgress({ i: i + 1, n: lessonModules.length });
+        const mod = lessonModules[i];
         // Per-module inner loop: retry the SAME module on a 429 up to a cap, so a
         // persistently rate-limited module can't loop forever; then record it as
         // failed and the outer loop moves on.
@@ -292,9 +300,10 @@ export default function MarketContent() {
           </section>
 
           {/* Scaffold, suggestions, lessons, and publish — non-GB only */}
-          {code !== 'GB' && (
+          {code && (
             <>
-              {/* Step 2 — Scaffold */}
+              {/* Step 2 — Scaffold (from-GB; not for GB itself) */}
+              {code !== 'GB' && (
               <section aria-labelledby="scaffold-heading" className="rounded-md border border-line bg-card px-4 py-3">
                 <h2 id="scaffold-heading" className="mb-1 text-lg font-semibold text-ink">
                   {t('marketContent.scaffold.heading')}
@@ -322,9 +331,10 @@ export default function MarketContent() {
                   </p>
                 )}
               </section>
+              )}
 
-              {/* Intelligent suggestions — proactive modules this market needs */}
-              {isVerified && (
+              {/* Intelligent suggestions — proactive modules this market needs (not for GB) */}
+              {code !== 'GB' && isVerified && (
                 <section aria-labelledby="suggest-heading" className="rounded-md border border-line bg-card px-4 py-3">
                   <h2 id="suggest-heading" className="mb-1 text-lg font-semibold text-ink">
                     {t('marketContent.suggest.heading')}
@@ -340,7 +350,7 @@ export default function MarketContent() {
                   {t('marketContent.lessons.heading')}
                 </h2>
                 <p className="mb-3 text-sm text-muted-foreground">{t('marketContent.lessons.description')}</p>
-                {marketModules.length === 0 ? (
+                {lessonModules.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{t('marketContent.lessons.notScaffolded')}</p>
                 ) : (
                   <div className="flex flex-col gap-4">
@@ -389,7 +399,7 @@ export default function MarketContent() {
                       )}
                     </div>
 
-                    {marketModules.map((mod) => (
+                    {lessonModules.map((mod) => (
                       <ModuleLessons
                         key={mod.id}
                         module={mod}
@@ -401,7 +411,9 @@ export default function MarketContent() {
                 )}
               </section>
 
-              {/* Step 4 — Publish */}
+              {/* Step 4 — Publish (legacy has_content flip for empty markets; GB
+                  uses "Publish curriculum" above, so hide this for GB). */}
+              {code !== 'GB' && (
               <section aria-labelledby="publish-heading" className="rounded-md border border-line bg-card px-4 py-3">
                 <h2 id="publish-heading" className="mb-1 text-lg font-semibold text-ink">
                   {t('marketContent.publish.heading')}
@@ -435,6 +447,7 @@ export default function MarketContent() {
                   </p>
                 )}
               </section>
+              )}
             </>
           )}
         </div>
