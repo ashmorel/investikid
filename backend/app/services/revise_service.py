@@ -18,7 +18,7 @@ from app.services.content_localize import (
     load_translations,
     localize_fields,
 )
-from app.services.content_service import record_daily_activity
+from app.services.content_service import get_accessible_module, record_daily_activity
 from app.services.entitlements import is_premium
 from app.services.market_progress_service import award_xp
 from app.services.spaced_repetition_service import get_due_items, record_review
@@ -274,8 +274,7 @@ async def record_answer(
     if lesson is None:
         raise ValueError("lesson not found")
     # Gate: reject forged refs pointing at unpublished/cross-market/premium content.
-    # get_accessible_module raises HTTPException (404 or 402) appropriately.
-    from app.services.content_service import get_accessible_module
+    # get_accessible_module raises HTTPException (404 or 403) appropriately.
     await get_accessible_module(session, lesson.module_id, user)
     quiz = await generate_practice_quiz(
         session, lesson, user=user, topic=data["topic"],
