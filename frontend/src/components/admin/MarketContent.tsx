@@ -76,14 +76,21 @@ export default function MarketContent() {
   const marketModules = allModules
     .filter((m) => m.market_code === code)
     .sort((a, b) => a.order_index - b.order_index);
-  // Lesson generation/review operates on the curriculum being built. For a LIVE
-  // market being regenerated (has_content), that's the staged (unpublished) new
-  // modules — so the operator doesn't see the existing live curriculum here. For
-  // an empty market it's all its modules (the old scaffold flow leaves them
-  // published=true, so no filtering).
-  const lessonModules = selected?.has_content
-    ? marketModules.filter((m) => m.published === false)
-    : marketModules;
+  // Lesson generation/review operates on the modules the current curriculum
+  // proposal OWNS — identified by the module_ids in the proposal, not by the
+  // published flag. This is correct in every state: staged-not-yet-published,
+  // and LIVE-being-regenerated (post-publish the new modules are published=true
+  // and the old hand-authored ones are retired to published=false). When no
+  // materialised curriculum exists (older scaffold-only markets), show them all.
+  const curriculumModuleIds = new Set(
+    (curriculumQ.data?.proposal.modules ?? [])
+      .map((m) => m.module_id)
+      .filter((id): id is string => !!id),
+  );
+  const lessonModules =
+    curriculumModuleIds.size > 0
+      ? marketModules.filter((m) => curriculumModuleIds.has(m.id))
+      : marketModules;
 
   // Editable JSON buffer, re-seeded from the loaded brief whenever the market
   // changes or a fresh brief arrives; preserves edits between unrelated renders.

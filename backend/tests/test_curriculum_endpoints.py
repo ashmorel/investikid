@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.models.market_brief import MarketBrief
+from app.models.market_curriculum import MarketCurriculumProposal
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -48,3 +49,17 @@ async def test_design_unverified_brief_409(admin_client, db_session):
 async def test_get_curriculum_404_when_none(admin_client):
     r = await admin_client.get("/admin/markets/ZZ/curriculum")
     assert r.status_code == 404
+
+
+async def test_get_curriculum_falls_back_to_published(admin_client, db_session):
+    # A LIVE curriculum (status=published, no proposed/accepted in progress) must
+    # still be visible so it can be regenerated — not 404.
+    db_session.add(MarketCurriculumProposal(
+        market_code="US", status="published",
+        proposal_json=_tree(), coverage_json={"ok": True, "missing_backbone": [],
+                                              "spans_all_tiers": True, "regressions": []},
+    ))
+    await db_session.flush()
+    g = await admin_client.get("/admin/markets/US/curriculum")
+    assert g.status_code == 200, g.text
+    assert len(g.json()["proposal"]["modules"]) == 1
