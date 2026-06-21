@@ -4,6 +4,8 @@ name: Generate market content
 # generate → approve → publish) for one or more markets, server-side on prod, via
 # the cron-secret-gated /internal/market-content endpoint. Dispatch manually
 # (gh workflow run) — generation runs on the Opus authoring tier and publishes.
+# Resumable: set scaffold=false to continue generating an existing staged
+# curriculum (e.g. after a transient LLM error) without re-designing it.
 
 on:
   workflow_dispatch:
@@ -12,6 +14,10 @@ on:
         description: "Space-separated market codes (e.g. 'GB US HK')"
         required: true
         default: "GB US HK"
+      scaffold:
+        description: "Design a fresh curriculum first? false = resume existing staged"
+        required: true
+        default: "true"
 
 jobs:
   generate:
@@ -19,8 +25,9 @@ jobs:
     timeout-minutes: 350
     env:
       BACKEND_URL: ${{ vars.BACKEND_URL || 'https://investikid.up.railway.app' }}
-      # Injection-safe: route the dispatch input through an env var, never inline.
+      # Injection-safe: route dispatch inputs through env vars, never inline.
       MARKETS: ${{ github.event.inputs.markets }}
+      RUN_SCAFFOLD: ${{ github.event.inputs.scaffold }}
     steps:
       - name: Run market content pipeline
         env:
@@ -34,26 +41,34 @@ jobs:
             echo "::error::MARKETS must be space-separated letters only."; exit 1
           fi
 
-          # POST one pipeline step; echoes the JSON body on stdout, fails on non-200.
+          # POST one pipeline step; echoes the JSON body on stdout. Retries any
+          # non-200 (e.g. a transient Opus 503) up to 6× with 30s backoff so a
+          # provider blip doesn't abort a long run.
           step() {
-            local action="$1" market="$2" body code
-            body=$(curl -sS -w $'\n%{http_code}' -X POST \
-              --retry 2 --retry-delay 10 --connect-timeout 15 --max-time 600 \
-              -H "X-Cron-Secret: ${CRON_SECRET}" \
-              "${BACKEND_URL}/internal/market-content?market=${market}&action=${action}")
-            code=$(printf '%s' "$body" | tail -n1)
-            body=$(printf '%s' "$body" | sed '$d')
-            if [ "$code" != "200" ]; then
-              echo "::error::${action} ${market} -> HTTP ${code}: ${body}" >&2
-              return 1
-            fi
-            printf '%s' "$body"
+            local action="$1" market="$2" attempt body code
+            for attempt in $(seq 1 6); do
+              body=$(curl -sS -w $'\n%{http_code}' -X POST \
+                --connect-timeout 15 --max-time 600 \
+                -H "X-Cron-Secret: ${CRON_SECRET}" \
+                "${BACKEND_URL}/internal/market-content?market=${market}&action=${action}")
+              code=$(printf '%s' "$body" | tail -n1)
+              body=$(printf '%s' "$body" | sed '$d')
+              if [ "$code" = "200" ]; then printf '%s' "$body"; return 0; fi
+              echo "::warning::${action} ${market} attempt ${attempt} -> HTTP ${code} (retry in 30s)" >&2
+              sleep 30
+            done
+            echo "::error::${action} ${market} failed after retries -> HTTP ${code}: ${body}" >&2
+            return 1
           }
 
           for m in $MARKETS; do
-            echo "::group::${m} — scaffold (brief + design + accept)"
-            step scaffold "$m" || exit 1
-            echo; echo "::endgroup::"
+            if [ "${RUN_SCAFFOLD}" = "true" ]; then
+              echo "::group::${m} — scaffold (brief + design + accept)"
+              step scaffold "$m" || exit 1
+              echo; echo "::endgroup::"
+            else
+              echo "${m}: resuming (skip scaffold)"
+            fi
 
             for i in $(seq 1 120); do
               out=$(step generate "$m") || exit 1
