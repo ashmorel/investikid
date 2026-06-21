@@ -23,5 +23,5 @@ def _lvl():
 def test_system_prompt_carries_concision_and_penny_rules():
     p = _system_prompt("card", _mod(), _lvl())
     assert "45-65 words" in p
-    assert "reading age of about 12" in p
+    assert "years 8-10" in p
     assert "Coach Penny" in p

@@ -29,15 +29,19 @@ _SCHEMA_HINT = {
     "scenario": '{"prompt": str, "choices": [{"label": str, "outcome": str}, ...(>=2)], "correct_index": int}',
 }
 
-# Concise, kid-readable style for ALL generated lessons. Reading age ~12, easy to
-# read on a phone; depth-on-demand lives in Coach Penny, not the card.
+# Concise, kid-readable style for ALL generated lessons. Pitched at UK years 8-10
+# (confident teen reader), easy to read on a phone; depth-on-demand lives in
+# Coach Penny, not the card.
 _CONCISION_RULES = (
-    "\n\nSTYLE — write for a UK reading age of about 12 and keep it easy to read on a phone:\n"
-    "- For a 'card', the body MUST be 45-65 words: 3-5 short sentences, ONE key idea, "
-    "plain prose (do NOT use long bullet lists).\n"
-    "- For 'quiz' and 'scenario', keep each explanation/outcome to 1-2 short sentences "
+    "\n\nSTYLE — pitch the language at UK school years 8-10 (a confident teen reader, "
+    "roughly ages 12-15): clear and direct, never childish or patronising, and easy to "
+    "read on a phone:\n"
+    "- For a 'card', the body MUST be 45-65 words: 3-5 sentences, ONE key idea, plain "
+    "prose (do NOT use long bullet lists).\n"
+    "- For 'quiz' and 'scenario', keep each explanation/outcome to 1-2 sentences "
     "(max ~30 words).\n"
-    "- Short sentences, everyday words, warm and encouraging.\n"
+    "- Short, clear sentences in plain language — but do NOT talk down to them or pad "
+    "with filler. Keep a warm, encouraging tone.\n"
     "- Avoid acronyms and regulatory jargon (e.g. FSCS, ISA product names, 'parental "
     "consent and ID checks') UNLESS the lesson is specifically about that term — then "
     "explain it in one plain phrase.\n"
