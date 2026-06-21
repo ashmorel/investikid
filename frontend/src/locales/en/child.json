@@ -123,7 +123,9 @@
     },
     "itemPremiumSr": " — Premium item",
     "confirmTitle": "Buy {{name}}?",
-    "confirmMessage": "This costs {{cost}} coins. You have {{balance}}."
+    "confirmMessage": "This costs {{cost}} coins. You have {{balance}}.",
+    "buyError": "Could not buy that item. Please try again.",
+    "equipError": "Could not update your look. Please try again."
   },
 
   "stats": {

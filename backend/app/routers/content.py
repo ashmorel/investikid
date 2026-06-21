@@ -30,6 +30,7 @@ from app.services.content_localize import (
 )
 from app.services.content_service import (
     derive_lesson_title,
+    get_accessible_module,
     grant_module_completion_cash,
     is_module_age_ok,
     is_module_premium_ok,
@@ -64,19 +65,7 @@ async def _get_accessible_module(
     current_user: User,
     session: AsyncSession,
 ) -> Module:
-    module = await session.get(Module, module_id)
-    if not module:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
-    if not is_module_visible(module, current_user.active_market_code):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
-    # Age gate uses the actual age from dob (NEVER the parent tier_override) and
-    # mirrors the inaccessible-market behaviour: a plain 404, no content tease.
-    user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
-    if not is_module_age_ok(user_age, module.min_age, module.max_age):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
-    if not is_module_premium_ok(module_is_premium=module.is_premium, is_premium_user=is_premium(current_user)):
-        raise premium_required_error("module", module.title)
-    return module
+    return await get_accessible_module(session, module_id, current_user)
 
 
 @router.get("/next-lesson", response_model=NextLessonEnvelope)
@@ -343,6 +332,7 @@ async def record_lesson_view(
     lesson = await session.get(Lesson, lesson_id)
     if not lesson:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
+    await _get_accessible_module(lesson.module_id, current_user, session)  # gate
     existing = await session.scalar(
         select(LessonView).where(
             LessonView.user_id == current_user.id,

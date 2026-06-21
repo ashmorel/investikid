@@ -24,6 +24,11 @@ export function ComingSoonMarket({ marketName }: { marketName: string }) {
           {t('comingSoon.switchBack', { home: home.name })}
         </button>
       )}
+      {switchMarket.isError && (
+        <p className="mt-2 text-sm text-danger-500" role="alert">
+          {t('picker.switchError')}
+        </p>
+      )}
     </div>
   );
 }

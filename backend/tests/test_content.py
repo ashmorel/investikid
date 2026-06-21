@@ -49,6 +49,24 @@ async def test_list_modules_filters_by_country_and_premium(client, db_session):
     assert "Stocks US" not in titles
 
 
+async def test_list_modules_serializes_non_canonical_topic(client, db_session):
+    # Regression: the per-market curriculum engine creates market-native modules
+    # with free-form topics (e.g. "Earning & Income"). ModuleOut.topic was a closed
+    # Literal, so /modules raised a 500 ResponseValidationError on these — the
+    # empty Learn-tab bug after publishing a regenerated UK curriculum.
+    db_session.add(Module(
+        topic="Earning & Income", title="Where Money Comes From", country_codes=[],
+        is_premium=False, order_index=0, market_code="GB",
+    ))
+    await db_session.commit()
+    await _register_and_login(client, email="topic@example.com", username="topickid", country_code="GB")
+    response = await client.get("/modules")
+    assert response.status_code == 200, response.text
+    titles = {m["title"]: m for m in response.json()}
+    assert "Where Money Comes From" in titles
+    assert titles["Where Money Comes From"]["topic"] == "Earning & Income"
+
+
 async def test_list_modules_unauthenticated(client):
     response = await client.get("/modules")
     assert response.status_code == 401
