@@ -35,7 +35,10 @@ class ModuleOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    topic: ModuleTopic
+    # Free-form: per-market curricula (the curriculum engine) define their own
+    # topics, so this is NOT constrained to the legacy ModuleTopic slug set —
+    # constraining it makes /modules 500 on any market-native topic.
+    topic: str
     title: str
     country_codes: list[str]
     is_premium: bool
