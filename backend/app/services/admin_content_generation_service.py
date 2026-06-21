@@ -195,9 +195,17 @@ async def generate_level_lessons(session: AsyncSession, level, *, concept: str, 
 
 async def generate_native_level_lessons(session: AsyncSession, level, *, brief, concepts,
                                         types: list[str] | None = None,
-                                        complexity_tier: int | None = None) -> GenerationResult:
-    """Generate market-NATIVE lessons (brief-grounded, no GB source) for ``level``,
-    one per concept. The caller passes a verified brief.
+                                        complexity_tier: int | None = None,
+                                        target_count: int | None = None) -> GenerationResult:
+    """Generate market-NATIVE lessons (brief-grounded, no GB source) for ``level``.
+
+    ``target_count`` controls how many lessons to produce:
+    - ``None`` (default, ad-hoc per-level generation): exactly one lesson per
+      concept, the lesson type alternating per concept.
+    - an int (curriculum batch with tiered depth): exactly ``target_count`` lessons
+      by round-robin over (concept, type) — concept0-card, concept0-quiz,
+      concept1-card, … so each concept gets a teach-card + practice-quiz pair;
+      concepts wrap (% len) if the level returned fewer than ceil(target/n_types).
     """
     module = await session.get(Module, level.module_id)
     type_cycle = types or ["card", "quiz"]
@@ -205,17 +213,16 @@ async def generate_native_level_lessons(session: AsyncSession, level, *, brief, 
     if not concepts:
         await session.commit()
         return result
-    # Generate EXACTLY target_lessons_for_tier(tier) lessons by round-robin over
-    # (concept, type): concept0-card, concept0-quiz, concept1-card, … — each concept
-    # gets a teach-card + practice-quiz pair. Concepts wrap (% len) if the level
-    # returned fewer than ceil(target/2); the type cycles every lesson.
-    target = target_lessons_for_tier(complexity_tier)
     n_types = len(type_cycle)
-    for n in range(target):
-        concept = concepts[(n // n_types) % len(concepts)]
+    if target_count is None:
+        pairs = [(concepts[i], type_cycle[i % n_types]) for i in range(len(concepts))]
+    else:
+        pairs = [(concepts[(n // n_types) % len(concepts)], type_cycle[n % n_types])
+                 for n in range(target_count)]
+    for concept, lesson_type in pairs:
         draft = await _generate_one(
             session, level=level, module=module, concept=concept,
-            lesson_type=type_cycle[n % n_types],
+            lesson_type=lesson_type,
             brief=brief.brief_json, source_text=None, complexity_tier=complexity_tier,
         )
         if draft is None:

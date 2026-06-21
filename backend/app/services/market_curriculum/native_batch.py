@@ -5,7 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import Lesson, Level, Module
 from app.models.lesson_draft import LessonDraft
-from app.services.admin_content_generation_service import generate_native_level_lessons
+from app.services.admin_content_generation_service import (
+    generate_native_level_lessons,
+    target_lessons_for_tier,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +58,10 @@ async def generate_market_native(
                 continue
         try:
             level = await session.get(Level, level_id)
+            tier = node.get("complexity_tier")
             result = await generate_native_level_lessons(
                 session, level, brief=brief, concepts=concepts,
-                complexity_tier=node.get("complexity_tier"),
+                complexity_tier=tier, target_count=target_lessons_for_tier(tier),
             )
             entry.update(status="generated", created=len(result.created))
             summary["generated"] += 1
