@@ -56,7 +56,7 @@ def _parse(raw: str, market_code: str) -> CurriculumProposal | None:
 async def design_curriculum(
     market_code: str, brief_json: dict
 ) -> tuple[CurriculumProposal, ValidationReport]:
-    client = get_llm_client("premium")
+    client = get_llm_client("authoring")
     gap_note = ""
     proposal: CurriculumProposal | None = None
     report: ValidationReport | None = None

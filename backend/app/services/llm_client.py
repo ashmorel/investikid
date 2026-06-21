@@ -191,6 +191,19 @@ class OpenAIClient:
             raise LLMError(str(exc), retryable=_is_retryable(exc)) from exc
 
 
+def _strip_json_fences(text: str) -> str:
+    """Remove a ```json … ``` (or plain ``` … ```) markdown fence some models wrap
+    JSON in, so json.loads downstream works. Returns the inner text trimmed."""
+    s = text.strip()
+    if s.startswith("```"):
+        s = s[3:]
+        if s[:4].lower() == "json":
+            s = s[4:]
+        if s.endswith("```"):
+            s = s[:-3]
+    return s.strip()
+
+
 class AnthropicClient:
     def __init__(self, api_key: str, model: str, provider: str = "anthropic") -> None:
         self._client = AsyncAnthropic(api_key=api_key)
@@ -224,7 +237,12 @@ class AnthropicClient:
                         prompt_tokens=getattr(usage, "input_tokens", 0) or 0,
                         completion_tokens=getattr(usage, "output_tokens", 0) or 0,
                     )
-                return response.content[0].text
+                text = response.content[0].text
+                # Anthropic has no native JSON mode; callers ask for JSON in the
+                # prompt. Strip a ```json … ``` fence so json.loads downstream works.
+                if response_format == "json":
+                    text = _strip_json_fences(text)
+                return text
             except Exception as exc:
                 last_error = exc
                 attempts += 1
@@ -376,6 +394,8 @@ def _build_chain(provider_csv: str) -> FallbackLLMClient:
 
 
 def get_model_name(tier: str = "lite") -> str:
+    if tier == "authoring":
+        return settings.llm_authoring_model or settings.llm_premium_model
     if tier == "premium":
         return settings.llm_premium_model
     if tier == "standard":
@@ -390,11 +410,33 @@ def get_llm_client(tier: str = "lite", *, premium: bool | None = None) -> LLMCli
       - "lite"     — FallbackLLMClient over llm_lite_providers (default)
       - "standard" — FallbackLLMClient over llm_standard_providers
       - "premium"  — Single commercial client (OpenAI or Anthropic)
+      - "authoring"— Best-quality model for offline content authoring; falls back
+                     to premium when unconfigured.
 
     Backward compat: premium=True maps to tier="premium", premium=False to tier="lite".
     """
     if premium is not None:
         tier = "premium" if premium else "lite"
+    if tier == "authoring":
+        # Best-quality model for OFFLINE content authoring (curriculum designer +
+        # lesson/brief generation). Falls back to the premium tier (which itself
+        # falls back to standard) when unconfigured, so generation always has a
+        # model and this ships inert until an authoring key+model are set.
+        if settings.llm_authoring_api_key and settings.llm_authoring_model:
+            if settings.llm_authoring_provider == "anthropic":
+                authoring: LLMClient = AnthropicClient(
+                    api_key=settings.llm_authoring_api_key,
+                    model=settings.llm_authoring_model,
+                    provider="anthropic-authoring",
+                )
+            else:
+                authoring = OpenAIClient(
+                    api_key=settings.llm_authoring_api_key,
+                    model=settings.llm_authoring_model,
+                    provider="openai-authoring",
+                )
+            return FallbackLLMClient(clients=[authoring, get_llm_client("premium")])
+        return get_llm_client("premium")
     if tier == "premium":
         clients: list[LLMClient] = []
         if settings.llm_premium_api_key:
