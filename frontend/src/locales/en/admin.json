@@ -102,6 +102,7 @@
       "includePopulated": "Include levels that already have lessons or pending drafts",
       "progress": "Generating module {{i}} of {{n}}…",
       "moduleResult": "{{generated}} generated, {{skipped}} skipped",
+      "moduleErrored": "{{errored}} errored — check server logs",
       "moduleFailed": "Failed — try again",
       "running": "Generating…",
       "done": "Done."

@@ -120,6 +120,37 @@ async def test_anthropic_client_complete():
         )
         assert result == "Hello there!"
         mock_instance.messages.create.assert_awaited_once()
+        assert "temperature" in mock_instance.messages.create.await_args.kwargs
+
+
+async def test_anthropic_client_retries_without_temperature_when_rejected():
+    # Models that reject `temperature` (extended-thinking/reasoning variants like
+    # the Opus authoring model) must not fail generation — drop it and retry.
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock()]
+    mock_response.content[0].text = "ok"
+
+    calls: list[bool] = []
+
+    async def fake_create(**kwargs):
+        had_temp = "temperature" in kwargs
+        calls.append(had_temp)
+        if had_temp:
+            raise Exception("Error code: 400 - `temperature` is deprecated for this model.")
+        return mock_response
+
+    with patch("app.services.llm_client.AsyncAnthropic") as MockAnthropic:
+        mock_instance = AsyncMock()
+        mock_instance.messages.create = AsyncMock(side_effect=fake_create)
+        MockAnthropic.return_value = mock_instance
+
+        client = AnthropicClient(api_key="test-key", model="claude-opus-4-8")
+        result = await client.complete(
+            system_prompt="s", messages=[{"role": "user", "content": "hi"}],
+        )
+        assert result == "ok"
+        # First call carried temperature (rejected), retry dropped it (succeeded).
+        assert calls == [True, False]
 
 
 async def test_openai_client_records_token_usage():
