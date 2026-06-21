@@ -29,6 +29,22 @@ _SCHEMA_HINT = {
     "scenario": '{"prompt": str, "choices": [{"label": str, "outcome": str}, ...(>=2)], "correct_index": int}',
 }
 
+# Concise, kid-readable style for ALL generated lessons. Reading age ~12, easy to
+# read on a phone; depth-on-demand lives in Coach Penny, not the card.
+_CONCISION_RULES = (
+    "\n\nSTYLE — write for a UK reading age of about 12 and keep it easy to read on a phone:\n"
+    "- For a 'card', the body MUST be 45-65 words: 3-5 short sentences, ONE key idea, "
+    "plain prose (do NOT use long bullet lists).\n"
+    "- For 'quiz' and 'scenario', keep each explanation/outcome to 1-2 short sentences "
+    "(max ~30 words).\n"
+    "- Short sentences, everyday words, warm and encouraging.\n"
+    "- Avoid acronyms and regulatory jargon (e.g. FSCS, ISA product names, 'parental "
+    "consent and ID checks') UNLESS the lesson is specifically about that term — then "
+    "explain it in one plain phrase.\n"
+    "- Teach the core idea only. Learners can ask Coach Penny for more detail, so do NOT "
+    "try to cover everything."
+)
+
 
 @dataclass
 class GenerationResult:
@@ -51,6 +67,7 @@ def _system_prompt(
         f"'{module.topic}' (module '{module.title}', '{level.title}'). Keep it simple, encouraging, "
         f"factual, and age-appropriate. Never give personalised financial advice. "
         f"Respond with ONLY a JSON object matching exactly: {_SCHEMA_HINT[lesson_type]}"
+        f"{_CONCISION_RULES}"
     )
     if brief is not None and source_text is not None:
         prompt += (

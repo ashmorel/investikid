@@ -1,3 +1,4 @@
+import re
 from datetime import UTC, datetime
 
 from sqlalchemy import select, update
@@ -9,6 +10,14 @@ from app.models.market_curriculum import MarketCurriculumProposal
 from app.services.market_curriculum.types import CurriculumProposal, ValidationReport
 
 _ACTIVE = ("proposed", "accepted")
+
+
+def _slugify_topic(label: str) -> str:
+    """The designer emits a human topic label ('Earning & Income'); `topic` is a
+    short slug used as a taxonomy key across the app, so normalise it
+    ('earning_income'). Falls back to 'general' for an empty result."""
+    slug = re.sub(r"[^a-z0-9]+", "_", label.strip().lower()).strip("_")
+    return (slug or "general")[:30]
 
 
 async def save_proposal(
@@ -54,7 +63,7 @@ async def accept_proposal(session: AsyncSession, row: MarketCurriculumProposal) 
         mod["levels"].sort(key=lambda lvl: lvl.get("order_index", 0))
     for m_idx, mod_node in enumerate(sorted(proposal.modules, key=lambda m: m.order_index)):
         module = Module(
-            topic=mod_node.topic[:30], title=mod_node.title, country_codes=[],
+            topic=_slugify_topic(mod_node.topic), title=mod_node.title, country_codes=[],
             market_code=proposal.market_code, is_premium=False,
             order_index=mod_node.order_index, icon=mod_node.icon,
             min_age=mod_node.min_age, max_age=mod_node.max_age,
