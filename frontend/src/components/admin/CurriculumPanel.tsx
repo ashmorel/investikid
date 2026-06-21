@@ -49,7 +49,13 @@ function ModuleCard({ module: mod }: { module: CurriculumModuleNode }) {
   );
 }
 
-export default function CurriculumPanel({ marketCode }: { marketCode: string }) {
+export default function CurriculumPanel({
+  marketCode,
+  briefVerified = true,
+}: {
+  marketCode: string;
+  briefVerified?: boolean;
+}) {
   const { t } = useTranslation('admin');
   const { data, isLoading } = useCurriculum(marketCode);
   const design = useDesignCurriculum(marketCode);
@@ -78,13 +84,23 @@ export default function CurriculumPanel({ marketCode }: { marketCode: string }) 
         <button
           type="button"
           onClick={() => design.mutate()}
-          disabled={design.isPending}
+          disabled={design.isPending || !briefVerified}
           className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           {design.isPending
             ? t('marketContent.curriculum.designing')
             : t('marketContent.curriculum.design')}
         </button>
+        {!briefVerified && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t('marketContent.curriculum.needsVerifiedBrief')}
+          </p>
+        )}
+        {design.isError && (
+          <p className="mt-2 text-sm text-danger-500" role="alert">
+            {t('marketContent.curriculum.designError')}
+          </p>
+        )}
       </section>
     );
   }
@@ -157,7 +173,7 @@ export default function CurriculumPanel({ marketCode }: { marketCode: string }) 
         <button
           type="button"
           onClick={() => design.mutate()}
-          disabled={design.isPending}
+          disabled={design.isPending || !briefVerified}
           className="rounded-md border border-line px-4 py-2 text-sm text-ink hover:bg-brand-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           {design.isPending
@@ -166,6 +182,11 @@ export default function CurriculumPanel({ marketCode }: { marketCode: string }) 
         </button>
       </div>
 
+      {design.isError && (
+        <p className="mt-2 text-sm text-danger-500" role="alert">
+          {t('marketContent.curriculum.designError')}
+        </p>
+      )}
       {accept.isSuccess && (
         <p className="mt-2 text-sm text-success-600" role="status">
           {t('marketContent.curriculum.accepted')}
