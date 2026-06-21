@@ -27,6 +27,19 @@ describe('CardLesson', () => {
     expect(btn).toBeDisabled();
   });
 
+  it('shows "Ask Coach Penny" and calls onShowPenny when provided', async () => {
+    const user = userEvent.setup();
+    const onShowPenny = vi.fn();
+    render(<CardLesson contentJson={content} onComplete={() => {}} onShowPenny={onShowPenny} />);
+    await user.click(screen.getByRole('button', { name: /ask coach penny/i }));
+    expect(onShowPenny).toHaveBeenCalled();
+  });
+
+  it('hides "Ask Coach Penny" when onShowPenny is not provided', () => {
+    render(<CardLesson contentJson={content} onComplete={() => {}} />);
+    expect(screen.queryByRole('button', { name: /ask coach penny/i })).not.toBeInTheDocument();
+  });
+
   it('renders illustration when provided', () => {
     render(<CardLesson contentJson={content} onComplete={() => {}} illustration={<img src="test.png" alt="piggy bank" />} />);
     expect(screen.getByAltText('piggy bank')).toBeInTheDocument();

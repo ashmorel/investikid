@@ -212,7 +212,7 @@ export default function Lesson() {
           <MachineTranslatedBadge />
         </div>
       )}
-      {lesson.type === 'card' && <CardLesson contentJson={lesson.content_json as { title?: string; body?: string }} onComplete={onComplete} illustration={illustration} completing={complete.isPending} />}
+      {lesson.type === 'card' && <CardLesson contentJson={lesson.content_json as { title?: string; body?: string }} onComplete={onComplete} illustration={illustration} onShowPenny={() => setShowPenny(true)} completing={complete.isPending} />}
       {lesson.type === 'quiz' && <QuizLesson contentJson={lesson.content_json as { question: string; choices: string[]; answer_index: number; explanation: string }} onComplete={onComplete} illustration={illustration} onShowPenny={() => setShowPenny(true)} completing={complete.isPending} />}
       {lesson.type === 'scenario' && <ScenarioLesson contentJson={lesson.content_json as { prompt: string; choices: { label: string; outcome: string }[]; correct_index: number }} onComplete={onComplete} illustration={illustration} onShowPenny={() => setShowPenny(true)} completing={complete.isPending} />}
       {lesson.type === 'video' && <VideoLesson contentJson={lesson.content_json as { youtube_id?: string; caption?: string }} onComplete={onComplete} completing={complete.isPending} />}
