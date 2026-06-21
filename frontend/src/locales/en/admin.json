@@ -136,6 +136,7 @@
       "accepted": "Curriculum accepted — modules and levels updated.",
       "coverageOk": "Coverage complete",
       "coverageGap": "Missing: {{key}}",
+      "coverageRegression": "Regression: {{key}}",
       "tier1": "foundational",
       "tier2": "developing",
       "tier3": "advanced"

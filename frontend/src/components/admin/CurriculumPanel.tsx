@@ -135,7 +135,7 @@ export default function CurriculumPanel({ marketCode }: { marketCode: string }) 
                 className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-900"
               >
                 <span aria-hidden="true">⚠</span>
-                {t('marketContent.curriculum.coverageGap', { key })}
+                {t('marketContent.curriculum.coverageRegression', { key })}
               </span>
             ))}
           </div>
