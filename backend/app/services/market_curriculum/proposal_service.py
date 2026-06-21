@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.content import Level, Module
 from app.models.market_curriculum import MarketCurriculumProposal
@@ -45,6 +46,12 @@ async def accept_proposal(session: AsyncSession, row: MarketCurriculumProposal) 
     proposal = CurriculumProposal.model_validate(row.proposal_json)
     n_modules = n_levels = 0
     tree = row.proposal_json
+    # Sort the raw JSON the same way we iterate the validated proposal, so the
+    # level_id write-back indices below can never misalign even if proposal_json
+    # was ever stored out of order_index order.
+    tree["modules"].sort(key=lambda m: m.get("order_index", 0))
+    for mod in tree["modules"]:
+        mod["levels"].sort(key=lambda lvl: lvl.get("order_index", 0))
     for m_idx, mod_node in enumerate(sorted(proposal.modules, key=lambda m: m.order_index)):
         module = Module(
             topic=mod_node.topic[:30], title=mod_node.title, country_codes=[],
@@ -69,7 +76,6 @@ async def accept_proposal(session: AsyncSession, row: MarketCurriculumProposal) 
     row.status = "accepted"
     row.accepted_at = datetime.now(UTC)
     # Re-assign the JSON attribute so SQLAlchemy tracks the in-place mutation.
-    from sqlalchemy.orm.attributes import flag_modified
     flag_modified(row, "proposal_json")
     await session.flush()
     return {"modules": n_modules, "levels": n_levels}

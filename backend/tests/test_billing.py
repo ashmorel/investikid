@@ -173,8 +173,8 @@ async def test_status_active(mock_stripe, client, db_session):
     )
     sub.status = "active"
     sub.stripe_subscription_id = "sub_active"
-    from datetime import UTC, datetime
-    sub.current_period_end = datetime(2026, 6, 21, tzinfo=UTC)
+    from datetime import UTC, datetime, timedelta
+    sub.current_period_end = datetime.now(UTC) + timedelta(days=30)
     await db_session.flush()
 
     r = await client.get("/billing/status")
