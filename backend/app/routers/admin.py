@@ -188,7 +188,7 @@ async def list_modules(session: AsyncSession = Depends(get_session)):
         ModuleOut(
             id=m.id, topic=m.topic, title=m.title, icon=m.icon,
             is_premium=m.is_premium, country_codes=m.country_codes,
-            market_code=m.market_code,
+            market_code=m.market_code, published=m.published,
             order_index=m.order_index, lesson_count=len(m.lessons),
             prerequisite_ids=m.prerequisite_ids, min_age=m.min_age, max_age=m.max_age,
             standards_alignment=m.standards_alignment, sources=m.sources,
@@ -220,7 +220,7 @@ async def create_module(payload: ModuleCreate, session: AsyncSession = Depends(g
     return ModuleOut(
         id=module.id, topic=module.topic, title=module.title, icon=module.icon,
         is_premium=module.is_premium, country_codes=module.country_codes,
-        market_code=module.market_code,
+        market_code=module.market_code, published=module.published,
         order_index=module.order_index, lesson_count=0,
         prerequisite_ids=module.prerequisite_ids, min_age=module.min_age, max_age=module.max_age,
         completion_cash_reward=module.completion_cash_reward,
@@ -257,7 +257,7 @@ async def update_module(
     return ModuleOut(
         id=module.id, topic=module.topic, title=module.title, icon=module.icon,
         is_premium=module.is_premium, country_codes=module.country_codes,
-        market_code=module.market_code,
+        market_code=module.market_code, published=module.published,
         order_index=module.order_index, lesson_count=len(module.lessons),
         prerequisite_ids=module.prerequisite_ids, min_age=module.min_age, max_age=module.max_age,
         completion_cash_reward=module.completion_cash_reward,

@@ -30,6 +30,9 @@ export interface AdminModule {
   /** Owning market; the API defaults it to GB. Optional so create payloads
    *  (which never set it) still satisfy `Omit<AdminModule, …>`. */
   market_code?: string;
+  /** Child-visibility flag. Engine-staged modules are false until publish.
+   *  Optional so create payloads (which never set it) still type-check. */
+  published?: boolean;
   order_index: number;
   lesson_count: number;
   prerequisite_ids: string[];
