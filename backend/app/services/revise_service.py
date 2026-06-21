@@ -18,7 +18,7 @@ from app.services.content_localize import (
     load_translations,
     localize_fields,
 )
-from app.services.content_service import record_daily_activity
+from app.services.content_service import get_accessible_module, record_daily_activity
 from app.services.entitlements import is_premium
 from app.services.market_progress_service import award_xp
 from app.services.spaced_repetition_service import get_due_items, record_review
@@ -71,12 +71,16 @@ def decode_ref(ref: str) -> dict:
 
 
 async def _lesson_for_concept(
-    session: AsyncSession, *, topic: str, concept: str
+    session: AsyncSession, *, topic: str, concept: str, market_code: str
 ) -> tuple[Lesson, Module] | None:
-    """Find a lesson in `topic` whose derived concept equals `concept`."""
+    """Find a published, market-scoped lesson in `topic` whose derived concept equals `concept`."""
     rows = await session.execute(
         select(Lesson, Module).join(Module, Module.id == Lesson.module_id)
-        .where(Module.topic == topic)
+        .where(
+            Module.topic == topic,
+            Module.published.is_(True),
+            Module.market_code == market_code,
+        )
         .order_by(Lesson.order_index)  # deterministic when concept strings collide
     )
     for lesson, module in rows.all():
@@ -118,7 +122,11 @@ async def list_revisable_modules(session: AsyncSession, user: User) -> list[dict
     if not comp_modules:
         return []
     modules = (await session.scalars(
-        select(Module).where(Module.id.in_(comp_modules), Module.published.is_(True))
+        select(Module).where(
+            Module.id.in_(comp_modules),
+            Module.published.is_(True),
+            Module.market_code == user.active_market_code,
+        )
     )).all()
     now = datetime.now(UTC)
     rows = (await session.execute(
@@ -178,7 +186,10 @@ async def build_session(
             w = by_id.get(d.weak_concept_id)
             if not w:
                 continue
-            resolved = await _lesson_for_concept(session, topic=w.topic, concept=w.concept)
+            resolved = await _lesson_for_concept(
+                session, topic=w.topic, concept=w.concept,
+                market_code=user.active_market_code,
+            )
             if not resolved:
                 continue
             lesson, module = resolved
@@ -198,7 +209,11 @@ async def build_session(
         select(Lesson, Module, LessonCompletion.completed_at)
         .join(Module, Module.id == Lesson.module_id)
         .join(LessonCompletion, LessonCompletion.lesson_id == Lesson.id)
-        .where(LessonCompletion.user_id == user.id)
+        .where(
+            LessonCompletion.user_id == user.id,
+            Module.published.is_(True),
+            Module.market_code == user.active_market_code,
+        )
         .order_by(LessonCompletion.completed_at.asc())  # stable rotation; oldest first
     )
     if module_id:
@@ -265,6 +280,9 @@ async def record_answer(
     lesson = await session.get(Lesson, uuid.UUID(data["lesson_id"]))
     if lesson is None:
         raise ValueError("lesson not found")
+    # Gate: reject forged refs pointing at unpublished/cross-market/premium content.
+    # get_accessible_module raises HTTPException (404 or 403) appropriately.
+    await get_accessible_module(session, lesson.module_id, user)
     quiz = await generate_practice_quiz(
         session, lesson, user=user, topic=data["topic"],
         concept=data["concept"], premium=is_premium(user),

@@ -213,6 +213,7 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
   });
   const [rejectTarget, setRejectTarget] = useState<LessonDraft | null>(null);
   const [confirmReplace, setConfirmReplace] = useState(false);
+  const [actionError, setActionError] = useState(false);
 
   function toggleType(t: LessonDraft['type']) {
     setTypes((prev) => ({ ...prev, [t]: !prev[t] }));
@@ -296,6 +297,11 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
             {t('draftReview.skipped', { count: skipped })}
           </p>
         )}
+        {generate.isError && (
+          <p role="alert" className="mt-2 text-sm text-danger-500">
+            {t('draftReview.actionError')}
+          </p>
+        )}
       </form>
 
       <h3 className="mb-3 text-lg font-semibold text-ink">{t('draftReview.draftReviewHeading')}</h3>
@@ -309,7 +315,7 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => approveDrafts.mutate(false)}
+              onClick={() => { setActionError(false); approveDrafts.mutate(false, { onError: () => setActionError(true) }); }}
               disabled={approveDrafts.isPending}
               className="min-h-[44px] rounded-md bg-success-600 px-4 py-2 text-sm text-white hover:bg-success-500 disabled:opacity-50"
             >
@@ -339,13 +345,19 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
             <DraftCard
               key={draft.id}
               draft={draft}
-              onApprove={(id) => approve.mutate(id)}
-              onRegenerate={(id) => regenerate.mutate(id)}
+              onApprove={(id) => { setActionError(false); approve.mutate(id, { onError: () => setActionError(true) }); }}
+              onRegenerate={(id) => { setActionError(false); regenerate.mutate(id, { onError: () => setActionError(true) }); }}
               onReject={(d) => setRejectTarget(d)}
-              onSaveEdit={(id, content_json) => update.mutate({ id, content_json })}
+              onSaveEdit={(id, content_json) => { setActionError(false); update.mutate({ id, content_json }, { onError: () => setActionError(true) }); }}
             />
           ))}
         </div>
+      )}
+
+      {actionError && (
+        <p role="alert" className="mt-2 text-sm text-danger-500">
+          {t('draftReview.actionError')}
+        </p>
       )}
 
       <ConfirmDialog
@@ -353,7 +365,10 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
         title={t('draftReview.rejectTitle')}
         message={t('draftReview.rejectMessage')}
         onConfirm={() => {
-          if (rejectTarget) reject.mutate(rejectTarget.id);
+          if (rejectTarget) {
+            setActionError(false);
+            reject.mutate(rejectTarget.id, { onError: () => setActionError(true) });
+          }
           setRejectTarget(null);
         }}
         onCancel={() => setRejectTarget(null)}
@@ -364,7 +379,8 @@ export default function LessonDraftReview({ levelId }: LessonDraftReviewProps) {
         title={t('draftReview.replaceConfirmTitle')}
         message={t('draftReview.replaceConfirmMessage', { count: publishedCount })}
         onConfirm={() => {
-          approveDrafts.mutate(true);
+          setActionError(false);
+          approveDrafts.mutate(true, { onError: () => setActionError(true) });
           setConfirmReplace(false);
         }}
         onCancel={() => setConfirmReplace(false)}

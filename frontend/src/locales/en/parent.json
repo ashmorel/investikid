@@ -181,7 +181,9 @@
       "nothingToRestoreApple": "Nothing to restore on this Apple ID.",
       "nothingToRestoreGoogle": "Nothing to restore on this Google account.",
       "error": "Something went wrong. Please try again."
-    }
+    },
+    "checkoutError": "Could not start checkout. Please try again.",
+    "portalError": "Could not open billing portal. Please try again."
   },
   "childCard": {
     "statusAriaLabel": "Status: {{status}}",

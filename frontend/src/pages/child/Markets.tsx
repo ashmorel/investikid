@@ -24,6 +24,9 @@ export function Markets() {
         if (msg) toast({ description: msg });
         navigate('/');
       },
+      onError: () => {
+        toast({ description: t('picker.switchError'), variant: 'destructive' });
+      },
     });
   }
 

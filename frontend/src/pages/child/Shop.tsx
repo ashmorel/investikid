@@ -100,6 +100,17 @@ export default function Shop() {
         </ul>
       )}
 
+      {buy.isError && (
+        <p className="mt-3 text-sm text-danger-500" role="alert">
+          {t('shop.buyError')}
+        </p>
+      )}
+      {equip.isError && (
+        <p className="mt-3 text-sm text-danger-500" role="alert">
+          {t('shop.equipError')}
+        </p>
+      )}
+
       <ConfirmDialog
         open={confirmItem !== null}
         title={confirmItem ? t('shop.confirmTitle', { name: confirmItem.name }) : ''}
