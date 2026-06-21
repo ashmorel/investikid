@@ -1236,7 +1236,12 @@ async def get_market_curriculum_endpoint(
     _admin: User = Depends(get_current_admin),
     session: AsyncSession = Depends(get_session),
 ):
+    # Prefer a staged proposal in progress (proposed/accepted); otherwise fall
+    # back to the published one so a LIVE curriculum stays visible and can be
+    # regenerated (the panel + lesson list key off this).
     row = await get_active_proposal(session, market_code)
+    if row is None:
+        row = await get_proposal_for_generation(session, market_code)
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No curriculum")
     return CurriculumDesignOut(proposal_id=str(row.id), proposal=row.proposal_json,
