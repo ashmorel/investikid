@@ -126,11 +126,13 @@
       "createError": "Could not create the module. Try again."
     },
     "publishCurriculum": {
+      "heading": "Publish",
       "action": "Publish curriculum (replaces live)",
       "confirmTitle": "Publish new curriculum?",
       "confirmMessage": "This makes the newly generated modules live and retires the market's current modules. Existing learners keep their XP, coins, level and streak but start the new curriculum fresh. This can't be auto-undone.",
       "publishing": "Publishing…",
-      "result": "{{published}} module(s) live, {{retired}} retired."
+      "result": "{{published}} module(s) live, {{retired}} retired.",
+      "error": "Couldn't publish. Try again."
     },
     "curriculum": {
       "heading": "Curriculum",
