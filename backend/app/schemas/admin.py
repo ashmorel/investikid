@@ -85,6 +85,7 @@ class ModuleOut(BaseModel):
     is_premium: bool
     country_codes: list[str]
     market_code: str = "GB"
+    published: bool = True
     order_index: int
     lesson_count: int = 0
     prerequisite_ids: list[uuid.UUID] = []
