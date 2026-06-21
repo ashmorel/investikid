@@ -192,6 +192,11 @@ export default function CurriculumPanel({
           {t('marketContent.curriculum.accepted')}
         </p>
       )}
+      {accept.isError && (
+        <p className="mt-2 text-sm text-danger-500" role="alert">
+          {t('marketContent.curriculum.acceptError')}
+        </p>
+      )}
     </section>
   );
 }

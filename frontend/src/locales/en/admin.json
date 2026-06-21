@@ -145,6 +145,7 @@
       "accept": "Accept",
       "accepting": "Accepting…",
       "accepted": "Curriculum accepted — modules and levels updated.",
+      "acceptError": "Could not accept the curriculum. Please try again.",
       "coverageOk": "Coverage complete",
       "coverageGap": "Missing: {{key}}",
       "coverageRegression": "Regression: {{key}}",

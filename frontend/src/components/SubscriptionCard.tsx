@@ -322,6 +322,11 @@ export function SubscriptionCard() {
         >
           {checkout.isPending ? t('subscription.redirecting') : t('subscription.subscribeToPremium')}
         </Button>
+        {checkout.isError && (
+          <p className="mt-2 text-sm text-danger-500" role="alert">
+            {t('subscription.checkoutError')}
+          </p>
+        )}
       </section>
     );
   }
@@ -340,6 +345,11 @@ export function SubscriptionCard() {
       >
         {portal.isPending ? t('subscription.redirecting') : t('subscription.manageBilling')}
       </Button>
+      {portal.isError && (
+        <p className="mt-2 text-sm text-danger-500" role="alert">
+          {t('subscription.portalError')}
+        </p>
+      )}
     </section>
   );
 }
