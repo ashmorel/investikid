@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
+from typing import TYPE_CHECKING
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +13,9 @@ from app.services.streak_config import (
     STREAK_FREEZE_GAP,
     STREAK_MILESTONE,
 )
+
+if TYPE_CHECKING:
+    from app.models.content import Module
 
 # XP thresholds per level (index = level-1 → threshold to reach NEXT level).
 # Exponential-ish curve from the spec: Piggy Bank (1) → ... → Investment Pro (7).
@@ -75,7 +81,7 @@ async def get_accessible_module(
     session: AsyncSession,
     module_id: uuid.UUID,
     current_user,  # User — Any to avoid circular import
-):
+) -> Module:
     """Content-access gate: visibility + age + premium checks.
 
     Raises HTTPException 404 if the module is missing, not visible to the user's

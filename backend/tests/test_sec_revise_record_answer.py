@@ -132,7 +132,7 @@ async def test_record_answer_rejects_forged_ref_cross_market_module(
 async def test_record_answer_rejects_forged_ref_premium_module_free_user(
     db_session, seed_markets_once
 ):
-    """Forged ref pointing at a premium lesson for a free user -> 402."""
+    """Forged ref pointing at a premium lesson for a free user -> 403."""
     user = await _make_user(db_session, email="sec-t3@example.com",
                             username="sec_t3", is_premium=False,
                             active_market_code="GB")

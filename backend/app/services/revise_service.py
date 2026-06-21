@@ -71,12 +71,16 @@ def decode_ref(ref: str) -> dict:
 
 
 async def _lesson_for_concept(
-    session: AsyncSession, *, topic: str, concept: str
+    session: AsyncSession, *, topic: str, concept: str, market_code: str
 ) -> tuple[Lesson, Module] | None:
-    """Find a lesson in `topic` whose derived concept equals `concept`."""
+    """Find a published, market-scoped lesson in `topic` whose derived concept equals `concept`."""
     rows = await session.execute(
         select(Lesson, Module).join(Module, Module.id == Lesson.module_id)
-        .where(Module.topic == topic)
+        .where(
+            Module.topic == topic,
+            Module.published.is_(True),
+            Module.market_code == market_code,
+        )
         .order_by(Lesson.order_index)  # deterministic when concept strings collide
     )
     for lesson, module in rows.all():
@@ -182,7 +186,10 @@ async def build_session(
             w = by_id.get(d.weak_concept_id)
             if not w:
                 continue
-            resolved = await _lesson_for_concept(session, topic=w.topic, concept=w.concept)
+            resolved = await _lesson_for_concept(
+                session, topic=w.topic, concept=w.concept,
+                market_code=user.active_market_code,
+            )
             if not resolved:
                 continue
             lesson, module = resolved
