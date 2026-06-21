@@ -84,7 +84,7 @@ describe('LessonDraftReview', () => {
     renderReview();
     const safeCard = screen.getByTestId('draft-s1');
     await user.click(within(safeCard).getByRole('button', { name: /approve/i }));
-    expect(approveMutate).toHaveBeenCalledWith('s1');
+    expect(approveMutate).toHaveBeenCalledWith('s1', expect.anything());
   });
 
   it('clicking safe Reject opens confirm dialog; confirming calls reject mutate', async () => {
@@ -94,7 +94,7 @@ describe('LessonDraftReview', () => {
     await user.click(within(safeCard).getByRole('button', { name: /reject/i }));
     const dialog = screen.getByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: /confirm/i }));
-    expect(rejectMutate).toHaveBeenCalledWith('s1');
+    expect(rejectMutate).toHaveBeenCalledWith('s1', expect.anything());
   });
 
   it('clicking Regenerate calls regenerate mutate with the id', async () => {
@@ -102,7 +102,7 @@ describe('LessonDraftReview', () => {
     renderReview();
     const safeCard = screen.getByTestId('draft-s1');
     await user.click(within(safeCard).getByRole('button', { name: /regenerate/i }));
-    expect(regenerateMutate).toHaveBeenCalledWith('s1');
+    expect(regenerateMutate).toHaveBeenCalledWith('s1', expect.anything());
   });
 
   it('draft with UK residue shows the adaptation badge; safe draft does not', () => {
@@ -119,7 +119,7 @@ describe('LessonDraftReview', () => {
     const user = userEvent.setup();
     renderReview();
     await user.click(screen.getByRole('button', { name: /approve all/i }));
-    expect(approveDraftsMutate).toHaveBeenCalledWith(false);
+    expect(approveDraftsMutate).toHaveBeenCalledWith(false, expect.anything());
   });
 
   it('Publish & replace shows when published lessons exist; confirming calls mutate with true', async () => {
@@ -128,7 +128,7 @@ describe('LessonDraftReview', () => {
     await user.click(screen.getByRole('button', { name: /publish & replace/i }));
     const dialog = screen.getByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: /confirm/i }));
-    expect(approveDraftsMutate).toHaveBeenCalledWith(true);
+    expect(approveDraftsMutate).toHaveBeenCalledWith(true, expect.anything());
   });
 
   it('Publish & replace hidden with no published lessons; Approve all still shown', () => {
