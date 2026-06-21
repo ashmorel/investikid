@@ -101,12 +101,12 @@ export default function Shop() {
       )}
 
       {buy.isError && (
-        <p className="mt-3 text-sm font-semibold text-danger-500" role="alert">
+        <p className="mt-3 text-sm text-danger-500" role="alert">
           {t('shop.buyError')}
         </p>
       )}
       {equip.isError && (
-        <p className="mt-3 text-sm font-semibold text-danger-500" role="alert">
+        <p className="mt-3 text-sm text-danger-500" role="alert">
           {t('shop.equipError')}
         </p>
       )}
