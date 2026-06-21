@@ -86,6 +86,7 @@ class ModuleOut(BaseModel):
     country_codes: list[str]
     market_code: str = "GB"
     published: bool = True
+    archived_at: datetime | None = None
     order_index: int
     lesson_count: int = 0
     prerequisite_ids: list[uuid.UUID] = []

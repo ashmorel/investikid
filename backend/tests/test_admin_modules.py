@@ -28,14 +28,15 @@ async def test_module_crud_lifecycle(admin_client):
     assert resp.status_code == 200
     assert resp.json()["title"] == "Updated Module"
 
-    # Delete
+    # Delete — a freshly-created module is published (live), so archiving is
+    # refused; you must unpublish/replace it first (see test_module_archive for
+    # the non-live soft-archive + restore path).
     resp = await admin_client.delete(f"/admin/modules/{module_id}")
-    assert resp.status_code == 200
-    assert resp.json()["status"] == "ok"
+    assert resp.status_code == 409
 
-    # Verify deleted
+    # Still present (not archived)
     resp = await admin_client.get("/admin/modules")
-    assert not any(m["id"] == module_id for m in resp.json())
+    assert any(m["id"] == module_id for m in resp.json())
 
 
 async def test_lesson_crud_lifecycle(admin_client):

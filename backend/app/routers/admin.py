@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -189,7 +189,7 @@ async def list_modules(session: AsyncSession = Depends(get_session)):
         ModuleOut(
             id=m.id, topic=m.topic, title=m.title, icon=m.icon,
             is_premium=m.is_premium, country_codes=m.country_codes,
-            market_code=m.market_code, published=m.published,
+            market_code=m.market_code, published=m.published, archived_at=m.archived_at,
             order_index=m.order_index, lesson_count=len(m.lessons),
             prerequisite_ids=m.prerequisite_ids, min_age=m.min_age, max_age=m.max_age,
             standards_alignment=m.standards_alignment, sources=m.sources,
@@ -268,14 +268,31 @@ async def update_module(
 
 @router.delete("/modules/{module_id}")
 async def delete_module(module_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
+    """Soft-archive a module (moves it to the admin Archived section; hard-purged
+    after the retention window). Live (published) modules are refused — unpublish
+    or replace them first so content can't vanish from the app mid-use."""
     module = await session.get(Module, module_id)
     if module is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
-    # Use bulk delete to trigger DB-level CASCADE on lessons
-    await session.execute(delete(Lesson).where(Lesson.module_id == module_id))
-    await session.execute(delete(Module).where(Module.id == module_id))
+    if module.published:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Unpublish or replace this live module before archiving",
+        )
+    module.archived_at = datetime.now(UTC)
     await session.commit()
-    return {"status": "ok"}
+    return {"status": "archived"}
+
+
+@router.post("/modules/{module_id}/restore")
+async def restore_module(module_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
+    """Un-archive a module: back to the admin main list, 30-day purge clock reset."""
+    module = await session.get(Module, module_id)
+    if module is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
+    module.archived_at = None
+    await session.commit()
+    return {"status": "restored"}
 
 
 @router.patch("/modules/reorder")

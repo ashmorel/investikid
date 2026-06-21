@@ -43,6 +43,11 @@ class Module(Base):
     sources: Mapped[list | None] = mapped_column(JSON, nullable=True)
     conversation_prompt: Mapped[str | None] = mapped_column(String(300), nullable=True)
     published: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    # NULL = active (live or staged). Set = archived: hidden from the admin main
+    # list (shown under "Archived") and hard-purged after the retention window.
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
 
     lessons: Mapped[list["Lesson"]] = relationship("Lesson", back_populates="module")
 
