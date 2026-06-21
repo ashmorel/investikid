@@ -1,10 +1,11 @@
 import inspect
+
 import pytest
 from sqlalchemy import select
 
 from app.models.content import Lesson, Level, Module
 from app.models.user import User
-from app.services import content_service, next_lesson_service, recommendation_service
+from app.services import next_lesson_service, recommendation_service
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -35,8 +36,8 @@ async def _gb_module(db_session, *, published, order_index, title="M"):
 
 
 async def test_child_module_list_excludes_unpublished(db_session):
-    user = await _gb_user(db_session)
-    pub = await _gb_module(db_session, published=True, order_index=900, title="Visible")
+    await _gb_user(db_session)
+    await _gb_module(db_session, published=True, order_index=900, title="Visible")
     await _gb_module(db_session, published=False, order_index=901, title="Staged")
     # The child list endpoint query: published-only.
     rows = (await db_session.scalars(
