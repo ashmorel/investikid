@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.rate_limit import limiter
-from app.models.content import Lesson, Module
+from app.models.content import Lesson
 from app.models.user import User
 from app.routers.users import get_current_user
 from app.schemas.ai import (
@@ -23,7 +23,7 @@ from app.schemas.ai import (
 )
 from app.services.ai_content_service import generate_practice_quiz
 from app.services.coach_service import coach_chat
-from app.services.content_service import is_module_visible
+from app.services.content_service import get_accessible_module
 from app.services.entitlements import is_premium
 from app.services.gap_detection_service import get_strengths_and_gaps
 from app.services.home_greeting_service import generate_home_greeting
@@ -58,9 +58,7 @@ async def practice_quiz(
     if not lesson:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
 
-    module = await session.get(Module, lesson.module_id)
-    if not module or not is_module_visible(module, current_user.active_market_code):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
+    module = await get_accessible_module(session, lesson.module_id, current_user)
 
     # Derive concept from lesson title
     content = lesson.content_json or {}
@@ -112,9 +110,7 @@ async def tutor_chat(
     if not lesson:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
 
-    module = await session.get(Module, lesson.module_id)
-    if not module or not is_module_visible(module, current_user.active_market_code):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
+    module = await get_accessible_module(session, lesson.module_id, current_user)
 
     try:
         result = await chat(
