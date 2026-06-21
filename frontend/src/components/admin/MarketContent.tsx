@@ -32,7 +32,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Per-module result row for the market-wide runner. */
 type RunnerResult =
-  | { title: string; ok: true; generated: number; skipped: number }
+  | { title: string; ok: true; generated: number; skipped: number; errored: number }
   | { title: string; ok: false };
 
 /** Admin market-content workflow (Sub-project E2).
@@ -149,6 +149,7 @@ export default function MarketContent() {
               generated: res.generated,
               skipped:
                 res.skipped_populated + res.skipped_has_drafts + (res.skipped_no_source ?? 0) + (res.skipped_no_concepts ?? 0),
+              errored: res.errored ?? 0,
             });
             setResults([...acc]);
             break;
@@ -394,9 +395,17 @@ export default function MarketContent() {
                             <li key={`${r.title}-${i}`} className="text-xs text-ink">
                               <span className="font-medium">{r.title}</span>{': '}
                               {r.ok ? (
-                                <span className="text-success-600">
-                                  {t('marketContent.batch.moduleResult', { generated: r.generated, skipped: r.skipped })}
-                                </span>
+                                <>
+                                  <span className="text-success-600">
+                                    {t('marketContent.batch.moduleResult', { generated: r.generated, skipped: r.skipped })}
+                                  </span>
+                                  {r.errored > 0 && (
+                                    <span className="text-danger-500">
+                                      {' · '}
+                                      {t('marketContent.batch.moduleErrored', { errored: r.errored })}
+                                    </span>
+                                  )}
+                                </>
                               ) : (
                                 <span className="text-danger-500">{t('marketContent.batch.moduleFailed')}</span>
                               )}
@@ -495,15 +504,23 @@ function ModuleLessons({
           <span className="text-xs text-danger-500" role="alert">{t('marketContent.batch.moduleFailed')}</span>
         )}
         {batch.isSuccess && batch.data && (
-          <span className="text-xs text-success-600" role="status">
-            {t('marketContent.batch.moduleResult', {
-              generated: batch.data.generated,
-              skipped:
-                batch.data.skipped_populated +
-                batch.data.skipped_has_drafts +
-                (batch.data.skipped_no_source ?? 0) +
-                (batch.data.skipped_no_concepts ?? 0),
-            })}
+          <span className="text-xs" role="status">
+            <span className="text-success-600">
+              {t('marketContent.batch.moduleResult', {
+                generated: batch.data.generated,
+                skipped:
+                  batch.data.skipped_populated +
+                  batch.data.skipped_has_drafts +
+                  (batch.data.skipped_no_source ?? 0) +
+                  (batch.data.skipped_no_concepts ?? 0),
+              })}
+            </span>
+            {(batch.data.errored ?? 0) > 0 && (
+              <span className="text-danger-500">
+                {' · '}
+                {t('marketContent.batch.moduleErrored', { errored: batch.data.errored })}
+              </span>
+            )}
           </span>
         )}
       </div>

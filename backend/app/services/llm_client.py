@@ -220,15 +220,22 @@ class AnthropicClient:
     ) -> str:
         attempts = 0
         last_error: Exception | None = None
+        # Some Anthropic models (extended-thinking / reasoning variants such as
+        # the Opus authoring model) reject a `temperature` argument outright
+        # ("temperature is deprecated for this model"). Send it, but drop it and
+        # retry if the API complains, so any model works without hardcoding names.
+        send_temperature = True
         while attempts < 2:
             try:
-                response = await self._client.messages.create(
+                kwargs: dict = dict(
                     model=self._model,
                     system=system_prompt,
                     messages=messages,
-                    temperature=temperature,
                     max_tokens=max_tokens,
                 )
+                if send_temperature:
+                    kwargs["temperature"] = temperature
+                response = await self._client.messages.create(**kwargs)
                 usage = getattr(response, "usage", None)
                 if usage is not None:
                     record_usage(
@@ -245,6 +252,11 @@ class AnthropicClient:
                 return text
             except Exception as exc:
                 last_error = exc
+                # Retry without temperature (not counting the attempt) when the
+                # model rejects it, rather than failing the whole generation.
+                if send_temperature and "temperature" in str(exc).lower():
+                    send_temperature = False
+                    continue
                 attempts += 1
         raise LLMError(str(last_error), retryable=_is_retryable(last_error)) from last_error
 
