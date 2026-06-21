@@ -183,7 +183,7 @@ export default function MarketContent() {
       {code && (
         <div className="flex max-w-2xl flex-col gap-6">
           {/* Curriculum panel — shown for all markets including GB */}
-          <CurriculumPanel marketCode={code} />
+          <CurriculumPanel marketCode={code} briefVerified={isVerified} />
 
           {/* Publish-curriculum control — shown when a curriculum exists */}
           {hasCurriculum && (
