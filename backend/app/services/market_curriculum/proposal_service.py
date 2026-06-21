@@ -49,6 +49,21 @@ async def get_active_proposal(
     )).first()
 
 
+async def get_proposal_for_generation(
+    session: AsyncSession, market_code: str
+) -> MarketCurriculumProposal | None:
+    """Latest materialised proposal whose levels can be (re)generated into — either
+    accepted (staged, not yet published) OR published (already live). The native
+    batch reads concepts/tiers from it; a published market can thus be refreshed
+    (regenerate → review → approve-replace) without re-designing."""
+    return (await session.scalars(
+        select(MarketCurriculumProposal)
+        .where(MarketCurriculumProposal.market_code == market_code,
+               MarketCurriculumProposal.status.in_(("accepted", "published")))
+        .order_by(MarketCurriculumProposal.created_at.desc())
+    )).first()
+
+
 async def accept_proposal(session: AsyncSession, row: MarketCurriculumProposal) -> dict:
     if row.status == "accepted":
         raise ValueError("proposal already accepted")
