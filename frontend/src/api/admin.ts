@@ -876,6 +876,9 @@ export type CurriculumModuleNode = {
   max_age: number;
   order_index: number;
   levels: CurriculumLevelNode[];
+  // Set once the proposal is accepted (modules materialised). Identifies the
+  // live/staged Module rows this curriculum owns, regardless of published flag.
+  module_id?: string | null;
 };
 
 export type CurriculumCoverage = {

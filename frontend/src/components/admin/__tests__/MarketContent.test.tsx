@@ -14,7 +14,7 @@ const mockUnpublish = vi.fn();
 
 type MarketSummary = { code: string; name: string; has_content: boolean };
 type Brief = { market_code: string; brief_json: Record<string, unknown>; status: string; model_used: string };
-type Mod = { id: string; topic: string; title: string; market_code: string; order_index: number };
+type Mod = { id: string; topic: string; title: string; market_code: string; order_index: number; published?: boolean };
 type Lvl = { id: string; module_id: string; title: string; order_index: number; lesson_count: number; draft_count?: number };
 
 let marketsData: MarketSummary[] = [
@@ -54,7 +54,9 @@ const mockGenerateModuleFn = vi.fn((_id: string, _incl: boolean) => Promise.reso
 
 // Publish-curriculum mock state.
 const mockPublishCurriculum = vi.fn();
-let curriculumData: { proposal_id: string } | null = null;
+let curriculumData:
+  | { proposal_id: string; proposal?: { market_code: string; modules: { module_id?: string | null }[] } }
+  | null = null;
 
 // Suggestion-flow mock state (driven per test).
 const mockSuggest = vi.fn();
@@ -316,6 +318,30 @@ describe('MarketContent', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^generate all$/i }));
     await waitFor(() => expect(mockGenerateModuleFn).toHaveBeenCalledTimes(1));
     expect(mockGenerateModuleFn).toHaveBeenCalledWith('us-mod', false);
+  });
+
+  it('regenerating a LIVE curriculum targets the modules the proposal owns, not retired ones', async () => {
+    // Post-publish: the new curriculum modules are published=true and the old
+    // hand-authored ones are retired to published=false. The lesson list must
+    // follow the proposal's module_ids, not the published flag.
+    marketsData = [{ code: 'GB', name: 'United Kingdom', has_content: true }];
+    briefData = { market_code: 'GB', brief_json: { currency: 'GBP' }, status: 'verified', model_used: 'm' };
+    modulesData = [
+      { id: 'gb-live', topic: 'earning_income', title: 'Where Money Comes From', market_code: 'GB', order_index: 0, published: true },
+      { id: 'gb-retired', topic: 'saving', title: 'What is a Stock?', market_code: 'GB', order_index: 1, published: false },
+    ];
+    levelsByModule = {
+      'gb-live': [{ id: 'gb-live-lvl', module_id: 'gb-live', title: 'L1', order_index: 0, lesson_count: 2 }],
+    };
+    curriculumData = {
+      proposal_id: 'p1',
+      proposal: { market_code: 'GB', modules: [{ module_id: 'gb-live' }] },
+    };
+    render(<MarketContent />, { wrapper });
+    // The live (curriculum-owned) module is offered for regeneration…
+    expect(await screen.findByText('Where Money Comes From')).toBeInTheDocument();
+    // …and the retired old module is NOT.
+    expect(screen.queryByText('What is a Stock?')).not.toBeInTheDocument();
   });
 
   it('creates a module from a suggestion, then generates native lessons with its concepts', async () => {
