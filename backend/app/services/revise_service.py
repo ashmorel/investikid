@@ -118,7 +118,11 @@ async def list_revisable_modules(session: AsyncSession, user: User) -> list[dict
     if not comp_modules:
         return []
     modules = (await session.scalars(
-        select(Module).where(Module.id.in_(comp_modules), Module.published.is_(True))
+        select(Module).where(
+            Module.id.in_(comp_modules),
+            Module.published.is_(True),
+            Module.market_code == user.active_market_code,
+        )
     )).all()
     now = datetime.now(UTC)
     rows = (await session.execute(
@@ -198,7 +202,11 @@ async def build_session(
         select(Lesson, Module, LessonCompletion.completed_at)
         .join(Module, Module.id == Lesson.module_id)
         .join(LessonCompletion, LessonCompletion.lesson_id == Lesson.id)
-        .where(LessonCompletion.user_id == user.id)
+        .where(
+            LessonCompletion.user_id == user.id,
+            Module.published.is_(True),
+            Module.market_code == user.active_market_code,
+        )
         .order_by(LessonCompletion.completed_at.asc())  # stable rotation; oldest first
     )
     if module_id:
