@@ -332,6 +332,7 @@ async def record_lesson_view(
     lesson = await session.get(Lesson, lesson_id)
     if not lesson:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
+    await _get_accessible_module(lesson.module_id, current_user, session)  # gate
     existing = await session.scalar(
         select(LessonView).where(
             LessonView.user_id == current_user.id,
