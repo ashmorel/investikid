@@ -231,14 +231,14 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
 
-      # Only chromium is configured in playwright.config (webkit is unused).
+      # playwright.config uses chromium (Desktop Chrome) + webkit (iPhone 13 mobile).
       - name: Install Playwright browser (+ OS deps)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Install Playwright OS deps (browser restored from cache)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx playwright install-deps chromium webkit
 
       - name: E2E axe scan
         run: npm run test:e2e:a11y
@@ -272,14 +272,14 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
 
-      # Only chromium is configured in playwright.config (webkit is unused).
+      # playwright.config uses chromium (Desktop Chrome) + webkit (iPhone 13 mobile).
       - name: Install Playwright browser (+ OS deps)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Install Playwright OS deps (browser restored from cache)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx playwright install-deps chromium webkit
 
       - name: Responsive viewport tests
         run: npm run test:e2e:responsive
