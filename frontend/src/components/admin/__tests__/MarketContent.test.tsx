@@ -25,7 +25,6 @@ let briefData: Brief | undefined;
 let briefStatus = { isLoading: false, isError: false };
 let modulesData: Mod[] = [];
 let levelsByModule: Record<string, Lvl[]> = {};
-const mockGenerateMarket = vi.fn();
 const idleMutation = { mutate: vi.fn(), isPending: false, isError: false, isSuccess: false, data: undefined, error: null as unknown };
 
 // Batch-generation runners (Task 5). `mockGenerateModuleHook` captures the
@@ -90,10 +89,6 @@ vi.mock('@/api/admin', () => ({
   useScaffoldMarket: () => ({ ...idleMutation, mutate: mockScaffold }),
   useModules: () => ({ data: modulesData }),
   useLevels: (moduleId: string) => ({ data: levelsByModule[moduleId] ?? [] }),
-  useGenerateMarketLessons: (levelId: string) => ({
-    ...idleMutation,
-    mutate: (sourceLevelId: string) => mockGenerateMarket({ levelId, source_level_id: sourceLevelId }),
-  }),
   useGenerateModuleLessons: (moduleId: string) => ({
     ...idleMutation,
     mutate: (include_populated: boolean) => mockGenerateModuleHook({ moduleId, include_populated }),
@@ -132,7 +127,6 @@ beforeEach(() => {
   mockScaffold.mockClear();
   mockPublish.mockClear();
   mockUnpublish.mockClear();
-  mockGenerateMarket.mockClear();
   mockGenerateModuleHook.mockClear();
   mockGenerateModuleFn.mockClear();
   mockGenerateModuleFn.mockResolvedValue(emptyBatch);
