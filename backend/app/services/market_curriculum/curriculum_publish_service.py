@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,7 +41,7 @@ async def publish_market_curriculum(session: AsyncSession, market_code: str) -> 
         update(Module)
         .where(Module.market_code == market_code, Module.published.is_(True),
                Module.id.notin_(staged_ids))
-        .values(published=False)
+        .values(published=False, archived_at=datetime.now(UTC))
     )).rowcount or 0
 
     # Publish the staged modules.

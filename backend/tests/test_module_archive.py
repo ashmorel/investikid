@@ -46,3 +46,32 @@ async def test_restore_clears_archived_at(admin_client, db_session):
     assert r.status_code == 200, r.text
     await db_session.refresh(m)
     assert m.archived_at is None
+
+
+async def test_publish_archives_retired_modules(db_session):
+    # Publishing a new curriculum retires the previously-live modules — and now
+    # also archives them so they leave the admin main list.
+    from app.models.content import Lesson
+    from app.models.market_curriculum import MarketCurriculumProposal
+    from app.services.market_curriculum.curriculum_publish_service import (
+        publish_market_curriculum,
+    )
+
+    old = await _module(db_session, published=True, market="US")
+    old.order_index = 99
+    staged = await _module(db_session, published=False, market="US")
+    db_session.add(Lesson(module_id=staged.id, type="card", xp_reward=0,
+                          order_index=0, content_json={"title": "x", "body": "y"}))
+    db_session.add(MarketCurriculumProposal(
+        market_code="US", status="accepted",
+        proposal_json={"market_code": "US", "modules": [{"module_id": str(staged.id),
+            "topic": "t", "title": "New", "icon": "📚", "min_age": 10, "max_age": 14,
+            "order_index": 0, "levels": []}]},
+        coverage_json={"ok": True}))
+    await db_session.flush()
+
+    await publish_market_curriculum(db_session, "US")
+    await db_session.refresh(old)
+    await db_session.refresh(staged)
+    assert old.archived_at is not None      # retired → archived
+    assert staged.published is True and staged.archived_at is None
