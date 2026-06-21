@@ -374,7 +374,8 @@
     "publishReplace": "Publish & replace existing ({{count}})",
     "replaceConfirmTitle": "Replace published lessons?",
     "replaceConfirmMessage": "This deletes the {{count}} published lesson(s) for this level and replaces them with the approved drafts.",
-    "approveResult": "Published {{approved}} lesson(s); replaced {{replaced}}; skipped {{skipped}} (failed moderation)."
+    "approveResult": "Published {{approved}} lesson(s); replaced {{replaced}}; skipped {{skipped}} (failed moderation).",
+    "actionError": "Something went wrong. Please try again."
   },
   "lessonForm": {
     "editTitle": "Edit Lesson",
