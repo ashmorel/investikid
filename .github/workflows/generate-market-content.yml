@@ -1,0 +1,70 @@
+name: Generate market content
+
+# Operator automation: runs the full content pipeline (brief → design → accept →
+# generate → approve → publish) for one or more markets, server-side on prod, via
+# the cron-secret-gated /internal/market-content endpoint. Dispatch manually
+# (gh workflow run) — generation runs on the Opus authoring tier and publishes.
+
+on:
+  workflow_dispatch:
+    inputs:
+      markets:
+        description: "Space-separated market codes (e.g. 'GB US HK')"
+        required: true
+        default: "GB US HK"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      BACKEND_URL: ${{ vars.BACKEND_URL || 'https://investikid.up.railway.app' }}
+      # Injection-safe: route the dispatch input through an env var, never inline.
+      MARKETS: ${{ github.event.inputs.markets }}
+    steps:
+      - name: Run market content pipeline
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -uo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET is empty (add it under Actions → Secrets)."; exit 1
+          fi
+          if ! printf '%s' "$MARKETS" | grep -Eq '^[A-Za-z ]+$'; then
+            echo "::error::MARKETS must be space-separated letters only."; exit 1
+          fi
+
+          # POST one pipeline step; echoes the JSON body on stdout, fails on non-200.
+          step() {
+            local action="$1" market="$2" body code
+            body=$(curl -sS -w $'\n%{http_code}' -X POST \
+              --retry 2 --retry-delay 10 --connect-timeout 15 --max-time 600 \
+              -H "X-Cron-Secret: ${CRON_SECRET}" \
+              "${BACKEND_URL}/internal/market-content?market=${market}&action=${action}")
+            code=$(printf '%s' "$body" | tail -n1)
+            body=$(printf '%s' "$body" | sed '$d')
+            if [ "$code" != "200" ]; then
+              echo "::error::${action} ${market} -> HTTP ${code}: ${body}" >&2
+              return 1
+            fi
+            printf '%s' "$body"
+          }
+
+          for m in $MARKETS; do
+            echo "::group::${m} — scaffold (brief + design + accept)"
+            step scaffold "$m" || exit 1
+            echo; echo "::endgroup::"
+
+            for i in $(seq 1 120); do
+              out=$(step generate "$m") || exit 1
+              rem=$(printf '%s' "$out" | jq -r '.remaining // -1')
+              echo "${m} generate #${i}: ${out}  (remaining=${rem})"
+              [ "$rem" = "0" ] && break
+            done
+
+            echo "::group::${m} — publish"
+            step publish "$m" || exit 1
+            echo; echo "::endgroup::"
+            echo "✅ ${m} done"
+          done
+          echo "All markets generated + published."

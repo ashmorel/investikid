@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.services import (
     digest_service,
+    market_content_pipeline,
     module_purge_service,
     product_analytics_service,
     streak_risk_push,
@@ -110,3 +111,30 @@ async def trigger_purge_archived_modules(
     purged = await module_purge_service.purge_archived_modules(session, now=datetime.now(UTC))
     await session.commit()
     return {"purged": purged}
+
+
+@router.post("/market-content")
+async def market_content_step(
+    market: str,
+    action: str,
+    x_cron_secret: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+):
+    """One step of the market content pipeline (operator automation). action ∈
+    {scaffold, generate, publish}; call `generate` repeatedly until remaining==0,
+    then `publish`. Cron-secret gated (no admin UI / JWT needed)."""
+    if not settings.cron_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    market = market.upper()
+    try:
+        if action == "scaffold":
+            return await market_content_pipeline.scaffold_market(session, market)
+        if action == "generate":
+            return await market_content_pipeline.generate_next_level(session, market)
+        if action == "publish":
+            return await market_content_pipeline.publish_market(session, market)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+    raise HTTPException(status.HTTP_400_BAD_REQUEST, "action must be scaffold|generate|publish")
