@@ -29,6 +29,17 @@ _SCHEMA_HINT = {
     "scenario": '{"prompt": str, "choices": [{"label": str, "outcome": str}, ...(>=2)], "correct_index": int}',
 }
 
+# Lessons generated per level, by complexity tier (1 foundational … 3 advanced).
+# This is the EXACT lesson count per level; each concept yields a teach-card +
+# practice-quiz pair, so a level needs ~ceil(target/2) concepts (the designer is
+# asked for that many; the generator wraps concepts if a level returns fewer).
+LESSONS_PER_TIER: dict[int, int] = {1: 10, 2: 15, 3: 20}
+
+
+def target_lessons_for_tier(tier: int | None) -> int:
+    """Exact number of lessons to generate for a level of the given tier."""
+    return LESSONS_PER_TIER.get(tier or 0, LESSONS_PER_TIER[2])
+
 # Concise, kid-readable style for ALL generated lessons. Pitched at UK years 8-10
 # (confident teen reader), easy to read on a phone; depth-on-demand lives in
 # Coach Penny, not the card.
@@ -191,10 +202,20 @@ async def generate_native_level_lessons(session: AsyncSession, level, *, brief, 
     module = await session.get(Module, level.module_id)
     type_cycle = types or ["card", "quiz"]
     result = GenerationResult()
-    for i, concept in enumerate(concepts):
+    if not concepts:
+        await session.commit()
+        return result
+    # Generate EXACTLY target_lessons_for_tier(tier) lessons by round-robin over
+    # (concept, type): concept0-card, concept0-quiz, concept1-card, … — each concept
+    # gets a teach-card + practice-quiz pair. Concepts wrap (% len) if the level
+    # returned fewer than ceil(target/2); the type cycles every lesson.
+    target = target_lessons_for_tier(complexity_tier)
+    n_types = len(type_cycle)
+    for n in range(target):
+        concept = concepts[(n // n_types) % len(concepts)]
         draft = await _generate_one(
             session, level=level, module=module, concept=concept,
-            lesson_type=type_cycle[i % len(type_cycle)],
+            lesson_type=type_cycle[n % n_types],
             brief=brief.brief_json, source_text=None, complexity_tier=complexity_tier,
         )
         if draft is None:

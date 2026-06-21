@@ -8,6 +8,7 @@ from app.models.content import Lesson, Level, Module
 from app.models.lesson_draft import LessonDraft
 from app.models.market_brief import MarketBrief
 from app.models.market_curriculum import MarketCurriculumProposal
+from app.services.admin_content_generation_service import target_lessons_for_tier
 from app.services.market_curriculum.native_batch import generate_market_native
 from app.services.moderation import ModerationResult
 
@@ -21,7 +22,18 @@ def _llm():
     card = {"title": "Saving up", "body": "Plan your dollars."}
     quiz = {"question": "What is saving?", "choices": ["Spending it", "Keeping money for later", "Borrowing"],
             "answer_index": 1, "explanation": "Saving means keeping money for later."}
-    client.complete = AsyncMock(side_effect=[json.dumps(card), json.dumps(quiz)])
+    # The generator alternates card/quiz (card on even calls, quiz on odd) and now
+    # produces target_lessons_for_tier() lessons per level, so the mock must answer
+    # indefinitely with the matching shape rather than a fixed 2-item list.
+    seq = [json.dumps(card), json.dumps(quiz)]
+    counter = {"i": 0}
+
+    async def _complete(**kwargs):
+        value = seq[counter["i"] % 2]
+        counter["i"] += 1
+        return value
+
+    client.complete = AsyncMock(side_effect=_complete)
     return (client,
             patch("app.services.admin_content_generation_service.get_llm_client", return_value=client),
             patch("app.services.admin_content_generation_service.moderate_output",
@@ -67,7 +79,7 @@ async def test_generates_from_proposal_concepts(db_session):
                                                proposal_row=proposal, include_populated=False)
     assert summary["generated"] == 1
     n = await db_session.scalar(select(func.count(LessonDraft.id)).where(LessonDraft.level_id == level.id))
-    assert n == 2  # one draft per concept
+    assert n == target_lessons_for_tier(2)  # tier-2 level → 15 lessons (card/quiz blend)
     # the complexity-tier depth instruction reached the prompt
     assert "develop" in client.complete.call_args.kwargs["system_prompt"].lower()
 
