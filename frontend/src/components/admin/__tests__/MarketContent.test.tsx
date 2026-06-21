@@ -38,6 +38,7 @@ type ModuleBatchResult = {
   skipped_populated: number;
   skipped_has_drafts: number;
   skipped_no_source: number;
+  skipped_no_concepts: number;
   errored: number;
 };
 const emptyBatch: ModuleBatchResult = {
@@ -46,6 +47,7 @@ const emptyBatch: ModuleBatchResult = {
   skipped_populated: 0,
   skipped_has_drafts: 0,
   skipped_no_source: 0,
+  skipped_no_concepts: 0,
   errored: 0,
 };
 const mockGenerateModuleHook = vi.fn();
@@ -67,8 +69,19 @@ let suggestData: Suggestion[] | undefined = undefined;
 let suggestState = { isPending: false, isError: false, isSuccess: false };
 let createResult: { module_id: string; level_id: string; suggested_concepts: string[] } | undefined = undefined;
 
-// Captures the levelId passed to the per-level hook factory so the test can
-// assert the generate-market mutation fires with { levelId, source_level_id }.
+// Stub CurriculumPanel — it calls useCurriculum which is not in the @/api/admin mock.
+vi.mock('../CurriculumPanel', () => ({
+  default: () => <div data-testid="curriculum-panel-stub" />,
+}));
+
+// Stub LessonDraftReview so the inline panel renders without needing
+// full draft-API hooks wired up in this test file.
+vi.mock('../LessonDraftReview', () => ({
+  default: ({ levelId }: { levelId: string }) => (
+    <div data-testid={`draft-review-${levelId}`}>Draft review panel</div>
+  ),
+}));
+
 vi.mock('@/api/admin', () => ({
   useMarketBrief: () => ({ data: briefData, ...briefStatus }),
   useGenerateMarketBrief: () => ({ ...idleMutation, mutate: mockGenerateBrief }),
@@ -183,9 +196,8 @@ describe('MarketContent', () => {
     await waitFor(() => expect(mockGenerateBrief).toHaveBeenCalled());
   });
 
-  it('generates market lessons for a scaffolded level using the matched GB source level', async () => {
+  it('shows a published-lesson badge and no per-level generate button (native batch only)', async () => {
     briefData = { market_code: 'US', brief_json: { currency: 'USD' }, status: 'verified', model_used: 'm' };
-    // GB + US each have a "saving" module at order 0 with one level at order 0.
     modulesData = [
       { id: 'gb-mod', topic: 'saving', title: 'Saving', market_code: 'GB', order_index: 0 },
       { id: 'us-mod', topic: 'saving', title: 'Saving (US)', market_code: 'US', order_index: 0 },
@@ -194,17 +206,12 @@ describe('MarketContent', () => {
       'gb-mod': [{ id: 'gb-lvl', module_id: 'gb-mod', title: 'Basics', order_index: 0, lesson_count: 0 }],
       'us-mod': [{ id: 'us-lvl', module_id: 'us-mod', title: 'Basics (US)', order_index: 0, lesson_count: 3 }],
     };
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<MarketContent />, { wrapper });
-    // The US level already has 3 published lessons, so the button is a
-    // "Regenerate (replace)" heads-up that confirms before generating.
-    const btn = await screen.findByRole('button', { name: /regenerate \(replace\)/i });
-    fireEvent.click(btn);
-    expect(confirmSpy).toHaveBeenCalled();
-    await waitFor(() =>
-      expect(mockGenerateMarket).toHaveBeenCalledWith({ levelId: 'us-lvl', source_level_id: 'gb-lvl' }),
-    );
-    confirmSpy.mockRestore();
+    // The US level has 3 published lessons — badge visible
+    expect(await screen.findByText('3 published')).toBeInTheDocument();
+    // The retired per-level from-GB button must not exist
+    expect(screen.queryByRole('button', { name: /regenerate \(replace\)/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /generate lessons \(from gb\)/i })).not.toBeInTheDocument();
   });
 
   it('shows a published-lesson badge per level based on lesson_count', async () => {
@@ -228,7 +235,7 @@ describe('MarketContent', () => {
     expect(screen.getByText('No lessons yet')).toBeInTheDocument();
   });
 
-  it('shows a "Review N drafts" link on a level that has pending drafts', async () => {
+  it('opens inline draft review in place instead of navigating away', async () => {
     briefData = { market_code: 'US', brief_json: { currency: 'USD' }, status: 'verified', model_used: 'm' };
     modulesData = [
       { id: 'gb-mod', topic: 'saving', title: 'Saving', market_code: 'GB', order_index: 0 },
@@ -242,8 +249,21 @@ describe('MarketContent', () => {
       ],
     };
     render(<MarketContent />, { wrapper });
-    const link = await screen.findByRole('link', { name: /review 5 draft/i });
-    expect(link).toHaveAttribute('href', '/admin/modules/us-mod/levels/us-lvl/lessons');
+
+    // Should render a button (not a link) for reviewing drafts
+    const btn = await screen.findByRole('button', { name: /review 5 draft/i });
+    expect(btn).toBeInTheDocument();
+
+    // No anchor navigating to /lessons should exist
+    const lessonLinks = screen.queryAllByRole('link');
+    const lessonsNav = lessonLinks.filter((el) =>
+      el.getAttribute('href')?.includes('/lessons'),
+    );
+    expect(lessonsNav).toHaveLength(0);
+
+    // Clicking the button reveals the inline review panel heading
+    fireEvent.click(btn);
+    expect(await screen.findByText('Review drafts')).toBeInTheDocument();
   });
 
   it('per-module "Generate all levels" runs the module batch (include_populated false)', async () => {

@@ -125,6 +125,25 @@
       "reviewLink": "Review drafts",
       "createError": "Could not create the module. Try again."
     },
+    "curriculum": {
+      "heading": "Curriculum",
+      "noCurriculum": "No curriculum designed yet. Generate one to scaffold modules and levels from a backbone.",
+      "design": "Design curriculum",
+      "designing": "Designing…",
+      "regenerate": "Regenerate",
+      "accept": "Accept",
+      "accepting": "Accepting…",
+      "accepted": "Curriculum accepted — modules and levels updated.",
+      "coverageOk": "Coverage complete",
+      "coverageGap": "Missing: {{key}}",
+      "tier1": "foundational",
+      "tier2": "developing",
+      "tier3": "advanced"
+    },
+    "review": {
+      "heading": "Review drafts",
+      "close": "Close"
+    },
     "publish": {
       "heading": "4. Publish",
       "live": "This market is live (children can see its content).",
