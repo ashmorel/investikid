@@ -21,3 +21,4 @@ ios/App/Pods/
 # resolves packages fresh each run), and Xcode rewrites it constantly, which
 # otherwise dirties the tree and blocks pulls across Claude/Codex/Xcode.
 ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+.vercel

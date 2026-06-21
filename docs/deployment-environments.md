@@ -16,9 +16,14 @@ manual checkpoint workflow).
 (testing + staging are snapshots of prod). This is what lets new migrations run on staging for
 beta-testers **without touching production**. Never point staging at the live production database.
 
-**Promotion flow:** build on `testing` → promote to `staging` for beta-testers → promote to
-`main` for everyone. Promote by fast-forwarding the branch (`git checkout staging && git merge
---ff-only testing && git push`, then the same `staging → main`).
+**Promotion flow (official release):** build on `testing` → promote to `staging` for beta-testers
+→ promote to `main` for everyone. Promote by fast-forwarding the branch (`git checkout staging &&
+git merge --ff-only testing && git push`, then the same `staging → main`).
+
+> **⚠️ BETA shortcut — CURRENT (set 2026-06-21):** while in beta we commit **straight to `main`**
+> and skip the `testing` and `staging` hops to ship faster. CI still gates `main` and Railway/Vercel
+> still deploy from it; the `testing`/`staging` branches and DBs are untouched, not retired.
+> **Reinstate the full `testing` → `staging` → `main` flow at the official (non-beta) release.**
 
 ## How deploys actually happen
 

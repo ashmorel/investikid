@@ -200,7 +200,7 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
   a11y:
-    name: A11y (lint · vitest-axe · playwright-axe)
+    name: A11y (playwright-axe e2e)
     needs: changes
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
@@ -221,14 +221,24 @@ jobs:
 
       - run: npm ci --legacy-peer-deps
 
-      - name: Lint (incl. jsx-a11y recommended)
-        run: npm run lint
+      # jsx-a11y lint + vitest-axe unit tests already run in the Frontend job
+      # (identical `npm run lint` + `npm test`, and both jobs always run
+      # together), so this job only adds the browser-based axe scan.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
 
-      - name: Unit a11y tests (vitest-axe)
-        run: npm test
+      # Only chromium is configured in playwright.config (webkit is unused).
+      - name: Install Playwright browser (+ OS deps)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
+      - name: Install Playwright OS deps (browser restored from cache)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: E2E axe scan
         run: npm run test:e2e:a11y
@@ -255,8 +265,21 @@ jobs:
 
       - run: npm ci --legacy-peer-deps
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
+
+      # Only chromium is configured in playwright.config (webkit is unused).
+      - name: Install Playwright browser (+ OS deps)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright OS deps (browser restored from cache)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Responsive viewport tests
         run: npm run test:e2e:responsive

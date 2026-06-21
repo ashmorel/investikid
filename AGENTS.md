@@ -10,6 +10,7 @@ A children's finance-education app (web + iOS), heading to a TestFlight beta. Th
 **What's left** is on the backlog: **launch-critical human/operator items** (TestFlight upload + beta cohort, M5 pricing go-live, App Store listing) and **operator content production** for the 9 empty markets on the now-shipped localization engine. No localization engineering is outstanding.
 
 > **Repo model:** this is the dedicated `ashmorel/investikid` repo. Branches flow **`testing` → `staging` → `main`** with three separate Postgres DBs; production promotion is **manual** (Railway backend on green `main` CI; Vercel prod web is a manual `vercel deploy --prod` + alias to `app.investikid.ai`). Ask before any **production** DB migration whether to snapshot first.
+> **⚠️ BETA shortcut — CURRENT (set 2026-06-21):** while in beta, commit **straight to `main`** and skip the `testing`/`staging` hops to ship faster. CI still gates `main`; the `testing`/`staging` branches + DBs are untouched, not retired. **Reinstate the full `testing` → `staging` → `main` flow at the official release.** See `docs/deployment-environments.md`.
 
 ## Structure
 - `backend/` — FastAPI + SQLAlchemy 2.0 (async) + Alembic + Postgres. Deployed on **Railway**.
