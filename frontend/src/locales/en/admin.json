@@ -137,6 +137,8 @@
     "curriculum": {
       "heading": "Curriculum",
       "noCurriculum": "No curriculum designed yet. Generate one to scaffold modules and levels from a backbone.",
+      "needsVerifiedBrief": "Generate and verify the market brief above first — the designer needs it to ground the curriculum.",
+      "designError": "Couldn't design a curriculum. Make sure the brief is verified, then try again.",
       "design": "Design curriculum",
       "designing": "Designing…",
       "regenerate": "Regenerate",
