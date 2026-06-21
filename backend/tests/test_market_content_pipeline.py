@@ -68,3 +68,38 @@ async def test_publish_market_delegates(db_session):
         res = await mcp.publish_market(db_session, "US")
     assert res["stage"] == "published" and res["published"] == 9
     pub.assert_awaited_once_with(db_session, "US")
+
+
+async def test_scaffold_cleans_up_orphan_staged_modules(db_session):
+    from datetime import UTC, datetime
+
+    def _mod(published, archived):
+        m = Module(topic="t", title="M", country_codes=[], market_code="US",
+                   is_premium=False, order_index=0, icon="📚", published=published)
+        if archived:
+            m.archived_at = datetime.now(UTC)
+        return m
+
+    live = _mod(True, False)
+    archived = _mod(False, True)
+    orphan = _mod(False, False)   # staged, never archived/live → should be deleted
+    db_session.add_all([live, archived, orphan])
+    await db_session.flush()
+    db_session.add(MarketBrief(market_code="US", brief_json={"currency": "USD"}, status="verified"))
+    await db_session.flush()
+    live_id, archived_id, orphan_id = live.id, archived.id, orphan.id
+
+    report = type("R", (), {"ok": True})()
+    with patch("app.services.market_content_pipeline.design_curriculum",
+               new=AsyncMock(return_value=(object(), report))), \
+         patch("app.services.market_content_pipeline.save_proposal",
+               new=AsyncMock(return_value=object())), \
+         patch("app.services.market_content_pipeline.accept_proposal",
+               new=AsyncMock(return_value={"modules": 9, "levels": 27})):
+        res = await mcp.scaffold_market(db_session, "US")
+
+    from sqlalchemy import select as _select
+    remaining = set((await db_session.execute(_select(Module.id))).scalars().all())
+    assert orphan_id not in remaining            # orphan staged deleted
+    assert live_id in remaining and archived_id in remaining  # live + archived kept
+    assert res["modules"] == 9

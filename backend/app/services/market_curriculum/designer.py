@@ -25,6 +25,8 @@ def _system_prompt(market_code: str, brief_json: dict, gap_note: str = "") -> st
         f"pound unless the facts say so.\n\n"
         f"COVER every one of these core concepts in at least one level, but design your own "
         f"modules, titles, ordering, depth and local topics around them: {backbone}.\n\n"
+        f"BREADTH: design 8-10 modules (roughly one per major money theme) so the curriculum "
+        f"has comparable breadth across markets; give each module 2-4 levels.\n\n"
         f"SPIRAL: assign every level a complexity_tier of 1 (foundational), 2 (developing) or "
         f"3 (advanced). The curriculum must span all three tiers, earlier levels shallower and "
         f"later levels deeper; when a concept recurs it must get DEEPER, never shallower.\n\n"

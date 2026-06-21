@@ -15,7 +15,7 @@ generation. Lessons are generated at the tiered depth (10/15/20 per tier).
 """
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import Lesson, Level, Module
@@ -59,6 +59,17 @@ async def scaffold_market(session: AsyncSession, market_code: str) -> dict:
     any in-progress proposal for the market; a published one stays live until the
     new curriculum is published."""
     brief = await _ensure_verified_brief(session, market_code)
+    # Discard any half-built staged curriculum (published=false, never archived,
+    # never live) so a fresh design leaves no orphan modules — and a retried
+    # scaffold call can't accumulate duplicates.
+    staged = (await session.execute(
+        select(Module.id).where(Module.market_code == market_code,
+                                Module.published.is_(False), Module.archived_at.is_(None))
+    )).scalars().all()
+    if staged:
+        await session.execute(delete(Lesson).where(Lesson.module_id.in_(staged)))
+        await session.execute(delete(Module).where(Module.id.in_(staged)))
+        await session.flush()
     proposal, report = await design_curriculum(market_code, brief.brief_json)
     row = await save_proposal(session, proposal, report)
     counts = await accept_proposal(session, row)
