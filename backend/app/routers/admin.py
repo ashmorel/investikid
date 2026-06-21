@@ -115,6 +115,7 @@ from app.services.market_curriculum.native_batch import generate_market_native
 from app.services.market_curriculum.proposal_service import (
     accept_proposal,
     get_active_proposal,
+    get_proposal_for_generation,
     save_proposal,
 )
 from app.services.market_module_suggester import suggest_modules
@@ -1285,10 +1286,10 @@ async def generate_native_batch_endpoint(
     if module is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
     brief = await require_verified_brief(session, module.market_code)
-    proposal_row = await get_active_proposal(session, module.market_code)
-    if proposal_row is None or proposal_row.status != "accepted":
+    proposal_row = await get_proposal_for_generation(session, module.market_code)
+    if proposal_row is None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail="No accepted curriculum for this market")
+                            detail="No accepted or published curriculum for this market")
     summary = await generate_market_native(
         session, module, brief=brief, proposal_row=proposal_row,
         include_populated=payload.include_populated)
