@@ -1,17 +1,22 @@
 import { readCookie } from '@/lib/cookies';
 import { isNativeApp } from '@/lib/platform';
 
-// Native (Capacitor) builds load from the `capacitor://localhost` origin and
-// have NO same-origin proxy, so they MUST call the backend at an absolute URL.
-// The web build leaves this empty and relies on same-origin + Vercel rewrites.
-// A native build with an unset VITE_API_BASE_URL would otherwise bake an empty
-// base, fetch `capacitor://localhost/...`, fail every call, and render a blank
-// screen — so native falls back to the production backend. Override the env var
-// to point a native build at testing/staging instead.
+// The web build calls the backend at an absolute URL baked from VITE_API_BASE_URL
+// (there is no same-origin API proxy). `__API_BASE__` is the build-time fallback
+// injected by vite.config from the process environment — needed because Vite's
+// `import.meta.env` only reads .env files, so a Vercel/CI-injected base would
+// otherwise be dropped and login would break. Native (Capacitor) builds load from
+// `capacitor://localhost` with no proxy, so when no base is configured they fall
+// back to the production backend rather than baking an empty base (blank screen).
+declare const __API_BASE__: string;
 const NATIVE_API_FALLBACK = 'https://investikid.up.railway.app';
 
+const CONFIGURED_API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof __API_BASE__ !== 'undefined' ? __API_BASE__ : '');
+
 export const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || (isNativeApp() ? NATIVE_API_FALLBACK : '');
+  CONFIGURED_API_BASE || (isNativeApp() ? NATIVE_API_FALLBACK : '');
 
 export class ApiError extends Error {
   constructor(
