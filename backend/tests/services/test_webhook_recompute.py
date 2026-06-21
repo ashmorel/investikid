@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -85,7 +85,7 @@ async def test_checkout_completed_grants_and_sets_provider(db_session):
     }
     stripe_sub = SimpleNamespace(
         status="active",
-        current_period_end=int(datetime(2026, 6, 21, tzinfo=UTC).timestamp()),
+        current_period_end=int((datetime.now(UTC) + timedelta(days=30)).timestamp()),
         cancel_at_period_end=False,
     )
     with patch(
