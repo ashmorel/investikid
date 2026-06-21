@@ -114,7 +114,7 @@ def _concat_text(parsed: dict) -> str:
 async def _generate_one(session, *, level, module, concept: str, lesson_type: str,
                         brief: dict | None = None, source_text: str | None = None,
                         complexity_tier: int | None = None):
-    client = get_llm_client("premium")
+    client = get_llm_client("authoring")
     system = _system_prompt(lesson_type, module, level, brief=brief, source_text=source_text,
                             complexity_tier=complexity_tier)
     user = f"Create a {lesson_type} lesson teaching: {concept}."
@@ -136,7 +136,7 @@ async def _generate_one(session, *, level, module, concept: str, lesson_type: st
     mod = await moderate_output(_concat_text(parsed), surface="lesson")
     draft = LessonDraft(
         level_id=level.id, type=lesson_type, content_json=parsed, concept=concept,
-        model_used=get_model_name("premium"),
+        model_used=get_model_name("authoring"),
         moderation_safe=mod.safe, moderation_category=mod.category,
     )
     session.add(draft)
