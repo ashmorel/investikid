@@ -12,8 +12,16 @@ const WATCH_ORIGIN = 'https://www.youtube.com';
 // YouTube request carries a valid https Referer. Overridable via VITE_WEB_ORIGIN.
 const DEFAULT_WEB_ORIGIN = 'https://app.investikid.ai';
 
+// `__WEB_ORIGIN__` is the build-time fallback injected by vite.config from the
+// process environment (Vite's import.meta.env only reads .env files). See client.ts.
+declare const __WEB_ORIGIN__: string;
+
 function defaultWebOrigin(): string {
-  return import.meta.env.VITE_WEB_ORIGIN || DEFAULT_WEB_ORIGIN;
+  return (
+    import.meta.env.VITE_WEB_ORIGIN ||
+    (typeof __WEB_ORIGIN__ !== 'undefined' ? __WEB_ORIGIN__ : '') ||
+    DEFAULT_WEB_ORIGIN
+  );
 }
 
 export interface BuildYouTubeOptions {

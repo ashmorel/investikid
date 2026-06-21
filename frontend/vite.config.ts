@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
@@ -22,7 +23,21 @@ function stripCrossorigin() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Vite's `import.meta.env` client replacement reads ONLY .env files, never the
+  // build-time process environment — so a Vercel/CI-injected VITE_API_BASE_URL
+  // is silently dropped, the web bundle ships an empty API base, and every
+  // same-origin /auth call 405s (login breaks). `loadEnv` DOES merge process.env,
+  // so we surface these two public config values through custom define globals
+  // (Vite won't clobber a non-`import.meta.env` identifier). client.ts /
+  // videoEmbed.ts still prefer import.meta.env first, so .env-file and test
+  // overrides keep working; the global is the build-time fallback.
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  return {
+  define: {
+    __API_BASE__: JSON.stringify(env.VITE_API_BASE_URL || ''),
+    __WEB_ORIGIN__: JSON.stringify(env.VITE_WEB_ORIGIN || ''),
+  },
   plugins: [react(), tailwindcss(), stripCrossorigin()],
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
@@ -107,4 +122,5 @@ export default defineConfig({
     css: false,
     exclude: ['node_modules', 'dist', 'tests/e2e/**'],
   },
+  };
 });
