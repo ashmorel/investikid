@@ -60,3 +60,23 @@ async def test_accept_twice_raises(db_session):
     await accept_proposal(db_session, row)
     with pytest.raises(ValueError):
         await accept_proposal(db_session, row)
+
+
+async def test_get_proposal_for_generation_includes_published(db_session):
+    # After publishing, the proposal is 'published' (not active) — but generation
+    # must still find it so a live market can be regenerated. Regression for the
+    # 409 'Generate all failed' after Publish curriculum.
+    from app.models.market_curriculum import MarketCurriculumProposal
+    from app.services.market_curriculum.proposal_service import (
+        get_active_proposal,
+        get_proposal_for_generation,
+    )
+    row = MarketCurriculumProposal(
+        market_code="GB", status="published",
+        proposal_json={"market_code": "GB", "modules": []}, coverage_json={"ok": True},
+    )
+    db_session.add(row)
+    await db_session.flush()
+    assert await get_active_proposal(db_session, "GB") is None
+    got = await get_proposal_for_generation(db_session, "GB")
+    assert got is not None and got.status == "published"
