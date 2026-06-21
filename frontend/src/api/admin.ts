@@ -924,3 +924,16 @@ export function useAcceptCurriculum(marketCode: string) {
     },
   });
 }
+
+export function usePublishCurriculum(marketCode: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      adminFetch<{ published: number; retired: number }>(`/admin/markets/${marketCode}/curriculum/publish`, { method: 'POST' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'curriculum', marketCode] });
+      qc.invalidateQueries({ queryKey: ['admin', 'modules'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'levels'] });
+    },
+  });
+}

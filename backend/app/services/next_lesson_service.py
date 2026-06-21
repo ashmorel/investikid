@@ -15,8 +15,8 @@ from app.services.content_localize import (
 from app.services.content_service import (
     derive_lesson_title,
     is_module_age_ok,
-    is_module_in_market,
     is_module_premium_ok,
+    is_module_visible,
 )
 from app.services.entitlements import is_premium
 from app.services.level_service import LevelStateInput, derive_level_states
@@ -29,9 +29,9 @@ async def resolve_next_lesson(session: AsyncSession, user: Any) -> NextLessonOut
     user_age = age_in_years(user.dob, date.today())
     lang = user.language
     active = await language_active(session, lang)
-    modules = list(await session.scalars(select(Module).order_by(Module.order_index)))
+    modules = list(await session.scalars(select(Module).where(Module.published.is_(True)).order_by(Module.order_index)))
     for m in modules:
-        if not is_module_in_market(m.market_code, user.active_market_code):
+        if not is_module_visible(m, user.active_market_code):
             continue
         if not is_module_premium_ok(module_is_premium=m.is_premium, is_premium_user=is_premium(user)):
             continue

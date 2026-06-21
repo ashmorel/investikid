@@ -9,7 +9,7 @@ from app.models.content import Lesson, LessonCompletion, Level, Module
 from app.models.skill_profile import TopicMastery
 from app.models.user import User
 from app.services.age_tier import age_in_years
-from app.services.content_service import is_module_in_market
+from app.services.content_service import is_module_visible
 from app.services.entitlements import is_premium
 from app.services.level_service import LevelStateInput, first_actionable_lesson
 
@@ -58,8 +58,8 @@ def _apply_hard_filters(
     if module.is_premium and not user.is_premium:
         return False
 
-    # 5. Market filtering
-    if not is_module_in_market(module.market_code, user.active_market_code):
+    # 5. Market filtering (also gates published)
+    if not is_module_visible(module, user.active_market_code):
         return False
 
     return True
@@ -231,9 +231,9 @@ async def get_recommendations(
             }
         return empty_result
 
-    # Load all modules ordered by order_index
+    # Load all modules ordered by order_index (published only — unpublished never reach children)
     all_modules = (
-        await session.scalars(select(Module).order_by(Module.order_index))
+        await session.scalars(select(Module).where(Module.published.is_(True)).order_by(Module.order_index))
     ).all()
 
     if not all_modules:
@@ -440,14 +440,14 @@ async def _topic_path_seed(session: AsyncSession, user: User):
 
     modules = (
         await session.scalars(
-            select(Module).where(Module.topic == pref).order_by(Module.order_index)
+            select(Module).where(Module.topic == pref, Module.published.is_(True)).order_by(Module.order_index)
         )
     ).all()
     for m in modules:
-        # Basic accessibility check: premium and country
+        # Basic accessibility check: premium and published/market
         if m.is_premium and not is_premium(user):
             continue
-        if not is_module_in_market(m.market_code, user.active_market_code):
+        if not is_module_visible(m, user.active_market_code):
             continue
         lessons = (
             await session.scalars(

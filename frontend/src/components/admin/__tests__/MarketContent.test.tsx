@@ -52,6 +52,10 @@ const emptyBatch: ModuleBatchResult = {
 const mockGenerateModuleHook = vi.fn();
 const mockGenerateModuleFn = vi.fn((_id: string, _incl: boolean) => Promise.resolve(emptyBatch));
 
+// Publish-curriculum mock state.
+const mockPublishCurriculum = vi.fn();
+let curriculumData: { proposal_id: string } | null = null;
+
 // Suggestion-flow mock state (driven per test).
 const mockSuggest = vi.fn();
 const mockCreateSuggestion = vi.fn();
@@ -107,6 +111,8 @@ vi.mock('@/api/admin', () => ({
   }),
   usePublishMarket: () => ({ ...idleMutation, mutate: mockPublish }),
   useUnpublishMarket: () => ({ ...idleMutation, mutate: mockUnpublish }),
+  usePublishCurriculum: () => ({ ...idleMutation, mutate: mockPublishCurriculum }),
+  useCurriculum: () => ({ data: curriculumData }),
 }));
 
 vi.mock('@/api/market', () => ({
@@ -127,6 +133,7 @@ beforeEach(() => {
   mockScaffold.mockClear();
   mockPublish.mockClear();
   mockUnpublish.mockClear();
+  mockPublishCurriculum.mockClear();
   mockGenerateModuleHook.mockClear();
   mockGenerateModuleFn.mockClear();
   mockGenerateModuleFn.mockResolvedValue(emptyBatch);
@@ -136,6 +143,7 @@ beforeEach(() => {
   suggestData = undefined;
   suggestState = { isPending: false, isError: false, isSuccess: false };
   createResult = undefined;
+  curriculumData = null;
   marketsData = [
     { code: 'GB', name: 'United Kingdom', has_content: true },
     { code: 'US', name: 'United States', has_content: false },
@@ -154,6 +162,23 @@ describe('MarketContent', () => {
     expect(screen.getByRole('button', { name: /verify brief/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /scaffold from gb/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^publish$/i })).toBeInTheDocument();
+  });
+
+  it('renders the Brief + Curriculum panel for GB (no longer a source-only wall)', async () => {
+    // Default market list has GB first but the component defaults to the first non-GB
+    // market. Flip marketsData so GB is the only option, forcing code === 'GB'.
+    marketsData = [{ code: 'GB', name: 'United Kingdom', has_content: true }];
+
+    render(<MarketContent />, { wrapper });
+
+    // Brief heading is present for GB
+    expect(await screen.findByText('1. Market brief')).toBeInTheDocument();
+
+    // CurriculumPanel stub is rendered
+    expect(screen.getByTestId('curriculum-panel-stub')).toBeInTheDocument();
+
+    // Scaffold heading must NOT be present for GB
+    expect(screen.queryByText('2. Scaffold from GB')).not.toBeInTheDocument();
   });
 
   it('disables Scaffold until the brief is verified', async () => {

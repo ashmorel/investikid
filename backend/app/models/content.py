@@ -42,6 +42,7 @@ class Module(Base):
     standards_alignment: Mapped[list | None] = mapped_column(JSON, nullable=True)
     sources: Mapped[list | None] = mapped_column(JSON, nullable=True)
     conversation_prompt: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    published: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
 
     lessons: Mapped[list["Lesson"]] = relationship("Lesson", back_populates="module")
 

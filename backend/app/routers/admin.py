@@ -109,6 +109,7 @@ from app.services.market_brief_service import (
     generate_brief,
     require_verified_brief,
 )
+from app.services.market_curriculum.curriculum_publish_service import publish_market_curriculum
 from app.services.market_curriculum.designer import CurriculumDesignError, design_curriculum
 from app.services.market_curriculum.native_batch import generate_market_native
 from app.services.market_curriculum.proposal_service import (
@@ -1252,6 +1253,20 @@ async def accept_market_curriculum_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No curriculum")
     try:
         result = await accept_proposal(session, row)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    await session.commit()
+    return result
+
+
+@router.post("/markets/{market_code}/curriculum/publish")
+async def publish_market_curriculum_endpoint(
+    market_code: str,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        result = await publish_market_curriculum(session, market_code)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     await session.commit()
