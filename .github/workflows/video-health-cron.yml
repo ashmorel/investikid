@@ -35,6 +35,7 @@ jobs:
             "internal/analytics-retention/run"
             "internal/weekly-digest/run"
             "internal/subscriptions/reconcile"
+            "internal/purge-archived-modules"
           )
 
           failed=0

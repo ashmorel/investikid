@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.services import (
     digest_service,
+    module_purge_service,
     product_analytics_service,
     streak_risk_push,
     subscription_reconcile_service,
@@ -95,3 +96,17 @@ async def trigger_subscription_reconcile(
     summary = await subscription_reconcile_service.run(session)
     await session.commit()
     return summary
+
+
+@router.post("/purge-archived-modules")
+async def trigger_purge_archived_modules(
+    x_cron_secret: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+):
+    if not settings.cron_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    purged = await module_purge_service.purge_archived_modules(session, now=datetime.now(UTC))
+    await session.commit()
+    return {"purged": purged}
