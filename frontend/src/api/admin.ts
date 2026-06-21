@@ -33,6 +33,9 @@ export interface AdminModule {
   /** Child-visibility flag. Engine-staged modules are false until publish.
    *  Optional so create payloads (which never set it) still type-check. */
   published?: boolean;
+  /** ISO timestamp when archived (NULL = active). Archived modules show in the
+   *  admin "Archived" section and are hard-purged 30 days after this. */
+  archived_at?: string | null;
   order_index: number;
   lesson_count: number;
   prerequisite_ids: string[];
@@ -209,6 +212,14 @@ export function useReorderModules() {
   return useMutation({
     mutationFn: (order: { id: string; order_index: number }[]) =>
       adminFetch('/admin/modules/reorder', { method: 'PATCH', body: JSON.stringify({ order }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'modules'] }),
+  });
+}
+
+export function useRestoreModule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminFetch(`/admin/modules/${id}/restore`, { method: 'POST' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'modules'] }),
   });
 }

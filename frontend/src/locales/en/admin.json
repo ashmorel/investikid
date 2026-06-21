@@ -556,10 +556,13 @@
     "delete": "Delete",
     "levelsLink": "Levels",
     "editLink": "Edit",
-    "deleteTitle": "Delete \"{{title}}\"?",
-    "deleteMessage": "This will permanently delete the module and all its lessons.",
+    "deleteTitle": "Archive \"{{title}}\"?",
+    "deleteMessage": "This moves the module to Archived and permanently deletes it after 30 days — you can restore it before then.",
     "premium": "⭐ Premium",
-    "lessonCount": "{{count}} lessons"
+    "lessonCount": "{{count}} lessons",
+    "archivedHeading": "Archived",
+    "archivedHint": "Auto-deletes in {{days}} days",
+    "restore": "Restore"
   },
   "videoHealth": {
     "heading": "Video health",
