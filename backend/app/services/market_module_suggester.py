@@ -32,7 +32,7 @@ async def suggest_modules(session: AsyncSession, market: Market) -> list[dict]:
         f'"suggested_concepts": [str, 3-5]}}.'
     )
     try:
-        raw = await get_llm_client("premium").complete(
+        raw = await get_llm_client("authoring").complete(
             system_prompt=system,
             messages=[{"role": "user", "content": f"Suggest modules for {market.name}."}],
             temperature=0.4, max_tokens=1500, response_format="json",

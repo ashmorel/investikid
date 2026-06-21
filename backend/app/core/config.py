@@ -64,6 +64,12 @@ class Settings(BaseSettings):
     llm_premium_provider: str = "openai"  # "openai" | "anthropic"
     llm_premium_api_key: str = ""
     llm_premium_model: str = "gpt-5-mini"
+    # LLM / AI — content-AUTHORING tier: a best-quality model for OFFLINE admin
+    # content generation (curriculum designer + lesson/brief generation) only.
+    # Child-facing AI stays on the premium tier. Falls back to premium when unset.
+    llm_authoring_provider: str = "anthropic"  # "openai" | "anthropic"
+    llm_authoring_api_key: str = ""
+    llm_authoring_model: str = ""  # e.g. claude-opus-4-8 (set in env to enable)
     # Parent social login (public client identifiers — NOT secrets)
     google_web_client_id: str = ""
     google_ios_client_id: str = ""

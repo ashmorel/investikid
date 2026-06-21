@@ -40,7 +40,7 @@ async def generate_brief(session: AsyncSession, market: Market) -> MarketBrief:
     Retries the LLM call; raises BriefGenerationError (logged) if every attempt
     fails — whether from an LLM/API error, an empty response, or non-JSON output.
     """
-    client = get_llm_client("premium")
+    client = get_llm_client("authoring")
     system = (
         f"You are a financial-education researcher. Produce a concise, FACTUAL brief of the "
         f"{market.name} ({market.code}) youth-finance landscape for curriculum writers. "
