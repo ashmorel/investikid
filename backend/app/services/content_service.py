@@ -1,5 +1,9 @@
+import uuid
 from collections.abc import Sequence
-from datetime import date
+from datetime import UTC, date, datetime
+
+from fastapi import HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.streak_config import (
     STREAK_FREEZE_CAP,
@@ -65,6 +69,40 @@ def is_module_visible(module, active_market_code: str) -> bool:
 def is_module_premium_ok(*, module_is_premium: bool, is_premium_user: bool) -> bool:
     """Premium gate, decoupled from the (now market-based) region gate."""
     return (not module_is_premium) or is_premium_user
+
+
+async def get_accessible_module(
+    session: AsyncSession,
+    module_id: uuid.UUID,
+    current_user,  # User — Any to avoid circular import
+):
+    """Content-access gate: visibility + age + premium checks.
+
+    Raises HTTPException 404 if the module is missing, not visible to the user's
+    active market, or outside the user's age range. Raises premium_required_error
+    if the module is premium and the user is not a premium subscriber.
+
+    Extracted here so services (revise_service, ai.py, etc.) can call it without
+    importing from app.routers.content (which would cause circular imports).
+    """
+    from app.models.content import Module
+    from app.services.age_tier import age_in_years
+    from app.services.entitlements import is_premium
+    from app.services.premium_config import premium_required_error
+
+    module = await session.get(Module, module_id)
+    if not module:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
+    if not is_module_visible(module, current_user.active_market_code):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
+    # Age gate uses the actual age from dob (NEVER the parent tier_override) and
+    # mirrors the inaccessible-market behaviour: a plain 404, no content tease.
+    user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
+    if not is_module_age_ok(user_age, module.min_age, module.max_age):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
+    if not is_module_premium_ok(module_is_premium=module.is_premium, is_premium_user=is_premium(current_user)):
+        raise premium_required_error("module", module.title)
+    return module
 
 
 def is_module_age_ok(
