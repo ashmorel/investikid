@@ -19,11 +19,14 @@ import {
   useGenerateNativeLessons,
   usePublishMarket,
   useUnpublishMarket,
+  usePublishCurriculum,
+  useCurriculum,
   type AdminModule,
   type ModuleSuggestion,
 } from '@/api/admin';
 import CurriculumPanel from './CurriculumPanel';
 import InlineDraftReview from './InlineDraftReview';
+import ConfirmDialog from './ConfirmDialog';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -56,10 +59,15 @@ export default function MarketContent() {
   const scaffold = useScaffoldMarket(code);
   const publish = usePublishMarket(code);
   const unpublish = useUnpublishMarket(code);
+  const publishCurriculum = usePublishCurriculum(code);
+  const curriculumQ = useCurriculum(code);
 
   const brief = briefQ.data;
   const isVerified = brief?.status === 'verified';
   const hasContent = !!selected?.has_content;
+  const hasCurriculum = curriculumQ.data != null;
+
+  const [publishCurriculumOpen, setPublishCurriculumOpen] = useState(false);
 
   // Modules for the lesson-generation step. The scaffold tags each new module
   // with `market_code=code` and preserves GB's `topic`/`order_index`, so we map
@@ -172,18 +180,55 @@ export default function MarketContent() {
         </select>
       </div>
 
-      {code === 'GB' && (
-        <p className="mb-6 rounded-md border border-line bg-card px-4 py-3 text-sm text-muted-foreground">
-          {t('marketContent.gbNote')}
-        </p>
-      )}
-
-      {code && code !== 'GB' && (
+      {code && (
         <div className="flex max-w-2xl flex-col gap-6">
-          {/* Curriculum panel */}
+          {/* Curriculum panel — shown for all markets including GB */}
           <CurriculumPanel marketCode={code} />
 
-          {/* Step 1 — Brief */}
+          {/* Publish-curriculum control — shown when a curriculum exists */}
+          {hasCurriculum && (
+            <section aria-labelledby="publish-curriculum-heading" className="rounded-md border border-line bg-card px-4 py-3">
+              <h2 id="publish-curriculum-heading" className="mb-1 text-lg font-semibold text-ink">
+                {t('marketContent.publishCurriculum.action')}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setPublishCurriculumOpen(true)}
+                disabled={publishCurriculum.isPending}
+                className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                {publishCurriculum.isPending
+                  ? t('marketContent.publishCurriculum.publishing')
+                  : t('marketContent.publishCurriculum.action')}
+              </button>
+              {publishCurriculum.isSuccess && publishCurriculum.data && (
+                <p className="mt-2 text-sm text-success-600" role="status">
+                  {t('marketContent.publishCurriculum.result', {
+                    published: publishCurriculum.data.published,
+                    retired: publishCurriculum.data.retired,
+                  })}
+                </p>
+              )}
+              {publishCurriculum.isError && (
+                <p className="mt-2 text-sm text-danger-500" role="alert">
+                  {(publishCurriculum.error as { message?: string } | null)?.message ??
+                    String(publishCurriculum.error)}
+                </p>
+              )}
+              <ConfirmDialog
+                open={publishCurriculumOpen}
+                title={t('marketContent.publishCurriculum.confirmTitle')}
+                message={t('marketContent.publishCurriculum.confirmMessage')}
+                onConfirm={() => {
+                  setPublishCurriculumOpen(false);
+                  publishCurriculum.mutate();
+                }}
+                onCancel={() => setPublishCurriculumOpen(false)}
+              />
+            </section>
+          )}
+
+          {/* Brief section — shown for all markets including GB */}
           <section aria-labelledby="brief-heading" className="rounded-md border border-line bg-card px-4 py-3">
             <h2 id="brief-heading" className="mb-1 text-lg font-semibold text-ink">
               {t('marketContent.brief.heading')}
@@ -247,147 +292,152 @@ export default function MarketContent() {
             )}
           </section>
 
-          {/* Step 2 — Scaffold */}
-          <section aria-labelledby="scaffold-heading" className="rounded-md border border-line bg-card px-4 py-3">
-            <h2 id="scaffold-heading" className="mb-1 text-lg font-semibold text-ink">
-              {t('marketContent.scaffold.heading')}
-            </h2>
-            <p className="mb-3 text-sm text-muted-foreground">{t('marketContent.scaffold.description')}</p>
-            <button
-              type="button"
-              onClick={() => scaffold.mutate()}
-              disabled={scaffold.isPending || !isVerified}
-              className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            >
-              {scaffold.isPending ? t('marketContent.scaffold.running') : t('marketContent.scaffold.action')}
-            </button>
-            {!isVerified && (
-              <p className="mt-2 text-xs text-muted-foreground">{t('marketContent.scaffold.needsVerified')}</p>
-            )}
-            {scaffold.isSuccess && scaffold.data && (
-              <p className="mt-2 text-sm text-success-600" role="status">
-                {scaffold.data.already_scaffolded
-                  ? t('marketContent.scaffold.alreadyDone')
-                  : t('marketContent.scaffold.result', {
-                      modules: scaffold.data.modules_created,
-                      levels: scaffold.data.levels_created,
-                    })}
-              </p>
-            )}
-          </section>
+          {/* Scaffold, suggestions, lessons, and publish — non-GB only */}
+          {code !== 'GB' && (
+            <>
+              {/* Step 2 — Scaffold */}
+              <section aria-labelledby="scaffold-heading" className="rounded-md border border-line bg-card px-4 py-3">
+                <h2 id="scaffold-heading" className="mb-1 text-lg font-semibold text-ink">
+                  {t('marketContent.scaffold.heading')}
+                </h2>
+                <p className="mb-3 text-sm text-muted-foreground">{t('marketContent.scaffold.description')}</p>
+                <button
+                  type="button"
+                  onClick={() => scaffold.mutate()}
+                  disabled={scaffold.isPending || !isVerified}
+                  className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  {scaffold.isPending ? t('marketContent.scaffold.running') : t('marketContent.scaffold.action')}
+                </button>
+                {!isVerified && (
+                  <p className="mt-2 text-xs text-muted-foreground">{t('marketContent.scaffold.needsVerified')}</p>
+                )}
+                {scaffold.isSuccess && scaffold.data && (
+                  <p className="mt-2 text-sm text-success-600" role="status">
+                    {scaffold.data.already_scaffolded
+                      ? t('marketContent.scaffold.alreadyDone')
+                      : t('marketContent.scaffold.result', {
+                          modules: scaffold.data.modules_created,
+                          levels: scaffold.data.levels_created,
+                        })}
+                  </p>
+                )}
+              </section>
 
-          {/* Intelligent suggestions — proactive modules this market needs */}
-          {isVerified && (
-            <section aria-labelledby="suggest-heading" className="rounded-md border border-line bg-card px-4 py-3">
-              <h2 id="suggest-heading" className="mb-1 text-lg font-semibold text-ink">
-                {t('marketContent.suggest.heading')}
-              </h2>
-              <p className="mb-3 text-sm text-muted-foreground">{t('marketContent.suggest.description')}</p>
-              <ModuleSuggestions code={code} />
-            </section>
-          )}
+              {/* Intelligent suggestions — proactive modules this market needs */}
+              {isVerified && (
+                <section aria-labelledby="suggest-heading" className="rounded-md border border-line bg-card px-4 py-3">
+                  <h2 id="suggest-heading" className="mb-1 text-lg font-semibold text-ink">
+                    {t('marketContent.suggest.heading')}
+                  </h2>
+                  <p className="mb-3 text-sm text-muted-foreground">{t('marketContent.suggest.description')}</p>
+                  <ModuleSuggestions code={code} />
+                </section>
+              )}
 
-          {/* Step 3 — Lessons (generate-market per level → existing draft-review flow) */}
-          <section aria-labelledby="lessons-heading" className="rounded-md border border-line bg-card px-4 py-3">
-            <h2 id="lessons-heading" className="mb-1 text-lg font-semibold text-ink">
-              {t('marketContent.lessons.heading')}
-            </h2>
-            <p className="mb-3 text-sm text-muted-foreground">{t('marketContent.lessons.description')}</p>
-            {marketModules.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('marketContent.lessons.notScaffolded')}</p>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {/* Market-wide batch runner */}
-                <div className="flex flex-col gap-2 rounded-md border border-line bg-background px-3 py-2">
-                  <label className="flex items-center gap-2 text-sm text-ink">
-                    <input
-                      type="checkbox"
-                      checked={includePopulated}
-                      onChange={(e) => setIncludePopulated(e.target.checked)}
-                      disabled={running}
-                      className="h-4 w-4"
-                    />
-                    {t('marketContent.batch.includePopulated')}
-                  </label>
-                  <div>
-                    <button
-                      type="button"
-                      onClick={handleGenerateAll}
-                      disabled={running || !isVerified}
-                      className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    >
-                      {running ? t('marketContent.batch.running') : t('marketContent.batch.generateAllMarket')}
-                    </button>
+              {/* Step 3 — Lessons (generate-market per level → existing draft-review flow) */}
+              <section aria-labelledby="lessons-heading" className="rounded-md border border-line bg-card px-4 py-3">
+                <h2 id="lessons-heading" className="mb-1 text-lg font-semibold text-ink">
+                  {t('marketContent.lessons.heading')}
+                </h2>
+                <p className="mb-3 text-sm text-muted-foreground">{t('marketContent.lessons.description')}</p>
+                {marketModules.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t('marketContent.lessons.notScaffolded')}</p>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {/* Market-wide batch runner */}
+                    <div className="flex flex-col gap-2 rounded-md border border-line bg-background px-3 py-2">
+                      <label className="flex items-center gap-2 text-sm text-ink">
+                        <input
+                          type="checkbox"
+                          checked={includePopulated}
+                          onChange={(e) => setIncludePopulated(e.target.checked)}
+                          disabled={running}
+                          className="h-4 w-4"
+                        />
+                        {t('marketContent.batch.includePopulated')}
+                      </label>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleGenerateAll}
+                          disabled={running || !isVerified}
+                          className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        >
+                          {running ? t('marketContent.batch.running') : t('marketContent.batch.generateAllMarket')}
+                        </button>
+                      </div>
+                      {progress && (
+                        <p className="text-sm text-muted-foreground" role="status">
+                          {t('marketContent.batch.progress', { i: progress.i, n: progress.n })}
+                        </p>
+                      )}
+                      {!running && results.length > 0 && (
+                        <ul className="flex flex-col gap-1" role="status">
+                          {results.map((r, i) => (
+                            <li key={`${r.title}-${i}`} className="text-xs text-ink">
+                              <span className="font-medium">{r.title}</span>{': '}
+                              {r.ok ? (
+                                <span className="text-success-600">
+                                  {t('marketContent.batch.moduleResult', { generated: r.generated, skipped: r.skipped })}
+                                </span>
+                              ) : (
+                                <span className="text-danger-500">{t('marketContent.batch.moduleFailed')}</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    {marketModules.map((mod) => (
+                      <ModuleLessons
+                        key={mod.id}
+                        module={mod}
+                        canGenerate={isVerified}
+                        includePopulated={includePopulated}
+                      />
+                    ))}
                   </div>
-                  {progress && (
-                    <p className="text-sm text-muted-foreground" role="status">
-                      {t('marketContent.batch.progress', { i: progress.i, n: progress.n })}
-                    </p>
-                  )}
-                  {!running && results.length > 0 && (
-                    <ul className="flex flex-col gap-1" role="status">
-                      {results.map((r, i) => (
-                        <li key={`${r.title}-${i}`} className="text-xs text-ink">
-                          <span className="font-medium">{r.title}</span>{': '}
-                          {r.ok ? (
-                            <span className="text-success-600">
-                              {t('marketContent.batch.moduleResult', { generated: r.generated, skipped: r.skipped })}
-                            </span>
-                          ) : (
-                            <span className="text-danger-500">{t('marketContent.batch.moduleFailed')}</span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                )}
+              </section>
+
+              {/* Step 4 — Publish */}
+              <section aria-labelledby="publish-heading" className="rounded-md border border-line bg-card px-4 py-3">
+                <h2 id="publish-heading" className="mb-1 text-lg font-semibold text-ink">
+                  {t('marketContent.publish.heading')}
+                </h2>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  {hasContent ? t('marketContent.publish.live') : t('marketContent.publish.notLive')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => publish.mutate()}
+                    disabled={publish.isPending || hasContent}
+                    className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    {t('marketContent.publish.publish')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => unpublish.mutate()}
+                    disabled={unpublish.isPending || !hasContent}
+                    className="rounded-md border border-line px-4 py-2 text-sm text-ink hover:bg-brand-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    {t('marketContent.publish.unpublish')}
+                  </button>
                 </div>
-
-                {marketModules.map((mod) => (
-                  <ModuleLessons
-                    key={mod.id}
-                    module={mod}
-                    canGenerate={isVerified}
-                    includePopulated={includePopulated}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Step 4 — Publish */}
-          <section aria-labelledby="publish-heading" className="rounded-md border border-line bg-card px-4 py-3">
-            <h2 id="publish-heading" className="mb-1 text-lg font-semibold text-ink">
-              {t('marketContent.publish.heading')}
-            </h2>
-            <p className="mb-3 text-sm text-muted-foreground">
-              {hasContent ? t('marketContent.publish.live') : t('marketContent.publish.notLive')}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => publish.mutate()}
-                disabled={publish.isPending || hasContent}
-                className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              >
-                {t('marketContent.publish.publish')}
-              </button>
-              <button
-                type="button"
-                onClick={() => unpublish.mutate()}
-                disabled={unpublish.isPending || !hasContent}
-                className="rounded-md border border-line px-4 py-2 text-sm text-ink hover:bg-brand-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              >
-                {t('marketContent.publish.unpublish')}
-              </button>
-            </div>
-            {publish.isError && (
-              <p className="mt-2 text-sm text-danger-500" role="alert">
-                {publishError === 409
-                  ? t('marketContent.publish.noLessons')
-                  : t('marketContent.publish.error')}
-              </p>
-            )}
-          </section>
+                {publish.isError && (
+                  <p className="mt-2 text-sm text-danger-500" role="alert">
+                    {publishError === 409
+                      ? t('marketContent.publish.noLessons')
+                      : t('marketContent.publish.error')}
+                  </p>
+                )}
+              </section>
+            </>
+          )}
         </div>
       )}
     </div>
