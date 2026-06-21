@@ -265,6 +265,10 @@ async def record_answer(
     lesson = await session.get(Lesson, uuid.UUID(data["lesson_id"]))
     if lesson is None:
         raise ValueError("lesson not found")
+    # Gate: reject forged refs pointing at unpublished/cross-market/premium content.
+    # get_accessible_module raises HTTPException (404 or 402) appropriately.
+    from app.services.content_service import get_accessible_module
+    await get_accessible_module(session, lesson.module_id, user)
     quiz = await generate_practice_quiz(
         session, lesson, user=user, topic=data["topic"],
         concept=data["concept"], premium=is_premium(user),
