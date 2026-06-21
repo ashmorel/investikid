@@ -118,7 +118,7 @@ async def list_revisable_modules(session: AsyncSession, user: User) -> list[dict
     if not comp_modules:
         return []
     modules = (await session.scalars(
-        select(Module).where(Module.id.in_(comp_modules))
+        select(Module).where(Module.id.in_(comp_modules), Module.published.is_(True))
     )).all()
     now = datetime.now(UTC)
     rows = (await session.execute(

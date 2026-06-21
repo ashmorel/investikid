@@ -84,7 +84,7 @@ async def is_market_complete(session: AsyncSession, user_id: uuid.UUID, market_c
         select(func.count(Lesson.id))
         .select_from(Lesson)
         .join(Module, Module.id == Lesson.module_id)
-        .where(Module.market_code == market_code)
+        .where(Module.market_code == market_code, Module.published.is_(True))
     ) or 0
     if total == 0:
         return False
@@ -93,7 +93,7 @@ async def is_market_complete(session: AsyncSession, user_id: uuid.UUID, market_c
         .select_from(LessonCompletion)
         .join(Lesson, Lesson.id == LessonCompletion.lesson_id)
         .join(Module, Module.id == Lesson.module_id)
-        .where(Module.market_code == market_code, LessonCompletion.user_id == user_id)
+        .where(Module.market_code == market_code, Module.published.is_(True), LessonCompletion.user_id == user_id)
     ) or 0
     return done >= total
 
