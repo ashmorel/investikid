@@ -28,6 +28,10 @@ def _system_prompt(market_code: str, brief_json: dict, gap_note: str = "") -> st
         f"SPIRAL: assign every level a complexity_tier of 1 (foundational), 2 (developing) or "
         f"3 (advanced). The curriculum must span all three tiers, earlier levels shallower and "
         f"later levels deeper; when a concept recurs it must get DEEPER, never shallower.\n\n"
+        f"CONCEPT COUNT scales with tier so lessons deepen: a tier-1 level has 5 concepts, a "
+        f"tier-2 level 8 concepts, a tier-3 level 10 concepts. Each concept is a distinct "
+        f"sub-idea (no near-duplicates) — we expand each into a teaching card + a practice "
+        f"question, so quality and distinctness matter more than quantity.\n\n"
         f"{gap_note}"
         f"Respond with ONLY a JSON object: {{\"modules\": [{{\"topic\": str (<=30 chars), "
         f"\"title\": str, \"icon\": one emoji, \"min_age\": int, \"max_age\": int, "
@@ -66,7 +70,9 @@ async def design_curriculum(
             system_prompt=_system_prompt(market_code, brief_json, gap_note),
             messages=[{"role": "user",
                        "content": f"Design the curriculum for market {market_code}."}],
-            temperature=0.5, max_tokens=4000, response_format="json",
+            # Larger tree now (9 modules × up to 10 concepts/level) — give the
+            # authoring model headroom so the JSON isn't truncated mid-curriculum.
+            temperature=0.5, max_tokens=16000, response_format="json",
         )
         parsed = _parse(raw, market_code)
         if parsed is None:
