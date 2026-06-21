@@ -58,10 +58,12 @@ async def accept_proposal(session: AsyncSession, row: MarketCurriculumProposal) 
             market_code=proposal.market_code, is_premium=False,
             order_index=mod_node.order_index, icon=mod_node.icon,
             min_age=mod_node.min_age, max_age=mod_node.max_age,
+            published=False,  # staged — invisible until publish_market_curriculum swaps it live
         )
         session.add(module)
         await session.flush()
         n_modules += 1
+        tree["modules"][m_idx]["module_id"] = str(module.id)
         for l_idx, lvl_node in enumerate(sorted(mod_node.levels, key=lambda lvl: lvl.order_index)):
             level = Level(
                 module_id=module.id, title=lvl_node.title, order_index=lvl_node.order_index,

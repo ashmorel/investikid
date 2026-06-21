@@ -233,8 +233,8 @@ async def coach_chat(
     gaps = await get_strengths_and_gaps(session, user.id)
     due_count = await get_due_count(session, user.id, market_code=user.active_market_code)
 
-    # Load module titles for action label resolution
-    all_modules = (await session.scalars(select(Module))).all()
+    # Load module titles for action label resolution (published only)
+    all_modules = (await session.scalars(select(Module).where(Module.published.is_(True)))).all()
     module_titles: dict[str, str] = {str(m.id): m.title for m in all_modules}
 
     # Build recommendation summaries for context

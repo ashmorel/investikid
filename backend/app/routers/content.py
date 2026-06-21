@@ -32,8 +32,8 @@ from app.services.content_service import (
     derive_lesson_title,
     grant_module_completion_cash,
     is_module_age_ok,
-    is_module_in_market,
     is_module_premium_ok,
+    is_module_visible,
     record_daily_activity,
 )
 from app.services.entitlements import is_premium, market_locked_for
@@ -67,7 +67,7 @@ async def _get_accessible_module(
     module = await session.get(Module, module_id)
     if not module:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
-    if not is_module_in_market(module.market_code, current_user.active_market_code):
+    if not is_module_visible(module, current_user.active_market_code):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     # Age gate uses the actual age from dob (NEVER the parent tier_override) and
     # mirrors the inaccessible-market behaviour: a plain 404, no content tease.
@@ -92,7 +92,7 @@ async def list_modules(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.scalars(select(Module).order_by(Module.order_index))
+    result = await session.scalars(select(Module).where(Module.published.is_(True)).order_by(Module.order_index))
     modules = result.all()
     user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
 
@@ -105,7 +105,7 @@ async def list_modules(
 
     out: list[ModuleOut] = []
     for m in modules:
-        if not is_module_in_market(m.market_code, current_user.active_market_code):
+        if not is_module_visible(m, current_user.active_market_code):
             continue
         # Hidden, not teased: out-of-age modules never appear in the list
         # (actual age from dob — the parent tier_override must not unlock these).
