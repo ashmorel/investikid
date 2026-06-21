@@ -23,6 +23,7 @@ from app.schemas.ai import (
 )
 from app.services.ai_content_service import generate_practice_quiz
 from app.services.coach_service import coach_chat
+from app.services.content_service import is_module_visible
 from app.services.entitlements import is_premium
 from app.services.gap_detection_service import get_strengths_and_gaps
 from app.services.home_greeting_service import generate_home_greeting
@@ -58,7 +59,7 @@ async def practice_quiz(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
 
     module = await session.get(Module, lesson.module_id)
-    if not module:
+    if not module or not is_module_visible(module, current_user.active_market_code):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
 
     # Derive concept from lesson title
@@ -112,7 +113,7 @@ async def tutor_chat(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
 
     module = await session.get(Module, lesson.module_id)
-    if not module:
+    if not module or not is_module_visible(module, current_user.active_market_code):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
 
     try:

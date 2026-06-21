@@ -5,7 +5,13 @@ from sqlalchemy import select
 
 from app.models.content import Lesson, Level, Module
 from app.models.user import User
-from app.services import next_lesson_service, recommendation_service
+from app.services import (
+    coach_service,
+    market_progress_service,
+    next_lesson_service,
+    recommendation_service,
+    revise_service,
+)
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -48,11 +54,23 @@ async def test_child_module_list_excludes_unpublished(db_session):
 
 
 def test_feeder_coverage_meta():
-    """Every child feeder module that filters by is_module_in_market must also
-    consider published (via is_module_visible) OR filter Module.published in SQL.
-    This guards against a new feeder silently skipping the published gate."""
+    """Forward guard: every child-facing module feeder must reference the published
+    gate — `Module.published` in SQL or `is_module_visible` on a loaded module. This
+    bites if the gate is removed from any feeder, or a child feeder is edited to
+    select modules without it. (Admin feeders are intentionally excluded — they
+    review staged content.)"""
     import app.routers.content as content_router
-    for mod in (content_router, next_lesson_service, recommendation_service):
+    child_feeders = (
+        content_router,
+        next_lesson_service,
+        recommendation_service,
+        coach_service,
+        revise_service,
+        market_progress_service,
+    )
+    for mod in child_feeders:
         src = inspect.getsource(mod)
-        if "is_module_in_market" in src:
-            assert "is_module_visible" in src, f"{mod.__name__} gates market but not published"
+        assert "Module.published" in src or "is_module_visible" in src, (
+            f"{mod.__name__} is a child module feeder but does not reference the "
+            f"published gate (Module.published / is_module_visible)"
+        )
