@@ -44,8 +44,8 @@ async def test_provider_degraded_sends_alert(db_session, monkeypatch):
     row = await db_session.scalar(select(SentEmail))
     assert row.template == "admin_llm_alert"
     assert row.to_email == "admin@example.com"
-    assert "quota exceeded" in row.body
-    assert "premium AI provider" in row.body
+    assert "quota exceeded" in row.body          # detail is rendered
+    assert "fallback provider" in row.body        # provider-agnostic headline
 
 
 async def test_provider_degraded_throttled(db_session, monkeypatch):

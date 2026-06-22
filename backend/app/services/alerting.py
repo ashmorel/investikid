@@ -48,8 +48,10 @@ def _get_cooldown() -> int:
 async def on_provider_degraded(detail: str) -> None:
     await _send_alert(
         "llm_degraded",
-        "A premium AI provider is failing; Coach Penny is using the fallback provider. "
-        "If this is OpenAI 'insufficient_quota', top up the account.",
+        "The primary AI provider is failing, so AI replies (including Coach Penny) are "
+        "coming from the fallback provider. Most likely a quota or rate limit on the "
+        "primary provider — e.g. a free-tier daily cap — so check that provider's "
+        "quota/billing. The provider's error is in the detail below.",
         detail,
     )
 
