@@ -81,19 +81,21 @@ export default function ParentDashboard() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-4 sm:px-6 sm:py-6">
       <header
-        className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex items-center justify-between border-b border-brand-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:-mt-6 sm:px-6"
+        className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex items-start justify-between border-b border-brand-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:-mt-6 sm:px-6"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col items-start gap-1">
           <Link to="/parent" className="flex items-center gap-2" aria-label={t('dashboard.homeAriaLabel')}>
             <Penny size={32} mood="happy" />
             {/* eslint-disable-next-line i18next/no-literal-string -- brand name, not translatable */}
             <span className="text-lg font-extrabold tracking-tight text-ink sm:text-xl">InvestiKid</span>
           </Link>
           <h1 className="sr-only">{t('dashboard.title')}</h1>
+          {/* Bridge users (app login + parent) can hop back to the child app;
+              standalone magic-link parents have no app session, so it stays hidden. */}
+          {hasAppSession && <BackToAppButton className="-ml-1" />}
         </div>
         <div className="flex items-center gap-1">
-          {hasAppSession && <BackToAppButton />}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" aria-label={t('dashboard.menuAriaLabel')}>
