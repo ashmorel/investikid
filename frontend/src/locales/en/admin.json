@@ -562,7 +562,9 @@
     "lessonCount": "{{count}} lessons",
     "archivedHeading": "Archived",
     "archivedHint": "Auto-deletes in {{days}} days",
-    "restore": "Restore"
+    "restore": "Restore",
+    "allMarkets": "All ({{count}})",
+    "emptyForMarket": "No modules for this market yet."
   },
   "videoHealth": {
     "heading": "Video health",

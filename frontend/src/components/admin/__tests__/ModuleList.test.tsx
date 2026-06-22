@@ -5,9 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ModuleList from '../ModuleList';
 
 const mockModules = [
-  { id: '1', topic: 'stocks', title: 'Intro to Stocks', icon: '📈', is_premium: false, country_codes: [], order_index: 0, lesson_count: 3, archived_at: null },
-  { id: '2', topic: 'savings', title: 'Compound Interest', icon: '🏦', is_premium: true, country_codes: ['GB'], order_index: 1, lesson_count: 2, archived_at: null },
-  { id: '3', topic: 'old', title: 'Retired Module', icon: '🗄️', is_premium: false, country_codes: [], order_index: 2, lesson_count: 4, archived_at: new Date(Date.now() - 5 * 86_400_000).toISOString() },
+  { id: '1', topic: 'stocks', title: 'Intro to Stocks', icon: '📈', is_premium: false, country_codes: [], market_code: 'GB', order_index: 0, lesson_count: 3, archived_at: null },
+  { id: '2', topic: 'savings', title: 'US Saving', icon: '🏦', is_premium: true, country_codes: [], market_code: 'US', order_index: 0, lesson_count: 2, archived_at: null },
+  { id: '3', topic: 'old', title: 'Retired Module', icon: '🗄️', is_premium: false, country_codes: [], market_code: 'GB', order_index: 2, lesson_count: 4, archived_at: new Date(Date.now() - 5 * 86_400_000).toISOString() },
 ];
 
 const mockReorder = vi.fn();
@@ -19,6 +19,15 @@ vi.mock('@/api/admin', () => ({
   useReorderModules: () => ({ mutate: mockReorder }),
   useDeleteModule: () => ({ mutate: mockDelete }),
   useRestoreModule: () => ({ mutate: mockRestore, isPending: false }),
+}));
+
+vi.mock('@/api/market', () => ({
+  marketApi: {
+    list: () => Promise.resolve([
+      { code: 'GB', name: 'United Kingdom', currency_code: 'GBP', has_content: true },
+      { code: 'US', name: 'United States', currency_code: 'USD', has_content: true },
+    ]),
+  },
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -33,7 +42,25 @@ describe('ModuleList', () => {
   it('renders module titles', () => {
     render(<ModuleList />, { wrapper });
     expect(screen.getByText('Intro to Stocks')).toBeInTheDocument();
-    expect(screen.getByText('Compound Interest')).toBeInTheDocument();
+    expect(screen.getByText('US Saving')).toBeInTheDocument();
+  });
+
+  it('shows a market badge on each module', () => {
+    render(<ModuleList />, { wrapper });
+    // GB on the active GB module, US on the active US module
+    expect(screen.getAllByText('GB').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('US').length).toBeGreaterThan(0);
+  });
+
+  it('filters modules by the selected market tab', async () => {
+    render(<ModuleList />, { wrapper });
+    // Default "All" shows both markets' active modules
+    expect(screen.getByText('Intro to Stocks')).toBeInTheDocument();
+    expect(screen.getByText('US Saving')).toBeInTheDocument();
+    // Click the US market tab (name resolves async from marketApi)
+    fireEvent.click(await screen.findByRole('button', { name: /United States/ }));
+    expect(screen.queryByText('Intro to Stocks')).not.toBeInTheDocument();
+    expect(screen.getByText('US Saving')).toBeInTheDocument();
   });
 
   it('shows premium badge for premium modules', () => {
