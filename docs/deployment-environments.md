@@ -185,8 +185,13 @@ These need dashboard access and are not in the repo.
   Android `versionCode` = **2** (versionName 1.0). Bump both for every new upload (build # / versionCode must increase).
 - **iOS:** `cd frontend && npm run build && npx cap sync ios`, then open `ios/App/App.xcodeproj` in Xcode
   (Capacitor 8 = SwiftPM — open the **.xcodeproj**, not a workspace), archive, upload to TestFlight. Signing/certs are yours.
-- **Android:** `npx cap sync android`, then open `frontend/android` in Android Studio → Generate Signed Bundle (AAB) → upload to Play internal. Keystore is yours.
+- **Android:** `npx cap sync android`, then either open `frontend/android` in Android Studio → Generate Signed Bundle (AAB), **or** build it from the terminal (signs automatically, no wizard): `cd frontend/android && ./gradlew :app:bundleRelease`. Output: `app/build/outputs/bundle/release/app-release.aab` → upload to Play internal.
 - For CI-built artifacts instead, run the **Deployment checkpoint** workflow with `run_ios=true` / `run_android=true`.
+
+#### Local toolchain (Android, this Mac)
+- **Gradle needs JDK 17/21**; the system default is Java 8. Installed **OpenJDK 21** via Homebrew (`brew install openjdk@21`, keg-only, no sudo) and wired it into `~/.zshrc`:
+  `export JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"` + `export PATH="$JAVA_HOME/bin:$PATH"`. A new terminal then runs `./gradlew` on JDK 21 with no per-command `JAVA_HOME=` prefix. (Android Studio uses its own bundled JBR 21 regardless.)
+- **Signing is gradle-configured, so no passwords are typed at build time.** `app/build.gradle` reads `frontend/android/keystore.properties` (`storeFile` = `/Users/leeashmore/investikid-upload.jks`, `keyAlias` = `investikid-upload`, passwords in that file) into `signingConfigs.release`. The app is on **Play App Signing** — `investikid-upload.jks` is the *upload* key (Google holds the app-signing key). **Back up `investikid-upload.jks` + `keystore.properties`** (e.g. password manager); a lost upload key needs a Play Console upload-key reset.
 
 ## Security pre-public checklist (before making the repo public)
 - Rotate any secrets that were ever tracked (the old monorepo tracked `frontend/.env.production`)
