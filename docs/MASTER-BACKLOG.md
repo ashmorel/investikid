@@ -1,6 +1,6 @@
 # InvestiKid — Master Backlog
 
-**Updated:** 2026-06-22 (tiered lesson depth + module archive/purge + server-side content pipeline; **GB/US/HK content LIVE**; markets tab; LLM credit-fallback; CI speed-up + beta straight-to-main)
+**Updated:** 2026-06-22 (tiered lesson depth + module archive/purge + server-side content pipeline; **GB/US/HK content LIVE**; markets tab; LLM credit-fallback; CI speed-up + beta straight-to-main) · **Launch-polish pass (pm):** Learn-tab market switcher, `has_content` deploy-reset fix, route-level ErrorBoundary, scroll-to-top on nav, unified "Back to App", Gemini quota/thinking + provider-agnostic alert. **Native build 14 / Android versionCode 2 are cut and store-ready** (web verified first; native API base = `api.investikid.ai`). See [`docs/launch/2026-06-22-pre-testflight-readiness-checklist.md`](launch/2026-06-22-pre-testflight-readiness-checklist.md).
 **Purpose:** the single go-forward list of what's left. Strategic context + per-M
 detail live in [`docs/2026-06-12-market-leader-roadmap.md`](2026-06-12-market-leader-roadmap.md);
 this is the actionable tracker. Update it as items ship — **and update it (plus any

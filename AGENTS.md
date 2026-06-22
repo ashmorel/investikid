@@ -26,12 +26,12 @@ Backend (run from `backend/`; venv at the repo root `/Users/leeashmore/Local Rep
 
 Frontend (run from `frontend/`):
 - `npm run dev` · `npx tsc -b` · `npm run lint` · `npm test` · `npm run build`
-- iOS: `npx cap sync ios` after a build, then rebuild in Xcode.
+- iOS/Android: `npx cap sync ios` / `npx cap sync android` after a build, then rebuild in Xcode / Android Studio. The native bundle bakes the API base from `frontend/.env.local` (`VITE_API_BASE_URL=https://api.investikid.ai` — the canonical domain, not the railway host); store-ready builds are iOS **14** / Android `versionCode` **2** (bump per upload). Full steps: `docs/deployment-environments.md`.
 
 ## Golden rules
 - **Never read or modify any `.env` file.** Secrets live there; `.env.example` lists the variables.
 - Commit to `main`; end commit messages with `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
-- **Railway deploys the backend only on green CI** (5 jobs: frontend, backend, security, a11y, responsive). Vercel auto-deploys the frontend from `main`.
+- **Railway deploys the backend only on green CI** (5 jobs: frontend, backend, security, a11y, responsive). **Vercel prod web does NOT auto-deploy** — ship it manually: `vercel --prod` then `vercel alias set frontend-<hash>-investikid.vercel.app app.investikid.ai` (the custom domain is pinned and won't auto-follow). A git push alone ships nothing to web. See lines above + `docs/deployment-environments.md`.
 - TDD; minimal focused changes. DB changes = hand-written chained Alembic migration (check `alembic heads` first).
 - Async backend tests use `pytestmark = pytest.mark.asyncio(loop_scope="session")` + the `client`/`admin_client`/`db_session` fixtures — never a raw `AsyncClient` on the app engine.
 - LLM output is always moderated (`moderate_output`); premium-gate with `is_premium`; rate-limit LLM endpoints. It's a kids' app — keep it safe and WCAG 2.2 AA accessible.

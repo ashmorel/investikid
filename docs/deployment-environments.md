@@ -30,7 +30,14 @@ git merge --ff-only testing && git push`, then the same `staging → main`).
 - **GitHub Actions (`ci.yml`)** only *validates* — frontend, backend, security, a11y, responsive.
   It runs on push to `main`, `staging`, `testing` and on PRs into `main`/`staging`. It is
   **ubuntu-only**: it never builds iOS or Android, so it doesn't burn macOS minutes.
-- **Vercel** deploys the frontend via its own Git integration, per branch (see `frontend/vercel.json`).
+- **Vercel** deploys preview branches via its Git integration, but **production does NOT auto-deploy**
+  (`frontend/vercel.json` `main:false`). Prod is a **manual two-step** from `frontend/`:
+  1. `vercel --prod --force --yes` → builds + returns a `frontend-<hash>-investikid.vercel.app` URL (wait for READY).
+  2. `vercel alias set frontend-<hash>-investikid.vercel.app app.investikid.ai` — **required**: the custom
+     domain is pinned to a specific deployment and does **not** auto-follow the latest prod deploy. Skipping
+     step 2 leaves `app.investikid.ai` on the OLD build. Verify: `vercel alias ls | grep app.investikid.ai`
+     shows the new hash + `curl -s -o /dev/null -w '%{http_code}' https://app.investikid.ai` → 200.
+  A git push alone ships nothing to web — never call a frontend change "live" until both steps run.
 - **Railway** deploys the backend via its own Git integration, per branch/environment.
 - **iOS/Android** are built **only** by the manual **Deployment checkpoint** workflow
   (`Actions → Deployment checkpoint → Run workflow`), with explicit `run_ios` / `run_android`
@@ -167,10 +174,19 @@ These need dashboard access and are not in the repo.
 3. Restrict `staging` deployment branch to `staging`.
 4. Add any environment secrets CI needs.
 
-### iOS (TestFlight)
-- `cd frontend && npm run build && npx cap sync ios` (already run for the current `main`),
-  then open `ios/App` in Xcode, archive, and upload to TestFlight. Signing/certs are yours.
-- For a CI-built artifact instead, run the **Deployment checkpoint** workflow with `run_ios=true`.
+### iOS (TestFlight) + Android (Play)
+- **Native API base:** the app bundles the web build, so it must point at prod. This is baked from
+  `frontend/.env.local` → `VITE_API_BASE_URL=https://api.investikid.ai` (the canonical custom domain — NOT
+  the `*.up.railway.app` host, so we can re-point hosting later without breaking installed apps; native auth
+  uses tokens/headers so it's free of the web same-site-cookie constraint). After any `npm run build`, verify
+  the synced assets bake it: `grep -roh "api.investikid.ai" frontend/ios/App/App/public/assets/*.js | head -1`
+  (and the Android `android/app/src/main/assets/public/assets/*.js` equivalent) print `api.investikid.ai`, no `railway.app`.
+- **Current store-ready builds:** iOS `CURRENT_PROJECT_VERSION` = **14** (MARKETING_VERSION 1.0);
+  Android `versionCode` = **2** (versionName 1.0). Bump both for every new upload (build # / versionCode must increase).
+- **iOS:** `cd frontend && npm run build && npx cap sync ios`, then open `ios/App/App.xcodeproj` in Xcode
+  (Capacitor 8 = SwiftPM — open the **.xcodeproj**, not a workspace), archive, upload to TestFlight. Signing/certs are yours.
+- **Android:** `npx cap sync android`, then open `frontend/android` in Android Studio → Generate Signed Bundle (AAB) → upload to Play internal. Keystore is yours.
+- For CI-built artifacts instead, run the **Deployment checkpoint** workflow with `run_ios=true` / `run_android=true`.
 
 ## Security pre-public checklist (before making the repo public)
 - Rotate any secrets that were ever tracked (the old monorepo tracked `frontend/.env.production`)

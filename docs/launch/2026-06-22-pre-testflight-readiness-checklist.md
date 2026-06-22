@@ -4,18 +4,23 @@
 
 > Companion docs: device QA → [`../release-qa-checklist.md`](../release-qa-checklist.md) + [`../release-signoffs/`](../release-signoffs/); store copy → [`2026-06-15-app-store-listing-kit.md`](2026-06-15-app-store-listing-kit.md); envs/deploy → [`../deployment-environments.md`](../deployment-environments.md); ops → [`../operations/monitoring-and-incident-runbook.md`](../operations/monitoring-and-incident-runbook.md).
 
-## Version pairing (fill in — a sign-off is valid only for these exact versions)
+## Version pairing — this release (filled 2026-06-22)
 | Component | Version / commit | Notes |
 |---|---|---|
-| Backend (Railway, prod) | `____` (main SHA) | `GET https://api.investikid.ai/health` → 200 |
-| Web (Vercel, prod) | `____` (bundle hash) | bundle bakes `api.investikid.ai` (grep =1, railway =0) |
-| iOS build | `____` (TestFlight build #) | `npm run build && npx cap sync ios` done from this commit |
-| Android build | `____` (internal-testing build #) | `npx cap sync android` done from this commit |
-| Alembic head | `____` | `alembic heads` = single head; prod migrated |
+| Backend (Railway, prod) | `acacd65` (main HEAD; backend code unchanged since `80a0421`) | `GET https://api.investikid.ai/health` → **200** ✅ |
+| Web (Vercel, prod) | bundle `index-DbAij6eY.js` (deploy `frontend-6ps4qbxjn`) | bakes `api.investikid.ai` (grep **=1**, railway **=0**) ✅ |
+| iOS build | **14** (MARKETING_VERSION 1.0) | synced from `7474004`; `npx cap sync ios` done; native bundle bakes `api.investikid.ai` ✅ |
+| Android build | **versionCode 2** (versionName 1.0) | synced from `7474004`; `npx cap sync android` done; native bundle bakes `api.investikid.ai` ✅ |
+| Alembic head | `d4f6b8c0e2a1` | single head; **no new migration** this release |
+
+**What ships in build 14 / versionCode 2** (all verified live on web first): Learn-tab market switcher (drives `active_market_code` in place); Home market chip + Learn picker correct after the `has_content` reconcile fix; route-level **ErrorBoundary** (a page crash can't blank the app); **scroll-to-top on route change** (header stays visible on Stats/Progress/Simulator); unified **"Back to App"** control in admin + parent; **native API base = `api.investikid.ai`** (was the Railway subdomain) baked via `frontend/.env.local`.
+
+> **Native API base check (run before archiving):** `grep -roh "api.investikid.ai" frontend/ios/App/App/public/assets/*.js | head -1` and the Android equivalent should each print `api.investikid.ai` (and **no** `railway.app`). This bakes from `frontend/.env.local` → `VITE_API_BASE_URL=https://api.investikid.ai`; a plain `npm run build && npx cap sync` reproduces it.
 
 ## Blocking gates (all must be ✅)
-- [ ] **Health:** `api.investikid.ai/health` 200; `app.investikid.ai` 200 and serving the paired bundle.
-- [ ] **Login (Safari + Chrome + native):** sign in persists across refresh; `/users/me` succeeds. (Same-site invariant: `VITE_API_BASE_URL=https://api.investikid.ai`.)
+- [x] **Health:** `api.investikid.ai/health` 200; `app.investikid.ai` 200 and serving the paired bundle (`index-DbAij6eY.js`, bakes `api.investikid.ai`). Verified 2026-06-22.
+- [ ] **Native smoke-test on build 14 / versionCode 2 (NEW — API base changed to `api.investikid.ai`):** on a real install, log in → load lessons → trigger one AI reply (chart insight or Coach). Confirms the native backend-domain switch is clean.
+- [ ] **Login (Safari + Chrome + native):** sign in persists across refresh; `/users/me` succeeds. (Same-site invariant: web `VITE_API_BASE_URL=https://api.investikid.ai`; native bakes the same via `frontend/.env.local`.)
 - [ ] **Biometric:** Face ID enrol + unlock on a real iPhone; fingerprint on a real Android device. Re-enrolling a face/finger invalidates the stored secret (OS-enforced).
 - [ ] **Billing — all three rails tested on real accounts:** Stripe (web), Apple IAP (sandbox), Google Play Billing (license tester). Purchase → premium unlocks; restore works; a missed webhook self-heals via the daily reconcile cron (see runbook).
 - [ ] **Content:** the child's market shows live modules/lessons (GB/US/HK currently); simulator loads and a trade executes; an investing lesson's simulator mission CTA appears.
