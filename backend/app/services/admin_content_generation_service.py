@@ -75,15 +75,25 @@ def _system_prompt(
     brief: dict | None = None,
     source_text: str | None = None,
     complexity_tier: int | None = None,
+    avoid: list[str] | None = None,
 ) -> str:
     age = f"ages {module.min_age}-{module.max_age}" if module.min_age else "children 8-16"
     prompt = (
         f"You write a single financial-education {lesson_type} lesson for {age} on the topic "
         f"'{module.topic}' (module '{module.title}', '{level.title}'). Keep it simple, encouraging, "
         f"factual, and age-appropriate. Never give personalised financial advice. "
+        f"Use a fresh, concrete everyday scenario with a varied character name (rotate genders, "
+        f"backgrounds and situations — do NOT default to one go-to name or example). "
         f"Respond with ONLY a JSON object matching exactly: {_SCHEMA_HINT[lesson_type]}"
         f"{_CONCISION_RULES}"
     )
+    if avoid:
+        prompt += (
+            "\n\nVARIETY — this is one of several lessons in the same level. To avoid "
+            "repetition, your lesson MUST use a DISTINCTLY different scenario, a different "
+            "person's name, and a different angle from the ones ALREADY used below. Never "
+            "reuse the same character, job, amount or situation:\n- " + "\n- ".join(avoid)
+        )
     if brief is not None and source_text is not None:
         prompt += (
             f"\n\nADAPT the following GB (United Kingdom) lesson's concept into the target "
@@ -124,10 +134,10 @@ def _concat_text(parsed: dict) -> str:
 @llm_usage.surface("admin_content_gen")
 async def _generate_one(session, *, level, module, concept: str, lesson_type: str,
                         brief: dict | None = None, source_text: str | None = None,
-                        complexity_tier: int | None = None):
+                        complexity_tier: int | None = None, avoid: list[str] | None = None):
     client = get_llm_client("authoring")
     system = _system_prompt(lesson_type, module, level, brief=brief, source_text=source_text,
-                            complexity_tier=complexity_tier)
+                            complexity_tier=complexity_tier, avoid=avoid)
     user = f"Create a {lesson_type} lesson teaching: {concept}."
     parsed = None
     for attempt in range(2):
@@ -208,7 +218,9 @@ async def generate_native_level_lessons(session: AsyncSession, level, *, brief, 
       concepts wrap (% len) if the level returned fewer than ceil(target/n_types).
     """
     module = await session.get(Module, level.module_id)
-    type_cycle = types or ["card", "quiz"]
+    # Rotate three formats (teach card → practice quiz → decision scenario) for
+    # variety; the ad-hoc path keeps the caller's types or the card/quiz default.
+    type_cycle = types or (["card", "quiz", "scenario"] if target_count else ["card", "quiz"])
     result = GenerationResult()
     if not concepts:
         await session.commit()
@@ -219,16 +231,24 @@ async def generate_native_level_lessons(session: AsyncSession, level, *, brief, 
     else:
         pairs = [(concepts[(n // n_types) % len(concepts)], type_cycle[n % n_types])
                  for n in range(target_count)]
+    # Sibling-aware: tell each lesson which scenarios/characters are already used in
+    # this level so it picks a distinctly different one (kills the "every question
+    # is the same Maya-walks-the-dog" repetition).
+    avoid: list[str] = []
     for concept, lesson_type in pairs:
         draft = await _generate_one(
             session, level=level, module=module, concept=concept,
             lesson_type=lesson_type,
             brief=brief.brief_json, source_text=None, complexity_tier=complexity_tier,
+            avoid=avoid[-12:],
         )
         if draft is None:
             result.skipped += 1
         else:
             result.created.append(draft)
+            cj = draft.content_json or {}
+            head = cj.get("title") or cj.get("question") or cj.get("prompt") or ""
+            avoid.append(f"{concept}: {str(head)[:80]}")
     await session.commit()
     return result
 

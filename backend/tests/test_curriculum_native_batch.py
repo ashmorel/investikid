@@ -22,14 +22,17 @@ def _llm():
     card = {"title": "Saving up", "body": "Plan your dollars."}
     quiz = {"question": "What is saving?", "choices": ["Spending it", "Keeping money for later", "Borrowing"],
             "answer_index": 1, "explanation": "Saving means keeping money for later."}
-    # The generator alternates card/quiz (card on even calls, quiz on odd) and now
-    # produces target_lessons_for_tier() lessons per level, so the mock must answer
-    # indefinitely with the matching shape rather than a fixed 2-item list.
-    seq = [json.dumps(card), json.dumps(quiz)]
+    scenario = {"prompt": "You earn $10 mowing a lawn.", "correct_index": 0,
+                "choices": [{"label": "Save half", "outcome": "Your goal gets closer."},
+                            {"label": "Spend it all", "outcome": "Nothing left for the goal."}]}
+    # The generator rotates card → quiz → scenario and produces
+    # target_lessons_for_tier() lessons per level, so the mock answers indefinitely
+    # with the shape matching each position (one complete() call per lesson).
+    seq = [json.dumps(card), json.dumps(quiz), json.dumps(scenario)]
     counter = {"i": 0}
 
     async def _complete(**kwargs):
-        value = seq[counter["i"] % 2]
+        value = seq[counter["i"] % 3]
         counter["i"] += 1
         return value
 
