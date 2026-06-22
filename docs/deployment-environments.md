@@ -69,7 +69,7 @@ deploy (which runs `alembic upgrade head` against the live prod DB):
 5. Trigger the manual Railway production deploy (and Vercel "Promote to Production").
 
 **Production cutover — ✅ COMPLETED 2026-06-08.** Production now runs on `ashmorel/investikid`
-(`main`): backend `https://investikid.up.railway.app` (Railway `Invest-Ed` → production →
+(`main`): backend `https://investikid.up.railway.app` (Railway `InvestiKid` → production →
 InvestiKid, **Root Directory `backend`**), frontend `https://app.investikid.ai` (Vercel
 production, deployed manually via `vercel --prod` from `main`). The four pending migrations
 (guardian-attested, lesson-drafts, subscriptions, parent-preferences) were applied to the prod DB
@@ -84,7 +84,7 @@ after a manual snapshot; login verified end-to-end.
   `CRON_SECRET` was already rotated 2026-06-08. `ADMIN_TOKEN` and `SECRET_KEY` env vars deleted —
   the app no longer reads either (admin is account-based; `SECRET_KEY` was never a Settings field).
   Note: rotating `JWT_SECRET` invalidated all sessions (one-time forced re-login).
-- ✅ **`CRON_SECRET` — RESOLVED 2026-06-08.** `CRON_SECRET` is set and **matched** on production Railway (`Invest-Ed` → production → InvestiKid) **and** the GitHub Actions secret. The `Video health cron` workflow is **enabled** and a manual run against production (`https://investikid.up.railway.app`) returned **HTTP 200** `{"ok":2,"dead":0,"unknown":0}`. The daily 06:00 UTC schedule now runs cleanly.
+- ✅ **`CRON_SECRET` — RESOLVED 2026-06-08.** `CRON_SECRET` is set and **matched** on production Railway (`InvestiKid` → production → InvestiKid) **and** the GitHub Actions secret. The `Video health cron` workflow is **enabled** and a manual run against production (`https://investikid.up.railway.app`) returned **HTTP 200** `{"ok":2,"dead":0,"unknown":0}`. The daily 06:00 UTC schedule now runs cleanly.
   - The cron workflow on **both `main` and `testing`** reads `BACKEND_URL` from the **repo Actions variable** (`${{ vars.BACKEND_URL || '<hardcoded fallback>' }}`; main `d8bef57`, testing `8622920`). The scheduled run executes from `main`.
   - **`vars.BACKEND_URL` = `https://investikid.up.railway.app`** (the prod backend). If the prod host ever changes (custom domain / rename): `gh variable set BACKEND_URL --body <prod-url>`.
   - History: pipeline first validated against `testing` (2026-06-07, HTTP 200), then pointed at prod and re-validated (2026-06-08). One transient 401 occurred before prod had redeployed with the new secret — re-running after the prod deploy completed returned 200.
@@ -180,7 +180,7 @@ These need dashboard access and are not in the repo.
 
 ## Provisioning status (2026-06-07)
 
-**Railway (project `Invest-Ed`, service renamed `InvestiKid`) — testing + staging + production DONE (production cut over 2026-06-08).**
+**Railway (project `InvestiKid`, service renamed `InvestiKid`) — testing + staging + production DONE (production cut over 2026-06-08).**
 - **testing** → backend `https://investikid-testing.up.railway.app`; source `investikid@testing`, root `/backend`; own Postgres (`DATABASE_URL` = `${{ Postgres.DATABASE_URL }}` reference); migrated + seeded; `ENVIRONMENT=testing`, `EMAIL_BACKEND=logging`. Auto-deploys on push to `testing`.
 - **staging** → backend `https://investikid-staging.up.railway.app`; source `investikid@staging`, root `/backend`; own Postgres (reference); full migration chain + seeded; `ENVIRONMENT=staging`, `EMAIL_BACKEND=logging`; `CORS_ORIGINS` set to the staging Vercel origin. Auto-deploys on push to `staging`.
 - **production** → ✅ **cut over 2026-06-08** to `ashmorel/investikid@main`, **Root Directory `backend`** (was a stale `invest-ed/backend` — the bug that had failed every prod deploy at build), backend `https://investikid.up.railway.app`, own Postgres; full migration chain applied after a manual snapshot; `ENVIRONMENT=production`. The old `lee-local-code-repo-production.up.railway.app` host is now dead (Railway "Application not found").

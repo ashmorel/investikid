@@ -1,4 +1,4 @@
-# Invest-Ed Operations Runbook: Account Purge
+# InvestiKid Operations Runbook: Account Purge
 
 This document describes the operational procedure for running the account purge job, which permanently overwrites personal data for accounts that have been soft-deleted for longer than the configured retention period.
 
@@ -6,7 +6,7 @@ This document describes the operational procedure for running the account purge 
 
 ## Purpose
 
-When a user requests account deletion (or an account is administratively closed), Invest-Ed performs a soft-delete: the account is made inactive immediately, but personal data remains in the database for up to `data_retention_days` days (default: 30 days). This window allows for accidental-deletion recovery and gives time for any in-flight legal holds to be applied before data is destroyed.
+When a user requests account deletion (or an account is administratively closed), InvestiKid performs a soft-delete: the account is made inactive immediately, but personal data remains in the database for up to `data_retention_days` days (default: 30 days). This window allows for accidental-deletion recovery and gives time for any in-flight legal holds to be applied before data is destroyed.
 
 After the retention window has elapsed, the account is eligible for hard purge. The purge operation overwrites all personally identifiable fields with anonymised values. It does not delete the database row — the row is retained for referential integrity and audit purposes, but it contains no information that can identify the former account holder.
 
