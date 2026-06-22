@@ -172,9 +172,13 @@ class OpenAIClient:
             # temperature: only the default (1) is supported → omit entirely
         elif _is_gemini_thinking_model(self._model):
             # Floor the budget so Gemini's default "thinking" can't starve the
-            # visible answer (see _GEMINI_THINKING_MIN_TOKENS).
+            # visible answer (see _GEMINI_THINKING_MIN_TOKENS), and cap the thinking
+            # effort — these surfaces are simple, so deep thinking only adds latency
+            # and cost. Operator-tunable; "" omits the param (default dynamic).
             kwargs["max_tokens"] = max(max_tokens, _GEMINI_THINKING_MIN_TOKENS)
             kwargs["temperature"] = temperature
+            if settings.llm_gemini_reasoning_effort:
+                kwargs["reasoning_effort"] = settings.llm_gemini_reasoning_effort
         else:
             kwargs["max_tokens"] = max_tokens
             kwargs["temperature"] = temperature
@@ -215,6 +219,8 @@ class OpenAIClient:
         elif _is_gemini_thinking_model(self._model):
             stream_kwargs["max_tokens"] = max(max_tokens, _GEMINI_THINKING_MIN_TOKENS)
             stream_kwargs["temperature"] = temperature
+            if settings.llm_gemini_reasoning_effort:
+                stream_kwargs["reasoning_effort"] = settings.llm_gemini_reasoning_effort
         else:
             stream_kwargs["max_tokens"] = max_tokens
             stream_kwargs["temperature"] = temperature

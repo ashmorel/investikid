@@ -106,7 +106,7 @@ async def test_gemini_thinking_model_floors_max_tokens():
         kwargs = mock_instance.chat.completions.create.await_args.kwargs
         assert kwargs["max_tokens"] == _GEMINI_THINKING_MIN_TOKENS   # 400 floored up
         assert "max_completion_tokens" not in kwargs
-        assert "reasoning_effort" not in kwargs
+        assert kwargs["reasoning_effort"] == "low"   # capped thinking (config default)
         assert kwargs["temperature"] == 0.3
 
 

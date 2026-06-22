@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     llm_gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     llm_gemini_flash_lite_model: str = "gemini-2.5-flash-lite"
     llm_gemini_flash_model: str = "gemini-2.5-flash"
+    # Gemini 2.5 "thinking" effort for the OpenAI-compat layer: "none" | "low" |
+    # "medium" | "high". Our chart/news/coach surfaces are simple, so "low" keeps
+    # them fast + cheap without quality loss. Set "" to omit the param entirely
+    # (reverts to the model's default dynamic thinking) if a provider rejects it.
+    llm_gemini_reasoning_effort: str = "low"
     llm_lite_providers: str = "gemini_flash_lite,together"
     llm_standard_providers: str = "gemini_flash,together"
     # LLM / AI — premium tier (OpenAI or Anthropic)
