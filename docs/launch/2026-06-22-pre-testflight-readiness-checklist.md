@@ -26,7 +26,7 @@
 
 ## Known launch gaps to clear before public store submission
 - [x] **Email SENDER on `investikid.ai`** — prod sends from `noreply@investikid.ai` (Railway `EMAIL_FROM` env var; `investikid.ai` verified in Resend). Code default in `config.py` matched 2026-06-22.
-- [ ] **Contact INBOX migration (open):** the privacy notice's contact address is still `privacy@invest-ed.app` because the `privacy@investikid.ai` **inbox isn't live yet**. When the inbox (or a forwarding rule) exists, flip the contact address in `docs/compliance/privacy-notice.md` AND the live app copy `frontend/src/locales/en/parent.json` (`legal…email`) to `privacy@investikid.ai`.
+- [x] **Contact INBOX on `investikid.ai`** — `privacy@investikid.ai` inbox live (Cloudflare Email Routing forwarding, verified 2026-06-22). Contact address flipped in `docs/compliance/privacy-notice.md` + the live app copy `frontend/src/locales/en/parent.json`. (Live web shows it after the next manual Vercel deploy.)
 - [ ] **Compliance review** of `docs/compliance/privacy-notice.md` + `DPIA.md` (renamed to InvestiKid 2026-06-22) by legal before submission.
 - [ ] **App age-rating decision** (App Store Kit §7) confirmed; Play "Designed for Families" decision made.
 - [ ] **Store listing kit** finalised (screenshots from the paired build, not mockups).

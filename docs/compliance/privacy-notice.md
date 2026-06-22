@@ -114,7 +114,7 @@ You are in control of some things on InvestiKid:
 
 If you have a question about your information, or if you want to ask for a copy of your data or delete your account, please contact us at:
 
-**privacy@invest-ed.app**
+**privacy@investikid.ai**
 
 If you are a parent or guardian with a concern about your child's account, please use the same address. We will respond within 30 days.
 
