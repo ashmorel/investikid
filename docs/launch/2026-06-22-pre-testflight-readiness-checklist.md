@@ -19,7 +19,7 @@
 
 ## Blocking gates (all must be ✅)
 - [x] **Health:** `api.investikid.ai/health` 200; `app.investikid.ai` 200 and serving the paired bundle (`index-DbAij6eY.js`, bakes `api.investikid.ai`). Verified 2026-06-22.
-- [ ] **Native smoke-test on build 14 / versionCode 2 (NEW — API base changed to `api.investikid.ai`):** on a real install, log in → load lessons → trigger one AI reply (chart insight or Coach). Confirms the native backend-domain switch is clean.
+- [x] **Native smoke-test on build 14 / versionCode 2 (NEW — API base changed to `api.investikid.ai`):** **PASSED 2026-06-22** on a real install — login + lessons + AI reply all working; confirms the native backend-domain switch is clean.
 - [ ] **Login (Safari + Chrome + native):** sign in persists across refresh; `/users/me` succeeds. (Same-site invariant: web `VITE_API_BASE_URL=https://api.investikid.ai`; native bakes the same via `frontend/.env.local`.)
 - [ ] **Biometric:** Face ID enrol + unlock on a real iPhone; fingerprint on a real Android device. Re-enrolling a face/finger invalidates the stored secret (OS-enforced).
 - [ ] **Billing — all three rails tested on real accounts:** Stripe (web), Apple IAP (sandbox), Google Play Billing (license tester). Purchase → premium unlocks; restore works; a missed webhook self-heals via the daily reconcile cron (see runbook).
@@ -42,4 +42,4 @@
 | Release owner | | | |
 | Device QA | | | |
 
-**Decision:** ____  ·  **Build uploaded:** ____
+**Decision:** GO (beta)  ·  **Build uploaded:** Android `versionCode 2` → **Play Internal testing, 2026-06-22** (native smoke-test passed); iOS build 14 archived via Xcode. Remaining human gates (billing on real accounts, biometric on real devices, device-QA sign-off, compliance/age-rating, store-listing screenshots) stay open for **public** store submission — not blockers for internal beta.
