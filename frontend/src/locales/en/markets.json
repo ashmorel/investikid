@@ -1,5 +1,6 @@
 {
   "chip": { "label": "Change learning market" },
+  "switcher": { "label": "Learning market" },
   "settings": { "link": "Learning market" },
   "picker": {
     "title": "Choose your market",

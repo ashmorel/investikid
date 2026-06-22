@@ -2,9 +2,8 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { contentApi, type LessonSummary, type ModuleOut } from '@/api/content';
 import { ModuleCard } from '@/components/child/ModuleCard';
-import { RegionSwitcher } from '@/components/child/RegionSwitcher';
+import { MarketSwitcher } from '@/components/child/MarketSwitcher';
 import { authApi, type Me } from '@/api/auth';
-import type { RegionCode } from '@/lib/region';
 import { orderModulesForTier } from '@/lib/tierModuleOrder';
 import { DEFAULT_TIER, densityGridGap, tierConfig } from '@/lib/ageTier';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
@@ -14,7 +13,6 @@ export default function Lessons() {
   const { open: openPaywall } = usePremiumPaywall();
 
   const { data: me } = useQuery<Me | null>({ queryKey: ['me'], queryFn: () => authApi.me(), staleTime: 60_000 });
-  const currentRegion = (me?.content_region ?? me?.country_code ?? 'US') as RegionCode;
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -51,7 +49,7 @@ export default function Lessons() {
     <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-extrabold text-gray-900">{t('modules.heading')}</h1>
-        <RegionSwitcher currentRegion={currentRegion} />
+        <MarketSwitcher onLockedClick={(m) => openPaywall({ kind: 'market', label: m.name })} />
       </div>
       <p className="mt-1 text-sm text-gray-500">{t('modules.summary', { moduleCount: modules.length, lessonCount: modules.reduce((acc, m) => acc + (lessonsByModuleId.get(m.id)?.length ?? 0), 0) })}</p>
       {modules.length > 0 && (() => {
