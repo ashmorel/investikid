@@ -133,3 +133,17 @@ async def test_no_target_count_is_one_per_concept(db_session):
         )
     assert len(result.created) == 3
     assert calls == [("a", "card"), ("b", "quiz"), ("c", "card")]
+
+
+def test_market_english_variant():
+    from app.services.admin_content_generation_service import _market_english, _system_prompt
+    assert "American English" in _market_english("US")
+    assert "American English" in _market_english("CA")
+    assert "British" in _market_english("GB")
+    assert "British" in _market_english("HK")
+
+    mod = type("M", (), {"market_code": "US", "topic": "earning", "title": "Work",
+                         "min_age": 12, "max_age": 15})()
+    lvl = type("L", (), {"title": "L1"})()
+    p = _system_prompt("quiz", mod, lvl, brief={"currency": "USD"}, complexity_tier=1)
+    assert "American English" in p

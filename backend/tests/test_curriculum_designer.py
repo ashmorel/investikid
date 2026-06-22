@@ -17,6 +17,7 @@ def test_prompt_requests_tiered_concept_counts():
     assert "tier-1 level has 5 concepts" in prompt
     assert "tier-2 level 8 concepts" in prompt
     assert "tier-3 level 10 concepts" in prompt
+    assert "SPREAD within a level" in prompt
 
 ALL = ["earning_income","spending_budgeting","saving_goals","banking_accounts",
        "borrowing_debt","growing_compound","risk_diversification","safety_scams","tax_giving"]

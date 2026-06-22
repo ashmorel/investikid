@@ -40,6 +40,21 @@ def target_lessons_for_tier(tier: int | None) -> int:
     """Exact number of lessons to generate for a level of the given tier."""
     return LESSONS_PER_TIER.get(tier or 0, LESSONS_PER_TIER[2])
 
+
+# Markets that use American English spelling/idioms; everything else defaults to
+# British/Commonwealth English (GB/IE/AU/NZ/HK/SG). Keeps gpt-5-mini from leaking
+# "mum/neighbour/paper round" into US content (and vice-versa).
+_AMERICAN_ENGLISH_MARKETS = {"US", "CA"}
+
+
+def _market_english(market_code: str | None) -> str:
+    if (market_code or "").upper() in _AMERICAN_ENGLISH_MARKETS:
+        return ("American English spelling and idioms (mom, neighbor, color, check, "
+                "route, soccer) — do NOT use British forms like mum, neighbour, colour, "
+                "cheque, 'paper round' or 'maths'")
+    return ("the market's own British/Commonwealth English spelling and idioms "
+            "(e.g. mum, neighbour, colour) — do NOT use American forms")
+
 # Concise, kid-readable style for ALL generated lessons. Pitched at UK years 8-10
 # (confident teen reader), easy to read on a phone; depth-on-demand lives in
 # Coach Penny, not the card.
@@ -111,7 +126,8 @@ def _system_prompt(
             f"grounded in these verified market facts: {json.dumps(brief, ensure_ascii=False)}. "
             f"Use the market's real products, regulators, currency and age-appropriate local "
             f"examples. This is NOT a UK lesson — do not reference UK-specific products, "
-            f"regulators or currency."
+            f"regulators or currency. "
+            f"Write in {_market_english(module.market_code)}."
         )
         if complexity_tier in _TIER_DEPTH:
             prompt += " " + _TIER_DEPTH[complexity_tier]
