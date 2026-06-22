@@ -399,7 +399,9 @@ async def get_chart_guide(
             system_prompt=with_guardrail_preamble(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Here's the chart data:\n{stats}"}],
             temperature=0.7,
-            max_tokens=250,
+            # 2-3 sentences + a closing question can exceed 250 tokens and get
+            # hard-cut mid-sentence; give headroom so the insight finishes cleanly.
+            max_tokens=400,
         )
     except LLMError:
         summary = ""
