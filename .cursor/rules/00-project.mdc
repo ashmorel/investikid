@@ -19,6 +19,13 @@ A children's finance-education app (web + iOS), heading to a TestFlight beta.
 - Follow **TDD**: write the failing test first, then the minimal code to pass. Keep changes small and focused; touch only what the task needs.
 - DB schema changes require a **hand-written, chained Alembic migration** (set `down_revision` to the current head — check `alembic heads` first). No blind autogenerate.
 - After frontend changes that must reach the iOS app, run `npm run build && npx cap sync ios`; native changes then need an Xcode rebuild.
+- **Beta:** commit straight to `main` (skip `testing`/`staging`) until official release. **Ask before any production DB migration** whether to snapshot first. Manual Vercel prod deploy = `vercel deploy --prod --archive=tgz --yes` then `vercel alias set <slug> app.investikid.ai` (the `--prod` deploy does NOT auto-switch the alias). New `/internal/*` cron POSTs need a CSRF allowlist entry (`backend/app/core/csrf.py`).
+- After every push to `main`, update the progress trackers (`docs/MASTER-BACKLOG.md`, `docs/superpowers/PROGRESS.md`) in the same task.
+
+## Domain invariants (settled — match unless the user changes them)
+- **Web auth is same-site.** Prod web (`app.investikid.ai`) calls the API at **`https://api.investikid.ai`**, never `investikid.up.railway.app` — same registrable domain keeps the `SameSite=None` auth cookie first-party (the railway host is cross-site → Safari/Chrome block it → "Could not start your session"). Keep Vercel Production `VITE_API_BASE_URL=https://api.investikid.ai`. Spec: `docs/superpowers/specs/2026-06-15-web-auth-same-site-api-design.md`.
+- **Content generation criteria.** Write in the market's English variant (**American for US/CA** — mom/neighbor/color; British elsewhere; `_market_english`). Ground examples in the verified `MarketBrief` (no UK products in non-GB markets). Keep lessons diverse (rotate names/scenarios, blend card/quiz/scenario, sibling-`avoid` list) and spread concepts across distinct facets per level (no 3+-concept single-product stacking). Tiered depth = 10/15/20 lessons for tier 1/2/3.
+- **Simulator apply-missions.** `evaluate_apply_missions` reads global portfolio state, so it MUST be scoped to the child's `active_market_code`, else one action multiplies rewards across markets. Keep missions sparse/curated (no bulk same-type). Investing modules auto-attach one mission to their culminating lesson (`investing_missions.py`: growth→`first_buy`, risk→`diversify` n=3; 20 XP + admin-editable per-market cash).
 
 ## Toolchain note
 - The Python virtualenv is at the **git-repo root**: `/Users/leeashmore/Local Repo/.venv` (one level above `backend/`). Backend commands below invoke it explicitly.
