@@ -7,6 +7,7 @@ import { authApi } from '@/api/auth';
 import { useParentAuthGuard } from '@/hooks/useParentAuthGuard';
 import { ChildCard } from '@/components/ChildCard';
 import { SubscriptionCard } from '@/components/SubscriptionCard';
+import { BackToAppButton } from '@/components/BackToAppButton';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -92,15 +93,7 @@ export default function ParentDashboard() {
           <h1 className="sr-only">{t('dashboard.title')}</h1>
         </div>
         <div className="flex items-center gap-1">
-          {hasAppSession && (
-            <button
-              type="button"
-              onClick={() => navigate('/home')}
-              className="whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:text-ink"
-            >
-              {t('dashboard.backToApp')}
-            </button>
-          )}
+          {hasAppSession && <BackToAppButton />}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" aria-label={t('dashboard.menuAriaLabel')}>

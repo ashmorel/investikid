@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { BackToAppButton } from '@/components/BackToAppButton';
 
 const NAV_ITEMS = [
   { to: '/admin', tKey: 'sidebar.items.dashboard', icon: '📊', end: true },
@@ -25,7 +26,10 @@ export default function AdminSidebar() {
       className="flex w-full shrink-0 flex-col border-b border-line bg-card px-3 pb-3 md:w-52 md:border-b-0 md:border-r md:px-4 md:pb-4"
       style={{ paddingTop: 'calc(var(--safe-top) + 0.75rem)' }}
     >
-      <div className="mb-3 text-base font-extrabold text-ink md:mb-6 md:text-lg">📚 {t('sidebar.title')}</div>
+      <div className="mb-3 md:mb-6">
+        <div className="text-base font-extrabold text-ink md:text-lg">📚 {t('sidebar.title')}</div>
+        <BackToAppButton className="mt-1 -ml-1" />
+      </div>
       <nav
         className="flex flex-row gap-1 overflow-x-auto pb-1 md:flex-col md:overflow-x-visible md:pb-0"
         aria-label={t('sidebar.nav')}
@@ -47,9 +51,6 @@ export default function AdminSidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="mt-3 border-t border-line pt-3 md:mt-auto md:pt-4">
-        <a href="/" className="text-sm text-muted-foreground hover:text-ink">{t('sidebar.backToApp')}</a>
-      </div>
     </aside>
   );
 }
