@@ -45,11 +45,12 @@ def test_is_module_accessible_premium_gating():
     (13, 14, None, False),   # under min → hidden
     (14, 14, None, True),    # equal to min → ok
     (15, 14, None, True),    # over min → ok
-    (19, None, 18, False),   # over max → hidden
+    (19, None, 18, True),    # over max → now VISIBLE (ceiling removed 2026-06-22)
     (18, None, 18, True),    # equal to max → ok
     (10, None, None, True),  # no bounds → ok
-    (13, 14, 18, False),     # both bounds, under min
+    (13, 14, 18, False),     # both bounds, under min → still hidden (floor)
     (16, 14, 18, True),      # both bounds, inside
+    (51, 8, 16, True),       # adult, well over max → visible (no ceiling)
 ])
 def test_is_module_age_ok(user_age, min_age, max_age, expected):
     assert is_module_age_ok(user_age, min_age, max_age) is expected

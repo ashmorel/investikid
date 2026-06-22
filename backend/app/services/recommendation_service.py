@@ -48,10 +48,9 @@ def _apply_hard_filters(
         if prereq_id not in completed_module_ids_for_prereqs:
             return False
 
-    # 3. Age out of range
+    # 3. Below the module's age floor (the upper ceiling was removed 2026-06-22 —
+    #    anyone at or above min_age is eligible, so adults aren't locked out).
     if module.min_age is not None and user_age < module.min_age:
-        return False
-    if module.max_age is not None and user_age > module.max_age:
         return False
 
     # 4. Premium gating

@@ -77,10 +77,11 @@ class TestHardFilters:
         module = _make_module(min_age=10)
         assert _apply_hard_filters(module, user, set(), set(), 6) is False
 
-    def test_excludes_age_too_old(self):
+    def test_includes_age_over_ceiling(self):
+        # Ceiling removed 2026-06-22: being older than max_age no longer excludes a module.
         user = _make_user(dob=date(2010, 1, 1))
         module = _make_module(max_age=12)
-        assert _apply_hard_filters(module, user, set(), set(), 16) is False
+        assert _apply_hard_filters(module, user, set(), set(), 16) is True
 
     def test_includes_age_in_range(self):
         user = _make_user(dob=date(2015, 1, 1))

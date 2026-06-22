@@ -116,14 +116,15 @@ def is_module_age_ok(
     module_min_age: int | None,
     module_max_age: int | None,
 ) -> bool:
-    """Age gate for module browse/access (mirrors recommendation_service's hard filter).
+    """Age FLOOR for module browse/access (mirrors recommendation_service's hard filter).
 
-    A module is age-appropriate if the user's actual age (from dob — NEVER the
-    parent tier_override) is >= min_age and <= max_age, treating None as unbounded.
+    The upper *ceiling* was removed 2026-06-22: anyone at or above a module's
+    min_age can use it, so adults are no longer locked out (target audience stays
+    ~10-18). Only the floor is enforced, using the user's actual age (from dob —
+    NEVER the parent tier_override). `module_max_age` is accepted for signature
+    stability but no longer gates visibility.
     """
     if module_min_age is not None and user_age < module_min_age:
-        return False
-    if module_max_age is not None and user_age > module_max_age:
         return False
     return True
 

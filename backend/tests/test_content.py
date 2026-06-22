@@ -348,7 +348,8 @@ async def test_old_enough_user_sees_and_opens_age_gated_module(client, db_sessio
     assert detail.status_code == 200
 
 
-async def test_over_max_age_module_hidden(client, db_session):
+async def test_over_max_age_module_visible(client, db_session):
+    # Ceiling removed 2026-06-22: a user older than a module's max_age can still see it.
     capped = Module(
         topic="savings", title="Little Kids Only", country_codes=[],
         is_premium=False, order_index=0, max_age=12,
@@ -361,6 +362,6 @@ async def test_over_max_age_module_hidden(client, db_session):
 
     listing = await client.get("/modules")
     assert listing.status_code == 200
-    assert "Little Kids Only" not in [m["title"] for m in listing.json()]
+    assert "Little Kids Only" in [m["title"] for m in listing.json()]
     detail = await client.get(f"/modules/{capped.id}/levels")
-    assert detail.status_code == 404
+    assert detail.status_code == 200
