@@ -1,7 +1,7 @@
 # InvestiKid — Android Operator Runbook
 
-**Date:** 2026-06-07
-**Branch:** `testing`
+**Date:** 2026-06-07 (production cutover 2026-06-08)
+**Branch:** `main` is production; `testing`/`staging` for development (in beta, work commits straight to `main`)
 **Design spec:** [`docs/superpowers/specs/2026-06-07-4a1-android-platform-foundation-design.md`](superpowers/specs/2026-06-07-4a1-android-platform-foundation-design.md) (Item 4A · Sub-project A1 — Android Platform Foundation)
 
 This runbook covers the **device- and account-bound steps that cannot be performed in the headless build environment** (no JDK, Android SDK, Gradle, Android Studio, or emulator). Everything here requires a real machine with the Android toolchain, plus access to the Google Cloud Console, the Google Play Console, and the production web origin.

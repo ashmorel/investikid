@@ -16,8 +16,8 @@
 
 ## What this programme is
 Reskin InvestiKid from amber → **sky-blue** with **Penny the pig** mascot, plus a few
-features. Source design: a Figma Make export (cloned to `/tmp/yasminschoice`; re-clone
-from GitHub `ashmorel/Investikidyasminschoice` if gone).
+features. Source design: an archived Figma Make export (the active repo is now
+`ashmorel/investikid` at https://github.com/ashmorel/investikid).
 
 ## Status
 

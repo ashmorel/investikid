@@ -4,7 +4,7 @@ globs: **/backend/**
 alwaysApply: false
 ---
 
-# Backend (`invest-ed/backend`)
+# Backend (`backend`)
 
 FastAPI + SQLAlchemy 2.0 **async** + Alembic + Postgres. App entry: `app.main:app`.
 

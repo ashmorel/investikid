@@ -6,6 +6,8 @@
 **Trigger:** Updated external product review (8.2/10 beta, up from 7/10). Goal: move into the 8.7–9.0 band as a **revenue-generating, sticky, market-leading** children's investment-education app, via TestFlight beta to a public paid App Store launch in ~12 weeks.
 
 > **Reconciliation (2026-06-15).** The full **build track (M3–M9)** plus **SP-Bio Face ID**, **iOS push parity** (FCM bridge, verified E2E on device), the **parent-management dashboard**, and a **web-auth fix** are all **LIVE IN PROD** (backend on Railway, web on Vercel `app.investikid.ai`, API now same-site at `api.investikid.ai`). **DONE this cycle:** M1 (promotion train), M7 (Firebase/APNs/push + prod `FIREBASE_SERVICE_ACCOUNT_JSON`), and the M2 **ops-hygiene** items (`CRON_SECRET` rotated, R2 upload-size enforced + decision doc, LLM token instrumentation, OpenAI-quota assessed → defer to post-beta data). M11's **app icon is finalised** and the **store-listing kit is drafted** (`docs/launch/2026-06-15-app-store-listing-kit.md`). **What's left is now consolidated in [`docs/MASTER-BACKLOG.md`](MASTER-BACKLOG.md)** — that is the single go-forward tracker; this roadmap stays as the strategic index + per-M detail.
+>
+> **Update (2026-06-22).** Operator content is now LIVE for **GB / US / HK** (3 of ~10 markets; the rest await content production). Also shipped since: tiered lesson depth + module archive/purge, investing→simulator "apply missions", and a re-fix of the same-site web-auth login (`VITE_API_BASE_URL` must stay `api.investikid.ai`). **Phase-status note:** the per-M "BUILD DONE (on `testing`)" labels below predate promotion — **M3–M9 are all LIVE in prod**; trust `MASTER-BACKLOG.md` for current status, not the per-M labels here.
 
 ---
 

@@ -1,6 +1,6 @@
 # Figma Handoff
 
-Last verified: 2026-06-03
+Design-foundation reference (tokens/components, not full screens). Last verified: 2026-06-03 — treat as historical design context, not a per-release gate.
 
 ## Source Design
 
@@ -26,7 +26,7 @@ Treat the Figma Make code as reference material, not a direct drop-in replacemen
 
 ## App Repository
 
-- GitHub repository: `ashmorel/Lee-Local-Code-Repo`
+- GitHub repository: `ashmorel/investikid`
 - App root: `invest-ed/`
 - Frontend: `invest-ed/frontend/`
 - Backend: `invest-ed/backend/`
