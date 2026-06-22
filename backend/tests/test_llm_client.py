@@ -689,3 +689,25 @@ async def test_openai_stream_normal_model_uses_max_tokens():
         assert call_kwargs["temperature"] == 0.4
         assert "max_completion_tokens" not in call_kwargs
         assert call_kwargs.get("stream") is True
+
+
+async def test_fallback_on_credit_balance_error():
+    # A provider that's out of credits (billing 400, not retryable) must advance
+    # to the next provider rather than failing the whole request.
+    from unittest.mock import AsyncMock as _AM
+
+    from app.services.llm_client import FallbackLLMClient, LLMError
+
+    broke = _AM()
+    broke.complete = _AM(side_effect=LLMError(
+        "Error code: 400 - Your credit balance is too low to access the Anthropic API.",
+        retryable=False,
+    ))
+    good = _AM()
+    good.complete = _AM(return_value="ok")
+
+    client = FallbackLLMClient(clients=[broke, good])
+    result = await client.complete(system_prompt="s", messages=[{"role": "user", "content": "hi"}])
+    assert result == "ok"
+    broke.complete.assert_awaited_once()
+    good.complete.assert_awaited_once()

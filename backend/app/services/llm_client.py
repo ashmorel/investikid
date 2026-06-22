@@ -93,6 +93,20 @@ def _is_provider_auth_error(exc: LLMError) -> bool:
     )
 
 
+def _is_provider_unavailable_error(exc: LLMError) -> bool:
+    """True when THIS provider can't serve the request for billing/quota reasons
+    (out of credits, quota exceeded, billing not active). Like an auth error, the
+    request itself is fine — advance to the next provider rather than failing."""
+    msg = str(exc).lower()
+    return (
+        "credit balance" in msg
+        or "insufficient_quota" in msg
+        or "insufficient quota" in msg
+        or "exceeded your current quota" in msg
+        or "billing" in msg
+    )
+
+
 class LLMClient(Protocol):
     async def complete(
         self,
@@ -308,7 +322,11 @@ class FallbackLLMClient:
                     response_format=response_format,
                 )
             except LLMError as e:
-                should_fallback = e.retryable or _is_provider_auth_error(e)
+                should_fallback = (
+                    e.retryable
+                    or _is_provider_auth_error(e)
+                    or _is_provider_unavailable_error(e)
+                )
                 if not should_fallback or i == len(self.clients) - 1:
                     raise
                 logger.warning("Provider %d failed (retryable/auth), trying next: %s", i, e)
@@ -337,7 +355,11 @@ class FallbackLLMClient:
                     yield chunk
                 return
             except LLMError as e:
-                should_fallback = e.retryable or _is_provider_auth_error(e)
+                should_fallback = (
+                    e.retryable
+                    or _is_provider_auth_error(e)
+                    or _is_provider_unavailable_error(e)
+                )
                 if not should_fallback or i == len(self.clients) - 1:
                     raise
                 logger.warning("Provider %d stream failed (retryable/auth), trying next: %s", i, e)
