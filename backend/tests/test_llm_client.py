@@ -87,6 +87,29 @@ async def test_reasoning_model_respects_larger_request():
         assert mock_instance.chat.completions.create.await_args.kwargs["max_completion_tokens"] == big
 
 
+async def test_gemini_thinking_model_floors_max_tokens():
+    # Gemini 2.5 'thinking' tokens are charged against max_tokens, so a small request
+    # must be floored or the answer is starved to a cut-off intro. Unlike gpt-5, it
+    # uses max_tokens (not max_completion_tokens) and keeps temperature.
+    from app.services.llm_client import _GEMINI_THINKING_MIN_TOKENS
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "ok"
+    with patch("app.services.llm_client.AsyncOpenAI") as MockOpenAI:
+        mock_instance = AsyncMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        MockOpenAI.return_value = mock_instance
+        client = OpenAIClient(api_key="k", model="gemini-2.5-flash")
+        await client.complete(system_prompt="s", messages=[{"role": "user", "content": "hi"}],
+                              max_tokens=400)
+        kwargs = mock_instance.chat.completions.create.await_args.kwargs
+        assert kwargs["max_tokens"] == _GEMINI_THINKING_MIN_TOKENS   # 400 floored up
+        assert "max_completion_tokens" not in kwargs
+        assert "reasoning_effort" not in kwargs
+        assert kwargs["temperature"] == 0.3
+
+
 async def test_non_reasoning_model_keeps_max_tokens():
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
@@ -599,7 +622,9 @@ async def test_openai_complete_normal_model_uses_max_tokens():
 
 
 async def test_openai_complete_gemini_model_uses_max_tokens():
-    """gemini-2.5-flash via the OpenAI-compat shim must use max_tokens + temperature."""
+    """gemini-2.5-flash via the OpenAI-compat shim uses max_tokens + temperature, with
+    the budget floored so Gemini's 'thinking' can't starve the answer."""
+    from app.services.llm_client import _GEMINI_THINKING_MIN_TOKENS
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
     mock_response.choices[0].message.content = "gemini answer"
@@ -624,7 +649,7 @@ async def test_openai_complete_gemini_model_uses_max_tokens():
         )
         assert result == "gemini answer"
         call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        assert call_kwargs["max_tokens"] == 400
+        assert call_kwargs["max_tokens"] == _GEMINI_THINKING_MIN_TOKENS  # 400 floored up
         assert call_kwargs["temperature"] == 0.3
         assert "max_completion_tokens" not in call_kwargs
 

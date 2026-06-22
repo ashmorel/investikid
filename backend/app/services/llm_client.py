@@ -37,6 +37,15 @@ def _is_openai_reasoning_model(model: str) -> bool:
     return m.startswith("gpt-5") or m.startswith(("o1", "o3", "o4"))
 
 
+def _is_gemini_thinking_model(model: str) -> bool:
+    """Gemini 2.5 models enable internal 'thinking' by default. Via the OpenAI-compat
+    layer those thinking tokens are charged against `max_tokens` BEFORE any visible
+    output, so a small budget is consumed by thinking and the answer is cut off (or
+    empty) — the same starve failure as gpt-5/o-series. These take the standard
+    `max_tokens` param (not max_completion_tokens), so they need their own handling."""
+    return model.lower().startswith("gemini-2.5")
+
+
 # Reasoning models (gpt-5 / o-series) spend tokens on INTERNAL reasoning that
 # count against max_completion_tokens BEFORE any visible output. A budget sized
 # only for the answer (e.g. 60–1200) is consumed entirely by reasoning, yielding
@@ -46,6 +55,12 @@ def _is_openai_reasoning_model(model: str) -> bool:
 # actual answer length stays governed by the prompt — this only prevents the
 # starve-to-empty failure. Non-reasoning models keep the caller's max_tokens.
 _REASONING_MIN_COMPLETION_TOKENS = 12000
+
+# Same starve-to-empty problem for Gemini 2.5 "thinking" models, but they take the
+# standard `max_tokens` param. Floor it so thinking can't eat the whole budget and
+# cut the answer short. Unused tokens aren't billed; answer length stays governed by
+# the prompt.
+_GEMINI_THINKING_MIN_TOKENS = 8000
 
 # Reasoning effort for gpt-5/o-series. "minimal" ≈ 0 reasoning tokens → ~3-5x
 # faster + cheaper than the default; output stays valid for our simple,
@@ -155,6 +170,11 @@ class OpenAIClient:
             # gain — and slow per-call latency was timing out batch generation.
             kwargs["reasoning_effort"] = _REASONING_EFFORT
             # temperature: only the default (1) is supported → omit entirely
+        elif _is_gemini_thinking_model(self._model):
+            # Floor the budget so Gemini's default "thinking" can't starve the
+            # visible answer (see _GEMINI_THINKING_MIN_TOKENS).
+            kwargs["max_tokens"] = max(max_tokens, _GEMINI_THINKING_MIN_TOKENS)
+            kwargs["temperature"] = temperature
         else:
             kwargs["max_tokens"] = max_tokens
             kwargs["temperature"] = temperature
@@ -192,6 +212,9 @@ class OpenAIClient:
         if _is_openai_reasoning_model(self._model):
             stream_kwargs["max_completion_tokens"] = max_tokens
             # temperature: only the default (1) is supported → omit entirely
+        elif _is_gemini_thinking_model(self._model):
+            stream_kwargs["max_tokens"] = max(max_tokens, _GEMINI_THINKING_MIN_TOKENS)
+            stream_kwargs["temperature"] = temperature
         else:
             stream_kwargs["max_tokens"] = max_tokens
             stream_kwargs["temperature"] = temperature
