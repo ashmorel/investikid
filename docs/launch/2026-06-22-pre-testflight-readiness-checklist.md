@@ -25,7 +25,8 @@
 - [ ] **No secrets in the build**; `.env` untouched; CRON_SECRET / JWT / API keys current per `deployment-environments.md`.
 
 ## Known launch gaps to clear before public store submission
-- [ ] **Email-domain migration (open):** the app currently sends from `noreply@invest-ed.app` (`backend/app/core/config.py: email_from`), but the privacy notice/DPIA now reference `investikid.ai`. Before launch, either (a) provision `investikid.ai` mail (mailbox for `privacy@investikid.ai` + SPF/DKIM/DMARC) and update `email_from`, or (b) revert the docs to `invest-ed.app`. Until then the documented contact address is not yet a live mailbox.
+- [x] **Email SENDER on `investikid.ai`** — prod sends from `noreply@investikid.ai` (Railway `EMAIL_FROM` env var; `investikid.ai` verified in Resend). Code default in `config.py` matched 2026-06-22.
+- [ ] **Contact INBOX migration (open):** the privacy notice's contact address is still `privacy@invest-ed.app` because the `privacy@investikid.ai` **inbox isn't live yet**. When the inbox (or a forwarding rule) exists, flip the contact address in `docs/compliance/privacy-notice.md` AND the live app copy `frontend/src/locales/en/parent.json` (`legal…email`) to `privacy@investikid.ai`.
 - [ ] **Compliance review** of `docs/compliance/privacy-notice.md` + `DPIA.md` (renamed to InvestiKid 2026-06-22) by legal before submission.
 - [ ] **App age-rating decision** (App Store Kit §7) confirmed; Play "Designed for Families" decision made.
 - [ ] **Store listing kit** finalised (screenshots from the paired build, not mockups).

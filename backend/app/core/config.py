@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     stripe_price_id_annual: str = ""
     stripe_portal_config_id: str = ""
     email_backend: str = "logging"  # "logging" | "resend"
-    email_from: str = "noreply@invest-ed.app"
+    email_from: str = "noreply@investikid.ai"
     feedback_notify_email: str = ""
     admin_alert_email: str = ""
     admin_bootstrap_email: str = ""  # if set, that user is granted is_admin on each deploy (idempotent)
