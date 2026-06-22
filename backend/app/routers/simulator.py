@@ -252,7 +252,8 @@ async def get_news_summary(
             system_prompt=with_guardrail_preamble(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Here are today's headlines about my stocks:\n{headlines}"}],
             temperature=0.5,
-            max_tokens=200,
+            # "2-4 sentences" can exceed 200 tokens and get cut mid-sentence.
+            max_tokens=400,
         )
     except LLMError:
         summary = "Couldn't generate a summary right now — check back soon!"
@@ -327,7 +328,8 @@ async def get_stock_news_summary(
             system_prompt=with_guardrail_preamble(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Recent news about {ticker}:\n{headlines}"}],
             temperature=0.5,
-            max_tokens=200,
+            # "2-3 sentences" can exceed 200 tokens and get cut mid-sentence.
+            max_tokens=400,
         )
     except LLMError:
         summary = ""
@@ -548,7 +550,8 @@ async def get_time_machine(
                     ),
                 }],
                 temperature=0.7,
-                max_tokens=100,
+                # 1-2 sentences with a comparison can brush past 100 tokens.
+                max_tokens=150,
             )
             fun_fact = fun_fact.strip()
         except LLMError:
