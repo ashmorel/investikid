@@ -84,6 +84,7 @@ from app.services.admin_content_generation_service import (
 from app.services.app_settings import (
     get_alert_emails,
     get_enabled_content_languages,
+    get_investing_mission_cash,
     get_market_completion_bonus_coins,
     get_market_enroll_bonus_coins,
     get_setting,
@@ -91,6 +92,7 @@ from app.services.app_settings import (
     get_trade_commission_pct,
     set_alert_emails,
     set_enabled_content_languages,
+    set_investing_mission_cash,
     set_market_completion_bonus_coins,
     set_market_enroll_bonus_coins,
     set_starting_cash,
@@ -949,6 +951,7 @@ async def list_countries(session: AsyncSession = Depends(get_session)):
 async def get_settings(session: AsyncSession = Depends(get_session)):
     emails = await get_alert_emails(session)
     cash = await get_starting_cash(session)
+    mission_cash = await get_investing_mission_cash(session)
     pct = await get_trade_commission_pct(session)
     enroll_bonus = await get_market_enroll_bonus_coins(session)
     completion_bonus = await get_market_completion_bonus_coins(session)
@@ -957,6 +960,7 @@ async def get_settings(session: AsyncSession = Depends(get_session)):
     return AdminSettingsOut(
         alert_emails=emails,
         starting_cash={k: str(v) for k, v in cash.items()},
+        investing_mission_cash={k: str(v) for k, v in mission_cash.items()},
         trade_commission_pct=str(pct),
         market_enroll_bonus_coins=enroll_bonus,
         market_completion_bonus_coins=completion_bonus,
@@ -972,6 +976,10 @@ async def update_settings(
     await set_alert_emails(session, body.alert_emails)
     if body.starting_cash is not None:
         await set_starting_cash(session, {k: Decimal(v) for k, v in body.starting_cash.items()})
+    if body.investing_mission_cash is not None:
+        await set_investing_mission_cash(
+            session, {k: Decimal(v) for k, v in body.investing_mission_cash.items()}
+        )
     if body.trade_commission_pct is not None:
         await set_trade_commission_pct(session, Decimal(body.trade_commission_pct))
     if body.market_enroll_bonus_coins is not None:
@@ -992,6 +1000,7 @@ async def update_settings(
         })
     await session.commit()
     cash = await get_starting_cash(session)
+    mission_cash = await get_investing_mission_cash(session)
     pct = await get_trade_commission_pct(session)
     enroll_bonus = await get_market_enroll_bonus_coins(session)
     completion_bonus = await get_market_completion_bonus_coins(session)
@@ -1000,6 +1009,7 @@ async def update_settings(
     return AdminSettingsOut(
         alert_emails=body.alert_emails,
         starting_cash={k: str(v) for k, v in cash.items()},
+        investing_mission_cash={k: str(v) for k, v in mission_cash.items()},
         trade_commission_pct=str(pct),
         market_enroll_bonus_coins=enroll_bonus,
         market_completion_bonus_coins=completion_bonus,

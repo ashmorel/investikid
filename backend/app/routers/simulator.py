@@ -694,7 +694,8 @@ async def place_trade(
     xp_awarded = await award_trade_xp(session, progress, today_local)
     streak_extended = record_daily_activity(progress, today_local)
     completed_missions = await evaluate_apply_missions(
-        session, current_user.id, progress, portfolio
+        session, current_user.id, progress, portfolio,
+        market_code=current_user.active_market_code,
     )
     cash_granted = sum(
         (m.cash_reward or Decimal("0") for m in completed_missions), Decimal("0")

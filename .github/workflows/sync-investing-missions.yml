@@ -1,0 +1,48 @@
+name: Sync investing missions
+
+# Operator automation: (re)attach a simulator "apply mission" to the culminating
+# lesson of each investing module for the given markets, via the cron-secret-gated
+# /internal/market-content?action=sync-missions endpoint. Idempotent — safe to
+# re-run. Dispatch manually (gh workflow run). Publishing a market already syncs
+# its missions; this is for backfilling already-published markets without a
+# republish.
+
+on:
+  workflow_dispatch:
+    inputs:
+      markets:
+        description: "Space-separated market codes (e.g. 'GB US HK')"
+        required: true
+        default: "GB US HK"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BACKEND_URL: ${{ vars.BACKEND_URL || 'https://investikid.up.railway.app' }}
+      MARKETS: ${{ github.event.inputs.markets }}
+    steps:
+      - name: Sync investing missions
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -uo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET is empty (add it under Actions → Secrets)."; exit 1
+          fi
+          if ! printf '%s' "$MARKETS" | grep -Eq '^[A-Za-z ]+$'; then
+            echo "::error::MARKETS must be space-separated letters only."; exit 1
+          fi
+          for m in $MARKETS; do
+            body=$(curl -sS -w $'\n%{http_code}' -X POST \
+              --connect-timeout 15 --max-time 120 \
+              -H "X-Cron-Secret: ${CRON_SECRET}" \
+              "${BACKEND_URL}/internal/market-content?market=${m}&action=sync-missions")
+            code=$(printf '%s' "$body" | tail -n1)
+            body=$(printf '%s' "$body" | sed '$d')
+            if [ "$code" != "200" ]; then
+              echo "::error::sync-missions ${m} -> HTTP ${code}: ${body}"; exit 1
+            fi
+            echo "✅ ${m}: ${body}"
+          done

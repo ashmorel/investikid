@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.content import Lesson, Level, Module
 from app.models.market import Market
 from app.models.market_brief import MarketBrief
+from app.services import investing_missions
 from app.services.admin_content_generation_service import (
     generate_native_level_lessons,
     target_lessons_for_tier,
@@ -131,5 +132,8 @@ async def generate_next_level(session: AsyncSession, market_code: str) -> dict:
 async def publish_market(session: AsyncSession, market_code: str) -> dict:
     """Publish the accepted curriculum (atomic swap; retires + archives the old)."""
     result = await publish_market_curriculum(session, market_code)
+    # Re-attach simulator missions to investing modules (the republish replaced the
+    # lessons, cascade-deleting any prior missions).
+    missions = await investing_missions.sync_investing_missions(session, market_code=market_code)
     await session.commit()
-    return {"market": market_code, "stage": "published", **result}
+    return {"market": market_code, "stage": "published", "missions": missions, **result}

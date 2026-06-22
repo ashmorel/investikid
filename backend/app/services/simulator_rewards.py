@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.apply_mission import ApplyMission, ApplyMissionCompletion
 from app.models.cash_grant import CashGrant
+from app.models.content import Lesson, Module
 from app.models.simulator import Holding, Portfolio, Trade
 from app.models.user import UserProgress
 from app.services.market_progress_service import award_xp
@@ -99,8 +100,15 @@ async def evaluate_apply_missions(
     user_id: uuid.UUID,
     progress: UserProgress,
     portfolio: Portfolio,
+    market_code: str | None = None,
 ) -> list[ApplyMission]:
     """Complete any newly-satisfied apply-missions. Awards XP + cash; returns completed missions.
+
+    When `market_code` is given, only missions whose lesson belongs to a module in
+    that market are considered — so a child completes only their own market's
+    missions. (Mission predicates read global portfolio state, so without this scope a
+    single first buy would satisfy every market's `first_buy` mission at once and
+    multiply the reward.) `None` keeps the legacy all-markets behaviour.
 
     Badge awarding (mission.badge_id) is handled by the caller after this returns, so the badge
     service stays the single owner of UserBadge inserts.
@@ -110,7 +118,14 @@ async def evaluate_apply_missions(
             select(ApplyMissionCompletion.mission_id).where(ApplyMissionCompletion.user_id == user_id)
         )).scalars().all()
     )
-    missions = (await session.execute(select(ApplyMission))).scalars().all()
+    mission_q = select(ApplyMission)
+    if market_code is not None:
+        mission_q = (
+            mission_q.join(Lesson, Lesson.id == ApplyMission.lesson_id)
+            .join(Module, Module.id == Lesson.module_id)
+            .where(Module.market_code == market_code)
+        )
+    missions = (await session.execute(mission_q)).scalars().all()
     pending = [m for m in missions if m.id not in completed_ids]
     if not pending:
         return []

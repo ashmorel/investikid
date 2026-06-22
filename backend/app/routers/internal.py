@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.services import (
     digest_service,
+    investing_missions,
     market_content_pipeline,
     module_purge_service,
     product_analytics_service,
@@ -121,8 +122,9 @@ async def market_content_step(
     session: AsyncSession = Depends(get_session),
 ):
     """One step of the market content pipeline (operator automation). action ∈
-    {scaffold, generate, publish}; call `generate` repeatedly until remaining==0,
-    then `publish`. Cron-secret gated (no admin UI / JWT needed)."""
+    {scaffold, generate, publish, sync-missions}; call `generate` repeatedly until
+    remaining==0, then `publish`. `sync-missions` (re)attaches simulator missions to
+    investing modules without republishing. Cron-secret gated (no admin UI / JWT)."""
     if not settings.cron_secret:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
     if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
@@ -135,6 +137,12 @@ async def market_content_step(
             return await market_content_pipeline.generate_next_level(session, market)
         if action == "publish":
             return await market_content_pipeline.publish_market(session, market)
+        if action == "sync-missions":
+            result = await investing_missions.sync_investing_missions(session, market_code=market)
+            await session.commit()
+            return {"market": market, "stage": "sync-missions", **result}
     except ValueError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
-    raise HTTPException(status.HTTP_400_BAD_REQUEST, "action must be scaffold|generate|publish")
+    raise HTTPException(
+        status.HTTP_400_BAD_REQUEST, "action must be scaffold|generate|publish|sync-missions"
+    )

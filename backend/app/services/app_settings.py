@@ -25,6 +25,17 @@ _DEFAULT_STARTING_CASH: dict[str, Decimal] = {
     "EUR": Decimal("1000.00"),
 }
 
+# Virtual-cash reward granted when a child completes an auto-attached investing
+# mission (keyed by MARKET code, amount in that market's currency). Admin-editable.
+_INVESTING_MISSION_CASH_KEY = "simulator.investing_mission_cash"
+_FALLBACK_INVESTING_MISSION_CASH = Decimal("100.00")
+_DEFAULT_INVESTING_MISSION_CASH: dict[str, Decimal] = {
+    "GB": Decimal("100.00"),
+    "US": Decimal("100.00"),
+    "HK": Decimal("1000.00"),
+    "EU": Decimal("100.00"),
+}
+
 
 async def get_setting(session: AsyncSession, key: str) -> str | None:
     row = await session.get(AppSetting, key)
@@ -96,6 +107,30 @@ async def get_starting_cash(session: AsyncSession) -> dict[str, Decimal]:
 async def set_starting_cash(session: AsyncSession, mapping: dict[str, Decimal]) -> None:
     await set_setting(
         session, _STARTING_CASH_KEY, json.dumps({k: str(v) for k, v in mapping.items()})
+    )
+
+
+async def get_investing_mission_cash(session: AsyncSession) -> dict[str, Decimal]:
+    merged = dict(_DEFAULT_INVESTING_MISSION_CASH)
+    raw = await get_setting(session, _INVESTING_MISSION_CASH_KEY)
+    if raw:
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                for k, v in parsed.items():
+                    merged[str(k)] = Decimal(str(v))
+        except (ValueError, TypeError, ArithmeticError):
+            # Corrupt/hand-edited setting -> fall back to defaults rather than crash.
+            pass
+    return merged
+
+
+async def set_investing_mission_cash(session: AsyncSession, mapping: dict[str, Decimal]) -> None:
+    for v in mapping.values():
+        if Decimal(str(v)) < 0:
+            raise ValueError("investing mission cash must be >= 0")
+    await set_setting(
+        session, _INVESTING_MISSION_CASH_KEY, json.dumps({k: str(v) for k, v in mapping.items()})
     )
 
 

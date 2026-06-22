@@ -414,6 +414,7 @@ class SeasonalEventIn(BaseModel):
 class AdminSettingsOut(BaseModel):
     alert_emails: list[str]
     starting_cash: dict[str, str] = {}
+    investing_mission_cash: dict[str, str] = {}
     trade_commission_pct: str = "1.0"
     market_enroll_bonus_coins: int = 25
     market_completion_bonus_coins: int = 250
@@ -424,6 +425,7 @@ class AdminSettingsOut(BaseModel):
 class AdminSettingsUpdate(BaseModel):
     alert_emails: list[EmailStr]
     starting_cash: dict[str, str] | None = None
+    investing_mission_cash: dict[str, str] | None = None
     trade_commission_pct: str | None = None
     market_enroll_bonus_coins: int | None = None
     market_completion_bonus_coins: int | None = None
