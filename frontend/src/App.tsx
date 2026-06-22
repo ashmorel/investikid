@@ -25,6 +25,7 @@ import Coach from '@/pages/child/Coach';
 import ConsentVerify from '@/pages/ConsentVerify';
 import ForgotPassword from '@/pages/ForgotPassword';
 import Privacy from '@/pages/Privacy';
+import DeleteAccount from '@/pages/DeleteAccount';
 import Try from '@/pages/Try';
 import ResetPassword from '@/pages/ResetPassword';
 import VerifyEmail from '@/pages/VerifyEmail';
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/delete-account" element={<DeleteAccount />} />
         <Route path="/try" element={<Try />} />
         <Route path="/pending-consent" element={<PendingConsent />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
