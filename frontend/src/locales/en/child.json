@@ -18,6 +18,12 @@
     "loading": "Loading…"
   },
 
+  "routeError": {
+    "title": "Oops — this page hit a snag",
+    "body": "You can tap another tab to keep going, or reload to try this page again.",
+    "reload": "Reload this page"
+  },
+
   "tierChip": {
     "label": "Investor mode",
     "text": "Investor"

@@ -13,6 +13,7 @@ import { TopNav } from './TopNav';
 import { TierBadge } from './TierBadge';
 import { BottomTabBar } from './BottomTabBar';
 import { SkipLink } from '@/components/a11y/SkipLink';
+import { RouteErrorBoundary } from '@/components/a11y/RouteErrorBoundary';
 import { useRouteFocus } from '@/components/a11y/useRouteFocus';
 import { useRecommendations } from '@/api/ai';
 import { PennyFAB } from './PennyFAB';
@@ -99,7 +100,9 @@ export function Shell() {
               exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
               transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
             >
-              <Outlet />
+              <RouteErrorBoundary>
+                <Outlet />
+              </RouteErrorBoundary>
             </motion.main>
           </AnimatePresence>
         </div>
