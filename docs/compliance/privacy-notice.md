@@ -1,16 +1,16 @@
-# Invest-Ed Privacy Notice
+# InvestiKid Privacy Notice
 
 **PRIVACY_NOTICE_VERSION = 2026-05-16**
 
-When you sign up to Invest-Ed, we show you this notice and record that you (or your parent or guardian) agreed to it. If we make important changes, we will show you the updated notice and ask you to agree again before you can keep using the app.
+When you sign up to InvestiKid, we show you this notice and record that you (or your parent or guardian) agreed to it. If we make important changes, we will show you the updated notice and ask you to agree again before you can keep using the app.
 
 This notice is written for young learners aged 8 and above. If there is anything you do not understand, please ask a grown-up to help you.
 
 ---
 
-## What is Invest-Ed?
+## What is InvestiKid?
 
-Invest-Ed is a learning app that teaches you about money — how to save it, how to spend it wisely, and how the world of investing works. To do that, we need to know a few things about you so that the app works properly and keeps you safe.
+InvestiKid is a learning app that teaches you about money — how to save it, how to spend it wisely, and how the world of investing works. To do that, we need to know a few things about you so that the app works properly and keeps you safe.
 
 ---
 
@@ -57,7 +57,7 @@ We only use your information to run the app and keep it safe. We do not use it t
 
 - **You** — you can always see your own information inside the app.
 - **Your parent or guardian** — if they gave permission for your account, they can see your progress and ask for a copy of your data.
-- **The Invest-Ed team** — to keep the app running, fix problems, and make sure it is safe. The team is not allowed to share your information with anyone else.
+- **The InvestiKid team** — to keep the app running, fix problems, and make sure it is safe. The team is not allowed to share your information with anyone else.
 
 We do **not** share your personal information with advertisers, data brokers, or any other company.
 
@@ -97,7 +97,7 @@ If you or your parent or guardian asks us to delete your account:
 
 ## Your choices
 
-You are in control of some things on Invest-Ed:
+You are in control of some things on InvestiKid:
 
 - **Personalised recommendations** — we can suggest lessons based on what you have already done. This is switched **off** by default. You (or your parent or guardian) can switch it on in your account settings if you would like it.
 - **Marketing messages** — we do not send marketing emails unless you ask us to. This is switched **off** by default. You can change this in account settings.
@@ -114,7 +114,7 @@ You are in control of some things on Invest-Ed:
 
 If you have a question about your information, or if you want to ask for a copy of your data or delete your account, please contact us at:
 
-**privacy@invest-ed.app**
+**privacy@investikid.ai**
 
 If you are a parent or guardian with a concern about your child's account, please use the same address. We will respond within 30 days.
 

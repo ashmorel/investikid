@@ -1,6 +1,6 @@
 # Data Protection Impact Assessment (DPIA)
 
-**Product:** Invest-Ed  
+**Product:** InvestiKid  
 **Version:** 1.0  
 **Date:** 2026-05-16  
 **Privacy Notice Version:** 2026-05-16  
@@ -11,7 +11,7 @@
 
 ## 1. Scope
 
-Invest-Ed is a financial literacy education platform aimed primarily at young learners aged 8 and above, accessible via web browser. The platform delivers structured lessons on personal finance, investments, and economic concepts, with gamified progress mechanics including experience points (XP), levels, streaks, and virtual coins.
+InvestiKid is a financial literacy education platform aimed primarily at young learners aged 8 and above, accessible via web browser. The platform delivers structured lessons on personal finance, investments, and economic concepts, with gamified progress mechanics including experience points (XP), levels, streaks, and virtual coins.
 
 Because the platform explicitly targets children and processes personal data of minors, it falls within the scope of heightened child data protection regulation across its target markets. Jurisdiction is resolved on a per-user basis at registration time using `app/services/compliance.py::resolve_policy(country_code, dob, today)`, which maps the combination of a user's declared country code and date of birth to one of the following regulatory regimes:
 
@@ -61,7 +61,7 @@ The following table enumerates every column in the `users` table (defined in `ap
 
 ### 3.1 UK — AADC + UK GDPR
 
-The UK Children's Code (Age Appropriate Design Code) applies to information society services likely to be accessed by under-18s. Invest-Ed is explicitly designed for children, so the Code applies in full.
+The UK Children's Code (Age Appropriate Design Code) applies to information society services likely to be accessed by under-18s. InvestiKid is explicitly designed for children, so the Code applies in full.
 
 **Parental consent for under-13s:** UK GDPR Article 8 sets the UK age of digital consent at 13. Users whose resolved age (from `dob` and `country_code = GB`) is below 13 must provide a parent email at registration. The account is created in an inactive state (`is_active = False`) with no personal email collected from the child. A consent invitation is sent to the parent email. The account activates and `parent_consent_given_at` is set only after the parent follows the consent link. Until activation the child has no access to the platform.
 
@@ -75,7 +75,7 @@ The UK Children's Code (Age Appropriate Design Code) applies to information soci
 
 COPPA applies to online services directed at children under 13, or where the operator has actual knowledge that a user is under 13.
 
-**Parental consent for under-13s:** COPPA requires verifiable parental consent before collecting, using, or disclosing personal information from children under 13. Invest-Ed implements an email-based parental consent gate: an email is sent to the provided `parent_email` and the account activates only when the parent clicks through. This mechanism is materially weaker than COPPA's preferred methods of verifiable consent (credit card charge, signed consent form, video call). See Residual Risks §5 for details.
+**Parental consent for under-13s:** COPPA requires verifiable parental consent before collecting, using, or disclosing personal information from children under 13. InvestiKid implements an email-based parental consent gate: an email is sent to the provided `parent_email` and the account activates only when the parent clicks through. This mechanism is materially weaker than COPPA's preferred methods of verifiable consent (credit card charge, signed consent form, video call). See Residual Risks §5 for details.
 
 **No behavioural advertising:** `marketing_opt_in` is `false` by default and under-13 US accounts are excluded from any marketing regardless of opt-in status.
 
@@ -87,7 +87,7 @@ GDPR Article 8 allows member states to set the age of digital consent between 13
 
 ### 3.4 HK PDPO — Hong Kong
 
-The Personal Data (Privacy) Ordinance establishes six Data Protection Principles. Invest-Ed's processing is designed to comply with:
+The Personal Data (Privacy) Ordinance establishes six Data Protection Principles. InvestiKid's processing is designed to comply with:
 
 - **DPP1 (Collection):** Data collected only for a directly related lawful purpose; notified to users at collection via the privacy notice.
 - **DPP2 (Accuracy):** Users may correct their data via profile PATCH endpoints.
@@ -140,7 +140,7 @@ The Personal Data (Privacy) Ordinance establishes six Data Protection Principles
 
 ### 5.1 Retention Schedule
 
-Invest-Ed implements a two-phase erasure process:
+InvestiKid implements a two-phase erasure process:
 
 **Soft delete:** When a user requests erasure (right to erasure / right to be forgotten), or when an account is administratively closed, `deleted_at` is set to the current timestamp and `is_active` is set to `false`. The account is immediately inaccessible for login and all user-facing data access. The `deletion_requested_at` timestamp is also set if the deletion was initiated by a subject rights request.
 
