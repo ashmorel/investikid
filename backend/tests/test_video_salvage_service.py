@@ -14,6 +14,25 @@ def _ok_client():
     payload = {"items": [{"status": {"embeddable": True}, "contentDetails": {"contentRating": {}}}]}
     return httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=payload)))
 
+def _bad_client():
+    # 400 (e.g. missing/invalid YouTube API key) → video_embeddability returns api_error
+    return httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(400, json={})))
+
+
+async def test_extraction_refreshes_existing_health(db_session):
+    await _seed(db_session)
+    async with _bad_client() as bad:
+        await extract_recovered_candidates(db_session, client=bad)
+    cand = (await db_session.scalars(select(VideoCandidate))).one()
+    assert cand.embeddable is False and cand.health_detail == "api_error"
+    # Re-run with a working client (e.g. the API key now configured): the existing
+    # candidate's health is refreshed, no duplicate row, status untouched.
+    async with _ok_client() as ok:
+        res = await extract_recovered_candidates(db_session, client=ok)
+    assert res["created"] == 0
+    refreshed = (await db_session.scalars(select(VideoCandidate))).one()
+    assert refreshed.embeddable is True and refreshed.health_detail is None
+
 async def _seed(db_session):
     # archived module (old) with a video lesson, + a current published module same topic
     old = Module(topic="saving", title="Old Saving", market_code="GB", order_index=0,

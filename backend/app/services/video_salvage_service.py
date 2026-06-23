@@ -43,14 +43,19 @@ async def extract_recovered_candidates(
             if not youtube_id:
                 continue
             found += 1
+            embeddable, detail = await video_embeddability(youtube_id, client=client)
             exists = (await session.scalars(select(VideoCandidate).where(
                 VideoCandidate.youtube_id == youtube_id,
                 VideoCandidate.market_code == module.market_code,
             ))).first()
             if exists:
+                # Refresh the health verdict on an already-extracted candidate (e.g.
+                # after the YouTube API key was configured, so a stale `api_error`
+                # clears) without creating a duplicate or touching its review status.
+                exists.embeddable = embeddable
+                exists.health_detail = detail
                 continue
             mod_id, lvl_id = await _topic_match(session, topic=module.topic, market_code=module.market_code)
-            embeddable, detail = await video_embeddability(youtube_id, client=client)
             session.add(VideoCandidate(
                 youtube_id=youtube_id,
                 title=cj.get("caption") or f"Video ({youtube_id})",
