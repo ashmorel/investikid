@@ -23,6 +23,7 @@ import { authApi, type Me } from '@/api/auth';
 import { trackOncePerSession } from '@/lib/analytics';
 import { EventStrip } from '@/components/child/home/EventStrip';
 import ArcadeHomeCard from '@/components/child/home/ArcadeHomeCard';
+import ArcadeDailyCard from '@/components/child/home/ArcadeDailyCard';
 
 export default function Home() {
   const { t } = useTranslation('home');
@@ -137,6 +138,10 @@ export default function Home() {
           </div>
 
           <div className="mt-4">
+            <ArcadeDailyCard />
+          </div>
+
+          <div className="mt-2">
             <ArcadeHomeCard />
           </div>
 

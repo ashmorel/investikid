@@ -1,6 +1,14 @@
 {
   "hub": { "title": "Penny's Arcade", "subtitle": "Quick games to test what you've learned." },
   "home": { "cardTitle": "Penny's Arcade", "cardCta": "Play a game" },
+  "dailyCard": {
+    "title": "MoneyWord",
+    "play": "Play",
+    "continue": "Continue",
+    "done": "Done ✓",
+    "guessesUsed": "{{count}} / {{max}} guesses used",
+    "ariaLabel": "MoneyWord daily puzzle — {{state}}"
+  },
   "quizRush": {
     "name": "Quiz Rush",
     "tagline": "Answer as many as you can in 60 seconds!",
