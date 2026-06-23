@@ -537,7 +537,7 @@ async def test_time_machine_fun_fact_safe_passthrough(client):
 # --- Language threading: all 4 simulator LLM call sites ---
 
 async def test_news_summary_threads_language(client, db_session):
-    """get_news_summary must pass current_user.language to with_guardrail_preamble."""
+    """get_news_summary must pass current_user.language to with_generation_framing."""
     from unittest.mock import AsyncMock, patch
 
     import app.routers.simulator as sim_mod
@@ -553,19 +553,19 @@ async def test_news_summary_threads_language(client, db_session):
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(return_value=safe)
 
-    with patch("app.routers.simulator.with_guardrail_preamble",
-               wraps=sim_mod.with_guardrail_preamble) as spy, \
+    with patch("app.routers.simulator.with_generation_framing",
+               wraps=sim_mod.with_generation_framing) as spy, \
          patch("app.routers.simulator.get_llm_client", return_value=mock_client):
         r = await client.get("/market/news-summary")
 
     assert r.status_code == 200
     assert any(c.kwargs.get("language") == "zh-Hant" for c in spy.call_args_list), (
-        "with_guardrail_preamble was not called with language='zh-Hant' — threading missing"
+        "with_generation_framing was not called with language='zh-Hant' — threading missing"
     )
 
 
 async def test_stock_news_summary_threads_language(client):
-    """get_stock_news_summary must pass current_user.language to with_guardrail_preamble."""
+    """get_stock_news_summary must pass current_user.language to with_generation_framing."""
     from unittest.mock import AsyncMock, patch
 
     import app.routers.simulator as sim_mod
@@ -580,19 +580,19 @@ async def test_stock_news_summary_threads_language(client):
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(return_value=safe)
 
-    with patch("app.routers.simulator.with_guardrail_preamble",
-               wraps=sim_mod.with_guardrail_preamble) as spy, \
+    with patch("app.routers.simulator.with_generation_framing",
+               wraps=sim_mod.with_generation_framing) as spy, \
          patch("app.routers.simulator.get_llm_client", return_value=mock_client):
         r = await client.get("/market/news-summary/NASDAQ/AAPL")
 
     assert r.status_code == 200
     assert any(c.kwargs.get("language") == "zh-Hant" for c in spy.call_args_list), (
-        "with_guardrail_preamble was not called with language='zh-Hant' — threading missing"
+        "with_generation_framing was not called with language='zh-Hant' — threading missing"
     )
 
 
 async def test_chart_guide_threads_language(client):
-    """get_chart_guide must pass current_user.language to with_guardrail_preamble."""
+    """get_chart_guide must pass current_user.language to with_generation_framing."""
     from unittest.mock import AsyncMock, patch
 
     import app.routers.simulator as sim_mod
@@ -607,19 +607,19 @@ async def test_chart_guide_threads_language(client):
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(return_value=safe)
 
-    with patch("app.routers.simulator.with_guardrail_preamble",
-               wraps=sim_mod.with_guardrail_preamble) as spy, \
+    with patch("app.routers.simulator.with_generation_framing",
+               wraps=sim_mod.with_generation_framing) as spy, \
          patch("app.routers.simulator.get_llm_client", return_value=mock_client):
         r = await client.get("/market/chart-guide/NASDAQ/AAPL")
 
     assert r.status_code == 200
     assert any(c.kwargs.get("language") == "zh-Hant" for c in spy.call_args_list), (
-        "with_guardrail_preamble was not called with language='zh-Hant' — threading missing"
+        "with_generation_framing was not called with language='zh-Hant' — threading missing"
     )
 
 
 async def test_time_machine_threads_language(client):
-    """get_time_machine must pass current_user.language to with_guardrail_preamble."""
+    """get_time_machine must pass current_user.language to with_generation_framing."""
     from unittest.mock import AsyncMock, patch
 
     import app.routers.simulator as sim_mod
@@ -634,12 +634,12 @@ async def test_time_machine_threads_language(client):
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(return_value=safe)
 
-    with patch("app.routers.simulator.with_guardrail_preamble",
-               wraps=sim_mod.with_guardrail_preamble) as spy, \
+    with patch("app.routers.simulator.with_generation_framing",
+               wraps=sim_mod.with_generation_framing) as spy, \
          patch("app.routers.simulator.get_llm_client", return_value=mock_client):
         r = await client.get("/market/time-machine/NASDAQ/AAPL")
 
     assert r.status_code == 200
     assert any(c.kwargs.get("language") == "zh-Hant" for c in spy.call_args_list), (
-        "with_guardrail_preamble was not called with language='zh-Hant' — threading missing"
+        "with_generation_framing was not called with language='zh-Hant' — threading missing"
     )

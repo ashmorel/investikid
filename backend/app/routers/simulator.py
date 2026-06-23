@@ -52,7 +52,7 @@ from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
 )
-from app.services.guardrails import log_guardrail_event, with_guardrail_preamble
+from app.services.guardrails import log_guardrail_event, with_generation_framing
 from app.services.llm_client import LLMError, get_llm_client
 from app.services.moderation import moderate_output
 from app.services.premium_config import premium_required_error
@@ -250,9 +250,7 @@ async def get_news_summary(
     llm = get_llm_client(tier="lite")
     try:
         summary = await llm.complete(
-            system_prompt=with_guardrail_preamble(
-                system_prompt, language=current_user.language, allow_market_summary=True
-            ),
+            system_prompt=with_generation_framing(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Here are today's headlines about my stocks:\n{headlines}"}],
             temperature=0.5,
             # "2-4 sentences" can exceed 200 tokens and get cut mid-sentence.
@@ -330,9 +328,7 @@ async def get_stock_news_summary(
     llm = get_llm_client(tier="lite")
     try:
         summary = await llm.complete(
-            system_prompt=with_guardrail_preamble(
-                system_prompt, language=current_user.language, allow_market_summary=True
-            ),
+            system_prompt=with_generation_framing(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Recent news about {ticker}:\n{headlines}"}],
             temperature=0.5,
             # "2-3 sentences" can exceed 200 tokens and get cut mid-sentence.
@@ -406,9 +402,7 @@ async def get_chart_guide(
     llm = get_llm_client(tier="standard")
     try:
         summary = await llm.complete(
-            system_prompt=with_guardrail_preamble(
-                system_prompt, language=current_user.language, allow_market_summary=True
-            ),
+            system_prompt=with_generation_framing(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Here's the chart data:\n{stats}"}],
             temperature=0.7,
             # 2-3 sentences + a closing question can exceed 250 tokens and get
@@ -542,14 +536,13 @@ async def get_time_machine(
         llm = get_llm_client(tier="lite")
         try:
             fun_fact = await llm.complete(
-                system_prompt=with_guardrail_preamble(
+                system_prompt=with_generation_framing(
                     f"You are a friendly investing teacher for a {age}-year-old. "
                     "Write ONE short, fun 'Did you know?' fact comparing the investment return to "
                     "something relatable for a young person (university fees, a car, a holiday, "
                     "a gaming setup, etc). Keep it to 1-2 sentences. Be encouraging but never "
                     "give investment advice. Use the reader's perspective ('you' not 'they').",
                     language=current_user.language,
-                    allow_market_summary=True,
                 ),
                 messages=[{
                     "role": "user",

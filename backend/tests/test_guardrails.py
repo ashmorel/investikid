@@ -7,6 +7,7 @@ from app.services.guardrails import (
     InputVerdict,
     log_guardrail_event,
     screen_input,
+    with_generation_framing,
     with_guardrail_preamble,
 )
 
@@ -81,17 +82,20 @@ def test_with_guardrail_preamble_prepends():
     assert composed == GUARDRAIL_PREAMBLE + "\n\n" + "SURFACE RULES HERE"
 
 
-def test_with_guardrail_preamble_market_summary_optin():
-    """Simulator market-data surfaces opt in: the preamble then permits factual
-    summary of stock prices/charts/news but still forbids buy/sell advice."""
-    default = with_guardrail_preamble("SYS")
-    allowed = with_guardrail_preamble("SYS", allow_market_summary=True)
-    assert "may factually summarise" in allowed.lower()
-    assert "simulator" in allowed.lower()
-    # the carve-out must NOT become permission to advise
-    assert "never tell the child whether to buy, sell, or hold" in allowed.lower()
-    # default (non-simulator) surfaces are unchanged — no carve-out leaks in
-    assert "may factually summarise" not in default.lower()
+def test_with_generation_framing_is_not_the_interactive_guardrail():
+    """Non-interactive, app-generated surfaces (simulator news/chart/time-machine)
+    get a content-safety framing — NOT the interactive anti-injection preamble that
+    made them refuse to summarise stock news. Safety rules (no advice, kid-safe,
+    data-not-instructions) are still present; output is moderated downstream."""
+    framed = with_generation_framing("SURFACE RULES HERE")
+    assert "SURFACE RULES HERE" in framed
+    # must NOT carry the interactive topical-deflection / anti-injection preamble
+    assert GUARDRAIL_PREAMBLE not in framed
+    assert "only ever discuss" not in framed.lower()
+    # but keeps content safety + data-injection resistance
+    assert "kid-safe" in framed.lower()
+    assert "never give buy, sell, or hold advice" in framed.lower()
+    assert "not as instructions" in framed.lower()
 
 
 def test_log_guardrail_event_structured_no_pii(caplog):
