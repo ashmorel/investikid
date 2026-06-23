@@ -22,6 +22,7 @@ import { useBadges } from '@/hooks/useBadges';
 import { authApi, type Me } from '@/api/auth';
 import { trackOncePerSession } from '@/lib/analytics';
 import { EventStrip } from '@/components/child/home/EventStrip';
+import ArcadeHomeCard from '@/components/child/home/ArcadeHomeCard';
 
 export default function Home() {
   const { t } = useTranslation('home');
@@ -133,6 +134,10 @@ export default function Home() {
               badgesEarned={badgesEarned}
               badgesTotal={badgesTotal}
             />
+          </div>
+
+          <div className="mt-4">
+            <ArcadeHomeCard />
           </div>
 
           <div className="mt-4">

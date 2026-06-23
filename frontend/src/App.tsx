@@ -22,6 +22,7 @@ import Stats from '@/pages/child/Stats';
 import Revise from '@/pages/child/Revise';
 import StrengthsGaps from '@/pages/child/StrengthsGaps';
 import Coach from '@/pages/child/Coach';
+import Arcade from '@/pages/child/Arcade';
 import ConsentVerify from '@/pages/ConsentVerify';
 import ForgotPassword from '@/pages/ForgotPassword';
 import Privacy from '@/pages/Privacy';
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="/revise" element={<Revise />} />
           <Route path="/revise/session" element={<Suspense fallback={null}><ReviseSession /></Suspense>} />
           <Route path="/coach" element={<Coach />} />
+          <Route path="/arcade" element={<Arcade />} />
         </Route>
 
         {/* Existing parent + consent routes (untouched) */}

@@ -1,0 +1,19 @@
+{
+  "hub": { "title": "Penny's Arcade", "subtitle": "Quick games to test what you've learned." },
+  "home": { "cardTitle": "Penny's Arcade", "cardCta": "Play a game" },
+  "quizRush": {
+    "name": "Quiz Rush",
+    "tagline": "Answer as many as you can in 60 seconds!",
+    "play": "Play",
+    "start": "Start",
+    "timeLeft": "Time left",
+    "score": "Score",
+    "combo": "Combo",
+    "results": "Results",
+    "personalBest": "Your best",
+    "coinsEarned": "Coins earned",
+    "playAgain": "Play again",
+    "backToArcade": "Back to Arcade",
+    "noQuestions": "No questions available yet — finish a lesson first!"
+  }
+}
