@@ -81,6 +81,19 @@ def test_with_guardrail_preamble_prepends():
     assert composed == GUARDRAIL_PREAMBLE + "\n\n" + "SURFACE RULES HERE"
 
 
+def test_with_guardrail_preamble_market_summary_optin():
+    """Simulator market-data surfaces opt in: the preamble then permits factual
+    summary of stock prices/charts/news but still forbids buy/sell advice."""
+    default = with_guardrail_preamble("SYS")
+    allowed = with_guardrail_preamble("SYS", allow_market_summary=True)
+    assert "may factually summarise" in allowed.lower()
+    assert "simulator" in allowed.lower()
+    # the carve-out must NOT become permission to advise
+    assert "never tell the child whether to buy, sell, or hold" in allowed.lower()
+    # default (non-simulator) surfaces are unchanged — no carve-out leaks in
+    assert "may factually summarise" not in default.lower()
+
+
 def test_log_guardrail_event_structured_no_pii(caplog):
     with caplog.at_level(logging.INFO, logger="app.services.guardrails"):
         log_guardrail_event(

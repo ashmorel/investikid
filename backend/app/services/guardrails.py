@@ -56,11 +56,34 @@ def screen_input(text: str, *, surface: str) -> InputVerdict:
         return InputVerdict(True, "error", _fallback_for(surface))
 
 
-def with_guardrail_preamble(system_prompt: str, *, language: str = "en") -> str:
+# Opt-in clause for the practice simulator's market-data surfaces (news summary,
+# chart guide, time machine). Without it the model treats "summarise this stock's
+# news/chart" as outside personal-finance learning and deflects to a generic
+# "we only teach saving/spending/earning" reply. Summarising the real prices,
+# charts, and news the app ALREADY shows the child is on-topic financial-news
+# education — NOT investment advice (the no buy/sell/hold rule is restated here so
+# the carve-out can't be read as permission to advise).
+_MARKET_SUMMARY_ALLOWANCE = (
+    " The child is using the practice stock-market simulator, so their active "
+    "activity INCLUDES the real stock prices, charts, and news headlines the app "
+    "shows them. You MAY factually summarise and explain those in age-appropriate "
+    "language — that is on-topic. This is NOT investment advice: STILL never tell "
+    "the child whether to buy, sell, or hold, and never predict future prices."
+)
+
+
+def with_guardrail_preamble(
+    system_prompt: str, *, language: str = "en", allow_market_summary: bool = False
+) -> str:
     """Prepend the shared guardrail preamble to a surface's system prompt, and
     append a language directive so the model replies in the user's language.
-    `language` defaults to "en" (no-op) for backward compatibility."""
-    body = f"{GUARDRAIL_PREAMBLE}\n\n{system_prompt}"
+    `language` defaults to "en" (no-op) for backward compatibility.
+
+    `allow_market_summary=True` (simulator news/chart/time-machine surfaces) adds a
+    clause permitting factual summary of the market data the app shows, so the
+    guardrail doesn't make the model refuse to summarise stock news/charts."""
+    preamble = GUARDRAIL_PREAMBLE + (_MARKET_SUMMARY_ALLOWANCE if allow_market_summary else "")
+    body = f"{preamble}\n\n{system_prompt}"
     directive = language_directive(language)
     return f"{body}\n\n{directive}" if directive else body
 
