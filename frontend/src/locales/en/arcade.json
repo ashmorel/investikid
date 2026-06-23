@@ -16,5 +16,32 @@
     "playAgain": "Play again",
     "backToArcade": "Back to Arcade",
     "noQuestions": "No questions available yet — finish a lesson first!"
+  },
+  "moneyword": {
+    "name": "MoneyWord",
+    "tagline": "Guess the daily finance word!",
+    "loading": "Loading today's puzzle…",
+    "loadError": "Couldn't load today's puzzle. Please try again later.",
+    "gridLabel": "MoneyWord guess grid",
+    "keyboardLabel": "Letter keyboard",
+    "enter": "Enter",
+    "backspace": "Delete last letter",
+    "guessError": "Guess not accepted. Try another word.",
+    "guessesLeft": "{{count}} guesses remaining",
+    "guessesLeft_one": "1 guess remaining",
+    "solved": "Solved!",
+    "failed": "No more guesses.",
+    "solvedMessage": "You got it in {{count}}!",
+    "solvedMessage_one": "You got it in 1!",
+    "failedMessage": "Better luck tomorrow!",
+    "definitionLabel": "Definition",
+    "share": "Share result",
+    "shareHeader": "MoneyWord",
+    "backToArcade": "Back to Arcade",
+    "tileLabel": {
+      "correct": "{{letter}}: correct",
+      "present": "{{letter}}: wrong position",
+      "absent": "{{letter}}: not in word"
+    }
   }
 }

@@ -24,6 +24,7 @@ import StrengthsGaps from '@/pages/child/StrengthsGaps';
 import Coach from '@/pages/child/Coach';
 import Arcade from '@/pages/child/Arcade';
 import QuizRush from '@/pages/child/games/QuizRush';
+import MoneyWord from '@/pages/child/games/MoneyWord';
 import ConsentVerify from '@/pages/ConsentVerify';
 import ForgotPassword from '@/pages/ForgotPassword';
 import Privacy from '@/pages/Privacy';
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="/coach" element={<Coach />} />
           <Route path="/arcade" element={<Arcade />} />
           <Route path="/arcade/quiz-rush" element={<QuizRush />} />
+          <Route path="/arcade/moneyword" element={<MoneyWord />} />
         </Route>
 
         {/* Existing parent + consent routes (untouched) */}

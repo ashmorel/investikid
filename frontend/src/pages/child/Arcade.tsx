@@ -17,6 +17,15 @@ export default function Arcade() {
             <div className="text-sm text-muted-foreground">{t('quizRush.tagline')}</div>
           </Link>
         </li>
+        <li>
+          <Link
+            to="/arcade/moneyword"
+            className="block rounded-xl border border-line bg-card p-4 min-h-[44px] focus-visible:outline focus-visible:outline-2"
+          >
+            <div className="text-base font-extrabold text-ink">🟩 {t('moneyword.name')}</div>
+            <div className="text-sm text-muted-foreground">{t('moneyword.tagline')}</div>
+          </Link>
+        </li>
       </ul>
     </main>
   );
