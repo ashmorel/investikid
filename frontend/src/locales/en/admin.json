@@ -256,6 +256,24 @@
     "suggestModuleAriaLabel": "Module for video suggestions",
     "suggestLevelAriaLabel": "Level for video suggestions"
   },
+  "arcadeWordBank": {
+    "heading": "Arcade word bank",
+    "subtitle": "Review LLM-suggested words for MoneyWord. Approve (with optional edits) or reject each pending word. Use Suggest to queue more candidates.",
+    "wordLabel": "Word",
+    "definitionLabel": "Definition",
+    "approve": "Approve",
+    "reject": "Reject",
+    "suggestCountLabel": "Count",
+    "suggestButton": "Suggest {{count}}",
+    "suggestedResult": "Queued {{count}} new word(s) for review.",
+    "statusFilterLabel": "Filter by status",
+    "statusPending": "Pending",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "loading": "Loading…",
+    "empty": "No words with this status.",
+    "meta": "{{language}} · {{length}} letters · {{source}} · {{status}}"
+  },
   "sidebar": {
     "title": "InvestiKid Admin",
     "nav": "Admin navigation",
@@ -268,6 +286,7 @@
       "videoHealth": "Video health",
       "videoCuration": "Video curation",
       "marketContent": "Market content",
+      "arcadeWordBank": "Word bank",
       "analytics": "Analytics",
       "settings": "Settings"
     },
