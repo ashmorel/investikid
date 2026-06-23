@@ -39,6 +39,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/internal/subscriptions/reconcile",
     "/internal/purge-archived-modules",
     "/internal/market-content",
+    "/internal/video-candidates/extract",
     "/parent/auth/oauth/google",
     "/parent/auth/oauth/apple",
 })

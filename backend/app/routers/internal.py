@@ -16,6 +16,7 @@ from app.services import (
     subscription_reconcile_service,
     trial_reminder_service,
 )
+from app.services.video_salvage_service import extract_recovered_candidates
 from app.video_health.run import run
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -112,6 +113,18 @@ async def trigger_purge_archived_modules(
     purged = await module_purge_service.purge_archived_modules(session, now=datetime.now(UTC))
     await session.commit()
     return {"purged": purged}
+
+
+@router.post("/video-candidates/extract")
+async def trigger_video_candidate_extract(
+    x_cron_secret: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+):
+    if not settings.cron_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    return await extract_recovered_candidates(session)
 
 
 @router.post("/market-content")
