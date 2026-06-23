@@ -7,6 +7,7 @@
     "play": "Play",
     "start": "Start",
     "timeLeft": "Time left",
+    "secondsValue": "{{count}}s",
     "score": "Score",
     "combo": "Combo",
     "results": "Results",
