@@ -14,6 +14,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from app.core.config import settings
 from app.core.csrf import CSRFMiddleware
 from app.core.rate_limit import limiter
+from app.routers import arcade as arcade_router
 from app.routers import admin as admin_router
 from app.routers import admin_analytics as admin_analytics_router
 from app.routers import ai as ai_router
@@ -216,6 +217,7 @@ def create_app() -> FastAPI:
     application.include_router(feedback_router.parent_feedback_router)
     application.include_router(analytics_router.router)
     application.include_router(internal_router.router)
+    application.include_router(arcade_router.router)
 
     return application
 
