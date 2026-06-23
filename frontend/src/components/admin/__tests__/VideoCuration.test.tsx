@@ -13,6 +13,15 @@ vi.mock('@/api/admin', () => ({
   useModules: () => ({
     data: [
       { id: 'm1', title: 'Saving basics', topic: 'saving', market_code: 'GB' },
+      // Archived module in the SAME market — must never be offered as an approve
+      // or suggest target (an approved video would land in an invisible module).
+      {
+        id: 'm-arch',
+        title: 'Archived Stock',
+        topic: 'stocks',
+        market_code: 'GB',
+        archived_at: '2026-01-01T00:00:00Z',
+      },
     ],
     isLoading: false,
   }),
@@ -73,6 +82,17 @@ describe('VideoCuration', () => {
     await screen.findByText('Saving 101');
     // Both the suggest-panel module select AND the per-row module select must render.
     expect(screen.getAllByRole('combobox', { name: /module/i }).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('never offers archived modules as approve/suggest targets', async () => {
+    wrap(<VideoCuration />);
+    await screen.findByText('Saving 101');
+    // Archived module is in the same market as the candidate but must be hidden
+    // from BOTH the suggest panel and the per-row approve picker — otherwise an
+    // approved video lands in a module no child can see.
+    expect(screen.queryByRole('option', { name: 'Archived Stock' })).not.toBeInTheDocument();
+    // The live, same-market module is still offered (in both selects).
+    expect(screen.getAllByRole('option', { name: 'Saving basics' }).length).toBeGreaterThanOrEqual(2);
   });
 
   it('has no axe violations', async () => {

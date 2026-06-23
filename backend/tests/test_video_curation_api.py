@@ -59,6 +59,25 @@ async def test_approve_blocked_when_not_embeddable(admin_client, db_session):
     assert r.status_code == 409
 
 
+async def test_approve_rejects_archived_module(admin_client, db_session):
+    import datetime as dt
+
+    c, m, lvl = await _candidate(db_session)
+    m.archived_at = dt.datetime.now(dt.UTC)
+    await db_session.flush()
+    r = await admin_client.post(
+        f"/admin/video-candidates/{c.id}/approve",
+        json={"module_id": str(m.id), "level_id": str(lvl.id)},
+    )
+    # Approving into an archived module would bury the video where no child can
+    # see it — reject it rather than silently creating an invisible lesson.
+    assert r.status_code == 422
+    assert (await db_session.scalars(select(Lesson).where(Lesson.type == "video"))).first() is None
+    refreshed = await db_session.get(VideoCandidate, c.id)
+    await db_session.refresh(refreshed)
+    assert refreshed.status == "pending"
+
+
 async def test_skip(admin_client, db_session):
     c, m, lvl = await _candidate(db_session)
     r = await admin_client.post(f"/admin/video-candidates/{c.id}/skip")

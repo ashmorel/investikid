@@ -173,7 +173,9 @@ export default function VideoCuration() {
   });
 
   const modulesQ = useModules();
-  const modules = modulesQ.data ?? [];
+  // Only LIVE modules are valid curation targets. Archived modules are invisible
+  // to children, so approving/suggesting a video into one silently buries it.
+  const modules = (modulesQ.data ?? []).filter((m) => !m.archived_at);
 
   const suggestLevelsQ = useLevels(suggestModuleId);
   const suggestLevels = suggestLevelsQ.data ?? [];

@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
-from app.models.content import Lesson, Level, VideoCandidate
+from app.models.content import Lesson, Level, Module, VideoCandidate
 from app.routers.admin_auth import get_current_admin
 from app.schemas.admin import ApproveCandidateIn, SuggestVideosIn, VideoCandidateOut
 from app.services.video_suggest_service import suggest_videos
@@ -50,6 +50,12 @@ async def approve_candidate(
     level = await session.get(Level, payload.level_id)
     if level is None or level.module_id != payload.module_id:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "level does not belong to module")
+    module = await session.get(Module, payload.module_id)
+    if module is None or module.archived_at is not None:
+        # Archived modules are invisible to children; an approved video must land
+        # in a live module or it is silently buried (see incident: recovered
+        # videos approved back into their old archived modules).
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "module is archived or missing")
     max_idx = await session.scalar(
         select(func.max(Lesson.order_index)).where(Lesson.level_id == level.id)
     )
