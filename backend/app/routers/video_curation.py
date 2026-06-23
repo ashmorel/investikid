@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -41,17 +41,11 @@ async def approve_candidate(
         raise HTTPException(status.HTTP_409_CONFLICT, "video failed the embeddability/safety check")
     level = await session.get(Level, payload.level_id)
     if level is None or level.module_id != payload.module_id:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "level does not belong to module")
-    next_order = (
-        (
-            await session.scalar(
-                select(Lesson.order_index)
-                .where(Lesson.level_id == level.id)
-                .order_by(Lesson.order_index.desc())
-            )
-        )
-        or -1
-    ) + 1
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "level does not belong to module")
+    max_idx = await session.scalar(
+        select(func.max(Lesson.order_index)).where(Lesson.level_id == level.id)
+    )
+    next_order = 0 if max_idx is None else max_idx + 1
     lesson = Lesson(
         module_id=payload.module_id,
         level_id=level.id,

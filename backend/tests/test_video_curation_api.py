@@ -66,3 +66,44 @@ async def test_skip(admin_client, db_session):
     refreshed = await db_session.get(VideoCandidate, c.id)
     await db_session.refresh(refreshed)
     assert refreshed.status == "skipped"
+
+
+async def test_approve_order_index_no_collision(admin_client, db_session):
+    """Approving into a level that already has a lesson at order_index=0 must produce order_index=1, not a duplicate 0."""
+    m = Module(topic="budgeting", title="Budgeting Basics", market_code="GB", order_index=0, published=True)
+    db_session.add(m)
+    await db_session.flush()
+    lvl = Level(module_id=m.id, title="L1", order_index=0)
+    db_session.add(lvl)
+    await db_session.flush()
+    existing = Lesson(
+        module_id=m.id,
+        level_id=lvl.id,
+        type="card",
+        content_json={"title": "x"},
+        xp_reward=10,
+        order_index=0,
+    )
+    db_session.add(existing)
+    await db_session.flush()
+    c = VideoCandidate(
+        youtube_id="vid_order",
+        title="Order Test",
+        source="recovered",
+        market_code="GB",
+        suggested_module_id=m.id,
+        suggested_level_id=lvl.id,
+        embeddable=True,
+    )
+    db_session.add(c)
+    await db_session.flush()
+    r = await admin_client.post(
+        f"/admin/video-candidates/{c.id}/approve",
+        json={"module_id": str(m.id), "level_id": str(lvl.id)},
+    )
+    assert r.status_code == 200
+    lessons = list(
+        (await db_session.scalars(select(Lesson).where(Lesson.level_id == lvl.id))).all()
+    )
+    video_lesson = next(ls for ls in lessons if ls.type == "video")
+    assert video_lesson.order_index == 1
