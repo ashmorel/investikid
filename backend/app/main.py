@@ -14,11 +14,11 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from app.core.config import settings
 from app.core.csrf import CSRFMiddleware
 from app.core.rate_limit import limiter
-from app.routers import arcade as arcade_router
 from app.routers import admin as admin_router
 from app.routers import admin_analytics as admin_analytics_router
 from app.routers import ai as ai_router
 from app.routers import analytics as analytics_router
+from app.routers import arcade as arcade_router
 from app.routers import auth as auth_router
 from app.routers import billing as billing_router
 from app.routers import consent as consent_router

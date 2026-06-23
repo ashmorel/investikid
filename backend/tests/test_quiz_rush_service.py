@@ -2,7 +2,6 @@
 import datetime as dt
 
 import pytest
-from sqlalchemy import select
 
 from app.models.content import Lesson, LessonCompletion, Level, Module
 from app.models.user import User
@@ -101,7 +100,6 @@ async def test_build_session_prefers_unlocked_lessons(db_session):
     which is < COLD_START_MIN), the service falls back to all published quiz lessons.
     But we assert that the completed lesson is present in the returned set, verifying
     the unlocked-first query works and the fallback includes both lessons."""
-    from app.services.quiz_rush_service import COLD_START_MIN
 
     user, completed_lesson, unrelated_lesson = await _seed_quiz_session(db_session)
 
