@@ -127,6 +127,12 @@
       "buy": "Buy",
       "keepSaving": "Keep saving"
     },
+    "avatarLabel": "Your Penny",
+    "tabs": {
+      "accessory": "Accessories",
+      "background": "Backgrounds",
+      "skin": "Skins"
+    },
     "itemPremiumSr": " — Premium item",
     "confirmTitle": "Buy {{name}}?",
     "confirmMessage": "This costs {{cost}} coins. You have {{balance}}.",
