@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { SKIN } from './pennyScenes';
 
 type Mood = 'happy' | 'thinking' | 'excited';
 
@@ -25,16 +26,19 @@ export function Penny({
   size = 48,
   mood = 'happy',
   accessory,
+  skin,
   className,
 }: {
   size?: number;
   mood?: Mood;
   accessory?: string | null;
+  skin?: string | null;
   className?: string;
 }) {
   const uid = useId();
   const gradId = `penny-${uid}`;
-  const [from, to] = MOOD_GRADIENT[mood];
+  const skinPair = skin ? SKIN[skin] : undefined;
+  const [from, to] = skinPair ?? MOOD_GRADIENT[mood];
   const acc = accessory ? ACCESSORY[accessory] : undefined;
   return (
     <svg
