@@ -35,6 +35,7 @@ from app.routers import premium as premium_router
 from app.routers import revise as revise_router
 from app.routers import simulator as simulator_router
 from app.routers import users as users_router
+from app.routers import video_curation as video_curation_router
 from app.services.alerting import on_all_providers_down, on_provider_degraded
 from app.services.llm_client import LLMError, set_failure_hook
 
@@ -209,6 +210,7 @@ def create_app() -> FastAPI:
     application.include_router(billing_router.router)
     application.include_router(admin_router.router)
     application.include_router(admin_analytics_router.router)
+    application.include_router(video_curation_router.router)
     application.include_router(feedback_router.router)
     application.include_router(feedback_router.admin_router)
     application.include_router(feedback_router.parent_feedback_router)

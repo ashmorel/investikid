@@ -561,3 +561,26 @@ class CurriculumDesignOut(BaseModel):
     proposal_id: str
     proposal: dict
     coverage: dict
+
+
+# ── Video curation ───────────────────────────────────────────────────
+class VideoCandidateOut(BaseModel):
+    id: uuid.UUID
+    youtube_id: str
+    title: str
+    thumbnail_url: str | None
+    source: str
+    market_code: str
+    origin_context: str | None
+    suggested_module_id: uuid.UUID | None
+    suggested_level_id: uuid.UUID | None
+    embeddable: bool | None
+    health_detail: str | None
+    status: str
+
+    model_config = {"from_attributes": True}
+
+
+class ApproveCandidateIn(BaseModel):
+    module_id: uuid.UUID
+    level_id: uuid.UUID
