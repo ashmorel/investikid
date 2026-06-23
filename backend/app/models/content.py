@@ -11,6 +11,7 @@ from sqlalchemy import (
     Numeric,
     String,
     UniqueConstraint,
+    func,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -142,4 +143,36 @@ class LessonView(Base):
     )
     first_viewed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class VideoCandidate(Base):
+    """Review queue for video lessons awaiting an operator's approval. Fed by the
+    recovered-videos extraction and the YouTube suggestion endpoint; an approved
+    candidate becomes a `video` Lesson."""
+    __tablename__ = "video_candidates"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    youtube_id: Mapped[str] = mapped_column(String(20), nullable=False)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    thumbnail_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    source: Mapped[str] = mapped_column(String(12), nullable=False)  # recovered | suggested
+    market_code: Mapped[str] = mapped_column(String(2), ForeignKey("markets.code"), nullable=False, index=True)
+    origin_context: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    suggested_module_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("modules.id", ondelete="SET NULL"), nullable=True
+    )
+    suggested_level_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("levels.id", ondelete="SET NULL"), nullable=True
+    )
+    embeddable: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    health_detail: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    status: Mapped[str] = mapped_column(String(12), nullable=False, server_default="pending", index=True)
+    created_lesson_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("lessons.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("youtube_id", "market_code", name="uq_video_candidate_video_market"),
     )
