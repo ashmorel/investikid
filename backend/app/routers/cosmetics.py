@@ -26,6 +26,7 @@ class CosmeticOut(BaseModel):
     slug: str
     name: str
     emoji: str
+    type: str
     coin_cost: int
     is_premium: bool
     owned: bool
@@ -66,6 +67,7 @@ async def _shop_state(session: AsyncSession, user: User) -> ShopResponse:
                 slug=item.slug,
                 name=item.name,
                 emoji=item.emoji,
+                type=item.type,
                 coin_cost=item.coin_cost,
                 is_premium=item.is_premium,
                 owned=item.id in owned_rows,
@@ -145,10 +147,18 @@ async def equip_item(
     )
     if owned is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "not_owned")
-    # At most one equipped accessory: unequip everything else first.
+    target = await session.get(CosmeticItem, item_id)
+    if target is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "not_found")
+    # One equipped per category: unequip only the user's SAME-TYPE items.
     await session.execute(
         update(UserCosmetic)
-        .where(UserCosmetic.user_id == current_user.id)
+        .where(
+            UserCosmetic.user_id == current_user.id,
+            UserCosmetic.item_id.in_(
+                select(CosmeticItem.id).where(CosmeticItem.type == target.type)
+            ),
+        )
         .values(equipped=False)
     )
     owned.equipped = True
@@ -157,13 +167,19 @@ async def equip_item(
 
 
 @router.post("/unequip")
-async def unequip_all(
+async def unequip_type(
+    type: str,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     await session.execute(
         update(UserCosmetic)
-        .where(UserCosmetic.user_id == current_user.id)
+        .where(
+            UserCosmetic.user_id == current_user.id,
+            UserCosmetic.item_id.in_(
+                select(CosmeticItem.id).where(CosmeticItem.type == type)
+            ),
+        )
         .values(equipped=False)
     )
     await session.commit()

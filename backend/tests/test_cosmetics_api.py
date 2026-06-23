@@ -70,7 +70,120 @@ async def test_buy_guards(client, db_session):
     assert user is not None
 
 
+async def _own_item(db_session, user, item: CosmeticItem) -> UserCosmetic:
+    """Give the user ownership of a CosmeticItem (without equipped)."""
+    from datetime import UTC, datetime
+
+    uc = UserCosmetic(user_id=user.id, item_id=item.id, unlocked_at=datetime.now(UTC))
+    db_session.add(uc)
+    await db_session.flush()
+    return uc
+
+
+async def _seed_typed_items(db_session):
+    """Ensure two typed items exist: one accessory, one background."""
+    from app.models.cosmetics import CosmeticItem as CI
+
+    acc = await db_session.scalar(select(CI).where(CI.slug == "_test_acc"))
+    if acc is None:
+        acc = CI(slug="_test_acc", name="Test Acc", emoji="🎀", type="accessory",
+                 coin_cost=0, is_premium=False)
+        db_session.add(acc)
+
+    bg = await db_session.scalar(select(CI).where(CI.slug == "_test_bg"))
+    if bg is None:
+        bg = CI(slug="_test_bg", name="Test BG", emoji="🖼️", type="background",
+                coin_cost=0, is_premium=False)
+        db_session.add(bg)
+
+    acc2 = await db_session.scalar(select(CI).where(CI.slug == "_test_bg2"))
+    if acc2 is None:
+        acc2 = CI(slug="_test_bg2", name="Test BG2", emoji="🌅", type="background",
+                  coin_cost=0, is_premium=False)
+        db_session.add(acc2)
+
+    await db_session.flush()
+    return (
+        await db_session.scalar(select(CI).where(CI.slug == "_test_acc")),
+        await db_session.scalar(select(CI).where(CI.slug == "_test_bg")),
+        await db_session.scalar(select(CI).where(CI.slug == "_test_bg2")),
+    )
+
+
+async def test_equip_is_per_category(client, db_session):
+    """Equipping an accessory then a background leaves BOTH equipped."""
+    user = await _login_with_coins(client, db_session, coins=0)
+    acc_item, bg_item, _ = await _seed_typed_items(db_session)
+
+    await _own_item(db_session, user, acc_item)
+    await _own_item(db_session, user, bg_item)
+    await db_session.commit()
+
+    assert (await client.post(f"/cosmetics/{acc_item.id}/equip")).status_code == 200
+    assert (await client.post(f"/cosmetics/{bg_item.id}/equip")).status_code == 200
+
+    rows = (
+        await db_session.execute(
+            select(UserCosmetic).where(UserCosmetic.user_id == user.id)
+        )
+    ).scalars().all()
+    equipped_ids = {r.item_id for r in rows if r.equipped}
+    assert acc_item.id in equipped_ids, "accessory should still be equipped"
+    assert bg_item.id in equipped_ids, "background should also be equipped"
+
+
+async def test_equip_swaps_within_category(client, db_session):
+    """Equipping a second background replaces only the first background."""
+    user = await _login_with_coins(client, db_session, coins=0)
+    _, bg1, bg2 = await _seed_typed_items(db_session)
+
+    await _own_item(db_session, user, bg1)
+    await _own_item(db_session, user, bg2)
+    await db_session.commit()
+
+    assert (await client.post(f"/cosmetics/{bg1.id}/equip")).status_code == 200
+    assert (await client.post(f"/cosmetics/{bg2.id}/equip")).status_code == 200
+
+    rows = (
+        await db_session.execute(
+            select(UserCosmetic).where(UserCosmetic.user_id == user.id)
+        )
+    ).scalars().all()
+    equipped_ids = {r.item_id for r in rows if r.equipped}
+    assert bg2.id in equipped_ids, "second background should be equipped"
+    assert bg1.id not in equipped_ids, "first background should be unequipped"
+
+
+async def test_unequip_by_type_only_clears_that_type(client, db_session):
+    """POST /cosmetics/unequip?type=background unequips bg but leaves accessory equipped."""
+    user = await _login_with_coins(client, db_session, coins=0)
+    acc_item, bg_item, _ = await _seed_typed_items(db_session)
+
+    uc_acc = await _own_item(db_session, user, acc_item)
+    uc_bg = await _own_item(db_session, user, bg_item)
+    uc_acc.equipped = True
+    uc_bg.equipped = True
+    await db_session.commit()
+
+    r = await client.post("/cosmetics/unequip?type=background")
+    assert r.status_code == 200
+
+    await db_session.refresh(uc_acc)
+    await db_session.refresh(uc_bg)
+    assert uc_acc.equipped is True, "accessory should still be equipped"
+    assert uc_bg.equipped is False, "background should be unequipped"
+
+
+async def test_shop_item_exposes_type(client, db_session):
+    """GET /cosmetics returns `type` on every item."""
+    await _login_with_coins(client, db_session, coins=0)
+    r = await client.get("/cosmetics")
+    assert r.status_code == 200
+    assert all("type" in it for it in r.json()["items"])
+
+
 async def test_equip_is_exclusive(client, db_session):
+    """Equipping a second SAME-TYPE item (both accessories) swaps within that category only."""
     user = await _login_with_coins(client, db_session, coins=500)
     hat = await _item(db_session, "party_hat")
     bow = await _item(db_session, "bow")
@@ -86,9 +199,10 @@ async def test_equip_is_exclusive(client, db_session):
         )
     ).scalars().all()
     equipped = [r for r in rows if r.equipped]
+    # Both hat and bow are accessories — only the bow (last equipped) should be equipped
     assert len(equipped) == 1 and equipped[0].item_id == bow.id
 
-    assert (await client.post("/cosmetics/unequip")).status_code == 200
+    assert (await client.post("/cosmetics/unequip?type=accessory")).status_code == 200
     await db_session.refresh(equipped[0])
     assert equipped[0].equipped is False
 
