@@ -3,6 +3,7 @@ import asyncio
 
 from app.core.database import async_session_factory
 from app.seed.admin_bootstrap import bootstrap_admin
+from app.seed.arcade_words import seed_arcade_words
 from app.seed.content import seed_modules_and_lessons
 from app.seed.cosmetics import seed_cosmetics
 from app.seed.gamification import seed_badges_and_challenges, seed_market_badges
@@ -19,6 +20,7 @@ async def main() -> None:
         await seed_cosmetics(session)
         await seed_tier_accounts(session)
         await bootstrap_admin(session)
+        await seed_arcade_words(session)
         # After content is seeded/present, mark any market with live modules as
         # having content (self-heals US/HK etc. published after the seed).
         await reconcile_market_content(session)
