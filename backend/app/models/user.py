@@ -124,6 +124,8 @@ class UserProgress(Base):
     sim_xp_today: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
     revise_xp_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     revise_xp_today: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
+    arcade_xp_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    arcade_xp_today: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="progress")
 
