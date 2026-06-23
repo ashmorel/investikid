@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/admin/challenges', tKey: 'sidebar.items.challenges', icon: '⚡', end: false },
   { to: '/admin/feedback', tKey: 'sidebar.items.feedback', icon: '💬', end: false },
   { to: '/admin/video-health', tKey: 'sidebar.items.videoHealth', icon: '🎬', end: false },
+  { to: '/admin/video-curation', tKey: 'sidebar.items.videoCuration', icon: '🎞️', end: false },
   { to: '/admin/market-content', tKey: 'sidebar.items.marketContent', icon: '🌍', end: false },
   { to: '/admin/analytics', tKey: 'sidebar.items.analytics', icon: '📈', end: false },
   { to: '/admin/settings', tKey: 'sidebar.items.settings', icon: '⚙️', end: false },
