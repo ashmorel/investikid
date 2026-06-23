@@ -243,7 +243,10 @@ async def get_news_summary(
         "- Be specific: name the companies/tickers and what actually happened — never a "
         "generic 'your stocks had some news'.\n"
         "- Focus on what it means for someone who owns these stocks.\n"
-        "- 2-4 sentences. Encouraging and educational, never scary about losses.\n"
+        "- Give a proper, informative summary — a short paragraph of about 4-6 "
+        "sentences (a little shorter and simpler for younger readers, fuller for "
+        "teens): what happened, why it matters, and what it means for a holder. "
+        "Encouraging and educational, never scary about losses.\n"
         "- Never give investment advice; never suggest buying or selling."
     )
 
@@ -253,8 +256,9 @@ async def get_news_summary(
             system_prompt=with_generation_framing(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Here are today's headlines about my stocks:\n{headlines}"}],
             temperature=0.5,
-            # "2-4 sentences" can exceed 200 tokens and get cut mid-sentence.
-            max_tokens=400,
+            # A 4-6 sentence paragraph needs headroom so it isn't cut mid-sentence
+            # (the Together fallback uses this directly; Gemini floors it higher).
+            max_tokens=700,
         )
     except LLMError:
         summary = "Couldn't generate a summary right now — check back soon!"
@@ -321,7 +325,10 @@ async def get_stock_news_summary(
         "- Be specific: say what actually happened in the headlines — never a generic "
         "'there was some news'.\n"
         "- Focus on what this news means for someone who owns this stock.\n"
-        "- 2-3 sentences. Encouraging and educational, never scary about losses.\n"
+        "- Give a proper, informative summary — a short paragraph of about 4-6 "
+        "sentences (a little shorter and simpler for younger readers, fuller for "
+        "teens): what happened, why it matters, and what it means for a holder. "
+        "Encouraging and educational, never scary about losses.\n"
         "- Never give investment advice; never suggest buying or selling."
     )
 
@@ -331,8 +338,9 @@ async def get_stock_news_summary(
             system_prompt=with_generation_framing(system_prompt, language=current_user.language),
             messages=[{"role": "user", "content": f"Recent news about {ticker}:\n{headlines}"}],
             temperature=0.5,
-            # "2-3 sentences" can exceed 200 tokens and get cut mid-sentence.
-            max_tokens=400,
+            # A 4-6 sentence paragraph needs headroom so it isn't cut mid-sentence
+            # (the Together fallback uses this directly; Gemini floors it higher).
+            max_tokens=700,
         )
     except LLMError:
         summary = ""
