@@ -135,6 +135,42 @@ export default function MoneyWord() {
     <main className="mx-auto max-w-md space-y-4 p-4 text-center">
       <h1 className="text-xl font-extrabold text-ink">{t('moneyword.name')}</h1>
 
+      {/* How to play */}
+      <details
+        open={guesses.length === 0 && !isComplete}
+        className="rounded-xl border border-line bg-card p-3 text-left text-sm"
+      >
+        <summary className="min-h-[44px] cursor-pointer list-none font-semibold text-ink">
+          ❓ {t('moneyword.howToPlay.title')}
+        </summary>
+        <div className="mt-2 space-y-2 text-muted-foreground">
+          <p>{t('moneyword.howToPlay.intro', { count: max_guesses })}</p>
+          <p>{t('moneyword.howToPlay.step1')}</p>
+          <p>{t('moneyword.howToPlay.step2')}</p>
+          <ul className="space-y-1">
+            {(
+              [
+                ['correct', 'bg-green-500 border-green-600', 'legendCorrect'],
+                ['present', 'bg-yellow-400 border-yellow-500', 'legendPresent'],
+                ['absent', 'bg-gray-400 border-gray-500', 'legendAbsent'],
+              ] as const
+            ).map(([state, color, labelKey]) => (
+              <li key={state} className="flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className={`flex h-7 w-7 shrink-0 flex-col items-center justify-center rounded border-2 text-xs font-bold text-white ${color}`}
+                >
+                  <span>{t('moneyword.howToPlay.exampleLetter')}</span>
+                  <span className="text-[8px] leading-none">{FEEDBACK_SYMBOL[state]}</span>
+                </span>
+                <span>{t(`moneyword.howToPlay.${labelKey}`)}</span>
+              </li>
+            ))}
+          </ul>
+          <p>{t('moneyword.howToPlay.step3')}</p>
+        </div>
+      </details>
+
       {/* aria-live region for announcements */}
       <div aria-live="polite" className="sr-only">
         {announcement}

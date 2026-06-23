@@ -28,6 +28,17 @@
   "moneyword": {
     "name": "MoneyWord",
     "tagline": "Guess the daily finance word!",
+    "howToPlay": {
+      "title": "How to play",
+      "intro": "Guess the hidden money word in {{count}} tries.",
+      "step1": "Tap letters to spell a word, then press Enter.",
+      "step2": "After each guess, the tiles show how close you are:",
+      "legendCorrect": "Right letter, right spot",
+      "legendPresent": "Right letter, wrong spot",
+      "legendAbsent": "Not in the word",
+      "exampleLetter": "A",
+      "step3": "Solve it to learn what the word means — there's a new word every day!"
+    },
     "loading": "Loading today's puzzle…",
     "loadError": "Couldn't load today's puzzle. Please try again later.",
     "gridLabel": "MoneyWord guess grid",

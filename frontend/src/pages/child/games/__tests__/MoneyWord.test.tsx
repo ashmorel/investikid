@@ -56,6 +56,14 @@ describe('MoneyWord', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('shows how-to-play instructions with the feedback legend', async () => {
+    render(<MemoryRouter><MoneyWord /></MemoryRouter>);
+    await screen.findByRole('grid');
+    expect(screen.getByText(/how to play/i)).toBeInTheDocument();
+    expect(screen.getByText(/right letter, right spot/i)).toBeInTheDocument();
+    expect(screen.getByText(/not in the word/i)).toBeInTheDocument();
+  });
+
   it('shows friendly message when puzzle fails to load', async () => {
     vi.mocked(api.getMoneyWordToday).mockResolvedValue(null);
     render(<MemoryRouter><MoneyWord /></MemoryRouter>);
