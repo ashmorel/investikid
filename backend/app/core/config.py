@@ -9,6 +9,16 @@ def _ensure_asyncpg(url: str) -> str:
     return url
 
 
+def _normalize_base_url(url: str) -> str:
+    """Ensure a public base URL is absolute (has a scheme) with no trailing slash.
+    A scheme-less value like ``app.investikid.ai`` produces relative <a href>
+    links that email clients render as un-clickable; default it to https://."""
+    url = url.strip().rstrip("/")
+    if url and not url.startswith(("http://", "https://")):
+        url = f"https://{url}"
+    return url
+
+
 class Settings(BaseSettings):
     database_url: str
     test_database_url: str
@@ -17,6 +27,7 @@ class Settings(BaseSettings):
     def _fix_db_urls(self) -> "Settings":
         self.database_url = _ensure_asyncpg(self.database_url)
         self.test_database_url = _ensure_asyncpg(self.test_database_url)
+        self.app_base_url = _normalize_base_url(self.app_base_url)
         return self
 
     redis_url: str = "redis://localhost:6379/0"

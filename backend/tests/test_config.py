@@ -1,4 +1,24 @@
-from app.core.config import settings
+from app.core.config import Settings, settings
+
+
+def _make(**kw):
+    return Settings(
+        database_url="sqlite+aiosqlite:///:memory:",
+        test_database_url="sqlite+aiosqlite:///:memory:",
+        jwt_secret="test-secret",
+        **kw,
+    )
+
+
+def test_app_base_url_gets_https_scheme_when_missing():
+    # A scheme-less env value (APP_BASE_URL=app.investikid.ai) would otherwise
+    # produce relative <a href> links that email clients can't make clickable.
+    assert _make(app_base_url="app.investikid.ai").app_base_url == "https://app.investikid.ai"
+
+
+def test_app_base_url_keeps_existing_scheme_and_strips_trailing_slash():
+    assert _make(app_base_url="http://localhost:5173/").app_base_url == "http://localhost:5173"
+    assert _make(app_base_url="https://app.investikid.ai").app_base_url == "https://app.investikid.ai"
 
 
 def test_settings_loads():
