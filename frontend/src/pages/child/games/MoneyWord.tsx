@@ -228,7 +228,7 @@ export default function MoneyWord() {
                   aria-label={letter}
                   onClick={() => pressLetter(letter)}
                   disabled={submitting}
-                  className="min-h-[44px] min-w-[2.25rem] rounded border border-line bg-card text-sm font-bold text-ink focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
+                  className="min-h-[44px] min-w-[44px] rounded border border-line bg-card text-sm font-bold text-ink focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
                 >
                   {letter}
                 </button>
