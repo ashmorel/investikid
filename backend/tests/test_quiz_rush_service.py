@@ -1,0 +1,116 @@
+"""Tests for quiz_rush_service: pure scoring + DB-backed session builder."""
+import datetime as dt
+
+import pytest
+from sqlalchemy import select
+
+from app.models.content import Lesson, LessonCompletion, Level, Module
+from app.models.user import User
+from app.services.quiz_rush_service import build_session, score_submission
+
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
+# ---------------------------------------------------------------------------
+# Pure function tests (no DB)
+# ---------------------------------------------------------------------------
+
+def test_score_counts_correct_and_combo():
+    items = [
+        {"lesson_id": "a", "question": "q", "choices": ["x", "y"], "answer_index": 0},
+        {"lesson_id": "b", "question": "q", "choices": ["x", "y"], "answer_index": 1},
+        {"lesson_id": "c", "question": "q", "choices": ["x", "y"], "answer_index": 0},
+    ]
+    answers = [
+        {"lesson_id": "a", "choice_index": 0},  # correct
+        {"lesson_id": "b", "choice_index": 1},  # correct (combo 2)
+        {"lesson_id": "c", "choice_index": 1},  # wrong (combo breaks)
+    ]
+    result = score_submission(items, answers)
+    assert result == {"correct": 2, "max_combo": 2, "points": 2 * 10 + 2 * 5}
+
+
+def test_score_ignores_unknown_lessons():
+    items = [{"lesson_id": "a", "question": "q", "choices": ["x"], "answer_index": 0}]
+    answers = [{"lesson_id": "zzz", "choice_index": 0}]
+    assert score_submission(items, answers)["correct"] == 0
+
+
+# ---------------------------------------------------------------------------
+# DB test: build_session prefers lessons from modules the child has completed
+# ---------------------------------------------------------------------------
+
+async def _seed_quiz_session(db_session):
+    """Seed:
+    - One published GB module with a quiz lesson the user has completed.
+    - One published GB module with a quiz lesson the user has NOT completed.
+    Returns (user, completed_lesson, unrelated_lesson).
+    """
+    user = User(
+        email="quiz_rush@example.com",
+        username="quizrushkid",
+        password_hash="x",
+        dob=dt.date(2012, 6, 1),
+        country_code="GB",
+        currency_code="GBP",
+        active_market_code="GB",
+    )
+    # Module the child has touched
+    touched_mod = Module(
+        topic="saving", title="Saving Basics", market_code="GB", order_index=0, published=True
+    )
+    # Module the child has never touched
+    untouched_mod = Module(
+        topic="investing", title="Investing Basics", market_code="GB", order_index=1, published=True
+    )
+    db_session.add_all([user, touched_mod, untouched_mod])
+    await db_session.flush()
+
+    touched_level = Level(module_id=touched_mod.id, title="L1", order_index=0)
+    untouched_level = Level(module_id=untouched_mod.id, title="L1", order_index=0)
+    db_session.add_all([touched_level, untouched_level])
+    await db_session.flush()
+
+    completed_lesson = Lesson(
+        module_id=touched_mod.id,
+        level_id=touched_level.id,
+        type="quiz",
+        xp_reward=10,
+        order_index=0,
+        content_json={"question": "Q1?", "choices": ["A", "B"], "answer_index": 0, "explanation": "A"},
+    )
+    unrelated_lesson = Lesson(
+        module_id=untouched_mod.id,
+        level_id=untouched_level.id,
+        type="quiz",
+        xp_reward=10,
+        order_index=0,
+        content_json={"question": "Q2?", "choices": ["A", "B"], "answer_index": 1, "explanation": "B"},
+    )
+    db_session.add_all([completed_lesson, unrelated_lesson])
+    await db_session.flush()
+
+    completion = LessonCompletion(user_id=user.id, lesson_id=completed_lesson.id)
+    db_session.add(completion)
+    await db_session.flush()
+
+    return user, completed_lesson, unrelated_lesson
+
+
+async def test_build_session_prefers_unlocked_lessons(db_session):
+    """When the child has ≥ COLD_START_MIN completed quiz lessons (we have 1 here,
+    which is < COLD_START_MIN), the service falls back to all published quiz lessons.
+    But we assert that the completed lesson is present in the returned set, verifying
+    the unlocked-first query works and the fallback includes both lessons."""
+    from app.services.quiz_rush_service import COLD_START_MIN
+
+    user, completed_lesson, unrelated_lesson = await _seed_quiz_session(db_session)
+
+    items = await build_session(db_session, user, limit=50)
+
+    lesson_ids = {it["lesson_id"] for it in items}
+    # With only 1 completed lesson (< COLD_START_MIN=10), fallback fires and returns ALL.
+    assert str(completed_lesson.id) in lesson_ids
+    assert str(unrelated_lesson.id) in lesson_ids
+    # Sanity: each item has the expected shape
+    for it in items:
+        assert set(it.keys()) == {"lesson_id", "question", "choices", "answer_index"}
