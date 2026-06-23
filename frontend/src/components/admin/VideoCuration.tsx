@@ -7,6 +7,7 @@ import {
   listVideoCandidates,
   approveVideoCandidate,
   skipVideoCandidate,
+  suggestVideos,
   type VideoCandidate,
 } from '@/api/videoCuration';
 
@@ -156,6 +157,11 @@ export default function VideoCuration() {
   const qc = useQueryClient();
   const [market, setMarket] = useState<string>('');
 
+  // Suggest panel state (independent of candidate rows)
+  const [suggestModuleId, setSuggestModuleId] = useState<string>('');
+  const [suggestLevelId, setSuggestLevelId] = useState<string>('');
+  const [suggestedCount, setSuggestedCount] = useState<number | null>(null);
+
   const marketsQ = useQuery({
     queryKey: ['markets', 'list'],
     queryFn: () => marketApi.list(),
@@ -169,6 +175,9 @@ export default function VideoCuration() {
   const modulesQ = useModules();
   const modules = modulesQ.data ?? [];
 
+  const suggestLevelsQ = useLevels(suggestModuleId);
+  const suggestLevels = suggestLevelsQ.data ?? [];
+
   const approveMutation = useMutation({
     mutationFn: (v: { id: string; module_id: string; level_id: string }) =>
       approveVideoCandidate(v.id, { module_id: v.module_id, level_id: v.level_id }),
@@ -180,12 +189,89 @@ export default function VideoCuration() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'video-candidates'] }),
   });
 
+  const suggestMutation = useMutation({
+    mutationFn: () => suggestVideos({ module_id: suggestModuleId, level_id: suggestLevelId }),
+    onSuccess: (data) => {
+      void qc.invalidateQueries({ queryKey: ['admin', 'video-candidates'] });
+      setSuggestedCount(data?.created ?? 0);
+    },
+  });
+
+  function handleSuggestModuleChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setSuggestModuleId(e.target.value);
+    setSuggestLevelId('');
+    setSuggestedCount(null);
+  }
+
+  const canSuggest = suggestModuleId !== '' && suggestLevelId !== '' && !suggestMutation.isPending;
+
   const candidates = candidatesQ.data ?? [];
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-extrabold text-ink">{t('videoCuration.heading')}</h1>
       <p className="text-sm text-muted-foreground">{t('videoCuration.subtitle')}</p>
+
+      {/* Suggest videos panel */}
+      <div className="rounded-xl border border-line bg-card p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 space-y-1">
+            <label htmlFor="suggest-module" className="block text-xs font-medium text-ink">
+              {t('videoCuration.suggestModule')}
+            </label>
+            <select
+              id="suggest-module"
+              aria-label={t('videoCuration.suggestModuleAriaLabel')}
+              value={suggestModuleId}
+              onChange={handleSuggestModuleChange}
+              className="min-h-[44px] w-full rounded-md border border-line bg-background px-3 py-2 text-sm text-ink"
+            >
+              <option value="">{t('videoCuration.selectModule')}</option>
+              {modules.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-1 space-y-1">
+            <label htmlFor="suggest-level" className="block text-xs font-medium text-ink">
+              {t('videoCuration.suggestLevel')}
+            </label>
+            <select
+              id="suggest-level"
+              aria-label={t('videoCuration.suggestLevelAriaLabel')}
+              value={suggestLevelId}
+              onChange={(e) => {
+                setSuggestLevelId(e.target.value);
+                setSuggestedCount(null);
+              }}
+              disabled={!suggestModuleId || suggestLevelsQ.isLoading}
+              className="min-h-[44px] w-full rounded-md border border-line bg-background px-3 py-2 text-sm text-ink disabled:opacity-50"
+            >
+              <option value="">{t('videoCuration.selectLevel')}</option>
+              {suggestLevels.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            disabled={!canSuggest}
+            onClick={() => suggestMutation.mutate()}
+            className="min-h-[44px] rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {t('videoCuration.suggest')}
+          </button>
+        </div>
+        {suggestedCount !== null && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t('videoCuration.suggested', { count: suggestedCount })}
+          </p>
+        )}
+      </div>
 
       {/* Market filter */}
       <div>

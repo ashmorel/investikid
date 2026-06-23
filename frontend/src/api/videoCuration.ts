@@ -31,3 +31,12 @@ export const approveVideoCandidate = (
 
 export const skipVideoCandidate = (id: string): Promise<VideoCandidate | null> =>
   apiFetch<VideoCandidate>(`/admin/video-candidates/${id}/skip`, { method: 'POST' });
+
+export const suggestVideos = (body: {
+  module_id: string;
+  level_id: string;
+}): Promise<{ created: number } | null> =>
+  apiFetch<{ created: number }>(`/admin/video-candidates/suggest`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -41,6 +42,7 @@ function wrap(ui: React.ReactNode) {
 }
 
 beforeEach(() => {
+  vi.mocked(api.suggestVideos).mockResolvedValue({ created: 2 });
   vi.mocked(api.listVideoCandidates).mockResolvedValue([
     {
       id: '1',
@@ -69,7 +71,8 @@ describe('VideoCuration', () => {
   it('renders a module select for the candidate row', async () => {
     wrap(<VideoCuration />);
     await screen.findByText('Saving 101');
-    expect(screen.getByRole('combobox', { name: /module/i })).toBeInTheDocument();
+    // Both the suggest-panel module select AND the per-row module select must render.
+    expect(screen.getAllByRole('combobox', { name: /module/i }).length).toBeGreaterThanOrEqual(2);
   });
 
   it('has no axe violations', async () => {
@@ -77,5 +80,25 @@ describe('VideoCuration', () => {
     await screen.findByText('Saving 101');
     // axe-core cannot communicate with live <iframe> elements in jsdom; skip them.
     expect(await axe(container, { iframes: false })).toHaveNoViolations();
+  });
+
+  it('calls suggest then refetches', async () => {
+    vi.mocked(api.suggestVideos).mockResolvedValue({ created: 2 });
+    wrap(<VideoCuration />);
+    await screen.findByText('Saving 101');
+
+    // Select a module in the suggest panel (using the suggest-module select)
+    const moduleSelect = screen.getByLabelText('Module for video suggestions');
+    await userEvent.selectOptions(moduleSelect, 'm1');
+
+    // Select a level
+    const levelSelect = screen.getByLabelText('Level for video suggestions');
+    await userEvent.selectOptions(levelSelect, 'l1');
+
+    // Click the suggest button
+    const suggestBtn = screen.getByRole('button', { name: /suggest videos/i });
+    await userEvent.click(suggestBtn);
+
+    expect(api.suggestVideos).toHaveBeenCalledWith({ module_id: 'm1', level_id: 'l1' });
   });
 });

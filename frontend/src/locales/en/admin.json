@@ -248,7 +248,13 @@
     "skip": "Skip",
     "blocked": "Can't embed this video ({{reason}}).",
     "empty": "No videos waiting for review.",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "suggest": "Suggest videos",
+    "suggestModule": "Module",
+    "suggestLevel": "Level",
+    "suggested": "Added {{count}} suggestions.",
+    "suggestModuleAriaLabel": "Module for video suggestions",
+    "suggestLevelAriaLabel": "Level for video suggestions"
   },
   "sidebar": {
     "title": "InvestiKid Admin",
