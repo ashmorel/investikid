@@ -90,7 +90,7 @@ describe('ParentDashboard', () => {
       return new Response(JSON.stringify([]), { status: 200 });
     });
     renderPage();
-    const back = await screen.findByRole('button', { name: /back to app/i });
+    const back = await screen.findByRole('link', { name: /back to app/i });
     await userEvent.click(back);
     expect(await screen.findByText('Home Page')).toBeInTheDocument();
   });

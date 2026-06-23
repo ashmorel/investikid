@@ -1,3 +1,6 @@
+/* eslint-disable i18next/no-literal-string -- public, intentionally English-only
+   legal/landing page (App Store / Play account-deletion URL); not part of the
+   localized app, so its copy is hard-coded by design. */
 import { Link } from 'react-router-dom';
 
 // Public, no-login page satisfying the App Store / Google Play account-deletion
