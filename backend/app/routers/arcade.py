@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Request
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -8,11 +10,13 @@ from app.routers.users import get_current_user
 from app.schemas.arcade import (
     LeaderboardEntryOut,
     LeaderboardOut,
+    MoneyWordGuessIn,
+    MoneyWordStateOut,
     QuizScoreIn,
     QuizScoreOut,
     QuizSessionOut,
 )
-from app.services import arcade_service, quiz_rush_service
+from app.services import arcade_service, moneyword_service, quiz_rush_service
 
 router = APIRouter(prefix="/arcade", tags=["arcade"])
 
@@ -57,6 +61,45 @@ async def quiz_rush_score(
         personal_best=best,
         leaderboard_rank=rank,
     )
+
+
+@router.get("/moneyword/today", response_model=MoneyWordStateOut)
+@limiter.limit("60/hour")
+async def moneyword_today(
+    request: Request,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> MoneyWordStateOut:
+    today = datetime.now(UTC).date()
+    try:
+        state = await moneyword_service.get_today(session, user, today=today, language="en")
+    except moneyword_service.NoApprovedWords:
+        raise HTTPException(status_code=503, detail="no_daily_word")
+    await session.commit()
+    return MoneyWordStateOut(**state)
+
+
+@router.post("/moneyword/guess", response_model=MoneyWordStateOut)
+@limiter.limit("60/hour")
+async def moneyword_guess(
+    request: Request,
+    payload: MoneyWordGuessIn,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> MoneyWordStateOut:
+    today = datetime.now(UTC).date()
+    try:
+        state = await moneyword_service.play_guess(
+            session, user, guess=payload.guess, today=today, language="en"
+        )
+    except moneyword_service.NoApprovedWords:
+        raise HTTPException(status_code=503, detail="no_daily_word")
+    except moneyword_service.AlreadyCompleted:
+        raise HTTPException(status_code=409, detail="already_completed")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    await session.commit()
+    return MoneyWordStateOut(**state)
 
 
 @router.get("/leaderboard", response_model=LeaderboardOut)

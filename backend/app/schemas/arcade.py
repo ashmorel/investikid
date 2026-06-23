@@ -1,6 +1,25 @@
 from pydantic import BaseModel
 
 
+class MoneyWordGuessOut(BaseModel):
+    word: str
+    feedback: list[str]
+
+
+class MoneyWordStateOut(BaseModel):
+    length: int
+    max_guesses: int
+    guesses: list[MoneyWordGuessOut]
+    completed: bool
+    solved: bool
+    definition: str | None
+    already_played: bool
+
+
+class MoneyWordGuessIn(BaseModel):
+    guess: str
+
+
 class QuizItem(BaseModel):
     lesson_id: str
     question: str
