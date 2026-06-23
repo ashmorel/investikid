@@ -6,6 +6,7 @@ export type CosmeticItem = {
   slug: string;
   name: string;
   emoji: string;
+  type: string;
   coin_cost: number;
   is_premium: boolean;
   owned: boolean;
@@ -25,10 +26,25 @@ export function useCosmetics() {
   });
 }
 
-/** Slug of the currently equipped accessory (for Penny renders). */
-export function useEquippedAccessory(): string | null {
+/** Equipped slug per category (accessory / skin / background). */
+export function useEquippedCosmetics(): {
+  accessory: string | null;
+  skin: string | null;
+  background: string | null;
+} {
   const { data } = useCosmetics();
-  return data?.items.find((i) => i.equipped)?.slug ?? null;
+  const bySlug = (type: string) =>
+    data?.items.find((i) => i.equipped && i.type === type)?.slug ?? null;
+  return {
+    accessory: bySlug('accessory'),
+    skin: bySlug('skin'),
+    background: bySlug('background'),
+  };
+}
+
+/** Slug of the currently equipped accessory (back-compat for PennyFAB/CoachPanel). */
+export function useEquippedAccessory(): string | null {
+  return useEquippedCosmetics().accessory;
 }
 
 export function useBuyCosmetic() {
@@ -46,10 +62,10 @@ export function useBuyCosmetic() {
 export function useEquipCosmetic() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (itemId: string | null) =>
-      itemId
-        ? apiFetch(`/cosmetics/${itemId}/equip`, { method: 'POST' })
-        : apiFetch('/cosmetics/unequip', { method: 'POST' }),
+    mutationFn: (v: { equip: string } | { unequip: string }) =>
+      'equip' in v
+        ? apiFetch(`/cosmetics/${v.equip}/equip`, { method: 'POST' })
+        : apiFetch(`/cosmetics/unequip?type=${encodeURIComponent(v.unequip)}`, { method: 'POST' }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: SHOP_KEY }),
   });
 }

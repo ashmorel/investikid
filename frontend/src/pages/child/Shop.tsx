@@ -21,7 +21,11 @@ export default function Shop() {
 
   function onAction(item: CosmeticItem) {
     if (item.owned) {
-      equip.mutate(item.equipped ? null : item.id);
+      if (item.equipped) {
+        equip.mutate({ unequip: item.type });
+      } else {
+        equip.mutate({ equip: item.id });
+      }
       return;
     }
     if (item.is_premium && !item.can_buy && (data?.coins ?? 0) >= item.coin_cost) {

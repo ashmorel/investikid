@@ -33,7 +33,7 @@ function renderShop() {
 }
 
 const item = (over: Partial<ShopState['items'][0]>): ShopState['items'][0] => ({
-  id: 'i1', slug: 'party_hat', name: 'Party Hat', emoji: '🥳', coin_cost: 50,
+  id: 'i1', slug: 'party_hat', name: 'Party Hat', emoji: '🥳', type: 'accessory', coin_cost: 50,
   is_premium: false, owned: false, equipped: false, can_buy: true, ...over,
 });
 
