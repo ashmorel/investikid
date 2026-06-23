@@ -584,3 +584,8 @@ class VideoCandidateOut(BaseModel):
 class ApproveCandidateIn(BaseModel):
     module_id: uuid.UUID
     level_id: uuid.UUID
+
+
+class SuggestVideosIn(BaseModel):
+    module_id: uuid.UUID
+    level_id: uuid.UUID

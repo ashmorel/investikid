@@ -7,13 +7,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_session
 from app.models.content import Lesson, Level, VideoCandidate
 from app.routers.admin_auth import get_current_admin
-from app.schemas.admin import ApproveCandidateIn, VideoCandidateOut
+from app.schemas.admin import ApproveCandidateIn, SuggestVideosIn, VideoCandidateOut
+from app.services.video_suggest_service import suggest_videos
 
 router = APIRouter(
     prefix="/admin/video-candidates",
     tags=["admin-video"],
     dependencies=[Depends(get_current_admin)],
 )
+
+
+@router.post("/suggest")
+async def suggest(
+    payload: SuggestVideosIn, session: AsyncSession = Depends(get_session)
+) -> dict:
+    return await suggest_videos(session, module_id=payload.module_id, level_id=payload.level_id)
 
 
 @router.get("", response_model=list[VideoCandidateOut])
