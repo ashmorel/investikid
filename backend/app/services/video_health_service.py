@@ -29,6 +29,37 @@ def classify(http_status: int | None) -> str:
     return "unknown"
 
 
+async def video_embeddability(
+    youtube_id: str, *, client: httpx.AsyncClient | None = None
+) -> tuple[bool, str | None]:
+    """Single-video health probe. (True, None) if embeddable AND not age-restricted,
+    else (False, reason). reason: not_found | embedding_disabled | age_restricted | api_error."""
+    owns_client = client is None
+    client = client or httpx.AsyncClient()
+    try:
+        resp = await client.get(
+            "https://www.googleapis.com/youtube/v3/videos"
+            f"?part=status,contentDetails&id={youtube_id}&key={settings.youtube_api_key}",
+            timeout=_TIMEOUT,
+        )
+        if resp.status_code != 200:
+            return False, "api_error"
+        items = resp.json().get("items", [])
+        if not items:
+            return False, "not_found"
+        item = items[0]
+        if item.get("contentDetails", {}).get("contentRating", {}).get("ytRating") == "ytAgeRestricted":
+            return False, "age_restricted"
+        if not item.get("status", {}).get("embeddable", False):
+            return False, "embedding_disabled"
+        return True, None
+    except (httpx.HTTPError, ValueError):
+        return False, "api_error"
+    finally:
+        if owns_client:
+            await client.aclose()
+
+
 async def _embeddable(client: httpx.AsyncClient, youtube_id: str) -> bool:
     """Whether the YouTube owner allows embedding (via the Data API).
 

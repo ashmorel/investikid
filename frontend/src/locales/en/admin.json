@@ -235,6 +235,27 @@
     "saveErrorInvalid": "Invalid data — check emails and try again (max 10).",
     "saveErrorGeneric": "Save failed. Please try again."
   },
+  "videoCuration": {
+    "heading": "Video curation",
+    "subtitle": "Review recovered and suggested videos, then place them into lessons.",
+    "marketFilterLabel": "Filter by market",
+    "allMarkets": "All markets",
+    "moduleLabel": "Module",
+    "selectModule": "Select a module…",
+    "levelLabel": "Level",
+    "selectLevel": "Select a level…",
+    "approve": "Approve into lesson",
+    "skip": "Skip",
+    "blocked": "Can't embed this video ({{reason}}).",
+    "empty": "No videos waiting for review.",
+    "loading": "Loading…",
+    "suggest": "Suggest videos",
+    "suggestModule": "Module",
+    "suggestLevel": "Level",
+    "suggested": "Added {{count}} suggestions.",
+    "suggestModuleAriaLabel": "Module for video suggestions",
+    "suggestLevelAriaLabel": "Level for video suggestions"
+  },
   "sidebar": {
     "title": "InvestiKid Admin",
     "nav": "Admin navigation",
@@ -245,6 +266,7 @@
       "challenges": "Challenges",
       "feedback": "Feedback",
       "videoHealth": "Video health",
+      "videoCuration": "Video curation",
       "marketContent": "Market content",
       "analytics": "Analytics",
       "settings": "Settings"

@@ -45,6 +45,7 @@ const ChallengeList = lazy(() => import('@/components/admin/ChallengeList'));
 const ChallengeForm = lazy(() => import('@/components/admin/ChallengeForm'));
 const FeedbackList = lazy(() => import('@/components/admin/FeedbackList'));
 const VideoHealthList = lazy(() => import('@/components/admin/VideoHealthList'));
+const VideoCuration = lazy(() => import('@/components/admin/VideoCuration'));
 const AdminSettings = lazy(() => import('@/components/admin/AdminSettings'));
 const AdminAnalytics = lazy(() => import('@/components/admin/AdminAnalytics'));
 const MarketContent = lazy(() => import('@/components/admin/MarketContent'));
@@ -126,6 +127,7 @@ export default function App() {
           <Route path="challenges/:challengeId" element={<ChallengeForm />} />
           <Route path="feedback" element={<FeedbackList />} />
           <Route path="video-health" element={<VideoHealthList />} />
+          <Route path="video-curation" element={<VideoCuration />} />
           <Route path="market-content" element={<MarketContent />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="analytics" element={<AdminAnalytics />} />
