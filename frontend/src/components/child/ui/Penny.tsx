@@ -102,6 +102,10 @@ export function Penny({
             fontSize={a.size}
             textAnchor="middle"
             dominantBaseline="middle"
+            // Without an explicit fill these emoji inherit fill="none" from the
+            // <svg fill="none"> root and never paint. Colour emoji ignore the
+            // fill colour for their coloured layers, so any non-none value works.
+            fill="#1f2937"
           >
             {a.glyph}
           </text>

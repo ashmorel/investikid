@@ -44,6 +44,17 @@ describe('Penny skin prop', () => {
     expect(glyphs).toContain('👑');
   });
 
+  it('gives accessory glyphs an explicit paintable fill (not the inherited none)', () => {
+    // Regression: the <svg fill="none"> root made accessory <text> inherit
+    // fill="none", so the emoji were in the DOM but never painted — Penny
+    // showed no hat/glasses/bow. Each glyph must set its own fill.
+    const { container } = render(<Penny accessories={['party_hat']} />);
+    const glyph = Array.from(container.querySelectorAll('text')).find((t) => t.textContent === '🥳');
+    expect(glyph).toBeTruthy();
+    expect(glyph!.getAttribute('fill')).toBeTruthy();
+    expect(glyph!.getAttribute('fill')).not.toBe('none');
+  });
+
   it('falls back to mood gradient when no skin is given', () => {
     const { container } = render(<Penny />);
     const stops = container.querySelectorAll('stop');
