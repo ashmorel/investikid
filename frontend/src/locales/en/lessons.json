@@ -47,7 +47,11 @@
     "tryAgain": "Try again",
     "practiceCta": "🎯 Practice this topic",
     "backLabel": "Lessons",
-    "premiumContent": "this content"
+    "premiumContent": "this content",
+    "collectableEarned": {
+      "title": "You earned a collectable! 🎉",
+      "description": "Check the Limited section in Penny's Shop to see your new item."
+    }
   },
 
   "card": {

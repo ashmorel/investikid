@@ -79,6 +79,7 @@ export type LessonCompletionResult = {
   practice_available: boolean;
   daily_goal_met?: boolean;
   reward: RewardGrant;
+  granted_collectables?: string[];
 };
 
 export type Progress = {

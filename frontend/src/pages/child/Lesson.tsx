@@ -72,6 +72,16 @@ export default function Lesson() {
         const marketName = (markets ?? []).find((m) => m.is_selected)?.name ?? '';
         const msg = formatRewardToast(tMarkets, result.reward, marketName);
         if (msg) toast({ description: msg });
+        // Toast any newly earned limited collectables.
+        if (result.granted_collectables && result.granted_collectables.length > 0) {
+          qc.invalidateQueries({ queryKey: ['collectables'] });
+          toast({
+            title: t('lesson.collectableEarned.title'),
+            description: t('lesson.collectableEarned.description', {
+              names: result.granted_collectables.join(', '),
+            }),
+          });
+        }
       }
     },
     onError: (err) => {

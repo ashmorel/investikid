@@ -250,6 +250,22 @@
     "lessonCount": "{{completed}} / {{total}} lessons"
   },
 
+  "limited": {
+    "title": "Limited Collectables",
+    "earned": "Earned ✓",
+    "ownedTitle": "Your Collection",
+    "emptyActive": "No limited items right now.",
+    "endsInDays": "{{count}}d left",
+    "endsInHours": "{{count}}h left",
+    "endsInLessThanHour": "Ending soon",
+    "goal": {
+      "streak_days": "Day streak",
+      "lessons_completed": "Lessons",
+      "xp_earned": "XP earned",
+      "trades_made": "Trades"
+    }
+  },
+
   "illustrations": {
     "budgetPieChart": {
       "center": "Budget",

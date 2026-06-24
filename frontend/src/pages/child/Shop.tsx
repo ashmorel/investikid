@@ -7,6 +7,7 @@ import { AvatarStage } from '@/components/child/ui/AvatarStage';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 import { tierConfig, useAgeTier } from '@/lib/ageTier';
+import LimitedShelf from '@/components/child/shop/LimitedShelf';
 
 type TabType = 'accessory' | 'background' | 'skin';
 
@@ -145,6 +146,8 @@ export default function Shop() {
           </ul>
         </>
       )}
+
+      <LimitedShelf />
 
       {buy.isError && (
         <p className="mt-3 text-sm text-danger-500" role="alert">
