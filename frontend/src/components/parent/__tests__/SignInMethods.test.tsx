@@ -151,8 +151,8 @@ describe('SignInMethods Face ID self-enroll', () => {
 
   it('enrolls — verify, parent enroll, keychain write, registry add', async () => {
     renderComponent();
-    const checkbox = await screen.findByRole('checkbox', { name: /face id sign-in/i });
-    fireEvent.click(checkbox);
+    const toggle = await screen.findByRole('switch', { name: /face id sign-in/i });
+    fireEvent.click(toggle);
 
     await waitFor(() => {
       expect(biometric.verify).toHaveBeenCalled();
@@ -165,9 +165,9 @@ describe('SignInMethods Face ID self-enroll', () => {
   it('unenrolls — parent unenroll, keychain clear, registry remove', async () => {
     vi.mocked(getBioAccounts).mockReturnValue([{ key: 'parent', label: 'Parent', kind: 'parent' }]);
     renderComponent();
-    const checkbox = await screen.findByRole('checkbox', { name: /face id sign-in/i });
-    expect(checkbox).toBeChecked();
-    fireEvent.click(checkbox);
+    const toggle = await screen.findByRole('switch', { name: /face id sign-in/i });
+    expect(toggle).toBeChecked();
+    fireEvent.click(toggle);
 
     await waitFor(() => {
       expect(parentApi.biometricUnenroll).toHaveBeenCalledWith('pdev-1');
@@ -180,6 +180,6 @@ describe('SignInMethods Face ID self-enroll', () => {
     vi.mocked(biometric.isAvailable).mockResolvedValue(false);
     renderComponent();
     await waitFor(() => screen.getByLabelText('Connect Apple'));
-    expect(screen.queryByRole('checkbox', { name: /face id sign-in/i })).toBeNull();
+    expect(screen.queryByRole('switch', { name: /face id sign-in/i })).toBeNull();
   });
 });

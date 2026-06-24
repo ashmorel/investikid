@@ -120,7 +120,7 @@ export function ChildCard({ child }: { child: Child }) {
     : t('childCard.experienceCurrentExplorer');
 
   return (
-    <article className="rounded-lg border bg-card p-4">
+    <article className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-medium">{child.username}</h2>
@@ -237,7 +237,7 @@ export function ChildCard({ child }: { child: Child }) {
         </Label>
         <select
           id={`tier-${child.user_id}`}
-          className="rounded-md border bg-background px-2 py-1 text-sm"
+          className="rounded-md border border-line bg-background px-2 py-1 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
           value={child.tier_override ?? 'auto'}
           disabled={isDeleted || tier.isPending}
           onChange={(e) => {

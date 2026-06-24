@@ -6,6 +6,8 @@ import { parentApi } from '@/api/parent';
 import { socialIdToken } from '@/lib/socialLogin';
 import { addBioAccount, biometric, getBioAccounts, getDeviceId, removeBioAccount } from '@/lib/biometric';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const PROVIDERS: { id: Provider; label: string }[] = [
   { id: 'apple', label: 'Apple' },
@@ -145,17 +147,16 @@ export function SignInMethods() {
 
       {bioAvailable && (
         <div className="mt-3 border-t border-brand-100 pt-3">
-          <label className="flex min-h-[44px] items-center justify-between gap-3 text-sm font-medium">
-            <span>{t('signInMethods.faceIdLabel')}</span>
-            <input
-              type="checkbox"
+          <div className="flex min-h-[44px] items-center justify-between gap-3">
+            <Label htmlFor="parent-bio" className="text-sm font-medium">{t('signInMethods.faceIdLabel')}</Label>
+            <Switch
+              id="parent-bio"
               checked={bioOn}
               disabled={bioPending}
-              onChange={(e) => void toggleBiometric(e.target.checked)}
-              className="h-5 w-5"
+              onCheckedChange={(checked) => void toggleBiometric(checked)}
               aria-describedby="parent-bio-help"
             />
-          </label>
+          </div>
           <p id="parent-bio-help" className="mt-1 text-xs text-muted-foreground">
             {t('signInMethods.faceIdHelp')}
           </p>

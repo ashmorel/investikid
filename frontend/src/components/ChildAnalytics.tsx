@@ -16,7 +16,7 @@ function StandardsBadge({ standards }: { standards: StandardRef[] }) {
   const shortNames = [...new Set(frameworks.map(frameworkShortName))];
   return (
     <p
-      className="mb-1.5 text-[11px] text-muted-foreground"
+      className="mb-1.5 text-xs text-muted-foreground"
       title={standards.map((s) => `${s.code}: ${s.label}`).join(' · ')}
     >
       {`Aligned to ${shortNames.join(' · ')}`}
@@ -41,7 +41,7 @@ function formatScore(type: string, score: number | null): string {
 function TypeBadge({ type }: { type: string }) {
   const label = type.charAt(0).toUpperCase() + type.slice(1);
   return (
-    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
+    <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium uppercase text-muted-foreground">
       {label}
     </span>
   );
@@ -51,20 +51,20 @@ function LevelStateBadge({ level }: { level: LevelProgress }) {
   const { t } = useTranslation('parent');
   if (level.state === 'completed') {
     return (
-      <span className="rounded-full bg-success-100 px-2 py-0.5 text-[11px] font-medium text-success-700">
+      <span className="rounded-full bg-success-100 px-2 py-0.5 text-xs font-medium text-success-700">
         {level.passed ? t('childAnalytics.levelStateBadge.completedPassed') : t('childAnalytics.levelStateBadge.completed')}
       </span>
     );
   }
   if (level.state === 'locked') {
     return (
-      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
         {t('childAnalytics.levelStateBadge.locked')}
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-medium text-brand-700">
+    <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">
       {t('childAnalytics.levelStateBadge.inProgress')}
     </span>
   );
@@ -80,10 +80,10 @@ function ModuleProgressBlock({ module }: { module: ModuleProgress }) {
       <ul className="space-y-1.5">
         {module.levels.map((level) => (
           <li key={level.level_id} className="flex items-center justify-between gap-2 text-xs">
-            <span className="text-gray-700">{level.title}</span>
+            <span className="text-foreground">{level.title}</span>
             <span className="flex items-center gap-2">
               {level.mastered_at && (
-                <span className="text-[11px] text-success-700">
+                <span className="text-xs text-success-700">
                   {t('childAnalytics.masteredDate', { date: formatMasteredDate(level.mastered_at) })}
                 </span>
               )}
@@ -112,7 +112,7 @@ export function ChildAnalytics({ analytics }: { analytics: ChildAnalyticsType })
 
   return (
     <div className="mt-2">
-      <p className="text-[13px] text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         {`Lvl ${analytics.level}`}
         <span className="mx-1.5">&middot;</span>
         {`${analytics.xp} XP`}
@@ -125,7 +125,7 @@ export function ChildAnalytics({ analytics }: { analytics: ChildAnalyticsType })
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
         aria-expanded={expanded}
-        className="mt-1 text-[13px] font-medium text-brand-700 hover:text-brand-800"
+        className="mt-1 text-sm font-medium text-brand-700 hover:text-brand-800"
       >
         {expanded ? t('childAnalytics.hideProgress') : t('childAnalytics.showProgress')}
       </button>

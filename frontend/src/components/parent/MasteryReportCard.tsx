@@ -71,7 +71,7 @@ function ChildMastery({ child, multi }: { child: MasteryReportChild; multi: bool
   return (
     <div>
       {multi && (
-        <p className="text-sm font-bold text-gray-800">
+        <p className="text-sm font-bold text-ink">
           {t('masteryReport.multiChildStats', { username: child.username, count: child.mastered_count, total: child.mastered_total })}
         </p>
       )}
@@ -88,19 +88,19 @@ function ChildMastery({ child, multi }: { child: MasteryReportChild; multi: bool
           ))}
         </ul>
       ) : (
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           {nextLabel
             ? t('masteryReport.noMasteriesQueued', { nextLabel })
             : t('masteryReport.noMasteriesNone')}
         </p>
       )}
       {child.standards.length > 0 && (
-        <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+        <p className="mt-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {t('masteryReport.alignedTo', { frameworks: Array.from(new Set(child.standards.map((s) => s.framework).filter(Boolean))).join(' · ') })}
         </p>
       )}
       {child.weak_topic && nextLabel && (
-        <p className="mt-1.5 text-sm text-gray-700">
+        <p className="mt-1.5 text-sm text-muted-foreground">
           {t('masteryReport.worthALook', { topic: child.weak_topic.replace(/_/g, ' '), nextLabel })}
         </p>
       )}
