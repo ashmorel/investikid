@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { billingApi, type Plan, type PlanOut, type SubscriptionStatus } from '@/api/billing';
@@ -232,20 +232,63 @@ export function SubscriptionCard() {
   const native = isNativeApp();
   const isActive = sub.has_subscription && sub.status !== 'canceled';
 
-  // Active subscription states (every branch below assigns statusText)
-  let statusText: string;
+  // Active-state presentation: a status detail line + a status badge + a
+  // tonal medallion. (Detail strings stay English here, matching the rest
+  // of this card; the badge/title are translated.)
+  let detail: string;
+  let badgeText = t('subscription.badge.active');
+  let medallionCls = 'bg-success-50 text-success-700';
+  let badgeCls = 'bg-success-50 text-success-700';
   if (sub.status === 'trialing' && sub.trial_ends_at) {
     const days = daysUntil(sub.trial_ends_at);
-    statusText = `Premium trial — ${days} day${days !== 1 ? 's' : ''} remaining`;
+    detail = `Trial — ${days} day${days !== 1 ? 's' : ''} remaining`;
+    badgeText = t('subscription.badge.trial');
+    medallionCls = 'bg-brand-100 text-brand-700';
+    badgeCls = 'bg-brand-100 text-brand-700';
   } else if (sub.cancel_at_period_end && sub.current_period_end) {
-    statusText = `Premium — cancels ${formatDate(sub.current_period_end)}`;
+    detail = `Cancels ${formatDate(sub.current_period_end)}`;
+    badgeText = t('subscription.badge.ending');
+    medallionCls = 'bg-accent-100 text-accent-700';
+    badgeCls = 'bg-accent-100 text-accent-700';
   } else if (sub.status === 'past_due') {
-    statusText = 'Premium — payment issue, retrying';
+    detail = 'Payment issue — retrying';
+    badgeText = t('subscription.badge.paymentDue');
+    medallionCls = 'bg-danger-100 text-danger-700';
+    badgeCls = 'bg-danger-100 text-danger-700';
   } else if (sub.current_period_end) {
-    statusText = `Premium — renews ${formatDate(sub.current_period_end)}`;
+    detail = `Renews ${formatDate(sub.current_period_end)}`;
   } else {
-    statusText = 'Premium — active';
+    detail = 'Active';
   }
+
+  // Shared active-subscription card: medallion + title + status detail + a
+  // tonal badge, a divider, then the platform's manage action.
+  const renderActive = (onManage: () => void, label: string, loading: boolean, errorEl: ReactNode) => (
+    <section
+      className="rounded-2xl border border-brand-200 bg-card p-4 sm:p-6"
+      aria-label={t('subscription.sectionAriaLabel')}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line i18next/no-literal-string -- decorative check glyph */}
+          <span aria-hidden="true" className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-extrabold ${medallionCls}`}>✓</span>
+          <div>
+            <p className="text-base font-extrabold text-ink">{t('subscription.activeTitle')}</p>
+            <p className="text-sm text-muted-foreground">{detail}</p>
+          </div>
+        </div>
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${badgeCls}`}>{badgeText}</span>
+      </div>
+      <div className="my-4 h-px bg-brand-100" />
+      <Button variant="outline" className="w-full" onClick={onManage} disabled={loading}>
+        {label}
+      </Button>
+      {errorEl}
+      {note && (
+        <p className="mt-3 text-sm text-brand-700" role="status">{note}</p>
+      )}
+    </section>
+  );
 
   // Native: in-app purchase Subscribe / Restore / Manage — no Stripe UI.
   // Android uses Play Billing; iOS uses StoreKit.
@@ -254,51 +297,39 @@ export function SubscriptionCard() {
     const subscribeMutation = android ? subscribeAndroid : subscribe;
     const restoreMutation = android ? restoreAndroid : restore;
     const manageUrl = android ? PLAY_MANAGE_URL : APPLE_MANAGE_URL;
+    if (isActive) {
+      return renderActive(
+        () => window.open(manageUrl, '_blank', 'noopener,noreferrer'),
+        t('subscription.manageSubscription'),
+        false,
+        null,
+      );
+    }
     return (
       <section
-        className="rounded-lg border-2 border-brand-200 bg-brand-50 px-4 py-4 sm:px-6 sm:py-6"
+        className="rounded-2xl border border-brand-200 bg-brand-50 p-4 sm:p-6"
         aria-label={t('subscription.sectionAriaLabel')}
       >
-        <p className="text-sm font-medium text-brand-900">
-          {isActive
-            ? statusText
-            : t('subscription.freeUpgrade')}
-        </p>
-
-        {isActive ? (
+        <p className="text-sm font-medium text-brand-900">{t('subscription.freeUpgrade')}</p>
+        <PlanPicker plans={plansData?.plans} value={plan} onChange={setPlan} />
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            className="bg-brand-600 text-white hover:bg-brand-700"
+            onClick={() => subscribeMutation.mutate()}
+            disabled={subscribeMutation.isPending}
+          >
+            {subscribeMutation.isPending ? t('subscription.subscribing') : t('subscription.subscribe')}
+          </Button>
           <Button
             variant="outline"
-            className="mt-3"
-            onClick={() => window.open(manageUrl, '_blank', 'noopener,noreferrer')}
+            onClick={() => restoreMutation.mutate()}
+            disabled={restoreMutation.isPending}
           >
-            {t('subscription.manageSubscription')}
+            {restoreMutation.isPending ? t('subscription.restoring') : t('subscription.restorePurchases')}
           </Button>
-        ) : (
-          <>
-          <PlanPicker plans={plansData?.plans} value={plan} onChange={setPlan} />
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              className="bg-brand-600 text-white hover:bg-brand-700"
-              onClick={() => subscribeMutation.mutate()}
-              disabled={subscribeMutation.isPending}
-            >
-              {subscribeMutation.isPending ? t('subscription.subscribing') : t('subscription.subscribe')}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => restoreMutation.mutate()}
-              disabled={restoreMutation.isPending}
-            >
-              {restoreMutation.isPending ? t('subscription.restoring') : t('subscription.restorePurchases')}
-            </Button>
-          </div>
-          </>
-        )}
-
+        </div>
         {note && (
-          <p className="mt-3 text-sm text-brand-700" role="status">
-            {note}
-          </p>
+          <p className="mt-3 text-sm text-brand-700" role="status">{note}</p>
         )}
       </section>
     );
@@ -308,7 +339,7 @@ export function SubscriptionCard() {
   if (!isActive) {
     return (
       <section
-        className="rounded-lg border-2 border-brand-200 bg-brand-50 px-4 py-4 sm:px-6 sm:py-6"
+        className="rounded-2xl border border-brand-200 bg-brand-50 p-4 sm:p-6"
         aria-label={t('subscription.sectionAriaLabel')}
       >
         <p className="text-sm font-medium text-brand-900">
@@ -331,25 +362,12 @@ export function SubscriptionCard() {
     );
   }
 
-  return (
-    <section
-      className="rounded-lg border-2 border-brand-200 bg-brand-50 px-4 py-4 sm:px-6 sm:py-6"
-      aria-label={t('subscription.sectionAriaLabel')}
-    >
-      <p className="text-sm font-medium text-brand-900">{statusText}</p>
-      <Button
-        variant="outline"
-        className="mt-3"
-        onClick={() => portal.mutate()}
-        disabled={portal.isPending}
-      >
-        {portal.isPending ? t('subscription.redirecting') : t('subscription.manageBilling')}
-      </Button>
-      {portal.isError && (
-        <p className="mt-2 text-sm text-danger-500" role="alert">
-          {t('subscription.portalError')}
-        </p>
-      )}
-    </section>
+  return renderActive(
+    () => portal.mutate(),
+    portal.isPending ? t('subscription.redirecting') : t('subscription.manageBilling'),
+    portal.isPending,
+    portal.isError ? (
+      <p className="mt-2 text-sm text-danger-500" role="alert">{t('subscription.portalError')}</p>
+    ) : null,
   );
 }

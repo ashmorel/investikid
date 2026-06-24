@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { parentApi, type MasteryReportChild } from '@/api/parent';
+import { ParentZoneHeading } from '@/components/parent/ParentSection';
 
 /**
  * The evidence hero (M6): what the household actually mastered this month,
@@ -16,9 +17,12 @@ export function MasteryReportCard() {
 
   if (isLoading) {
     return (
-      <section aria-label={t('masteryReport.sectionAriaLabel')} className="mb-4 rounded-2xl border border-brand-200 bg-white p-4 sm:p-6">
-        <div className="h-5 w-2/3 animate-pulse rounded bg-brand-100" aria-hidden="true" />
-        <div className="mt-3 h-4 w-1/2 animate-pulse rounded bg-brand-100" aria-hidden="true" />
+      <section aria-label={t('masteryReport.sectionAriaLabel')}>
+        <ParentZoneHeading>{t('zones.thisMonth')}</ParentZoneHeading>
+        <div className="rounded-2xl border border-brand-200 bg-white p-4 sm:p-6">
+          <div className="h-5 w-2/3 animate-pulse rounded bg-brand-100" aria-hidden="true" />
+          <div className="mt-3 h-4 w-1/2 animate-pulse rounded bg-brand-100" aria-hidden="true" />
+        </div>
       </section>
     );
   }
@@ -48,12 +52,15 @@ export function MasteryReportCard() {
   }
 
   return (
-    <section aria-label={t('masteryReport.sectionAriaLabel')} className="mb-4 rounded-2xl border border-brand-200 bg-white p-4 sm:p-6">
-      <h2 className="text-base font-extrabold text-brand-900">{headline}</h2>
-      <div className="mt-3 space-y-4">
-        {kids.map((child) => (
-          <ChildMastery key={child.user_id} child={child} multi={kids.length > 1} />
-        ))}
+    <section aria-label={t('masteryReport.sectionAriaLabel')}>
+      <ParentZoneHeading>{t('zones.thisMonth')}</ParentZoneHeading>
+      <div className="rounded-2xl border border-brand-200 bg-white p-4 sm:p-6">
+        <h2 className="text-base font-extrabold text-brand-900">{headline}</h2>
+        <div className="mt-3 space-y-4">
+          {kids.map((child) => (
+            <ChildMastery key={child.user_id} child={child} multi={kids.length > 1} />
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -142,9 +142,16 @@
       "errorDesc": "Please try again."
     }
   },
+  "zones": {
+    "thisMonth": "This month",
+    "needsApproval": "Needs your approval",
+    "yourPlan": "Your plan",
+    "yourChildren": "Your children",
+    "account": "Account"
+  },
   "premiumRequests": {
     "sectionAriaLabel": "Premium requests",
-    "requested": "✨ Premium requested",
+    "requested": "Premium requested",
     "approveAriaLabel": "Approve and subscribe to unlock {{contextLabel}} for {{childUsername}}",
     "approve": "Approve",
     "declineAriaLabel": "Decline request from {{childUsername}}",
@@ -163,6 +170,13 @@
   },
   "subscription": {
     "sectionAriaLabel": "Subscription status",
+    "activeTitle": "Premium",
+    "badge": {
+      "active": "Active",
+      "trial": "Trial",
+      "ending": "Ending",
+      "paymentDue": "Payment due"
+    },
     "choosePlanLegend": "Choose a plan",
     "choosePlanAriaLabel": "Choose a plan",
     "savePercent": "Save {{pct}}%",

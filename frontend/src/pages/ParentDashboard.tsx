@@ -28,6 +28,7 @@ import { PremiumRequestsCard } from '@/components/parent/PremiumRequestsCard';
 import { MasteryReportCard } from '@/components/parent/MasteryReportCard';
 import { PremiumValueCard } from '@/components/parent/PremiumValueCard';
 import { DeleteAccountCard } from '@/components/parent/DeleteAccountCard';
+import { ParentSection } from '@/components/parent/ParentSection';
 import { Penny } from '@/components/child/ui/Penny';
 
 export default function ParentDashboard() {
@@ -118,60 +119,69 @@ export default function ParentDashboard() {
         </div>
       </header>
 
-      <MasteryReportCard />
-      <PremiumRequestsCard
-        onApprove={() =>
-          document.getElementById('subscription-card')?.scrollIntoView({ behavior: 'smooth' })
-        }
-      />
-      <PremiumValueCard
-        onSubscribe={() =>
-          document.getElementById('subscription-card')?.scrollIntoView({ behavior: 'smooth' })
-        }
-      />
-      <div id="subscription-card">
-        <SubscriptionCard />
-      </div>
-      <NotificationPreferencesCard />
-
-      {q.isLoading && <p className="mt-6 text-sm text-muted-foreground">{t('dashboard.loading')}</p>}
-      {q.isError && (
-        <ErrorBanner
-          className="mt-6"
-          title={t('dashboard.childrenLoadError.title')}
-          message={t('dashboard.childrenLoadError.message')}
+      <div className="space-y-7">
+        <MasteryReportCard />
+        <PremiumRequestsCard
+          onApprove={() =>
+            document.getElementById('subscription-card')?.scrollIntoView({ behavior: 'smooth' })
+          }
         />
-      )}
-      {q.data && q.data.length === 0 && (
-        <div className="rounded-xl border border-line bg-card p-4 text-sm text-muted-foreground mt-6">
-          <p className="font-medium text-foreground">{t('dashboard.noChildrenLinked')}</p>
-          <p className="mt-1">
-            {t('dashboard.noChildrenLinkedHelp')}
-          </p>
-        </div>
-      )}
-      {!hintSeen && (q.data?.length ?? 0) > 0 && (
-        <div className="mb-4 mt-6 flex items-start justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 p-3 text-sm">
-          <span>{t('dashboard.welcome')}</span>
-          <button type="button" className="font-semibold text-brand-700" onClick={() => { localStorage.setItem('parent-welcome-seen', '1'); setHintSeen(true); }}>{t('dashboard.welcomeDismiss')}</button>
-        </div>
-      )}
-      {q.data && q.data.length > 0 && (
-        <ul className="mt-6 space-y-3">
-          {q.data.map((c: Child) => (
-            <li key={c.user_id}><ChildCard child={c} /></li>
-          ))}
-        </ul>
-      )}
-      <GroupsCard
-        childrenList={(q.data ?? []).map((c: Child) => ({ user_id: c.user_id, username: c.username }))}
-      />
-      <SignInMethods />
-      <section className="mt-6 rounded-xl border border-line bg-card p-4">
-        <p className="mb-3 text-sm font-semibold text-muted-foreground">{t('dashboard.preferences')}</p>
-        <LanguageSwitcher />
-      </section>
-      <DeleteAccountCard />
+
+        <ParentSection title={t('zones.yourPlan')}>
+          <PremiumValueCard
+            onSubscribe={() =>
+              document.getElementById('subscription-card')?.scrollIntoView({ behavior: 'smooth' })
+            }
+          />
+          <div id="subscription-card">
+            <SubscriptionCard />
+          </div>
+        </ParentSection>
+
+        <ParentSection title={t('zones.yourChildren')}>
+          {q.isLoading && <p className="text-sm text-muted-foreground">{t('dashboard.loading')}</p>}
+          {q.isError && (
+            <ErrorBanner
+              title={t('dashboard.childrenLoadError.title')}
+              message={t('dashboard.childrenLoadError.message')}
+            />
+          )}
+          {q.data && q.data.length === 0 && (
+            <div className="rounded-2xl border border-line bg-card p-4 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">{t('dashboard.noChildrenLinked')}</p>
+              <p className="mt-1">
+                {t('dashboard.noChildrenLinkedHelp')}
+              </p>
+            </div>
+          )}
+          {!hintSeen && (q.data?.length ?? 0) > 0 && (
+            <div className="flex items-start justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-3 text-sm">
+              <span>{t('dashboard.welcome')}</span>
+              <button type="button" className="font-semibold text-brand-700" onClick={() => { localStorage.setItem('parent-welcome-seen', '1'); setHintSeen(true); }}>{t('dashboard.welcomeDismiss')}</button>
+            </div>
+          )}
+          {q.data && q.data.length > 0 && (
+            <ul className="space-y-3">
+              {q.data.map((c: Child) => (
+                <li key={c.user_id}><ChildCard child={c} /></li>
+              ))}
+            </ul>
+          )}
+        </ParentSection>
+
+        <ParentSection title={t('zones.account')}>
+          <NotificationPreferencesCard />
+          <GroupsCard
+            childrenList={(q.data ?? []).map((c: Child) => ({ user_id: c.user_id, username: c.username }))}
+          />
+          <SignInMethods />
+          <section className="rounded-2xl border border-brand-100 bg-card p-4">
+            <p className="mb-3 text-sm font-semibold text-muted-foreground">{t('dashboard.preferences')}</p>
+            <LanguageSwitcher />
+          </section>
+          <DeleteAccountCard />
+        </ParentSection>
+      </div>
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} audience="parent" />
     </main>
   );
