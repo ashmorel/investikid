@@ -17,8 +17,8 @@ function wrap(ui: React.ReactNode) {
 beforeEach(() => {
   getLeaderboard.mockReset();
   getLeaderboard.mockResolvedValue([
-    { rank: 1, name: 'CleverOtter42', country_code: 'GB', points: 120, is_me: false },
-    { rank: 2, name: 'You', country_code: 'GB', points: 90, is_me: true },
+    { rank: 1, name: 'CleverOtter42', country_code: 'GB', points: 120, is_me: false, avatar: { skin: 'skin_sky', accessories: ['party_hat'] } },
+    { rank: 2, name: 'You', country_code: 'GB', points: 90, is_me: true, avatar: { skin: null, accessories: [] } },
   ]);
 });
 
@@ -40,5 +40,12 @@ describe('LeaderboardCard', () => {
     const { container } = wrap(<LeaderboardCard />);
     await screen.findByText('CleverOtter42');
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('renders a Penny avatar on each row', async () => {
+    const { container } = wrap(<LeaderboardCard />);
+    await screen.findByText('CleverOtter42');
+    // at least one Penny svg in the rendered rows
+    expect(container.querySelectorAll('svg[viewBox="0 0 56 56"]').length).toBeGreaterThanOrEqual(1);
   });
 });

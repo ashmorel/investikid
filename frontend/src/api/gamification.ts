@@ -35,11 +35,8 @@ export type ChallengeOut = {
 export type LeaderboardScope = 'market' | 'global' | 'friends';
 export type LeaderboardMetric = 'xp' | 'arcade';
 export type LeaderboardRow = {
-  rank: number;
-  name: string;
-  country_code: string | null;
-  points: number;
-  is_me: boolean;
+  rank: number; name: string; country_code: string | null; points: number; is_me: boolean;
+  avatar: { skin: string | null; accessories: string[] };
 };
 
 export const gamificationApi = {

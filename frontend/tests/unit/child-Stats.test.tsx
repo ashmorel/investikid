@@ -39,7 +39,7 @@ vi.mock('@/hooks/useChallenges', () => ({
 vi.mock('@/hooks/useLeaderboard', () => ({
   useLeaderboard: () => ({
     data: [
-      { rank: 1, name: 'You', country_code: 'GB', points: 100, is_me: true },
+      { rank: 1, name: 'You', country_code: 'GB', points: 100, is_me: true, avatar: { skin: null, accessories: [] } },
     ],
     isLoading: false,
     isError: false,

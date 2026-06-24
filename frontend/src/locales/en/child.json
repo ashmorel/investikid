@@ -210,6 +210,7 @@
     "friendsEmpty": "No friends on the board yet. Ask a parent to join a group!",
     "loading": "Loading leaderboard…",
     "error": "Could not load the leaderboard. Please try again.",
+    "colAvatar": "Avatar",
     "colRank": "#",
     "colName": "Name",
     "colUsername": "Username",

@@ -4,9 +4,9 @@ import { LeaderboardTable } from '@/components/child/stats/LeaderboardTable';
 import type { LeaderboardRow } from '@/api/gamification';
 
 const rows: LeaderboardRow[] = [
-  { rank: 1, name: 'alice', country_code: 'US', points: 120, is_me: false },
-  { rank: 2, name: 'testuser', country_code: 'GB', points: 80, is_me: true },
-  { rank: 3, name: 'bob', country_code: 'FR', points: 50, is_me: false },
+  { rank: 1, name: 'alice', country_code: 'US', points: 120, is_me: false, avatar: { skin: null, accessories: [] } },
+  { rank: 2, name: 'testuser', country_code: 'GB', points: 80, is_me: true, avatar: { skin: null, accessories: [] } },
+  { rank: 3, name: 'bob', country_code: 'FR', points: 50, is_me: false, avatar: { skin: null, accessories: [] } },
 ];
 
 describe('LeaderboardTable', () => {
