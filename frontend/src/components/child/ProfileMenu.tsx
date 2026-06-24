@@ -440,7 +440,7 @@ export function ProfileMenu({ username }: { username: string }) {
         </BottomSheet>
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="top-[5dvh] max-h-[85dvh] translate-y-0">
+          <DialogContent className="top-[5dvh] max-h-[85dvh] translate-y-0 data-[state=open]:animate-none data-[state=closed]:animate-none">
             <DialogHeader>
               <DialogTitle>{t('dialog.title')}</DialogTitle>
             </DialogHeader>
