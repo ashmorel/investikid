@@ -18,7 +18,7 @@ function ActiveDrop({ drop, now }: { drop: CollectableDrop; now: number }) {
       <div className="flex items-center gap-3">
         <span className="text-3xl" aria-hidden="true">{drop.emoji}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-900">{drop.name}</p>
+          <p className="text-sm font-bold text-ink">{drop.name}</p>
           <span
             className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${rarityClass(drop.rarity)}`}
           >
@@ -26,7 +26,7 @@ function ActiveDrop({ drop, now }: { drop: CollectableDrop; now: number }) {
           </span>
         </div>
         {countdown && (
-          <span className="shrink-0 text-xs text-gray-500">{countdown}</span>
+          <span className="shrink-0 text-xs text-muted-foreground">{countdown}</span>
         )}
       </div>
 
@@ -34,7 +34,7 @@ function ActiveDrop({ drop, now }: { drop: CollectableDrop; now: number }) {
         <p className="text-sm font-bold text-brand-700">{t('limited.earned')}</p>
       ) : (
         <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-gray-600">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{goalLabel}</span>
             <span>{drop.goal.current} / {drop.goal.threshold}</span>
           </div>
@@ -64,7 +64,7 @@ function OwnedCard({ item }: { item: OwnedCollectable }) {
   return (
     <li className="flex flex-col items-center gap-1.5 rounded-2xl border border-brand-200 bg-white p-4 text-center">
       <span className="text-3xl" aria-hidden="true">{item.emoji}</span>
-      <p className="text-sm font-bold text-gray-900">{item.name}</p>
+      <p className="text-sm font-bold text-ink">{item.name}</p>
       <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${rarityClass(item.rarity)}`}>
         {rarity}
       </span>
@@ -113,13 +113,13 @@ export default function LimitedShelf() {
     <section className="mt-8" aria-labelledby="limited-shelf-heading">
       <h2
         id="limited-shelf-heading"
-        className="text-base font-extrabold text-gray-900"
+        className="mb-1 px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground"
       >
         {t('limited.title')}
       </h2>
 
       {active.length === 0 && (
-        <p className="mt-2 text-sm text-gray-500">{t('limited.emptyActive')}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t('limited.emptyActive')}</p>
       )}
 
       {active.length > 0 && (
@@ -132,7 +132,7 @@ export default function LimitedShelf() {
 
       {owned.length > 0 && (
         <>
-          <h3 className="mt-5 text-sm font-bold text-gray-700">
+          <h3 className="mb-1 mt-5 px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
             {t('limited.ownedTitle')}
           </h3>
           <ul className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">

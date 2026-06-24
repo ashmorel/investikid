@@ -52,18 +52,18 @@ export default function Shop() {
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
       <BackButton to="/home" label={t('nav.home')} />
       <div className="mt-2 flex items-center justify-between">
-        <h1 className="flex items-center gap-2 text-xl font-extrabold text-gray-900">
+        <h1 className="flex items-center gap-2 text-xl font-extrabold text-ink">
           <Penny size={36} accessories={eq.accessories} skin={eq.skin} />
           {playful ? t('shop.pageTitle') : t('shop.pageTitleSimple')}
         </h1>
         <span
-          className="rounded-full bg-accent-100 px-3 py-1.5 text-sm font-extrabold text-accent-700"
+          className="rounded-full bg-accent-100 px-2.5 py-1 text-sm font-extrabold text-accent-700"
           aria-label={t('shop.coinsAriaLabel', { count: data?.coins ?? 0 })}
         >
           <span aria-hidden="true">🪙 </span>{data?.coins ?? 0}
         </span>
       </div>
-      <p className="mt-1 text-sm text-gray-600">
+      <p className="mt-1 text-sm text-muted-foreground">
         {t('shop.description')}
       </p>
 
@@ -78,7 +78,7 @@ export default function Shop() {
 
       {isLoading && <p className="mt-6 text-sm text-muted-foreground">{t('shop.loading')}</p>}
       {isError && (
-        <p role="alert" className="mt-6 text-sm font-semibold text-red-700">
+        <p role="alert" className="mt-6 text-sm font-semibold text-danger-700">
           {t('shop.error')}
         </p>
       )}
@@ -118,11 +118,11 @@ export default function Shop() {
                   className="flex flex-col items-center gap-1.5 rounded-2xl border border-brand-200 bg-white p-4 text-center"
                 >
                   <span className="text-3xl" aria-hidden="true">{item.emoji}</span>
-                  <p className="text-sm font-bold text-gray-900">
+                  <p className="text-sm font-bold text-ink">
                     {item.name}
                     {item.is_premium && <span aria-hidden="true"> ✨</span>}
                   </p>
-                  <p className="text-xs font-semibold text-gray-600">
+                  <p className="text-xs font-semibold text-muted-foreground">
                     <span aria-hidden="true">🪙 </span>{item.coin_cost}
                     {item.is_premium && <span className="sr-only">{t('shop.itemPremiumSr')}</span>}
                   </p>
@@ -135,7 +135,7 @@ export default function Shop() {
                         ? 'border border-brand-600 bg-brand-50 text-brand-800'
                         : item.owned || item.can_buy
                           ? 'bg-brand-600 text-white hover:bg-brand-700'
-                          : 'bg-gray-100 text-gray-400'
+                          : 'bg-muted text-muted-foreground'
                     }`}
                   >
                     {label}

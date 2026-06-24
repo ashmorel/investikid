@@ -6,7 +6,7 @@ export const RARITY_STYLE: Record<string, string> = {
   legendary: 'bg-amber-100 text-amber-800',
   epic:      'bg-purple-100 text-purple-800',
   rare:      'bg-sky-100 text-sky-800',
-  common:    'bg-gray-100 text-gray-700',
+  common:    'bg-muted text-muted-foreground',
 };
 
 export function rarityClass(rarity: string | null): string {
@@ -33,7 +33,7 @@ export function ProgressBar({ current, threshold }: { current: number; threshold
   const pct = threshold > 0 ? Math.min(100, (current / threshold) * 100) : 0;
   return (
     <div
-      className="h-2 overflow-hidden rounded-full bg-gray-100"
+      className="h-2 overflow-hidden rounded-full bg-muted"
       role="progressbar"
       aria-label={`${current} / ${threshold}`}
       aria-valuenow={current}
