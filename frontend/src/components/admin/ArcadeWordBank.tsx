@@ -116,7 +116,9 @@ function WordRow({ word, onApprove, onReject, approving, rejecting }: WordRowPro
 export default function ArcadeWordBank() {
   const { t } = useTranslation('admin');
   const qc = useQueryClient();
-  const [status, setStatus] = useState<Status>('pending');
+  // Default to the approved bank so the operator sees the existing words on load;
+  // Suggest then switches to pending so the new candidates show up for review.
+  const [status, setStatus] = useState<Status>('approved');
   const [suggestCount, setSuggestCount] = useState(10);
   const [suggestedResult, setSuggestedResult] = useState<number | null>(null);
 
@@ -139,6 +141,7 @@ export default function ArcadeWordBank() {
     onSuccess: (data) => {
       void qc.invalidateQueries({ queryKey: ['admin', 'arcade-words'] });
       setSuggestedResult(data?.length ?? 0);
+      setStatus('pending'); // jump to the review queue so new candidates are visible
     },
   });
 
@@ -183,26 +186,41 @@ export default function ArcadeWordBank() {
         )}
       </div>
 
-      {/* Status filter */}
-      <div>
-        <label htmlFor="status-filter" className="sr-only">
-          {t('arcadeWordBank.statusFilterLabel')}
-        </label>
-        <select
-          id="status-filter"
+      {/* Status filter — visible tabs so the existing (approved) bank is easy to find */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-ink">{t('arcadeWordBank.statusFilterLabel')}</span>
+        <div
+          role="tablist"
           aria-label={t('arcadeWordBank.statusFilterLabel')}
-          value={status}
-          onChange={(e) => setStatus(e.target.value as Status)}
-          className="min-h-[44px] rounded-md border border-line bg-background px-3 py-2 text-sm text-ink"
+          className="flex flex-wrap gap-1 rounded-lg border border-line p-1"
         >
-          <option value="pending">{t('arcadeWordBank.statusPending')}</option>
-          <option value="approved">{t('arcadeWordBank.statusApproved')}</option>
-          <option value="rejected">{t('arcadeWordBank.statusRejected')}</option>
-        </select>
+          {(['approved', 'pending', 'rejected'] as Status[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              role="tab"
+              aria-selected={status === s}
+              onClick={() => setStatus(s)}
+              className={`min-h-[44px] rounded-md px-3 py-2 text-sm font-semibold transition active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 ${
+                status === s
+                  ? 'bg-brand-600 text-white'
+                  : 'text-ink hover:bg-muted'
+              }`}
+            >
+              {t(`arcadeWordBank.status${s.charAt(0).toUpperCase()}${s.slice(1)}`)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {wordsQ.isLoading && (
         <p className="text-sm text-muted-foreground">{t('arcadeWordBank.loading')}</p>
+      )}
+
+      {!wordsQ.isLoading && words.length > 0 && (
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          {t('arcadeWordBank.count', { count: words.length })}
+        </p>
       )}
 
       {words.length === 0 && !wordsQ.isLoading && (

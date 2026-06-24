@@ -312,6 +312,7 @@
     "statusApproved": "Approved",
     "statusRejected": "Rejected",
     "loading": "Loading…",
+    "count": "{{count}} word(s) in this view.",
     "empty": "No words with this status.",
     "meta": "{{language}} · {{length}} letters · {{source}} · {{status}}"
   },

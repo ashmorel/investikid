@@ -109,6 +109,20 @@ describe('ArcadeWordBank', () => {
     expect(screen.getByText(/no words with this status/i)).toBeInTheDocument();
   });
 
+  it('shows status tabs (defaulting to the approved bank) and a count', () => {
+    wrap(<ArcadeWordBank />);
+    expect(screen.getByRole('tab', { name: /approved/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /pending/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /rejected/i })).toBeInTheDocument();
+    expect(screen.getByText(/word\(s\) in this view/i)).toBeInTheDocument();
+  });
+
+  it('re-queries with the chosen status when a tab is clicked', async () => {
+    wrap(<ArcadeWordBank />);
+    await userEvent.click(screen.getByRole('tab', { name: /pending/i }));
+    expect(api.useArcadeWords).toHaveBeenCalledWith('pending');
+  });
+
   it('has no axe violations', async () => {
     const { container } = wrap(<ArcadeWordBank />);
     expect(await axe(container)).toHaveNoViolations();
