@@ -18,7 +18,7 @@ ANIMALS = [
     "Otter", "Fox", "Panda", "Koala", "Tiger", "Falcon", "Dolphin", "Lynx",
     "Beaver", "Robin", "Badger", "Gecko", "Heron", "Ibis", "Jaguar", "Kestrel",
     "Llama", "Meerkat", "Newt", "Owl", "Puffin", "Quokka", "Raccoon", "Seal",
-    "Toucan", "Urchin", "Vole", "Walrus", "Yak", "Zebra",
+    "Toucan", "Pony", "Vole", "Walrus", "Yak", "Zebra",
 ]
 
 def generate_handle() -> str:
