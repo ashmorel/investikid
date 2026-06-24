@@ -117,7 +117,7 @@ async def get_my_handle(
 ):
     handle = await ensure_handle(session, current_user)
     await session.commit()
-    return {"handle": handle}
+    return {"handle": handle, "hidden": current_user.leaderboard_hidden}
 
 
 @router.post("/me/handle/reroll")

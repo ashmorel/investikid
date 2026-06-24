@@ -39,6 +39,9 @@ async def test_list_children_returns_own(client, db_session):
     assert len(body) == 1
     assert body[0]["username"] == "kid7"
     assert body[0]["is_active"] is False
+    # Task 7: leaderboard_consent must be present and default False
+    assert "leaderboard_consent" in body[0]
+    assert body[0]["leaderboard_consent"] is False
 
 
 async def test_list_children_unauthenticated(client):

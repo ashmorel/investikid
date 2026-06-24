@@ -48,7 +48,7 @@ export const gamificationApi = {
   getChallenges: () => apiFetch<ChallengeOut[]>('/challenges'),
   getLeaderboard: (scope: LeaderboardScope, metric: LeaderboardMetric) =>
     apiFetch<LeaderboardRow[]>(`/leaderboard?scope=${scope}&metric=${metric}`),
-  getHandle: () => apiFetch<{ handle: string }>('/me/handle'),
+  getHandle: () => apiFetch<{ handle: string; hidden: boolean }>('/me/handle'),
   rerollHandle: () => apiFetch<{ handle: string }>('/me/handle/reroll', { method: 'POST' }),
   setLeaderboardVisibility: (hidden: boolean) =>
     apiFetch<{ hidden: boolean }>('/me/leaderboard-visibility', { method: 'PATCH', body: JSON.stringify({ hidden }) }),

@@ -75,6 +75,7 @@ async def list_children(
                 is_active=r.is_active, is_premium=r.is_premium,
                 push_enabled=r.push_enabled,
                 biometric_allowed=r.biometric_allowed,
+                leaderboard_consent=r.leaderboard_consent,
                 parent_consent_given_at=r.parent_consent_given_at,
                 consent_declined_at=r.consent_declined_at,
                 deleted_at=r.deleted_at,

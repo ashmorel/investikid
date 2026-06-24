@@ -67,6 +67,7 @@ class ChildOut(BaseModel):
     is_premium: bool
     push_enabled: bool = False
     biometric_allowed: bool = False
+    leaderboard_consent: bool = False
     parent_consent_given_at: datetime | None
     consent_declined_at: datetime | None
     deleted_at: datetime | None

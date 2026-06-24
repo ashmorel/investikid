@@ -39,7 +39,7 @@ vi.mock('@/components/child/CurrencySelector', () => ({ CurrencySelector: () => 
 vi.mock('@/hooks/useMediaQuery', () => ({ useMediaQuery: () => true }));
 vi.mock('@/api/gamification', () => ({
   gamificationApi: {
-    getHandle: vi.fn(async () => ({ handle: 'CoolBadger42' })),
+    getHandle: vi.fn(async () => ({ handle: 'CoolBadger42', hidden: false })),
     rerollHandle: vi.fn(async () => ({ handle: 'SwiftFox99' })),
     setLeaderboardVisibility: vi.fn(async () => ({ hidden: true })),
     getAllBadges: vi.fn(async () => []),
@@ -65,7 +65,7 @@ async function openProfileEditor() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(gamificationApi.getHandle).mockResolvedValue({ handle: 'CoolBadger42' });
+  vi.mocked(gamificationApi.getHandle).mockResolvedValue({ handle: 'CoolBadger42', hidden: false });
   vi.mocked(gamificationApi.rerollHandle).mockResolvedValue({ handle: 'SwiftFox99' });
   vi.mocked(gamificationApi.setLeaderboardVisibility).mockResolvedValue({ hidden: true });
 });
@@ -92,6 +92,20 @@ describe('ProfileMenu hide-from-leaderboard toggle', () => {
     await openProfileEditor();
     const cb = await screen.findByRole('checkbox', { name: /hide me from public leaderboards/i });
     expect(cb).toBeInTheDocument();
+  });
+
+  it('seeds the hide checkbox as unchecked when API returns hidden: false', async () => {
+    vi.mocked(gamificationApi.getHandle).mockResolvedValue({ handle: 'CoolBadger42', hidden: false });
+    await openProfileEditor();
+    const cb = await screen.findByRole('checkbox', { name: /hide me from public leaderboards/i });
+    expect(cb).not.toBeChecked();
+  });
+
+  it('seeds the hide checkbox as checked when API returns hidden: true', async () => {
+    vi.mocked(gamificationApi.getHandle).mockResolvedValue({ handle: 'CoolBadger42', hidden: true });
+    await openProfileEditor();
+    const cb = await screen.findByRole('checkbox', { name: /hide me from public leaderboards/i });
+    expect(cb).toBeChecked();
   });
 
   it('toggling calls setLeaderboardVisibility(true)', async () => {

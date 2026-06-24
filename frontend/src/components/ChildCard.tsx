@@ -175,17 +175,22 @@ export function ChildCard({ child }: { child: Child }) {
           </Label>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Switch
-            id={`leaderboard-consent-${child.user_id}`}
-            checked={child.leaderboard_consent ?? false}
-            disabled={isDeleted || leaderboardConsentToggle.isPending}
-            onCheckedChange={(value) => leaderboardConsentToggle.mutate(value)}
-            aria-describedby={`leaderboard-consent-help-${child.user_id}`}
-          />
-          <Label htmlFor={`leaderboard-consent-${child.user_id}`} className="text-sm">
-            {t('childCard.leaderboardConsentLabel')}
-          </Label>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <Switch
+              id={`leaderboard-consent-${child.user_id}`}
+              checked={child.leaderboard_consent ?? false}
+              disabled={isDeleted || leaderboardConsentToggle.isPending}
+              onCheckedChange={(value) => leaderboardConsentToggle.mutate(value)}
+              aria-describedby={`leaderboard-consent-help-${child.user_id}`}
+            />
+            <Label htmlFor={`leaderboard-consent-${child.user_id}`} className="text-sm">
+              {t('childCard.leaderboardConsentLabel')}
+            </Label>
+          </div>
+          <p id={`leaderboard-consent-help-${child.user_id}`} className="text-xs text-muted-foreground">
+            {t('childCard.leaderboardConsentHelp')}
+          </p>
         </div>
 
         <div className="flex items-center gap-2 text-sm">

@@ -100,8 +100,12 @@ async def test_leaderboard_rejects_bad_scope(client):
 async def test_me_handle_generates_and_reroll_changes_it(client):
     from tests.test_content import _register_and_login
     await _register_and_login(client, email="lbh@example.com", username="lbh")
-    h1 = (await client.get("/me/handle")).json()["handle"]
+    r = await client.get("/me/handle")
+    h1 = r.json()["handle"]
     assert h1
+    # Task 7: GET /me/handle must include hidden field
+    assert "hidden" in r.json(), f"Expected 'hidden' in response, got: {r.json()}"
+    assert r.json()["hidden"] is False  # default
     h2 = (await client.post("/me/handle/reroll")).json()["handle"]
     assert h2 and h2 != h1
 

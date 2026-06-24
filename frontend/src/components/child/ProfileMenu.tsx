@@ -114,7 +114,12 @@ export function ProfileMenu({ username }: { username: string }) {
   const [handleLoading, setHandleLoading] = useState(false);
   const [leaderboardHidden, setLeaderboardHidden] = useState(false);
   useEffect(() => {
-    void gamificationApi.getHandle().then((r) => { if (r) setHandle(r.handle); }).catch(() => {});
+    void gamificationApi.getHandle().then((r) => {
+      if (r) {
+        setHandle(r.handle);
+        setLeaderboardHidden(r.hidden);
+      }
+    }).catch(() => {});
   }, []);
   async function rerollHandle() {
     setHandleLoading(true);
