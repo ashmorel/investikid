@@ -152,7 +152,7 @@ export default function QuizRush() {
     <main className="mx-auto max-w-md space-y-4 p-4">
       <div className="flex items-center justify-between" aria-live="polite">
         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-bold text-amber-700">
-          <span aria-hidden="true">⏱️</span>{t('quizRush.timeLeft')}{': '}{t('quizRush.secondsValue', { count: seconds })}
+          {t('quizRush.timeLeft')}{': '}{t('quizRush.secondsValue', { count: seconds })}
         </span>
         <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-3 py-1.5 text-sm font-bold text-brand-700">
           <span aria-hidden="true">🔥</span>{t('quizRush.combo')}{': '}{combo}

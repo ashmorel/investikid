@@ -20,7 +20,6 @@ export function MarketChip({ activeCode, xp }: { activeCode: string; xp?: number
       {showXp && (
         <span aria-hidden="true" className="ml-0.5 flex items-center gap-1 border-l border-brand-100 pl-2">
           <span className="font-bold">{xp}</span>
-          {/* eslint-disable-next-line i18next/no-literal-string -- decorative unit, aria-hidden */}
           <span className="text-brand-400">XP</span>
         </span>
       )}

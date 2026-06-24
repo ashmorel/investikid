@@ -14,7 +14,7 @@ export default function Arcade() {
     <main className="mx-auto max-w-2xl space-y-4 p-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-extrabold text-ink">
-          <span aria-hidden="true">🕹️ </span>{t('hub.title')}
+          <span aria-hidden="true">🎮 </span>{t('hub.title')}
         </h1>
         <span
           className="inline-flex items-center gap-1 rounded-xl bg-amber-100 px-2.5 py-1.5 text-sm font-bold text-amber-700"
