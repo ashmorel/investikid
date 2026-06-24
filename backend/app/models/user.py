@@ -1,6 +1,7 @@
 import uuid
 from datetime import UTC, date, datetime
 
+import sqlalchemy as sa
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -86,6 +87,9 @@ class User(Base):
         DateTime(timezone=True), nullable=True
     )
     tier_override: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    display_handle: Mapped[str | None] = mapped_column(String(40), unique=True, nullable=True)
+    leaderboard_consent: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa.false())
+    leaderboard_hidden: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa.false())
 
     @property
     def age_tier(self) -> str:
