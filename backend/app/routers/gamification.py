@@ -12,6 +12,7 @@ from app.models.gamification import Badge, Challenge, UserBadge, UserChallenge
 from app.models.user import User
 from app.routers.users import get_current_user
 from app.schemas.gamification import (
+    AvatarOut,
     BadgeDefinitionOut,
     BadgeOut,
     ChallengeOut,
@@ -102,10 +103,9 @@ async def weekly_leaderboard(
         await session.commit()
     rows = await leaderboard(session, viewer=current_user, scope=scope, metric=metric)
     return [
-        LeaderboardRowOut(
-            rank=r.rank, name=r.name, country_code=r.country_code,
-            points=r.points, is_me=r.is_me,
-        )
+        LeaderboardRowOut(rank=r.rank, name=r.name, country_code=r.country_code,
+                          points=r.points, is_me=r.is_me,
+                          avatar=AvatarOut(skin=r.avatar.skin, accessories=r.avatar.accessories))
         for r in rows
     ]
 

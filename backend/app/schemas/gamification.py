@@ -39,9 +39,15 @@ class ChallengeOut(BaseModel):
     completed_at: datetime | None = None
 
 
+class AvatarOut(BaseModel):
+    skin: str | None = None
+    accessories: list[str] = []
+
+
 class LeaderboardRowOut(BaseModel):
     rank: int
     name: str
     country_code: str | None = None
     points: int
     is_me: bool
+    avatar: AvatarOut
