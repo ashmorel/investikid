@@ -1,5 +1,6 @@
 import pytest
 from sqlalchemy import select
+
 from app.models.user import User
 from tests.test_content import _register_and_login
 
