@@ -32,9 +32,9 @@ describe('Penny skin prop', () => {
   });
 
   it('renders multiple stacked accessory glyphs at once', () => {
-    const { container } = render(<Penny accessories={['party_hat', 'sunglasses']} />);
+    const { container } = render(<Penny accessories={['crown', 'sunglasses']} />);
     const glyphs = Array.from(container.querySelectorAll('text')).map((t) => t.textContent);
-    expect(glyphs).toContain('🥳');
+    expect(glyphs).toContain('👑');
     expect(glyphs).toContain('🕶️');
   });
 
@@ -47,12 +47,21 @@ describe('Penny skin prop', () => {
   it('gives accessory glyphs an explicit paintable fill (not the inherited none)', () => {
     // Regression: the <svg fill="none"> root made accessory <text> inherit
     // fill="none", so the emoji were in the DOM but never painted — Penny
-    // showed no hat/glasses/bow. Each glyph must set its own fill.
-    const { container } = render(<Penny accessories={['party_hat']} />);
-    const glyph = Array.from(container.querySelectorAll('text')).find((t) => t.textContent === '🥳');
+    // showed no glasses/bow. Each glyph must set its own fill.
+    const { container } = render(<Penny accessories={['sunglasses']} />);
+    const glyph = Array.from(container.querySelectorAll('text')).find((t) => t.textContent === '🕶️');
     expect(glyph).toBeTruthy();
     expect(glyph!.getAttribute('fill')).toBeTruthy();
     expect(glyph!.getAttribute('fill')).not.toBe('none');
+  });
+
+  it('renders the party hat as a drawn SVG shape, not the partying-face emoji', () => {
+    // 🥳 is a whole face and looked unprofessional on Penny's head; the party
+    // hat is now a proper SVG cone (polygon) + pom-pom.
+    const { container } = render(<Penny accessories={['party_hat']} />);
+    const glyphs = Array.from(container.querySelectorAll('text')).map((t) => t.textContent);
+    expect(glyphs).not.toContain('🥳');
+    expect(container.querySelector('polygon')).toBeTruthy();
   });
 
   it('falls back to mood gradient when no skin is given', () => {

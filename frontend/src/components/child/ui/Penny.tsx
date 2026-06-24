@@ -12,7 +12,6 @@ const MOOD_GRADIENT: Record<Mood, [string, string]> = {
 // Accessory overlays (M8 Penny's Shop) — emoji anchored above/on the head.
 // Keyed by CosmeticItem.slug; unknown slugs render nothing (forward-compatible).
 const ACCESSORY: Record<string, { glyph: string; x: number; y: number; size: number }> = {
-  party_hat: { glyph: '🥳', x: 28, y: 12, size: 18 },
   sunglasses: { glyph: '🕶️', x: 28, y: 30, size: 16 },
   bow: { glyph: '🎀', x: 40, y: 14, size: 14 },
   headphones: { glyph: '🎧', x: 28, y: 14, size: 16 },
@@ -20,6 +19,23 @@ const ACCESSORY: Record<string, { glyph: string; x: number; y: number; size: num
   crown: { glyph: '👑', x: 28, y: 9, size: 18 },
   monocle: { glyph: '🧐', x: 36, y: 30, size: 14 },
   top_hat: { glyph: '🎩', x: 28, y: 8, size: 18 },
+};
+
+// Some accessories are hand-drawn flat-SVG (matching the scene backgrounds)
+// rather than emoji — for items with no good emoji. Checked before ACCESSORY.
+// Coordinates are in the 0–56 Penny viewBox, anchored on top of the head.
+const ACCESSORY_SVG: Record<string, JSX.Element> = {
+  // A proper party hat: striped cone + base band + pom-pom (no emoji face).
+  party_hat: (
+    <>
+      <polygon points="28,1 19,17 37,17" fill="#ec4899" />
+      {/* diagonal stripes */}
+      <polygon points="28,1 24.5,8 30,8" fill="#fde047" />
+      <polygon points="22,12 33.5,12 35,17 20.5,17" fill="#fde047" />
+      <ellipse cx="28" cy="17" rx="9.5" ry="2.2" fill="#be185d" />
+      <circle cx="28" cy="2.5" r="2.4" fill="#facc15" />
+    </>
+  ),
 };
 
 export function Penny({
@@ -93,6 +109,8 @@ export function Penny({
         fill="none"
       />
       {accSlugs.map((slug) => {
+        const custom = ACCESSORY_SVG[slug];
+        if (custom) return <g key={slug}>{custom}</g>;
         const a = ACCESSORY[slug];
         return a ? (
           <text
