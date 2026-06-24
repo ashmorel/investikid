@@ -10,6 +10,10 @@ function fromLocalInput(local: string): string {
   return new Date(local).toISOString();
 }
 
+function toLocalInput(iso: string | null | undefined): string {
+  return iso ? iso.slice(0, 16) : '';
+}
+
 export default function CollectablesAdmin() {
   const { t } = useTranslation('admin');
   const { data: pool = [] } = usePool();
@@ -26,15 +30,50 @@ export default function CollectablesAdmin() {
   const [until, setUntil] = useState('');
 
   const [confirm, setConfirm] = useState<{ kind: 'end' | 'unschedule'; drop: Drop } | null>(null);
+  const [editing, setEditing] = useState<Drop | null>(null);
+
+  function startEdit(drop: Drop) {
+    setEditing(drop);
+    setRarity(drop.rarity ?? 'rare');
+    setUnlockType(drop.unlock_type ?? 'streak_days');
+    setThreshold(drop.unlock_threshold ?? 5);
+    setFrom(toLocalInput(drop.available_from));
+    setUntil(toLocalInput(drop.available_until));
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setItemId('');
+    setRarity('rare');
+    setUnlockType('streak_days');
+    setThreshold(5);
+    setFrom('');
+    setUntil('');
+  }
 
   async function onSchedule(e: React.FormEvent) {
     e.preventDefault();
-    if (!itemId || !from || !until) return;
-    await schedule.mutateAsync({
-      item_id: itemId, rarity, unlock_type: unlockType, unlock_threshold: threshold,
-      available_from: fromLocalInput(from), available_until: fromLocalInput(until),
-    });
-    setItemId(''); setFrom(''); setUntil('');
+    if (editing) {
+      if (!from || !until) return;
+      await edit.mutateAsync({
+        itemId: editing.item_id,
+        body: {
+          rarity,
+          unlock_type: unlockType,
+          unlock_threshold: threshold,
+          available_from: fromLocalInput(from),
+          available_until: fromLocalInput(until),
+        },
+      });
+      cancelEdit();
+    } else {
+      if (!itemId || !from || !until) return;
+      await schedule.mutateAsync({
+        item_id: itemId, rarity, unlock_type: unlockType, unlock_threshold: threshold,
+        available_from: fromLocalInput(from), available_until: fromLocalInput(until),
+      });
+      setItemId(''); setFrom(''); setUntil('');
+    }
   }
 
   return (
@@ -65,12 +104,18 @@ export default function CollectablesAdmin() {
                 </td>
                 <td className="px-3 py-2">{t(`collectables.status${d.status[0].toUpperCase()}${d.status.slice(1)}`)}</td>
                 <td className="px-3 py-2">{d.owned_count}</td>
-                <td className="px-3 py-2 text-right">
+                <td className="px-3 py-2 text-right space-x-3">
                   {d.status === 'scheduled' && (
-                    <button type="button" className="text-sm font-bold text-brand-700"
-                      onClick={() => setConfirm({ kind: 'unschedule', drop: d })}>
-                      {t('collectables.unschedule')}
-                    </button>
+                    <>
+                      <button type="button" className="text-sm font-bold text-brand-700"
+                        onClick={() => startEdit(d)}>
+                        {t('collectables.edit')}
+                      </button>
+                      <button type="button" className="text-sm font-bold text-brand-700"
+                        onClick={() => setConfirm({ kind: 'unschedule', drop: d })}>
+                        {t('collectables.unschedule')}
+                      </button>
+                    </>
                   )}
                   {d.status === 'live' && (
                     <button type="button" className="text-sm font-bold text-red-700"
@@ -85,20 +130,29 @@ export default function CollectablesAdmin() {
         </table>
       </div>
 
-      {/* Schedule a drop */}
-      <h3 className="mb-2 mt-8 text-sm font-bold text-muted-foreground">{t('collectables.scheduleHeading')}</h3>
-      {pool.length === 0 ? (
+      {/* Schedule / Edit a drop */}
+      <h3 className="mb-2 mt-8 text-sm font-bold text-muted-foreground">
+        {editing ? t('collectables.editHeading') : t('collectables.scheduleHeading')}
+      </h3>
+      {!editing && pool.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('collectables.poolEmpty')}</p>
       ) : (
         <form onSubmit={onSchedule} className="flex max-w-lg flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            {t('collectables.poolItemLabel')}
-            <select className="rounded border px-2 py-2 text-base" value={itemId}
-              onChange={(e) => setItemId(e.target.value)} required>
-              <option value="" disabled>—</option>
-              {pool.map((p) => <option key={p.item_id} value={p.item_id}>{p.emoji} {p.name}</option>)}
-            </select>
-          </label>
+          {editing ? (
+            <p className="text-sm text-muted-foreground">
+              <span aria-hidden="true">{editing.emoji}</span>{' '}
+              {t('collectables.editingLabel', { name: editing.name })}
+            </p>
+          ) : (
+            <label className="flex flex-col gap-1 text-sm">
+              {t('collectables.poolItemLabel')}
+              <select className="rounded border px-2 py-2 text-base" value={itemId}
+                onChange={(e) => setItemId(e.target.value)} required>
+                <option value="" disabled>—</option>
+                {pool.map((p) => <option key={p.item_id} value={p.item_id}>{p.emoji} {p.name}</option>)}
+              </select>
+            </label>
+          )}
           <label className="flex flex-col gap-1 text-sm">
             {t('collectables.rarityLabel')}
             <select className="rounded border px-2 py-2 text-base" value={rarity}
@@ -128,10 +182,18 @@ export default function CollectablesAdmin() {
             <input type="datetime-local" className="rounded border px-2 py-2 text-base" value={until}
               onChange={(e) => setUntil(e.target.value)} required />
           </label>
-          <button type="submit" disabled={schedule.isPending}
-            className="min-h-[44px] rounded-xl bg-brand-600 px-4 font-bold text-white hover:bg-brand-700">
-            {t('collectables.save')}
-          </button>
+          <div className="flex gap-3">
+            <button type="submit" disabled={schedule.isPending || edit.isPending}
+              className="min-h-[44px] rounded-xl bg-brand-600 px-4 font-bold text-white hover:bg-brand-700">
+              {t('collectables.save')}
+            </button>
+            {editing && (
+              <button type="button" onClick={cancelEdit}
+                className="min-h-[44px] rounded-xl border px-4 font-bold hover:bg-muted">
+                {t('collectables.cancelEdit')}
+              </button>
+            )}
+          </div>
         </form>
       )}
 

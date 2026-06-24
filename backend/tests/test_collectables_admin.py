@@ -236,3 +236,53 @@ async def test_scheduled_drop_grants_via_b1_engine(admin_client, db_session):
     await db_session.flush()
     granted = await collectables_service.grant_eligible(db_session, p)
     assert "_api_grant" in granted
+
+
+async def test_edit_scheduled_full_replace(db_session):
+    item = _pool_item("_edit_sched_a")
+    db_session.add(item)
+    await db_session.flush()
+    now = datetime.now(UTC)
+    await svc.schedule_drop(
+        db_session, item_id=item.id, rarity="rare", unlock_type="streak_days",
+        unlock_threshold=5, available_from=now + timedelta(days=1),
+        available_until=now + timedelta(days=8),
+    )
+    await svc.edit_drop(
+        db_session, item_id=item.id, now=now,
+        rarity="epic", unlock_type="window_xp", unlock_threshold=200,
+        available_from=now + timedelta(days=2),
+        available_until=now + timedelta(days=9),
+    )
+    refreshed = await db_session.get(CosmeticItem, item.id)
+    assert refreshed.rarity == "epic"
+    assert refreshed.unlock_type == "window_xp"
+    assert refreshed.unlock_threshold == 200
+    assert refreshed.available_from == now + timedelta(days=2)
+    assert refreshed.available_until == now + timedelta(days=9)
+
+
+async def test_patch_scheduled_drop_updates_fields(admin_client, db_session):
+    item = await _seed_pool(db_session, "_api_patch_sched")
+    now = datetime.now(UTC)
+    schedule_body = {
+        "item_id": str(item.id), "rarity": "rare", "unlock_type": "streak_days",
+        "unlock_threshold": 5,
+        "available_from": (now + timedelta(days=1)).isoformat(),
+        "available_until": (now + timedelta(days=8)).isoformat(),
+    }
+    r = await admin_client.post("/admin/collectables", json=schedule_body)
+    assert r.status_code == 200, r.text
+
+    patch_body = {
+        "rarity": "epic", "unlock_type": "window_xp", "unlock_threshold": 200,
+        "available_from": (now + timedelta(days=2)).isoformat(),
+        "available_until": (now + timedelta(days=9)).isoformat(),
+    }
+    r2 = await admin_client.patch(f"/admin/collectables/{item.id}", json=patch_body)
+    assert r2.status_code == 200, r2.text
+    data = r2.json()
+    assert data["rarity"] == "epic"
+    assert data["unlock_type"] == "window_xp"
+    assert data["unlock_threshold"] == 200
+    assert data["status"] == "scheduled"
