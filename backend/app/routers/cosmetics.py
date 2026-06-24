@@ -21,8 +21,31 @@ from app.services.entitlements import is_premium
 router = APIRouter(prefix="/cosmetics", tags=["cosmetics"])
 
 # Categories where only ONE item can be equipped at a time (equipping one
-# swaps out the others of that type). Accessories are NOT here — they stack.
+# swaps out the others of that type). Accessories are NOT here — they stack
+# ACROSS slots (a hat + eyewear + bow together).
 _SINGLE_PICK_TYPES = {"background", "skin"}
+
+# Within accessories, items sharing a "slot" are mutually exclusive — you can
+# only wear one hat at a time, one pair of eyewear, etc. Items NOT listed here
+# get a slot of their own slug (always stackable). Keep in sync with the
+# ACCESSORY overlay map in the frontend Penny mascot.
+_ACCESSORY_SLOT: dict[str, str] = {
+    "party_hat": "head",
+    "grad_cap": "head",
+    "crown": "head",
+    "top_hat": "head",
+    "headphones": "head",
+    "sunglasses": "eyes",
+    "monocle": "eyes",
+    # "bow" -> its own slot (off to the side; always stacks)
+}
+
+
+def _accessory_slot_slugs(slug: str) -> set[str]:
+    """All accessory slugs sharing the given slug's slot (incl. itself)."""
+    slot = _ACCESSORY_SLOT.get(slug, slug)
+    same = {s for s, sl in _ACCESSORY_SLOT.items() if sl == slot}
+    return same or {slug}
 
 
 class CosmeticOut(BaseModel):
@@ -155,8 +178,9 @@ async def equip_item(
     if target is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "not_found")
     # Single-pick categories (background, skin) allow one equipped at a time, so
-    # equipping one unequips the others of that type. Accessories STACK — equip
-    # just turns this one on, leaving other equipped accessories in place.
+    # equipping one unequips the others of that type. Accessories STACK across
+    # slots, but within a slot (e.g. "head" = hats) only one can be worn — so
+    # equipping a hat swaps out any other equipped hat, leaving eyewear/bow on.
     if target.type in _SINGLE_PICK_TYPES:
         await session.execute(
             update(UserCosmetic)
@@ -164,6 +188,18 @@ async def equip_item(
                 UserCosmetic.user_id == current_user.id,
                 UserCosmetic.item_id.in_(
                     select(CosmeticItem.id).where(CosmeticItem.type == target.type)
+                ),
+            )
+            .values(equipped=False)
+        )
+    elif target.type == "accessory":
+        slot_slugs = _accessory_slot_slugs(target.slug)
+        await session.execute(
+            update(UserCosmetic)
+            .where(
+                UserCosmetic.user_id == current_user.id,
+                UserCosmetic.item_id.in_(
+                    select(CosmeticItem.id).where(CosmeticItem.slug.in_(slot_slugs))
                 ),
             )
             .values(equipped=False)

@@ -215,3 +215,37 @@ async def test_accessories_stack(client, db_session):
     # equipping an unowned item -> 404
     crown = await _item(db_session, "crown")
     assert (await client.post(f"/cosmetics/{crown.id}/equip")).status_code == 404
+
+
+async def test_accessories_swap_within_slot(client, db_session):
+    """Same-slot accessories are mutually exclusive (one hat at a time), but
+    different slots stack (a hat + eyewear can be worn together)."""
+    user = await _login_with_coins(client, db_session, coins=2000, premium=True)
+    party_hat = await _item(db_session, "party_hat")   # head slot
+    top_hat = await _item(db_session, "top_hat")        # head slot
+    sunglasses = await _item(db_session, "sunglasses")  # eyes slot
+    for it in (party_hat, top_hat, sunglasses):
+        assert (await client.post(f"/cosmetics/{it.id}/buy")).status_code == 200
+
+    async def _equipped_ids():
+        rows = (
+            await db_session.execute(
+                select(UserCosmetic).where(UserCosmetic.user_id == user.id)
+            )
+        ).scalars().all()
+        for r in rows:
+            await db_session.refresh(r)
+        return {r.item_id for r in rows if r.equipped}
+
+    # Equip a hat, then sunglasses -> different slots, both stay on.
+    assert (await client.post(f"/cosmetics/{party_hat.id}/equip")).status_code == 200
+    assert (await client.post(f"/cosmetics/{sunglasses.id}/equip")).status_code == 200
+    equipped = await _equipped_ids()
+    assert party_hat.id in equipped and sunglasses.id in equipped
+
+    # Equip a second hat -> swaps out the first hat, leaves sunglasses on.
+    assert (await client.post(f"/cosmetics/{top_hat.id}/equip")).status_code == 200
+    equipped = await _equipped_ids()
+    assert top_hat.id in equipped, "new hat equipped"
+    assert party_hat.id not in equipped, "old hat swapped out (one hat at a time)"
+    assert sunglasses.id in equipped, "different-slot accessory unaffected"
