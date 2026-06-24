@@ -23,6 +23,9 @@ class CosmeticItem(Base):
     rarity: Mapped[str | None] = mapped_column(String(12), nullable=True)
     unlock_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     unlock_threshold: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    drop_eligible: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false", default=False
+    )
 
 
 class UserCosmetic(Base):

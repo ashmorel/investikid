@@ -42,7 +42,7 @@ CATALOG: list[dict] = [
     # ── Limited drops ────────────────────────────────────────────────────────
     {"slug": "founders_crown", "name": "Founder's Crown", "emoji": "👑", "type": "accessory",
      "coin_cost": 0, "is_premium": False, "rarity": "legendary",
-     "unlock_type": "streak_days", "unlock_threshold": 7,
+     "unlock_type": "streak_days", "unlock_threshold": 7, "drop_eligible": True,
      "available_from": _drop_window()[0], "available_until": _drop_window()[1]},
 ]
 
@@ -68,5 +68,6 @@ async def seed_cosmetics(session: AsyncSession) -> int:
             item.rarity = spec.get("rarity")
             item.unlock_type = spec.get("unlock_type")
             item.unlock_threshold = spec.get("unlock_threshold")
+            item.drop_eligible = spec.get("drop_eligible", False)
     await session.flush()
     return len(CATALOG)

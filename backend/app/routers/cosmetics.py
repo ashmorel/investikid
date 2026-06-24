@@ -77,7 +77,10 @@ async def _shop_state(session: AsyncSession, user: User) -> ShopResponse:
     items = (
         await session.scalars(
             select(CosmeticItem)
-            .where(CosmeticItem.unlock_type.is_(None))
+            .where(
+                CosmeticItem.unlock_type.is_(None),
+                CosmeticItem.drop_eligible.is_(False),
+            )
             .order_by(CosmeticItem.coin_cost)
         )
     ).all()
