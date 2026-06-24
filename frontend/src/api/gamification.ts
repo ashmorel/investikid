@@ -32,15 +32,24 @@ export type ChallengeOut = {
   completed_at: string | null;
 };
 
-export type LeaderboardEntry = {
-  username: string;
-  country_code: string;
-  xp_this_week: number;
+export type LeaderboardScope = 'market' | 'global' | 'friends';
+export type LeaderboardMetric = 'xp' | 'arcade';
+export type LeaderboardRow = {
+  rank: number;
+  name: string;
+  country_code: string | null;
+  points: number;
+  is_me: boolean;
 };
 
 export const gamificationApi = {
   getAllBadges: () => apiFetch<BadgeDefinition[]>('/badges'),
   getEarnedBadges: () => apiFetch<EarnedBadge[]>('/users/me/badges'),
   getChallenges: () => apiFetch<ChallengeOut[]>('/challenges'),
-  getLeaderboard: () => apiFetch<LeaderboardEntry[]>('/leaderboard'),
+  getLeaderboard: (scope: LeaderboardScope, metric: LeaderboardMetric) =>
+    apiFetch<LeaderboardRow[]>(`/leaderboard?scope=${scope}&metric=${metric}`),
+  getHandle: () => apiFetch<{ handle: string }>('/me/handle'),
+  rerollHandle: () => apiFetch<{ handle: string }>('/me/handle/reroll', { method: 'POST' }),
+  setLeaderboardVisibility: (hidden: boolean) =>
+    apiFetch<{ hidden: boolean }>('/me/leaderboard-visibility', { method: 'PATCH', body: JSON.stringify({ hidden }) }),
 };

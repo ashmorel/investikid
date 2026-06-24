@@ -144,6 +144,8 @@ export const parentApi = {
       method: 'PATCH',
       body: JSON.stringify(update),
     }),
+  setChildLeaderboardConsent: (childId: string, consent: boolean) =>
+    apiFetch(`/parent/children/${childId}/leaderboard-consent`, { method: 'POST', body: JSON.stringify({ consent }) }),
 };
 
 
