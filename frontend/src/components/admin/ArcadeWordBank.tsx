@@ -82,8 +82,10 @@ function WordRow({ word, onApprove, onReject, approving, rejecting }: WordRowPro
           </div>
         </div>
 
-        {isPending && (
-          <div className="flex shrink-0 gap-2">
+        {/* Actions by status: pending → Approve + Reject; approved → Reject
+            (remove it from the live game); rejected → Approve (restore it). */}
+        <div className="flex shrink-0 gap-2">
+          {word.status !== 'approved' && (
             <button
               type="button"
               disabled={approving || rejecting}
@@ -95,8 +97,12 @@ function WordRow({ word, onApprove, onReject, approving, rejecting }: WordRowPro
               }
               className="min-h-[44px] rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition active:scale-95 hover:bg-brand-700 active:bg-brand-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
             >
-              {approving ? t('arcadeWordBank.approving') : t('arcadeWordBank.approve')}
+              {approving
+                ? t('arcadeWordBank.approving')
+                : t(word.status === 'rejected' ? 'arcadeWordBank.restore' : 'arcadeWordBank.approve')}
             </button>
+          )}
+          {word.status !== 'rejected' && (
             <button
               type="button"
               disabled={approving || rejecting}
@@ -105,8 +111,8 @@ function WordRow({ word, onApprove, onReject, approving, rejecting }: WordRowPro
             >
               {rejecting ? t('arcadeWordBank.rejecting') : t('arcadeWordBank.reject')}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </li>
   );

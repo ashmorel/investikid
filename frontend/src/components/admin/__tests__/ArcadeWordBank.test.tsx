@@ -109,6 +109,36 @@ describe('ArcadeWordBank', () => {
     expect(screen.getByText(/no words with this status/i)).toBeInTheDocument();
   });
 
+  it('shows a Reject action on an already-approved word (and no Approve)', () => {
+    vi.mocked(api.useArcadeWords).mockReturnValue({
+      data: [APPROVED_WORD],
+      isLoading: false,
+    } as unknown as ReturnType<typeof api.useArcadeWords>);
+    wrap(<ArcadeWordBank />);
+    expect(screen.getByRole('button', { name: /reject/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^approve$/i })).toBeNull();
+  });
+
+  it('rejects an already-approved word via rejectArcadeWord', async () => {
+    vi.mocked(api.useArcadeWords).mockReturnValue({
+      data: [APPROVED_WORD],
+      isLoading: false,
+    } as unknown as ReturnType<typeof api.useArcadeWords>);
+    wrap(<ArcadeWordBank />);
+    await userEvent.click(screen.getByRole('button', { name: /reject/i }));
+    expect(api.rejectArcadeWord).toHaveBeenCalledWith('w2');
+  });
+
+  it('shows a Restore (approve) action on a rejected word', () => {
+    vi.mocked(api.useArcadeWords).mockReturnValue({
+      data: [{ ...APPROVED_WORD, id: 'w3', status: 'rejected' }],
+      isLoading: false,
+    } as unknown as ReturnType<typeof api.useArcadeWords>);
+    wrap(<ArcadeWordBank />);
+    expect(screen.getByRole('button', { name: /restore/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reject/i })).toBeNull();
+  });
+
   it('shows status tabs (defaulting to the approved bank) and a count', () => {
     wrap(<ArcadeWordBank />);
     expect(screen.getByRole('tab', { name: /approved/i })).toHaveAttribute('aria-selected', 'true');
