@@ -7,6 +7,7 @@ import {
   rejectArcadeWord,
   suggestArcadeWords,
   type ArcadeWord,
+  type SuggestResult,
 } from '@/api/arcadeWordsAdmin';
 
 type Status = 'pending' | 'approved' | 'rejected';
@@ -126,7 +127,7 @@ export default function ArcadeWordBank() {
   // Suggest then switches to pending so the new candidates show up for review.
   const [status, setStatus] = useState<Status>('approved');
   const [suggestCount, setSuggestCount] = useState(10);
-  const [suggestedResult, setSuggestedResult] = useState<number | null>(null);
+  const [suggestedResult, setSuggestedResult] = useState<SuggestResult | null>(null);
 
   const wordsQ = useArcadeWords(status);
   const words = wordsQ.data ?? [];
@@ -146,7 +147,7 @@ export default function ArcadeWordBank() {
     mutationFn: () => suggestArcadeWords(suggestCount),
     onSuccess: (data) => {
       void qc.invalidateQueries({ queryKey: ['admin', 'arcade-words'] });
-      setSuggestedResult(data?.length ?? 0);
+      setSuggestedResult({ created: data?.created ?? 0, skipped: data?.skipped ?? 0 });
       setStatus('pending'); // jump to the review queue so new candidates are visible
     },
   });
@@ -186,8 +187,10 @@ export default function ArcadeWordBank() {
           </button>
         </div>
         {suggestedResult !== null && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            {t('arcadeWordBank.suggestedResult', { count: suggestedResult })}
+          <p className="mt-2 text-sm text-muted-foreground" aria-live="polite">
+            {t('arcadeWordBank.suggestedResult', { count: suggestedResult.created })}
+            {suggestedResult.skipped > 0 &&
+              ' ' + t('arcadeWordBank.suggestedSkipped', { count: suggestedResult.skipped })}
           </p>
         )}
       </div>

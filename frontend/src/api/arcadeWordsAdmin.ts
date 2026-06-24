@@ -16,8 +16,12 @@ export function listArcadeWords(status = 'pending') {
   return apiFetch<ArcadeWord[]>(`/admin/arcade-words?status=${encodeURIComponent(status)}`);
 }
 
+/** The /suggest endpoint returns how many words it created vs skipped
+ * (duplicates / out-of-length / moderation) — NOT the word list. */
+export type SuggestResult = { created: number; skipped: number };
+
 export function suggestArcadeWords(count = 10) {
-  return apiFetch<ArcadeWord[]>('/admin/arcade-words/suggest', {
+  return apiFetch<SuggestResult>('/admin/arcade-words/suggest', {
     method: 'POST',
     body: JSON.stringify({ count }),
   });

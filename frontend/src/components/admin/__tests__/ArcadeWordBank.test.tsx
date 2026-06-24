@@ -45,7 +45,7 @@ beforeEach(() => {
     data: [PENDING_WORD],
     isLoading: false,
   } as unknown as ReturnType<typeof api.useArcadeWords>);
-  vi.mocked(api.suggestArcadeWords).mockResolvedValue([PENDING_WORD]);
+  vi.mocked(api.suggestArcadeWords).mockResolvedValue({ created: 3, skipped: 2 });
   vi.mocked(api.approveArcadeWord).mockResolvedValue(APPROVED_WORD);
   vi.mocked(api.rejectArcadeWord).mockResolvedValue({ ...PENDING_WORD, status: 'rejected' });
 });
@@ -68,6 +68,16 @@ describe('ArcadeWordBank', () => {
     const suggestBtn = screen.getByRole('button', { name: /suggest/i });
     await userEvent.click(suggestBtn);
     expect(api.suggestArcadeWords).toHaveBeenCalledWith(10);
+  });
+
+  it('reports the created and skipped counts from the suggest result', async () => {
+    // The endpoint returns { created, skipped } — the message must reflect
+    // `created` (not data.length, which was always 0 → the "0 queued" bug).
+    wrap(<ArcadeWordBank />);
+    await userEvent.click(screen.getByRole('button', { name: /suggest/i }));
+    // i18n mock interpolates real catalogs: "Queued 3 new word(s) for review."
+    expect(await screen.findByText(/queued 3 new word/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 suggestion\(s\) were skipped/i)).toBeInTheDocument();
   });
 
   it('calls approveArcadeWord with no edits when word/def unchanged', async () => {

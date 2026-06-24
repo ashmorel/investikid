@@ -308,6 +308,7 @@
     "suggestCountLabel": "Count",
     "suggestButton": "Suggest {{count}}",
     "suggestedResult": "Queued {{count}} new word(s) for review.",
+    "suggestedSkipped": "{{count}} suggestion(s) were skipped (already in the bank or not 5–6 letters).",
     "statusFilterLabel": "Filter by status",
     "statusPending": "Pending",
     "statusApproved": "Approved",
