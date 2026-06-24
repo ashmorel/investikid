@@ -29,6 +29,7 @@ export default function MoneyWord() {
   const [gameState, setGameState] = useState<MoneyWordState | null>(null);
   const [current, setCurrent] = useState('');
   const [announcement, setAnnouncement] = useState('');
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const isMounted = useRef(true);
 
@@ -82,13 +83,34 @@ export default function MoneyWord() {
     }
   }, [gameState, submitting, current, t]);
 
-  const shareResult = useCallback(() => {
+  const shareResult = useCallback(async () => {
     if (!gameState) return;
     const header = t('moneyword.shareHeader');
     const grid = gameState.guesses
       .map((g) => g.feedback.map((f) => FEEDBACK_EMOJI[f] ?? '⬛').join(''))
       .join('\n');
-    void navigator.clipboard.writeText(`${header}\n${grid}`);
+    const text = `${header}\n${grid}`;
+    // Prefer the native share sheet (mobile / iOS Safari); fall back to the
+    // clipboard. Either way, give visible + announced confirmation — the old
+    // version copied silently, so it looked like nothing happened.
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch (err) {
+        // User dismissed the share sheet — leave quietly, no error message.
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        // Any other failure: fall through to the clipboard path below.
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setShareMsg(t('moneyword.shareCopied'));
+      setAnnouncement(t('moneyword.shareCopied'));
+    } catch {
+      setShareMsg(t('moneyword.shareFailed'));
+      setAnnouncement(t('moneyword.shareFailed'));
+    }
   }, [gameState, t]);
 
   if (loadState === 'loading') {
@@ -249,6 +271,11 @@ export default function MoneyWord() {
               {t('moneyword.backToArcade')}
             </Link>
           </div>
+          {shareMsg && (
+            <p role="status" className="text-sm font-semibold text-brand-700">
+              {shareMsg}
+            </p>
+          )}
         </div>
       )}
 

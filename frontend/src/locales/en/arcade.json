@@ -56,6 +56,8 @@
     "definitionLabel": "Definition",
     "share": "Share result",
     "shareHeader": "MoneyWord",
+    "shareCopied": "Copied! Paste it anywhere to share.",
+    "shareFailed": "Couldn't copy — try again.",
     "backToArcade": "Back to Arcade",
     "tileLabel": {
       "correct": "{{letter}}: correct",

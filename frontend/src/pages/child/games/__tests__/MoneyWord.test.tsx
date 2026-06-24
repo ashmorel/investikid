@@ -50,6 +50,32 @@ describe('MoneyWord', () => {
     expect(screen.getByRole('button', { name: /share/i })).toBeInTheDocument();
   });
 
+  it('share copies the grid and shows a visible confirmation (clipboard fallback)', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    // jsdom has no navigator.share, so this exercises the clipboard fallback.
+    // Stub clipboard narrowly (don't replace navigator — that breaks userEvent).
+    const prev = Object.getOwnPropertyDescriptor(window.navigator, 'clipboard');
+    Object.defineProperty(window.navigator, 'clipboard', { value: { writeText }, configurable: true });
+
+    render(<MemoryRouter><MoneyWord /></MemoryRouter>);
+    await screen.findByRole('grid');
+    for (const letter of ['A', 'S', 'S', 'E', 'T']) {
+      await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${letter}$`, 'i') }));
+    }
+    await userEvent.click(screen.getByRole('button', { name: /enter/i }));
+    await waitFor(() => expect(screen.getByText(/something valuable/i)).toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole('button', { name: /share/i }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(writeText.mock.calls[0][0]).toContain('🟩🟩🟩🟩🟩');
+    // Visible confirmation (the old bug: copied silently, looked broken)
+    expect(await screen.findByRole('status')).toHaveTextContent(/copied/i);
+
+    if (prev) Object.defineProperty(window.navigator, 'clipboard', prev);
+    else Reflect.deleteProperty(window.navigator, 'clipboard');
+  });
+
   it('has no axe violations on the initial board', async () => {
     const { container } = render(<MemoryRouter><MoneyWord /></MemoryRouter>);
     await screen.findByRole('grid');
