@@ -182,6 +182,32 @@ async def test_suggest_words_accepts_5_and_6_letters_only(db_session):
     assert lengths == {"PRICE": 5, "SAVING": 6}
 
 
+async def test_suggest_words_rejects_truncated_nonword(db_session):
+    """A truncated non-word (ACCRU) is rejected by the allowlist gate, while the
+    real word it was chopped from (ACCRUE) is accepted — the reported bug."""
+    response = json.dumps(
+        [
+            {"word": "ACCRU", "definition": "To slowly add up money bit by bit over time."},
+            {"word": "ACCRUE", "definition": "To slowly build up money bit by bit over time."},
+        ]
+    )
+    mock_client = _mock_llm_client(response)
+    with patch(
+        "app.services.arcade_word_admin_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result = await suggest_words(db_session, language="en")
+
+    assert result["created"] == 1
+    assert result["skipped"] == 1
+    assert await db_session.scalar(
+        select(ArcadeWord).where(ArcadeWord.word == "ACCRUE", ArcadeWord.language == "en")
+    ) is not None
+    assert await db_session.scalar(
+        select(ArcadeWord).where(ArcadeWord.word == "ACCRU", ArcadeWord.language == "en")
+    ) is None
+
+
 async def test_suggest_words_sends_existing_words_as_avoid_list(db_session):
     """Existing bank words are passed to the LLM as a do-not-repeat list, so the
     suggester stops returning words we already have (the '0 queued' bug)."""

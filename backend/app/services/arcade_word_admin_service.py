@@ -27,20 +27,44 @@ _SYS = with_generation_framing(
     "5. Add a one-sentence kid-friendly definition (<=180 chars) that does NOT contain the word "
     "itself.\n"
     'Return a JSON array of {"word": "...", "definition": "..."}. '
-    "Aim for VARIED, less-obvious money words — not just the most common few. "
+    "Use COMMON, well-known money words that any adult would recognise — not obscure jargon. "
     "Format examples only (do NOT simply return these): MONEY, PRICE, STOCK, WAGES, WALLET, "
     "MARKET, LENDER, SALARY."
 )
 
 
-def _valid_word(w: str) -> bool:
-    """Accept only a real-length (5 or 6) ASCII word.
+# Curated allowlist of REAL, kid-appropriate money words (5-6 letters). The LLM
+# proposes words + definitions, but only words in this set are accepted — this
+# is the hard backstop that the prompt alone cannot provide: it rejects both
+# truncated/invented non-words (e.g. "ACCRU" for ACCRUE) AND real-but-off-topic
+# words, guaranteeing every banked word is a genuine money term. Extend this set
+# to grow the bank's ceiling.
+_MONEY_WORDS: frozenset[str] = frozenset({
+    # ── 5 letters ──
+    "MONEY", "COINS", "PENNY", "POUND", "PRICE", "VALUE", "WORTH", "COSTS",
+    "SPEND", "SPENT", "SAVES", "EARNS", "DEBTS", "LOANS", "BONDS", "FUNDS",
+    "STOCK", "TRADE", "WAGES", "YIELD", "NOTES", "CENTS", "CARDS", "BANKS",
+    "VAULT", "TOTAL", "BILLS", "SALES", "BUYER", "GOODS", "REPAY", "CHEAP",
+    "TAXES", "SHARE", "CHECK", "PURSE", "QUOTE", "OWNER", "ASSET",
+    # ── 6 letters ──
+    "BUDGET", "CREDIT", "INCOME", "INVEST", "PROFIT", "REFUND", "WALLET",
+    "MARKET", "LENDER", "WEALTH", "BANKER", "SALARY", "POCKET", "EQUITY",
+    "ESCROW", "BROKER", "COUPON", "CHARGE", "CHEQUE", "AMOUNT", "PAYDAY",
+    "BORROW", "TRADER", "SELLER", "RICHES", "CHANGE", "SAVING", "EARNER",
+    "ACCRUE", "DOLLAR", "TYCOON", "COSTLY", "THRIFT", "SAVERS", "FUNDED",
+    "REPAID", "CASHED", "DEBITS", "EXPORT", "IMPORT", "RENTAL", "TENANT",
+    "INSURE", "PRICED", "MARKUP", "PAYOUT", "SPENDS", "BUYERS",
+})
 
-    The 5-6 length rule is the hard backstop behind the prompt: it rejects any
-    suggestion the model padded or truncated to a different length, so non-words
-    produced by length-forcing never reach the bank. Real-word quality is then
-    the prompt's job plus the human approval gate."""
-    return 5 <= len(w) <= 6 and w.isalpha() and w.isascii()
+
+def _valid_word(w: str) -> bool:
+    """Accept only words on the curated money-word allowlist.
+
+    Length/format are implied (every allowlist entry is a real 5-6 letter
+    A-Z word). Gating on a known set — rather than just length/alpha — is what
+    keeps truncated non-words like "ACCRU" and off-topic real words out of the
+    bank, since the prompt alone cannot guarantee the model never miscounts."""
+    return w in _MONEY_WORDS
 
 
 async def suggest_words(
