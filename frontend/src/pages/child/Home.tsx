@@ -4,12 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useProgress } from '@/hooks/useProgress';
 import { useRecommendations } from '@/api/ai';
-import { Button } from '@/components/ui/button';
 import HomeHero from '@/components/child/HomeHero';
 import { MarketChip } from '@/components/child/MarketChip';
 import { ComingSoonMarket } from '@/components/child/ComingSoonMarket';
 import { useMarkets, useMarketProgress } from '@/hooks/useMarkets';
-import { flagFor } from '@/lib/marketFlags';
 import { StatsCard } from '@/components/child/StatsCard';
 import StreakReminderNudge from '@/components/child/StreakReminderNudge';
 import { QuickLinksRow } from '@/components/child/home/QuickLinksRow';
@@ -78,21 +76,14 @@ export default function Home() {
       <h1 className="sr-only">{t('pageTitle')}</h1>
       <EventStrip />
       <div className="mb-2 flex items-center justify-end gap-2">
-        {activeMarket != null && (
-          <span
-            className="inline-flex items-center gap-1.5 rounded-xl border border-brand-100 bg-card px-3 py-2 text-sm font-semibold text-brand-700"
-            aria-label={`${activeMarketXp} ${tMarkets('home.marketXp', { market: activeMarket.name })}`}
-          >
-            <span aria-hidden="true">{flagFor(activeMarketCode)}</span>
-            <span className="font-bold">{activeMarketXp}</span>
-            <span aria-hidden="true" className="text-brand-400">XP</span>
-          </span>
-        )}
-        <MarketChip activeCode={me?.active_market_code ?? 'GB'} />
+        <MarketChip
+          activeCode={me?.active_market_code ?? 'GB'}
+          xp={activeMarket != null ? activeMarketXp : null}
+        />
       </div>
       {!marketComingSoon && <HomeHero />}
 
-      <div className="mt-4">
+      <div className="mt-3">
         <StatsCard
           xp={xp}
           level={level}
@@ -126,9 +117,32 @@ export default function Home() {
             </div>
           )}
 
+          {/* Keep learning — the two learning actions, grouped */}
+          <h2 className="mb-1 mt-5 text-xs font-bold uppercase tracking-wider text-gray-500">
+            {t('zones.keepLearning')}
+          </h2>
           <ReviseCard />
+          <Link
+            to="/lessons"
+            className="mt-3 flex min-h-[44px] items-center gap-2 rounded-2xl border border-line bg-card p-4 text-base font-extrabold text-ink shadow-sm transition-colors hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+          >
+            <span aria-hidden="true">📚</span>
+            <span className="flex-1">{t('browseAll')}</span>
+            <span aria-hidden="true" className="text-brand-400">→</span>
+          </Link>
 
-          <div className="mt-4">
+          {/* Play — the limited drop + the two games, grouped */}
+          <h2 className="mb-1 mt-6 text-xs font-bold uppercase tracking-wider text-gray-500">
+            {t('zones.play')}
+          </h2>
+          <FeaturedDropCard />
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <ArcadeDailyCard />
+            <ArcadeHomeCard />
+          </div>
+
+          {/* Shortcuts */}
+          <div className="mt-6">
             <QuickLinksRow
               portfolioValue={portfolio?.total_value ?? null}
               currencyCode={portfolio?.currency_code ?? 'USD'}
@@ -139,26 +153,8 @@ export default function Home() {
             />
           </div>
 
-          <div className="mt-4">
-            <FeaturedDropCard />
-          </div>
-
-          <div className="mt-4">
-            <ArcadeDailyCard />
-          </div>
-
-          <div className="mt-2">
-            <ArcadeHomeCard />
-          </div>
-
-          <div className="mt-4">
-            <PremiumUpsellCard isPremium={me?.is_premium ?? false} />
-          </div>
-
           <div className="mt-5">
-            <Button asChild className="bg-brand-gradient hover:brightness-110 text-white font-bold rounded-xl">
-              <Link to="/lessons">{t('browseAll')}</Link>
-            </Button>
+            <PremiumUpsellCard isPremium={me?.is_premium ?? false} />
           </div>
         </>
       )}

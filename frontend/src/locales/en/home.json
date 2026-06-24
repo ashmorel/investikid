@@ -1,7 +1,6 @@
 {
   "pageTitle": "Your learning home",
   "browseAll": "Browse all modules →",
-
   "hero": {
     "allCaughtUp": "All caught up",
     "allCaughtUpSub": "You've finished everything for now!",
@@ -14,7 +13,6 @@
     "startLessonCta": "Start lesson",
     "nextLesson": "Your next lesson"
   },
-
   "stats": {
     "ariaLabel": "Your progress",
     "level": "Level {{level}}",
@@ -31,7 +29,6 @@
     "dailyGoalAriaLabel": "Daily goal progress",
     "xpProgress": "{{xpInLevel}} / {{xpForNext}} XP · {{toGo}} XP to Level {{nextLevel}}"
   },
-
   "quickLinks": {
     "heading": "While you're here",
     "portfolio": "Portfolio",
@@ -41,7 +38,6 @@
     "shop": "Penny's Shop",
     "shopAria": "Penny's Shop and Avatar, {{count}} coins to spend"
   },
-
   "revise": {
     "conceptsToPractice": "{{count}} concept to practice",
     "conceptsToPracticePlural": "{{count}} concepts to practice",
@@ -50,28 +46,28 @@
     "subCaughtUp": "Revise a few things you've learned.",
     "ariaLabel": "Revise: {{headline}}"
   },
-
   "upsell": {
     "message": "Unlock all levels & the AI coach",
     "cta": "Ask my grown-up",
     "dismiss": "Dismiss"
   },
-
   "eventStrip": {
     "ariaLabel": "Seasonal event: {{title}}",
     "ariaLabelWithBonus": "Seasonal event: {{title}}, {{pct}} percent bonus XP",
     "xpBonus": " — +{{pct}}% XP!"
   },
-
   "streakNudge": {
     "title": "Never miss your streak",
     "body": "Get a friendly daily reminder so your streak keeps growing.",
     "enable": "Enable reminders",
     "dismiss": "Not now"
   },
-
   "featuredDrop": {
     "title": "Limited drop",
     "ariaLabel": "Limited drop: {{name}}, {{current}} of {{threshold}} — see it in the shop"
+  },
+  "zones": {
+    "keepLearning": "Keep learning",
+    "play": "Play"
   }
 }
