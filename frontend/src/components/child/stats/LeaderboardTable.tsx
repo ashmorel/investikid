@@ -24,7 +24,7 @@ export function LeaderboardTable({ rows, pointsLabel }: Props) {
           {rows.map((r) => (
             <tr key={`${r.rank}-${r.name}`} className={cn('border-b last:border-b-0', r.is_me && 'bg-brand-50 font-bold')}>
               <td className="px-2 py-3">
-                <Penny size={28} accessories={r.avatar.accessories} skin={r.avatar.skin} />
+                <Penny size={28} accessories={r.avatar?.accessories} skin={r.avatar?.skin} />
               </td>
               <td className="px-4 py-3">{r.rank}</td>
               <td className="px-4 py-3">{r.name}</td>
