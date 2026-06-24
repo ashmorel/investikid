@@ -122,7 +122,7 @@ async def edit_drop(
     if status == "live":
         if any(v is not None for v in (rarity, unlock_type, unlock_threshold, available_from)):
             raise AdminError("live_locked")
-        if available_until is None or available_until <= (item.available_from or now):
+        if available_until is None or available_until <= now:
             raise AdminError("bad_window")
         item.available_until = available_until
     else:  # scheduled — full replace, all fields required
@@ -141,7 +141,7 @@ async def unschedule_drop(session: AsyncSession, *, item_id: uuid.UUID, now: dat
     if item.unlock_type is None:
         raise AdminError("not_a_drop")
     if drop_status(item, now) != "scheduled":
-        raise AdminError("owned_cannot_unschedule")  # only not-yet-started drops revert
+        raise AdminError("not_scheduled")  # only not-yet-started drops revert
     if await _owned_count(session, item_id) > 0:
         raise AdminError("owned_cannot_unschedule")
     item.unlock_type = None

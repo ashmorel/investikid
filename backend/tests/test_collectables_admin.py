@@ -128,3 +128,38 @@ async def test_unschedule_clears_fields_when_clean(db_session):
     assert refreshed.rarity is None
     assert refreshed.available_from is None
     assert refreshed.drop_eligible is True  # still a pool item
+
+
+async def test_unschedule_on_live_raises_not_scheduled(db_session):
+    item = _pool_item("_live_unsch_a")
+    db_session.add(item)
+    await db_session.flush()
+    now = datetime.now(UTC)
+    # schedule a drop that is already live (from in the past, until in the future)
+    await svc.schedule_drop(
+        db_session, item_id=item.id, rarity="rare", unlock_type="streak_days",
+        unlock_threshold=5, available_from=now - timedelta(days=1),
+        available_until=now + timedelta(days=7),
+    )
+    # attempt to unschedule a live drop with zero owners should raise "not_scheduled"
+    with pytest.raises(svc.AdminError) as ei:
+        await svc.unschedule_drop(db_session, item_id=item.id, now=now)
+    assert ei.value.code == "not_scheduled"
+
+
+async def test_live_edit_rejects_past_end_date(db_session):
+    item = _pool_item("_live_past_end_a")
+    db_session.add(item)
+    await db_session.flush()
+    now = datetime.now(UTC)
+    # schedule a drop that is already live (from in the past, until in the future)
+    await svc.schedule_drop(
+        db_session, item_id=item.id, rarity="rare", unlock_type="streak_days",
+        unlock_threshold=5, available_from=now - timedelta(days=1),
+        available_until=now + timedelta(days=7),
+    )
+    # attempt to edit with a past end-date should raise "bad_window"
+    past_end = now - timedelta(hours=1)
+    with pytest.raises(svc.AdminError) as ei:
+        await svc.edit_drop(db_session, item_id=item.id, now=now, available_until=past_end)
+    assert ei.value.code == "bad_window"
