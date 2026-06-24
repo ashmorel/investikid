@@ -39,12 +39,6 @@ class ChallengeOut(BaseModel):
     completed_at: datetime | None = None
 
 
-class LeaderboardEntry(BaseModel):
-    username: str
-    country_code: str
-    xp_this_week: int
-
-
 class LeaderboardRowOut(BaseModel):
     rank: int
     name: str

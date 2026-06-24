@@ -76,7 +76,7 @@ export default function Stats() {
 
       {/* Leaderboard */}
       <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
-        <LeaderboardCard currentName={session.data?.username ?? ''} />
+        <LeaderboardCard />
       </section>
     </div>
   );

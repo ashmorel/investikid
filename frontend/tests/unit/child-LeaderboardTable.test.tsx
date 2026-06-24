@@ -11,7 +11,7 @@ const rows: LeaderboardRow[] = [
 
 describe('LeaderboardTable', () => {
   it('renders table with rank numbers', () => {
-    render(<LeaderboardTable rows={rows} currentName="testuser" pointsLabel="XP This Week" />);
+    render(<LeaderboardTable rows={rows} pointsLabel="XP This Week" />);
     const tableRows = screen.getAllByRole('row');
     // 1 header + 3 data rows
     expect(tableRows).toHaveLength(4);
@@ -21,20 +21,20 @@ describe('LeaderboardTable', () => {
   });
 
   it('renders names', () => {
-    render(<LeaderboardTable rows={rows} currentName="testuser" pointsLabel="XP This Week" />);
+    render(<LeaderboardTable rows={rows} pointsLabel="XP This Week" />);
     expect(screen.getByText('alice')).toBeInTheDocument();
     expect(screen.getByText('testuser')).toBeInTheDocument();
     expect(screen.getByText('bob')).toBeInTheDocument();
   });
 
   it('highlights current user row (is_me)', () => {
-    render(<LeaderboardTable rows={rows} currentName="testuser" pointsLabel="XP This Week" />);
+    render(<LeaderboardTable rows={rows} pointsLabel="XP This Week" />);
     // testuser row should be bold (is_me=true); check the row exists
     expect(screen.getByText('testuser')).toBeInTheDocument();
   });
 
   it('renders XP values', () => {
-    render(<LeaderboardTable rows={rows} currentName="testuser" pointsLabel="XP This Week" />);
+    render(<LeaderboardTable rows={rows} pointsLabel="XP This Week" />);
     expect(screen.getByText('120')).toBeInTheDocument();
     expect(screen.getByText('80')).toBeInTheDocument();
     expect(screen.getByText('50')).toBeInTheDocument();

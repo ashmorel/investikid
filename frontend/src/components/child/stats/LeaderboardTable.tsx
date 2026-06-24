@@ -3,7 +3,7 @@ import type { LeaderboardRow } from '@/api/gamification';
 import { countryFlag } from '@/lib/country';
 import { cn } from '@/lib/utils';
 
-type Props = { rows: LeaderboardRow[]; currentName: string; pointsLabel: string };
+type Props = { rows: LeaderboardRow[]; pointsLabel: string };
 
 export function LeaderboardTable({ rows, pointsLabel }: Props) {
   const { t } = useTranslation('child');
@@ -23,7 +23,9 @@ export function LeaderboardTable({ rows, pointsLabel }: Props) {
             <tr key={`${r.rank}-${r.name}`} className={cn('border-b last:border-b-0', r.is_me && 'bg-brand-50 font-bold')}>
               <td className="px-4 py-3">{r.rank}</td>
               <td className="px-4 py-3">{r.name}</td>
-              <td className="px-4 py-3" aria-hidden="true">{r.country_code ? countryFlag(r.country_code) : ''}</td>
+              <td className="px-4 py-3">
+                <span role="img" aria-label={r.country_code ?? ''}>{r.country_code ? countryFlag(r.country_code) : ''}</span>
+              </td>
               <td className="px-4 py-3 text-right">{r.points}</td>
             </tr>
           ))}

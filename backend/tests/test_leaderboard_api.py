@@ -121,30 +121,6 @@ async def test_visibility_toggle(client):
 # Parent consent endpoint
 # ---------------------------------------------------------------------------
 
-async def _sign_in_parent(client, db_session, parent_email, child_email, child_username):
-    from datetime import timedelta  # noqa: PLC0415
-
-    from app.services.tokens import PARENT_MAGIC_AUDIENCE, issue_one_time_token  # noqa: PLC0415
-
-    await client.post("/auth/register", json={
-        **_USER_BASE,
-        "email": child_email,
-        "username": child_username,
-        "parent_email": parent_email,
-    })
-    token = await issue_one_time_token(
-        db_session, purpose=PARENT_MAGIC_AUDIENCE,
-        email=parent_email, subject_id=None, expires_in=timedelta(minutes=15),
-    )
-    await db_session.commit()
-    await client.get(f"/parent/auth/callback?token={token}")
-    csrf = client.cookies.get("csrf_token")
-    child = await db_session.scalar(select(__import__("app.models.user", fromlist=["User"]).User).where(
-        __import__("app.models.user", fromlist=["User"]).User.username == child_username
-    ))
-    return csrf, child.id
-
-
 async def test_parent_consent_endpoint(client, db_session):
     from datetime import timedelta
 

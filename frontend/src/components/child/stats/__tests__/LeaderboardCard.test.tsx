@@ -24,20 +24,20 @@ beforeEach(() => {
 
 describe('LeaderboardCard', () => {
   it('defaults to Market + XP and renders rows', async () => {
-    wrap(<LeaderboardCard currentName="You" />);
+    wrap(<LeaderboardCard />);
     await waitFor(() => expect(getLeaderboard).toHaveBeenCalledWith('market', 'xp'));
     expect(await screen.findByText('CleverOtter42')).toBeInTheDocument();
   });
 
   it('switching scope to Global refetches with global', async () => {
-    wrap(<LeaderboardCard currentName="You" />);
+    wrap(<LeaderboardCard />);
     await screen.findByText('CleverOtter42');
-    fireEvent.click(screen.getByRole('tab', { name: /global/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /global/i }));
     await waitFor(() => expect(getLeaderboard).toHaveBeenCalledWith('global', 'xp'));
   });
 
   it('has no axe violations', async () => {
-    const { container } = wrap(<LeaderboardCard currentName="You" />);
+    const { container } = wrap(<LeaderboardCard />);
     await screen.findByText('CleverOtter42');
     expect(await axe(container)).toHaveNoViolations();
   });
