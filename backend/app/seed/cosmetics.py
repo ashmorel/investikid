@@ -11,7 +11,7 @@ from app.models.cosmetics import CosmeticItem
 
 CATALOG: list[dict] = [
     # ── Accessories ──────────────────────────────────────────────────────────
-    {"slug": "party_hat", "name": "Party Hat", "emoji": "🥳", "coin_cost": 50, "is_premium": False, "type": "accessory"},
+    {"slug": "party_hat", "name": "Party Hat", "emoji": "🎉", "coin_cost": 50, "is_premium": False, "type": "accessory"},
     {"slug": "sunglasses", "name": "Cool Shades", "emoji": "🕶️", "coin_cost": 75, "is_premium": False, "type": "accessory"},
     {"slug": "bow", "name": "Big Bow", "emoji": "🎀", "coin_cost": 75, "is_premium": False, "type": "accessory"},
     {"slug": "headphones", "name": "Headphones", "emoji": "🎧", "coin_cost": 100, "is_premium": False, "type": "accessory"},
