@@ -86,4 +86,14 @@ describe('ArcadeDailyCard', () => {
     expect(link).toHaveAccessibleName(/play/i);
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it('degrades to Play state when data is malformed (no guesses array)', () => {
+    // A partial/malformed response (truthy object missing `guesses`) must not
+    // throw "Cannot read properties of undefined (reading 'length')".
+    mockData({ completed: false });
+
+    expect(() => renderCard()).not.toThrow();
+    const link = screen.getByRole('link');
+    expect(link).toHaveAccessibleName(/play/i);
+  });
 });

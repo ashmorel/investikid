@@ -9,13 +9,14 @@ export default function ArcadeDailyCard() {
   let label: string;
   let sub: string | null = null;
 
-  if (!data || (!data.completed && data.guesses.length === 0)) {
-    // Not started (or null/failed — degrade to Play)
+  const guessCount = data?.guesses?.length ?? 0;
+  if (!data || (!data.completed && guessCount === 0)) {
+    // Not started (or null/failed/malformed — degrade to Play)
     label = t('dailyCard.play');
   } else if (!data.completed) {
     // In progress
     label = t('dailyCard.continue');
-    sub = t('dailyCard.guessesUsed', { count: data.guesses.length, max: data.max_guesses });
+    sub = t('dailyCard.guessesUsed', { count: guessCount, max: data.max_guesses });
   } else {
     // Completed
     label = t('dailyCard.done');
