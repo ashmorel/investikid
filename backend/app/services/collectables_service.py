@@ -82,11 +82,14 @@ async def grant_eligible(session: AsyncSession, progress: UserProgress) -> list[
             if d.id in owned_ids:
                 continue
             if await progress_for(session, progress, d) >= (d.unlock_threshold or 0):
-                session.add(UserCosmetic(user_id=progress.user_id, item_id=d.id, equipped=False,
-                                         unlocked_at=now))
-                granted.append(d.slug)
-        if granted:
-            await session.flush()
+                try:
+                    async with session.begin_nested():
+                        session.add(UserCosmetic(user_id=progress.user_id, item_id=d.id, equipped=False,
+                                                 unlocked_at=now))
+                        await session.flush()
+                    granted.append(d.slug)
+                except Exception:
+                    log.exception("grant_eligible: savepoint failed for drop %s", d.slug)
         return granted
     except Exception:  # never break the learning flow
         log.exception("grant_eligible failed")

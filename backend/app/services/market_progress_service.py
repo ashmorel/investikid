@@ -57,6 +57,8 @@ async def award_xp(
             select(User.active_market_code).where(User.id == progress.user_id)
         ) or "GB"
     await _add_market_xp(session, progress.user_id, market_code, amount)
+    from app.services.collectables_service import grant_eligible
+    result.granted_collectables = await grant_eligible(session, progress)
     return result
 
 

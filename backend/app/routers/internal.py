@@ -127,6 +127,27 @@ async def trigger_video_candidate_extract(
     return await extract_recovered_candidates(session)
 
 
+@router.post("/collectables/reconcile")
+async def trigger_collectables_reconcile(
+    x_cron_secret: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+):
+    if not settings.cron_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    from sqlalchemy import select
+
+    from app.models.user import UserProgress
+    from app.services.collectables_service import grant_eligible
+    progresses = (await session.scalars(select(UserProgress).where(UserProgress.streak_count > 0))).all()
+    total = 0
+    for p in progresses:
+        total += len(await grant_eligible(session, p))
+    await session.commit()
+    return {"status": "ok", "granted": total}
+
+
 @router.post("/market-content")
 async def market_content_step(
     market: str,

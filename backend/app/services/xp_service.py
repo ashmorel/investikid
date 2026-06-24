@@ -5,7 +5,7 @@ Every XP award (lessons, simulator trades, missions) flows through record_xp so
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
 
@@ -15,11 +15,12 @@ if TYPE_CHECKING:
     from app.models.user import UserProgress
 
 
-@dataclass(frozen=True)
+@dataclass
 class XpResult:
     awarded: int
     goal_met_now: bool    # this award crossed the daily-goal line
     goal_met_today: bool  # the goal is met after this award
+    granted_collectables: list[str] = field(default_factory=list)
 
 
 def record_xp(progress: UserProgress, amount: int, *, today: date | None = None) -> XpResult:
