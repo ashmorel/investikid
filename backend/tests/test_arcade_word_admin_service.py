@@ -16,15 +16,15 @@ pytestmark = pytest.mark.asyncio(loop_scope="session")
 # Helpers
 # ---------------------------------------------------------------------------
 
-_VALID_WORD = "GRANT"          # 5 letters, new, not a seed word
-_INVALID_LONG = "OVERFLOW1"   # 9 chars — must be skipped
-_DUPLICATE = "SAVE"            # appears in the seed — must be skipped
+_VALID_WORD = "WALLET"         # exactly 6 letters, new, not a seed word
+_WRONG_LENGTH = "INTEREST"     # a REAL word but 8 letters — must be skipped (length lock)
+_DUPLICATE = "BUDGET"          # exactly 6 letters AND a seed word — skipped as a duplicate
 
 _LLM_RESPONSE = json.dumps(
     [
-        {"word": _VALID_WORD, "definition": "Money given to help pay for something without needing to be paid back."},
-        {"word": _INVALID_LONG, "definition": "A word that is too long for our game."},
-        {"word": _DUPLICATE, "definition": "Put money aside for the future."},
+        {"word": _VALID_WORD, "definition": "A small folded holder you keep your cash and cards in."},
+        {"word": _WRONG_LENGTH, "definition": "Extra money a bank pays you for saving, or charges you for borrowing."},
+        {"word": _DUPLICATE, "definition": "A plan for how much money you will spend and save."},
     ]
 )
 
@@ -91,7 +91,7 @@ async def test_suggest_words_inserts_valid_only(db_session):
         result = await suggest_words(db_session, language="en")
 
     assert result["created"] == 1
-    assert result["skipped"] == 2  # too-long + duplicate
+    assert result["skipped"] == 2  # wrong-length (real but 8 letters) + duplicate
 
     row = await db_session.scalar(
         select(ArcadeWord).where(
@@ -106,7 +106,7 @@ async def test_suggest_words_inserts_valid_only(db_session):
 async def test_suggest_words_skips_flagged_definition(db_session):
     """A definition that fails moderation is skipped even if the word is valid."""
     safe_response = json.dumps(
-        [{"word": "YIELD", "definition": "How much a investment pays you back each year."}]
+        [{"word": "POCKET", "definition": "How much an investment pays you back each year."}]
     )
     mock_client = _mock_llm_client(safe_response)
 
@@ -127,7 +127,7 @@ async def test_suggest_words_skips_flagged_definition(db_session):
     assert result["skipped"] == 1
 
     row = await db_session.scalar(
-        select(ArcadeWord).where(ArcadeWord.word == "YIELD", ArcadeWord.language == "en")
+        select(ArcadeWord).where(ArcadeWord.word == "POCKET", ArcadeWord.language == "en")
     )
     assert row is None
 
@@ -135,7 +135,7 @@ async def test_suggest_words_skips_flagged_definition(db_session):
 async def test_suggest_words_skips_word_in_definition(db_session):
     """Word embedded in its own definition is rejected (answer leak)."""
     leak_response = json.dumps(
-        [{"word": "LOAN", "definition": "A LOAN is money borrowed from a bank."}]
+        [{"word": "MARKET", "definition": "A MARKET is where things are bought and sold."}]
     )
     mock_client = _mock_llm_client(leak_response)
     with patch(
@@ -146,6 +146,32 @@ async def test_suggest_words_skips_word_in_definition(db_session):
 
     assert result["created"] == 0
     assert result["skipped"] == 1
+
+
+async def test_suggest_words_skips_real_words_that_are_not_six_letters(db_session):
+    """The length lock rejects REAL finance words that aren't exactly 6 letters,
+    rather than letting the model truncate/pad them to fit (the reported bug)."""
+    response = json.dumps(
+        [
+            {"word": "CASH", "definition": "Notes and coins you can spend straight away."},
+            {"word": "INTEREST", "definition": "Extra money a bank adds to your savings over time."},
+            {"word": "SAVING", "definition": "Money you keep instead of spending it right now."},
+        ]
+    )
+    mock_client = _mock_llm_client(response)
+    with patch(
+        "app.services.arcade_word_admin_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result = await suggest_words(db_session, language="en")
+
+    # Only SAVING (6 letters) survives; CASH (4) and INTEREST (8) are skipped.
+    assert result["created"] == 1
+    assert result["skipped"] == 2
+    survivor = await db_session.scalar(
+        select(ArcadeWord).where(ArcadeWord.word == "SAVING", ArcadeWord.language == "en")
+    )
+    assert survivor is not None and survivor.length == 6
 
 
 async def test_suggest_words_idempotent_on_second_call(db_session):
