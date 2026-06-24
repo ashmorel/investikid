@@ -75,7 +75,11 @@ async def _shop_state(session: AsyncSession, user: User) -> ShopResponse:
     progress = await session.get(UserProgress, user.id)
     coins = (progress.virtual_coins or 0) if progress else 0
     items = (
-        await session.scalars(select(CosmeticItem).order_by(CosmeticItem.coin_cost))
+        await session.scalars(
+            select(CosmeticItem)
+            .where(CosmeticItem.unlock_type.is_(None))
+            .order_by(CosmeticItem.coin_cost)
+        )
     ).all()
     owned_rows = {
         row.item_id: row
@@ -127,6 +131,8 @@ async def buy_item(
     item = await session.get(CosmeticItem, item_id)
     if item is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
+    if item.unlock_type is not None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "not_buyable")
     if item.is_premium and not is_premium(current_user):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "premium_item")
 
