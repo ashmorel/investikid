@@ -39,9 +39,10 @@ vi.mock('@/hooks/useChallenges', () => ({
 vi.mock('@/hooks/useLeaderboard', () => ({
   useLeaderboard: () => ({
     data: [
-      { username: 'testuser', country_code: 'GB', xp_this_week: 100 },
+      { rank: 1, name: 'You', country_code: 'GB', points: 100, is_me: true },
     ],
     isLoading: false,
+    isError: false,
   }),
 }));
 vi.mock('@/hooks/useChildSession', () => ({
@@ -90,7 +91,7 @@ describe('Stats page', () => {
   it('renders leaderboard section heading', async () => {
     const { default: Stats } = await import('@/pages/child/Stats');
     render(<Stats />, { wrapper });
-    expect(screen.getByRole('heading', { name: /weekly leaderboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^leaderboard$/i })).toBeInTheDocument();
   });
 
   it('renders challenge data', async () => {
