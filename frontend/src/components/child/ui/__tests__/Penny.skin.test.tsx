@@ -31,37 +31,35 @@ describe('Penny skin prop', () => {
     expect(stars.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders multiple stacked accessory glyphs at once', () => {
+  it('renders multiple stacked accessories at once, each in its own group', () => {
     const { container } = render(<Penny accessories={['crown', 'sunglasses']} />);
-    const glyphs = Array.from(container.querySelectorAll('text')).map((t) => t.textContent);
-    expect(glyphs).toContain('👑');
-    expect(glyphs).toContain('🕶️');
+    expect(container.querySelector('[data-accessory="crown"]')).toBeTruthy();
+    expect(container.querySelector('[data-accessory="sunglasses"]')).toBeTruthy();
   });
 
   it('renders a single accessory via the legacy `accessory` prop', () => {
     const { container } = render(<Penny accessory="crown" />);
-    const glyphs = Array.from(container.querySelectorAll('text')).map((t) => t.textContent);
-    expect(glyphs).toContain('👑');
+    expect(container.querySelector('[data-accessory="crown"]')).toBeTruthy();
   });
 
-  it('gives accessory glyphs an explicit paintable fill (not the inherited none)', () => {
-    // Regression: the <svg fill="none"> root made accessory <text> inherit
-    // fill="none", so the emoji were in the DOM but never painted — Penny
-    // showed no glasses/bow. Each glyph must set its own fill.
-    const { container } = render(<Penny accessories={['sunglasses']} />);
-    const glyph = Array.from(container.querySelectorAll('text')).find((t) => t.textContent === '🕶️');
-    expect(glyph).toBeTruthy();
-    expect(glyph!.getAttribute('fill')).toBeTruthy();
-    expect(glyph!.getAttribute('fill')).not.toBe('none');
+  it('draws every accessory as flat SVG shapes, never emoji text', () => {
+    // Accessories are hand-drawn SVG (professional, consistent), not emoji —
+    // emoji <text> previously inherited fill="none" and was invisible anyway.
+    const slugs = ['party_hat', 'sunglasses', 'bow', 'headphones', 'grad_cap', 'crown', 'monocle', 'top_hat'];
+    const { container } = render(<Penny accessories={slugs} />);
+    // No emoji text nodes at all.
+    expect(container.querySelectorAll('text')).toHaveLength(0);
+    // Each slug renders a group containing at least one drawn shape.
+    for (const slug of slugs) {
+      const g = container.querySelector(`[data-accessory="${slug}"]`);
+      expect(g, `accessory ${slug} should render`).toBeTruthy();
+      expect(g!.querySelector('polygon, rect, circle, ellipse, path, line')).toBeTruthy();
+    }
   });
 
-  it('renders the party hat as a drawn SVG shape, not the partying-face emoji', () => {
-    // 🥳 is a whole face and looked unprofessional on Penny's head; the party
-    // hat is now a proper SVG cone (polygon) + pom-pom.
-    const { container } = render(<Penny accessories={['party_hat']} />);
-    const glyphs = Array.from(container.querySelectorAll('text')).map((t) => t.textContent);
-    expect(glyphs).not.toContain('🥳');
-    expect(container.querySelector('polygon')).toBeTruthy();
+  it('renders nothing for an unknown accessory slug (forward-compatible)', () => {
+    const { container } = render(<Penny accessories={['not_a_real_slug']} />);
+    expect(container.querySelector('[data-accessory="not_a_real_slug"]')).toBeNull();
   });
 
   it('falls back to mood gradient when no skin is given', () => {
