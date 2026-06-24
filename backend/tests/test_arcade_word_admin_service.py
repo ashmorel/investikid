@@ -148,14 +148,15 @@ async def test_suggest_words_skips_word_in_definition(db_session):
     assert result["skipped"] == 1
 
 
-async def test_suggest_words_skips_real_words_that_are_not_six_letters(db_session):
-    """The length lock rejects REAL finance words that aren't exactly 6 letters,
-    rather than letting the model truncate/pad them to fit (the reported bug)."""
+async def test_suggest_words_accepts_5_and_6_letters_only(db_session):
+    """The length rule accepts real 5- and 6-letter words and rejects anything
+    outside that range (rather than letting the model truncate/pad to fit)."""
     response = json.dumps(
         [
-            {"word": "CASH", "definition": "Notes and coins you can spend straight away."},
-            {"word": "INTEREST", "definition": "Extra money a bank adds to your savings over time."},
-            {"word": "SAVING", "definition": "Money you keep instead of spending it right now."},
+            {"word": "CASH", "definition": "Notes and coins you can spend straight away."},  # 4 → skip
+            {"word": "PRICE", "definition": "How much money something costs to buy."},        # 5 → keep
+            {"word": "SAVING", "definition": "Money you keep instead of spending it now."},   # 6 → keep
+            {"word": "INTEREST", "definition": "Extra money a bank adds to your money over time."},  # 8 → skip
         ]
     )
     mock_client = _mock_llm_client(response)
@@ -165,13 +166,20 @@ async def test_suggest_words_skips_real_words_that_are_not_six_letters(db_sessio
     ):
         result = await suggest_words(db_session, language="en")
 
-    # Only SAVING (6 letters) survives; CASH (4) and INTEREST (8) are skipped.
-    assert result["created"] == 1
+    # PRICE (5) and SAVING (6) survive; CASH (4) and INTEREST (8) are skipped.
+    assert result["created"] == 2
     assert result["skipped"] == 2
-    survivor = await db_session.scalar(
-        select(ArcadeWord).where(ArcadeWord.word == "SAVING", ArcadeWord.language == "en")
-    )
-    assert survivor is not None and survivor.length == 6
+    lengths = {
+        row.word: row.length
+        for row in (
+            await db_session.scalars(
+                select(ArcadeWord).where(
+                    ArcadeWord.word.in_(["PRICE", "SAVING"]), ArcadeWord.language == "en"
+                )
+            )
+        ).all()
+    }
+    assert lengths == {"PRICE": 5, "SAVING": 6}
 
 
 async def test_suggest_words_sends_existing_words_as_avoid_list(db_session):

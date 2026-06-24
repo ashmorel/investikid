@@ -15,10 +15,10 @@ from app.services.moderation import moderate_output
 _SYS = with_generation_framing(
     "You generate REAL English finance vocabulary words for a kids' money-learning word game "
     "(like Wordle). Follow EVERY rule:\n"
-    "1. Each word MUST be a real, standard English dictionary word that is EXACTLY 6 letters "
-    "long. Count the letters; if it is not exactly 6, leave it out.\n"
-    "2. NEVER invent a word, NEVER truncate or chop a longer word to make it 6 letters, and "
-    "NEVER pad or add letters to a shorter word. If a finance term is not naturally a real "
+    "1. Each word MUST be a real, standard English dictionary word that is EITHER 5 OR 6 letters "
+    "long. Count the letters; if it is not 5 or 6, leave it out.\n"
+    "2. NEVER invent a word, NEVER truncate or chop a longer word to make it 5 or 6 letters, and "
+    "NEVER pad or add letters to a shorter word. If a finance term is not naturally a real 5- or "
     "6-letter word, simply do not include it — return fewer words instead.\n"
     "3. The word must relate to money, saving, spending, banking, or investing, and be "
     "understandable by a 9-12 year old.\n"
@@ -28,19 +28,19 @@ _SYS = with_generation_framing(
     "itself.\n"
     'Return a JSON array of {"word": "...", "definition": "..."}. '
     "Aim for VARIED, less-obvious money words — not just the most common few. "
-    "Format examples only (do NOT simply return these): WALLET, MARKET, LENDER, WEALTH, "
-    "SAVING, BANKER, SALARY, POCKET."
+    "Format examples only (do NOT simply return these): MONEY, PRICE, STOCK, WAGES, WALLET, "
+    "MARKET, LENDER, SALARY."
 )
 
 
 def _valid_word(w: str) -> bool:
-    """Accept only an exact 6-letter ASCII word.
+    """Accept only a real-length (5 or 6) ASCII word.
 
-    The exact-6 rule is the hard backstop behind the prompt: it rejects any
+    The 5-6 length rule is the hard backstop behind the prompt: it rejects any
     suggestion the model padded or truncated to a different length, so non-words
     produced by length-forcing never reach the bank. Real-word quality is then
     the prompt's job plus the human approval gate."""
-    return len(w) == 6 and w.isalpha() and w.isascii()
+    return 5 <= len(w) <= 6 and w.isalpha() and w.isascii()
 
 
 async def suggest_words(
