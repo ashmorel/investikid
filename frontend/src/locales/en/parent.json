@@ -197,6 +197,8 @@
     "freezeLabel": "Freeze account",
     "pushLabel": "Notifications",
     "biometricLabel": "Face ID sign-in",
+    "leaderboardConsentLabel": "Show on public leaderboards",
+    "leaderboardConsentHelp": "Allow your child's username and rank to appear on InvestiKid leaderboards. Off by default.",
     "premium": "Premium ✨",
     "freePlan": "Free plan",
     "deleteAccount": "Delete account…",

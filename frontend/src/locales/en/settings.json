@@ -26,6 +26,12 @@
     "label": "Sign in with Face ID",
     "help": "Unlock InvestiKid with Face ID instead of your password. Your grown-up turned this on."
   },
+  "leaderboard": {
+    "handleLabel": "Your leaderboard name",
+    "reroll": "New name",
+    "hideLabel": "Hide me from public leaderboards",
+    "hideHelp": "When on, your name won't appear on any InvestiKid leaderboard."
+  },
   "nav": {
     "profile": "Profile",
     "sendFeedback": "Send Feedback",

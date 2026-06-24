@@ -60,6 +60,7 @@ export type Child = {
   is_premium: boolean;
   push_enabled?: boolean;
   biometric_allowed?: boolean;
+  leaderboard_consent?: boolean;
   parent_consent_given_at: string | null;
   consent_declined_at: string | null;
   deleted_at: string | null;

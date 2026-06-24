@@ -72,6 +72,15 @@ export function ChildCard({ child }: { child: Child }) {
     },
   });
 
+  const leaderboardConsentToggle = useMutation({
+    mutationFn: (consent: boolean) => parentApi.setChildLeaderboardConsent(child.user_id, consent),
+    onSuccess: (_d, consent) => {
+      qc.setQueryData<Child[]>(['children'], (old) =>
+        old?.map((c) => c.user_id === child.user_id ? { ...c, leaderboard_consent: consent } : c),
+      );
+    },
+  });
+
   const tier = useMutation({
     mutationFn: (value: TierOverride) => parentApi.setChildTier(child.user_id, value),
     onMutate: async (value) => {
@@ -163,6 +172,19 @@ export function ChildCard({ child }: { child: Child }) {
           />
           <Label htmlFor={`biometric-${child.user_id}`} className="text-sm">
             {t('childCard.biometricLabel')}
+          </Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            id={`leaderboard-consent-${child.user_id}`}
+            checked={child.leaderboard_consent ?? false}
+            disabled={isDeleted || leaderboardConsentToggle.isPending}
+            onCheckedChange={(value) => leaderboardConsentToggle.mutate(value)}
+            aria-describedby={`leaderboard-consent-help-${child.user_id}`}
+          />
+          <Label htmlFor={`leaderboard-consent-${child.user_id}`} className="text-sm">
+            {t('childCard.leaderboardConsentLabel')}
           </Label>
         </div>
 

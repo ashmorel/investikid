@@ -28,6 +28,7 @@ import { contentApi, type DailyGoalSize } from '@/api/content';
 import { useProgress } from '@/hooks/useProgress';
 import { disablePush, enablePush, isPushRegistered } from '@/lib/push';
 import { addBioAccount, biometric, getBioAccounts, getDeviceId, removeBioAccount } from '@/lib/biometric';
+import { gamificationApi } from '@/api/gamification';
 
 const GOAL_SIZES: { value: DailyGoalSize; label: string }[] = [
   { value: 10, label: 'Chill' },
@@ -106,6 +107,27 @@ export function ProfileMenu({ username }: { username: string }) {
     setSoundEnabled(next);
     setSoundOn(next);
     if (next) playSound('correct'); // instant audition so kids hear what they enabled
+  }
+
+  // Leaderboard handle + visibility
+  const [handle, setHandle] = useState<string | null>(null);
+  const [handleLoading, setHandleLoading] = useState(false);
+  const [leaderboardHidden, setLeaderboardHidden] = useState(false);
+  useEffect(() => {
+    void gamificationApi.getHandle().then((r) => { if (r) setHandle(r.handle); }).catch(() => {});
+  }, []);
+  async function rerollHandle() {
+    setHandleLoading(true);
+    try {
+      const r = await gamificationApi.rerollHandle();
+      if (r) setHandle(r.handle);
+    } finally {
+      setHandleLoading(false);
+    }
+  }
+  async function toggleLeaderboardHide(next: boolean) {
+    setLeaderboardHidden(next);
+    await gamificationApi.setLeaderboardVisibility(next);
   }
 
   const resetPf = useMutation({
@@ -253,6 +275,38 @@ export function ProfileMenu({ username }: { username: string }) {
             <span aria-hidden="true">🪙 </span>{progressData?.virtual_coins ?? 0}
           </span>
         </Link>
+        {handle !== null && (
+          <div className="space-y-1.5 border-t border-line pt-3">
+            <div className="flex min-h-[44px] items-center justify-between gap-3">
+              <div>
+                <span className="text-sm font-medium" id="handle-label">{t('leaderboard.handleLabel')}</span>
+                <p className="text-xs text-muted-foreground">{handle}</p>
+              </div>
+              <button
+                type="button"
+                disabled={handleLoading}
+                onClick={() => void rerollHandle()}
+                className="min-h-[44px] rounded-md border border-line px-3 text-sm font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+                aria-label={t('leaderboard.reroll')}
+              >
+                {t('leaderboard.reroll')}
+              </button>
+            </div>
+            <label className="flex min-h-[44px] items-center justify-between gap-3 text-sm font-medium">
+              <span>{t('leaderboard.hideLabel')}</span>
+              <input
+                type="checkbox"
+                checked={leaderboardHidden}
+                onChange={(e) => void toggleLeaderboardHide(e.target.checked)}
+                className="h-5 w-5"
+                aria-describedby="leaderboard-hide-help"
+              />
+            </label>
+            <p id="leaderboard-hide-help" className="text-xs text-muted-foreground">
+              {t('leaderboard.hideHelp')}
+            </p>
+          </div>
+        )}
         <button
           type="button"
           onClick={() => setConfirmReset(true)}
