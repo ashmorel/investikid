@@ -24,5 +24,10 @@ export function submitMoneyWordGuess(guess: string) {
 }
 
 export function useMoneyWordToday() {
-  return useQuery({ queryKey: ['arcade', 'moneyword', 'today'], queryFn: getMoneyWordToday });
+  // The puzzle resets at 00:00 UTC (the backend keys play rows on the UTC date).
+  // Encode that UTC day in the query key so a cached "completed" result can never
+  // be served into a new day — when the day rolls over the key changes and React
+  // Query refetches a fresh board instead of showing yesterday's "Done".
+  const utcDay = new Date().toISOString().slice(0, 10);
+  return useQuery({ queryKey: ['arcade', 'moneyword', 'today', utcDay], queryFn: getMoneyWordToday });
 }
