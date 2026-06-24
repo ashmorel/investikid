@@ -9,14 +9,14 @@ type Props = {
 };
 
 export function PennyFAB({ dueCount, onOpen, locked = false }: Props) {
-  const { accessory, skin } = useEquippedCosmetics();
+  const { accessories, skin } = useEquippedCosmetics();
   return (
     <button
       onClick={onOpen}
       aria-label="Open Coach Penny"
       className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gradient shadow-lg transition-transform hover:scale-105 active:scale-95"
     >
-      <Penny size={34} mood="happy" accessory={accessory} skin={skin} />
+      <Penny size={34} mood="happy" accessories={accessories} skin={skin} />
       {dueCount > 0 && (
         <span
           data-testid="penny-badge"

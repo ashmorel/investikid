@@ -12,7 +12,7 @@ type CoachPanelProps = { open: boolean; onOpenChange: (open: boolean) => void };
 export function CoachPanel({ open, onOpenChange }: CoachPanelProps) {
   const { t } = useTranslation('child');
   const isDesktop = useMediaQuery('(min-width: 640px)');
-  const { accessory, skin } = useEquippedCosmetics();
+  const { accessories, skin } = useEquippedCosmetics();
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -25,7 +25,7 @@ export function CoachPanel({ open, onOpenChange }: CoachPanelProps) {
       >
         <SheetHeader className="flex-row items-center gap-2 border-b border-brand-100 px-4 py-3 text-left">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100" aria-hidden="true">
-            <Penny size={28} mood="happy" accessory={accessory} skin={skin} />
+            <Penny size={28} mood="happy" accessories={accessories} skin={skin} />
           </span>
           <div>
             <SheetTitle>{t('coach.title')}</SheetTitle>

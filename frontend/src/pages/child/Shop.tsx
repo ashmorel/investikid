@@ -26,7 +26,7 @@ export default function Shop() {
   function onAction(item: CosmeticItem) {
     if (item.owned) {
       if (item.equipped) {
-        equip.mutate({ unequip: item.type });
+        equip.mutate({ unequip: item.id });
       } else {
         equip.mutate({ equip: item.id });
       }
@@ -52,7 +52,7 @@ export default function Shop() {
       <BackButton to="/home" label={t('nav.home')} />
       <div className="mt-2 flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-xl font-extrabold text-gray-900">
-          <Penny size={36} accessory={eq.accessory} skin={eq.skin} />
+          <Penny size={36} accessories={eq.accessories} skin={eq.skin} />
           {playful ? t('shop.pageTitle') : t('shop.pageTitleSimple')}
         </h1>
         <span
@@ -70,7 +70,7 @@ export default function Shop() {
         <AvatarStage
           background={eq.background}
           skin={eq.skin}
-          accessory={eq.accessory}
+          accessories={eq.accessories}
           label={t('shop.avatarLabel')}
         />
       </div>

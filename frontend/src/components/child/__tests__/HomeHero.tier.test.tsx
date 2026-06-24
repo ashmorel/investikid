@@ -7,7 +7,9 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@/api/cosmetics', () => ({ useEquippedAccessory: () => null }));
+vi.mock('@/api/cosmetics', () => ({
+  useEquippedCosmetics: () => ({ accessories: [], skin: null, background: null }),
+}));
 import { MemoryRouter } from 'react-router-dom';
 import { axe } from 'vitest-axe';
 

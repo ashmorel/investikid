@@ -20,6 +20,10 @@ from app.services.entitlements import is_premium
 
 router = APIRouter(prefix="/cosmetics", tags=["cosmetics"])
 
+# Categories where only ONE item can be equipped at a time (equipping one
+# swaps out the others of that type). Accessories are NOT here — they stack.
+_SINGLE_PICK_TYPES = {"background", "skin"}
+
 
 class CosmeticOut(BaseModel):
     id: uuid.UUID
@@ -150,37 +154,40 @@ async def equip_item(
     target = await session.get(CosmeticItem, item_id)
     if target is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "not_found")
-    # One equipped per category: unequip only the user's SAME-TYPE items.
-    await session.execute(
-        update(UserCosmetic)
-        .where(
-            UserCosmetic.user_id == current_user.id,
-            UserCosmetic.item_id.in_(
-                select(CosmeticItem.id).where(CosmeticItem.type == target.type)
-            ),
+    # Single-pick categories (background, skin) allow one equipped at a time, so
+    # equipping one unequips the others of that type. Accessories STACK — equip
+    # just turns this one on, leaving other equipped accessories in place.
+    if target.type in _SINGLE_PICK_TYPES:
+        await session.execute(
+            update(UserCosmetic)
+            .where(
+                UserCosmetic.user_id == current_user.id,
+                UserCosmetic.item_id.in_(
+                    select(CosmeticItem.id).where(CosmeticItem.type == target.type)
+                ),
+            )
+            .values(equipped=False)
         )
-        .values(equipped=False)
-    )
     owned.equipped = True
     await session.commit()
     return {"status": "ok"}
 
 
-@router.post("/unequip")
-async def unequip_type(
-    type: str,
+@router.post("/{item_id}/unequip")
+async def unequip_item(
+    item_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    await session.execute(
-        update(UserCosmetic)
-        .where(
-            UserCosmetic.user_id == current_user.id,
-            UserCosmetic.item_id.in_(
-                select(CosmeticItem.id).where(CosmeticItem.type == type)
-            ),
+    """Take off a single owned item (per-item, so one of several stacked
+    accessories can be removed without affecting the others)."""
+    owned = await session.scalar(
+        select(UserCosmetic).where(
+            UserCosmetic.user_id == current_user.id, UserCosmetic.item_id == item_id
         )
-        .values(equipped=False)
     )
+    if owned is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "not_owned")
+    owned.equipped = False
     await session.commit()
     return {"status": "ok"}

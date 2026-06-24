@@ -26,25 +26,23 @@ export function useCosmetics() {
   });
 }
 
-/** Equipped slug per category (accessory / skin / background). */
+/**
+ * Equipped cosmetics. Accessories STACK (a list of every equipped accessory
+ * slug); background + skin are single-pick (one slug or null each).
+ */
 export function useEquippedCosmetics(): {
-  accessory: string | null;
+  accessories: string[];
   skin: string | null;
   background: string | null;
 } {
   const { data } = useCosmetics();
-  const bySlug = (type: string) =>
+  const single = (type: string) =>
     data?.items.find((i) => i.equipped && i.type === type)?.slug ?? null;
   return {
-    accessory: bySlug('accessory'),
-    skin: bySlug('skin'),
-    background: bySlug('background'),
+    accessories: (data?.items ?? []).filter((i) => i.equipped && i.type === 'accessory').map((i) => i.slug),
+    skin: single('skin'),
+    background: single('background'),
   };
-}
-
-/** Slug of the currently equipped accessory (back-compat for PennyFAB/CoachPanel). */
-export function useEquippedAccessory(): string | null {
-  return useEquippedCosmetics().accessory;
 }
 
 export function useBuyCosmetic() {
@@ -65,7 +63,7 @@ export function useEquipCosmetic() {
     mutationFn: (v: { equip: string } | { unequip: string }) =>
       'equip' in v
         ? apiFetch(`/cosmetics/${v.equip}/equip`, { method: 'POST' })
-        : apiFetch(`/cosmetics/unequip?type=${encodeURIComponent(v.unequip)}`, { method: 'POST' }),
+        : apiFetch(`/cosmetics/${v.unequip}/unequip`, { method: 'POST' }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: SHOP_KEY }),
   });
 }

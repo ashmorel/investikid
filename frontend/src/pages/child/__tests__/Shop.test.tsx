@@ -116,7 +116,7 @@ describe("Penny's Shop (m8)", () => {
     expect(screen.queryByText('Rosy')).not.toBeInTheDocument();
   });
 
-  it('unequipping an equipped item calls mutation with { unequip: type }', async () => {
+  it('unequipping an equipped item calls mutation with that item id', async () => {
     shop = {
       coins: 10,
       items: [item({ id: 'a1', owned: true, equipped: true, type: 'accessory', can_buy: false })],
@@ -124,7 +124,7 @@ describe("Penny's Shop (m8)", () => {
     renderShop();
     fireEvent.click(await screen.findByRole('button', { name: 'Take off' }));
     await waitFor(() =>
-      expect(buyPost).toHaveBeenCalledWith('/cosmetics/unequip?type=accessory'),
+      expect(buyPost).toHaveBeenCalledWith('/cosmetics/a1/unequip'),
     );
   });
 

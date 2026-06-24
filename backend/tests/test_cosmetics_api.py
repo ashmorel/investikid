@@ -154,8 +154,8 @@ async def test_equip_swaps_within_category(client, db_session):
     assert bg1.id not in equipped_ids, "first background should be unequipped"
 
 
-async def test_unequip_by_type_only_clears_that_type(client, db_session):
-    """POST /cosmetics/unequip?type=background unequips bg but leaves accessory equipped."""
+async def test_unequip_item_only_clears_that_item(client, db_session):
+    """POST /cosmetics/{id}/unequip unequips just that item; others stay equipped."""
     user = await _login_with_coins(client, db_session, coins=0)
     acc_item, bg_item, _ = await _seed_typed_items(db_session)
 
@@ -165,7 +165,7 @@ async def test_unequip_by_type_only_clears_that_type(client, db_session):
     uc_bg.equipped = True
     await db_session.commit()
 
-    r = await client.post("/cosmetics/unequip?type=background")
+    r = await client.post(f"/cosmetics/{bg_item.id}/unequip")
     assert r.status_code == 200
 
     await db_session.refresh(uc_acc)
@@ -182,8 +182,9 @@ async def test_shop_item_exposes_type(client, db_session):
     assert all("type" in it for it in r.json()["items"])
 
 
-async def test_equip_is_exclusive(client, db_session):
-    """Equipping a second SAME-TYPE item (both accessories) swaps within that category only."""
+async def test_accessories_stack(client, db_session):
+    """Accessories STACK: equipping a second accessory leaves both equipped;
+    per-item unequip removes just one."""
     user = await _login_with_coins(client, db_session, coins=500)
     hat = await _item(db_session, "party_hat")
     bow = await _item(db_session, "bow")
@@ -193,18 +194,23 @@ async def test_equip_is_exclusive(client, db_session):
     assert (await client.post(f"/cosmetics/{hat.id}/equip")).status_code == 200
     assert (await client.post(f"/cosmetics/{bow.id}/equip")).status_code == 200
 
-    rows = (
-        await db_session.execute(
-            select(UserCosmetic).where(UserCosmetic.user_id == user.id)
-        )
-    ).scalars().all()
-    equipped = [r for r in rows if r.equipped]
-    # Both hat and bow are accessories — only the bow (last equipped) should be equipped
-    assert len(equipped) == 1 and equipped[0].item_id == bow.id
+    async def _equipped_ids():
+        rows = (
+            await db_session.execute(
+                select(UserCosmetic).where(UserCosmetic.user_id == user.id)
+            )
+        ).scalars().all()
+        for r in rows:
+            await db_session.refresh(r)
+        return {r.item_id for r in rows if r.equipped}
 
-    assert (await client.post("/cosmetics/unequip?type=accessory")).status_code == 200
-    await db_session.refresh(equipped[0])
-    assert equipped[0].equipped is False
+    equipped = await _equipped_ids()
+    assert hat.id in equipped and bow.id in equipped, "both accessories stay equipped"
+
+    # Take off just the hat -> bow remains.
+    assert (await client.post(f"/cosmetics/{hat.id}/unequip")).status_code == 200
+    equipped = await _equipped_ids()
+    assert hat.id not in equipped and bow.id in equipped
 
     # equipping an unowned item -> 404
     crown = await _item(db_session, "crown")

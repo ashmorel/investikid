@@ -2,8 +2,8 @@ import { Penny } from './Penny';
 import { BACKGROUND } from './pennyScenes';
 
 export function AvatarStage({
-  background, skin, accessory, label,
-}: { background?: string | null; skin?: string | null; accessory?: string | null; label: string }) {
+  background, skin, accessories, label,
+}: { background?: string | null; skin?: string | null; accessories?: string[]; label: string }) {
   const scene = background ? BACKGROUND[background] : null;
   return (
     <div
@@ -21,7 +21,7 @@ export function AvatarStage({
           {scene}
         </svg>
       )}
-      <Penny size={120} skin={skin} accessory={accessory} className="relative" />
+      <Penny size={120} skin={skin} accessories={accessories} className="relative" />
     </div>
   );
 }

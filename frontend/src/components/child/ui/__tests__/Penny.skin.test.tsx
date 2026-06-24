@@ -31,6 +31,19 @@ describe('Penny skin prop', () => {
     expect(stars.length).toBeGreaterThanOrEqual(2);
   });
 
+  it('renders multiple stacked accessory glyphs at once', () => {
+    const { container } = render(<Penny accessories={['party_hat', 'sunglasses']} />);
+    const glyphs = Array.from(container.querySelectorAll('text')).map((t) => t.textContent);
+    expect(glyphs).toContain('🥳');
+    expect(glyphs).toContain('🕶️');
+  });
+
+  it('renders a single accessory via the legacy `accessory` prop', () => {
+    const { container } = render(<Penny accessory="crown" />);
+    const glyphs = Array.from(container.querySelectorAll('text')).map((t) => t.textContent);
+    expect(glyphs).toContain('👑');
+  });
+
   it('falls back to mood gradient when no skin is given', () => {
     const { container } = render(<Penny />);
     const stops = container.querySelectorAll('stop');

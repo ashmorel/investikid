@@ -36,16 +36,10 @@ describe('useEquipCosmetic mutationFn', () => {
     expect(spy).toHaveBeenCalledWith('/cosmetics/abc123/equip', { method: 'POST' });
   });
 
-  it('{ unequip: type } posts /cosmetics/unequip?type=background', async () => {
+  it('{ unequip: id } posts /cosmetics/{id}/unequip', async () => {
     const spy = vi.spyOn(client, 'apiFetch').mockResolvedValue(null);
-    await equipFn({ unequip: 'background' });
-    expect(spy).toHaveBeenCalledWith('/cosmetics/unequip?type=background', { method: 'POST' });
-  });
-
-  it('{ unequip: type } url-encodes the type', async () => {
-    const spy = vi.spyOn(client, 'apiFetch').mockResolvedValue(null);
-    await equipFn({ unequip: 'some type' });
-    expect(spy).toHaveBeenCalledWith('/cosmetics/unequip?type=some%20type', { method: 'POST' });
+    await equipFn({ unequip: 'abc123' });
+    expect(spy).toHaveBeenCalledWith('/cosmetics/abc123/unequip', { method: 'POST' });
   });
 });
 
@@ -73,7 +67,7 @@ function mockItems(items: {
 describe('useEquippedCosmetics', () => {
   beforeEach(() => vi.restoreAllMocks());
 
-  it('maps equipped items by type, returns slug or null', () => {
+  it('maps equipped items by type; accessories as an array, bg/skin as slug or null', () => {
     mockItems([
       { id: '1', slug: 'hat', name: 'Hat', emoji: '🎩', type: 'accessory', owned: true, equipped: true },
       { id: '2', slug: 'blue-bg', name: 'Blue BG', emoji: '🟦', type: 'background', owned: true, equipped: false },
@@ -81,21 +75,32 @@ describe('useEquippedCosmetics', () => {
     ]);
 
     const result = useEquippedCosmetics();
-    expect(result.accessory).toBe('hat');
+    expect(result.accessories).toEqual(['hat']);
     expect(result.background).toBeNull();
     expect(result.skin).toBeNull();
   });
 
-  it('returns all nulls when nothing is equipped', () => {
+  it('stacks multiple equipped accessories into the array', () => {
+    mockItems([
+      { id: '1', slug: 'hat', name: 'Hat', emoji: '🎩', type: 'accessory', owned: true, equipped: true },
+      { id: '2', slug: 'bow', name: 'Bow', emoji: '🎀', type: 'accessory', owned: true, equipped: true },
+      { id: '3', slug: 'monocle', name: 'Monocle', emoji: '🧐', type: 'accessory', owned: true, equipped: false },
+    ]);
+
+    const result = useEquippedCosmetics();
+    expect(result.accessories).toEqual(['hat', 'bow']);
+  });
+
+  it('returns empty accessories and null bg/skin when nothing is equipped', () => {
     mockItems([
       { id: '1', slug: 'hat', name: 'Hat', emoji: '🎩', type: 'accessory', owned: false, equipped: false },
     ]);
 
     const result = useEquippedCosmetics();
-    expect(result).toEqual({ accessory: null, skin: null, background: null });
+    expect(result).toEqual({ accessories: [], skin: null, background: null });
   });
 
-  it('returns all three when all categories are equipped', () => {
+  it('returns all three categories when all are equipped', () => {
     mockItems([
       { id: '1', slug: 'hat', name: 'Hat', emoji: '🎩', type: 'accessory', owned: true, equipped: true },
       { id: '2', slug: 'blue-bg', name: 'Blue BG', emoji: '🟦', type: 'background', owned: true, equipped: true },
@@ -103,13 +108,13 @@ describe('useEquippedCosmetics', () => {
     ]);
 
     const result = useEquippedCosmetics();
-    expect(result).toEqual({ accessory: 'hat', skin: 'skin-a', background: 'blue-bg' });
+    expect(result).toEqual({ accessories: ['hat'], skin: 'skin-a', background: 'blue-bg' });
   });
 
-  it('returns null for all when data is undefined', () => {
+  it('returns empty accessories and null bg/skin when data is undefined', () => {
     vi.mocked(useQuery).mockReturnValue({ data: undefined } as ReturnType<typeof useQuery>);
 
     const result = useEquippedCosmetics();
-    expect(result).toEqual({ accessory: null, skin: null, background: null });
+    expect(result).toEqual({ accessories: [], skin: null, background: null });
   });
 });

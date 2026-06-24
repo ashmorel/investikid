@@ -26,12 +26,15 @@ export function Penny({
   size = 48,
   mood = 'happy',
   accessory,
+  accessories,
   skin,
   className,
 }: {
   size?: number;
   mood?: Mood;
   accessory?: string | null;
+  /** Multiple stacked accessory slugs (takes precedence over `accessory`). */
+  accessories?: string[];
   skin?: string | null;
   className?: string;
 }) {
@@ -39,7 +42,7 @@ export function Penny({
   const gradId = `penny-${uid}`;
   const skinPair = skin ? SKIN[skin] : undefined;
   const [from, to] = skinPair ?? MOOD_GRADIENT[mood];
-  const acc = accessory ? ACCESSORY[accessory] : undefined;
+  const accSlugs = accessories ?? (accessory ? [accessory] : []);
   return (
     <svg
       width={size}
@@ -89,17 +92,21 @@ export function Penny({
         strokeLinecap="round"
         fill="none"
       />
-      {acc && (
-        <text
-          x={acc.x}
-          y={acc.y}
-          fontSize={acc.size}
-          textAnchor="middle"
-          dominantBaseline="middle"
-        >
-          {acc.glyph}
-        </text>
-      )}
+      {accSlugs.map((slug) => {
+        const a = ACCESSORY[slug];
+        return a ? (
+          <text
+            key={slug}
+            x={a.x}
+            y={a.y}
+            fontSize={a.size}
+            textAnchor="middle"
+            dominantBaseline="middle"
+          >
+            {a.glyph}
+          </text>
+        ) : null;
+      })}
     </svg>
   );
 }

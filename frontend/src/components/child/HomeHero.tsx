@@ -11,7 +11,7 @@ import { Penny } from '@/components/child/ui/Penny';
 import { GradientButton } from '@/components/child/ui/GradientButton';
 import { TierChip } from '@/components/child/TierChip';
 import { track } from '@/lib/analytics';
-import { useEquippedAccessory } from '@/api/cosmetics';
+import { useEquippedCosmetics } from '@/api/cosmetics';
 
 export default function HomeHero() {
   const { t } = useTranslation('home');
@@ -26,7 +26,7 @@ export default function HomeHero() {
   const isPremium = me?.is_premium ?? false;
   const tier: AgeTier = me?.age_tier ?? DEFAULT_TIER;
 
-  const equippedAccessory = useEquippedAccessory();
+  const { accessories: equippedAccessories, skin: equippedSkin } = useEquippedCosmetics();
   const templated = buildHeroGreeting({ name, mode: next.mode, lessonLabel: next.lessonLabel, streakCount, dueCount, tier });
 
   const aiQ = useHomeGreeting(
@@ -42,7 +42,7 @@ export default function HomeHero() {
       {cfg.showPennyAvatar ? (
         <div className="flex items-start gap-3" data-testid="penny-greeting">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-100 shadow" aria-hidden="true">
-            <Penny size={cfg.pennyHeroSize} mood="happy" accessory={equippedAccessory} />
+            <Penny size={cfg.pennyHeroSize} mood="happy" accessories={equippedAccessories} skin={equippedSkin} />
           </div>
           <div className="flex min-w-0 flex-col items-start gap-1">
             {cfg.showTierChip && <TierChip />}
