@@ -37,7 +37,9 @@
     "portfolio": "Portfolio",
     "review": "{{count}} to review",
     "badges": "Badges",
-    "badgesCount": "{{earned}} of {{total}}"
+    "badgesCount": "{{earned}} of {{total}}",
+    "shop": "Penny's Shop",
+    "shopAria": "Penny's Shop and Avatar, {{count}} coins to spend"
   },
 
   "revise": {

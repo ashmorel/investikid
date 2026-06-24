@@ -10,18 +10,31 @@ type Props = {
   reviewDue: number;
   badgesEarned: number | null;
   badgesTotal: number | null;
+  coins: number;
 };
 
 const chipBase =
   'inline-flex min-h-[44px] items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-bold shadow-sm ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500';
 
-export function QuickLinksRow({ portfolioValue, currencyCode, reviewDue, badgesEarned, badgesTotal }: Props) {
+export function QuickLinksRow({ portfolioValue, currencyCode, reviewDue, badgesEarned, badgesTotal, coins }: Props) {
   const { t } = useTranslation('home');
   const tier = useAgeTier();
   const emoji = tierConfig[tier].chipEmoji;
 
-  const chips: Array<{ key: string; to: string; label: string; text: string; className: string; icon: string }> = [];
+  const chips: Array<{ key: string; to: string; label: string; text: string; className: string; icon: string; ariaLabel?: string }> = [];
+
+  // Penny's Shop & Avatar — always shown so it's easy to find (it was
+  // previously buried in the account menu). Shows the spendable coin balance.
+  chips.push({
+    key: 'shop',
+    to: '/shop',
+    label: t('quickLinks.shop'),
+    text: String(coins),
+    className: 'bg-brand-100 text-brand-800',
+    icon: '🐷',
+    ariaLabel: t('quickLinks.shopAria', { count: coins }),
+  });
 
   if (portfolioValue != null) {
     chips.push({
@@ -66,7 +79,7 @@ export function QuickLinksRow({ portfolioValue, currencyCode, reviewDue, badgesE
           <Link
             key={c.key}
             to={c.to}
-            aria-label={c.text ? `${c.label} ${c.text}` : c.label}
+            aria-label={c.ariaLabel ?? (c.text ? `${c.label} ${c.text}` : c.label)}
             className={`${chipBase} ${c.className}`}
             onClick={() => track('quicklink_tap', { surface: c.key })}
           >

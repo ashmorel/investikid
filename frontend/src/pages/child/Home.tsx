@@ -134,6 +134,7 @@ export default function Home() {
               reviewDue={recs?.review_summary.due_count ?? 0}
               badgesEarned={badgesEarned}
               badgesTotal={badgesTotal}
+              coins={progress?.virtual_coins ?? 0}
             />
           </div>
 
