@@ -86,24 +86,24 @@ function WordRow({ word, onApprove, onReject, approving, rejecting }: WordRowPro
           <div className="flex shrink-0 gap-2">
             <button
               type="button"
-              disabled={approving}
+              disabled={approving || rejecting}
               onClick={() =>
                 onApprove(word.id, {
                   word: editWord !== word.word ? editWord : undefined,
                   definition: editDef !== word.definition ? editDef : undefined,
                 })
               }
-              className="min-h-[44px] rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="min-h-[44px] rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition active:scale-95 hover:bg-brand-700 active:bg-brand-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
             >
-              {t('arcadeWordBank.approve')}
+              {approving ? t('arcadeWordBank.approving') : t('arcadeWordBank.approve')}
             </button>
             <button
               type="button"
-              disabled={rejecting}
+              disabled={approving || rejecting}
               onClick={() => onReject(word.id)}
-              className="min-h-[44px] rounded-md border border-line px-4 py-2 text-sm font-semibold text-ink"
+              className="min-h-[44px] rounded-md border border-line bg-card px-4 py-2 text-sm font-semibold text-ink transition active:scale-95 hover:bg-muted active:bg-muted/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
             >
-              {t('arcadeWordBank.reject')}
+              {rejecting ? t('arcadeWordBank.rejecting') : t('arcadeWordBank.reject')}
             </button>
           </div>
         )}
@@ -216,8 +216,8 @@ export default function ArcadeWordBank() {
             word={w}
             onApprove={(id, edits) => approveMutation.mutate({ id, edits })}
             onReject={(id) => rejectMutation.mutate(id)}
-            approving={approveMutation.isPending}
-            rejecting={rejectMutation.isPending}
+            approving={approveMutation.isPending && approveMutation.variables?.id === w.id}
+            rejecting={rejectMutation.isPending && rejectMutation.variables === w.id}
           />
         ))}
       </ul>
