@@ -23,6 +23,7 @@ from app.routers import arcade_words_admin as arcade_words_admin_router
 from app.routers import auth as auth_router
 from app.routers import billing as billing_router
 from app.routers import collectables as collectables_router
+from app.routers import collectables_admin as collectables_admin_router
 from app.routers import consent as consent_router
 from app.routers import content as content_router
 from app.routers import cosmetics as cosmetics_router
@@ -214,6 +215,7 @@ def create_app() -> FastAPI:
     application.include_router(billing_router.router)
     application.include_router(admin_router.router)
     application.include_router(admin_analytics_router.router)
+    application.include_router(collectables_admin_router.router)
     application.include_router(video_curation_router.router)
     application.include_router(arcade_words_admin_router.router)
     application.include_router(feedback_router.router)

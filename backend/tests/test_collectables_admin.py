@@ -2,6 +2,7 @@
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
+from sqlalchemy import select
 
 from app.models.cosmetics import CosmeticItem, UserCosmetic
 from app.models.user import User
@@ -163,3 +164,75 @@ async def test_live_edit_rejects_past_end_date(db_session):
     with pytest.raises(svc.AdminError) as ei:
         await svc.edit_drop(db_session, item_id=item.id, now=now, available_until=past_end)
     assert ei.value.code == "bad_window"
+
+
+# HTTP-level admin router tests
+
+
+async def _seed_pool(db_session, slug="_api_a"):
+    item = CosmeticItem(slug=slug, name="API A", emoji="🎩", type="accessory",
+                        coin_cost=0, is_premium=False, drop_eligible=True)
+    db_session.add(item)
+    await db_session.commit()
+    return item
+
+
+async def test_requires_admin(client, db_session):
+    await _register_and_login(client, email="plain@example.com", username="plain")
+    r = await client.get("/admin/collectables")
+    assert r.status_code == 403
+
+
+async def test_schedule_via_api_and_leaves_pool(admin_client, db_session):
+    item = await _seed_pool(db_session, "_api_sched")
+    now = datetime.now(UTC)
+    body = {
+        "item_id": str(item.id), "rarity": "rare", "unlock_type": "streak_days",
+        "unlock_threshold": 5,
+        "available_from": (now + timedelta(days=1)).isoformat(),
+        "available_until": (now + timedelta(days=8)).isoformat(),
+    }
+    r = await admin_client.post("/admin/collectables", json=body)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "scheduled"
+    pool = await admin_client.get("/admin/collectables/pool")
+    assert str(item.id) not in {p["item_id"] for p in pool.json()}
+
+
+async def test_schedule_bad_unlock_type_400(admin_client, db_session):
+    item = await _seed_pool(db_session, "_api_bad")
+    now = datetime.now(UTC)
+    body = {
+        "item_id": str(item.id), "rarity": "rare", "unlock_type": "nope",
+        "unlock_threshold": 5,
+        "available_from": (now + timedelta(days=1)).isoformat(),
+        "available_until": (now + timedelta(days=8)).isoformat(),
+    }
+    r = await admin_client.post("/admin/collectables", json=body)
+    assert r.status_code == 400
+    assert r.json()["detail"] == "bad_unlock_type"
+
+
+async def test_scheduled_drop_grants_via_b1_engine(admin_client, db_session):
+    # Proves B2 output (a scheduled, live drop) feeds the unchanged B1 grant engine.
+    from app.models.user import User, UserProgress
+    from app.services import collectables_service
+
+    item = await _seed_pool(db_session, "_api_grant")
+    now = datetime.now(UTC)
+    # schedule it already-live with a streak threshold of 3
+    body = {
+        "item_id": str(item.id), "rarity": "rare", "unlock_type": "streak_days",
+        "unlock_threshold": 3,
+        "available_from": (now - timedelta(days=1)).isoformat(),
+        "available_until": (now + timedelta(days=7)).isoformat(),
+    }
+    assert (await admin_client.post("/admin/collectables", json=body)).status_code == 200
+
+    u = await db_session.scalar(select(User).where(User.email == "admin@example.com"))
+    p = await db_session.get(UserProgress, u.id) or UserProgress(user_id=u.id)
+    p.streak_count = 5
+    db_session.add(p)
+    await db_session.flush()
+    granted = await collectables_service.grant_eligible(db_session, p)
+    assert "_api_grant" in granted
