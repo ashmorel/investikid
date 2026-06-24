@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getQuizRushSession, submitQuizRushScore, type QuizItem, type QuizScoreResult } from '@/api/arcade';
 
 const ROUND_SECONDS = 60;
+const QUIZ_GRADIENT = { background: 'linear-gradient(135deg, #ea580c, #dc2626)' };
 type Phase = 'idle' | 'playing' | 'done';
 
 export default function QuizRush() {
@@ -76,42 +77,59 @@ export default function QuizRush() {
 
   if (phase === 'idle') {
     return (
-      <main className="mx-auto max-w-md space-y-4 p-4 text-center">
-        <h1 className="text-xl font-extrabold text-ink">&#9889; {t('quizRush.name')}</h1>
-        <p className="text-sm text-muted-foreground">{t('quizRush.tagline')}</p>
-        <button
-          type="button"
-          onClick={() => void start()}
-          className="min-h-[44px] rounded-md bg-brand-600 px-6 py-2 font-semibold text-white focus-visible:outline focus-visible:outline-2"
+      <main className="mx-auto max-w-md space-y-4 p-4">
+        <div
+          style={QUIZ_GRADIENT}
+          className="flex flex-col items-center gap-2 rounded-3xl p-7 text-center text-white shadow-lg"
         >
-          {t('quizRush.start')}
-        </button>
+          <span className="text-4xl" aria-hidden="true">&#9889;</span>
+          <h1 className="text-2xl font-extrabold">{t('quizRush.name')}</h1>
+          <p className="text-sm text-white/85">{t('quizRush.tagline')}</p>
+          <button
+            type="button"
+            onClick={() => void start()}
+            className="mt-2 min-h-[44px] rounded-xl bg-white px-8 py-2.5 font-extrabold text-amber-700 shadow-sm transition hover:bg-amber-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            {t('quizRush.start')}
+          </button>
+        </div>
+        <Link
+          to="/arcade"
+          className="block min-h-[44px] py-2 text-center text-sm font-semibold text-brand-600 hover:underline focus-visible:outline focus-visible:outline-2"
+        >
+          {t('quizRush.backToArcade')}
+        </Link>
       </main>
     );
   }
 
   if (phase === 'done') {
     return (
-      <main className="mx-auto max-w-md space-y-3 p-4 text-center">
-        <h2 className="text-lg font-extrabold text-ink">{t('quizRush.results')}</h2>
-        <p className="text-3xl font-extrabold text-ink">{result?.points ?? 0}</p>
-        <p className="text-sm text-muted-foreground">
-          {t('quizRush.personalBest')}{': '}{result?.personal_best ?? 0}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {t('quizRush.coinsEarned')}{': '}{result?.coins_awarded ?? 0}
-        </p>
-        <div className="flex justify-center gap-2">
+      <main className="mx-auto max-w-md space-y-4 p-4">
+        <div className="flex flex-col items-center gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-6 text-center">
+          <h2 className="text-lg font-extrabold text-amber-700">
+            <span aria-hidden="true">🎉 </span>{t('quizRush.results')}
+          </h2>
+          <p className="text-5xl font-extrabold text-amber-900">{result?.points ?? 0}</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-700">
+              {t('quizRush.personalBest')}{': '}{result?.personal_best ?? 0}
+            </span>
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-700">
+              <span aria-hidden="true">🪙 </span>+{result?.coins_awarded ?? 0}
+            </span>
+          </div>
           <button
             type="button"
             onClick={() => void start()}
-            className="min-h-[44px] rounded-md bg-brand-600 px-4 py-2 font-semibold text-white focus-visible:outline focus-visible:outline-2"
+            style={QUIZ_GRADIENT}
+            className="mt-1 min-h-[44px] w-full rounded-xl px-4 py-2.5 font-extrabold text-white shadow-sm transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
           >
             {t('quizRush.playAgain')}
           </button>
           <Link
             to="/arcade"
-            className="inline-flex min-h-[44px] items-center rounded-md border border-line px-4 py-2 font-semibold text-ink focus-visible:outline focus-visible:outline-2"
+            className="inline-flex min-h-[44px] items-center text-sm font-semibold text-amber-700 hover:underline focus-visible:outline focus-visible:outline-2"
           >
             {t('quizRush.backToArcade')}
           </Link>
@@ -132,18 +150,22 @@ export default function QuizRush() {
 
   return (
     <main className="mx-auto max-w-md space-y-4 p-4">
-      <div className="flex justify-between text-sm font-semibold text-ink" aria-live="polite">
-        <span>{t('quizRush.timeLeft')}{': '}{t('quizRush.secondsValue', { count: seconds })}</span>
-        <span>{t('quizRush.combo')}{': '}{combo}</span>
+      <div className="flex items-center justify-between" aria-live="polite">
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-bold text-amber-700">
+          <span aria-hidden="true">⏱️</span>{t('quizRush.timeLeft')}{': '}{t('quizRush.secondsValue', { count: seconds })}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-3 py-1.5 text-sm font-bold text-brand-700">
+          <span aria-hidden="true">🔥</span>{t('quizRush.combo')}{': '}{combo}
+        </span>
       </div>
       <h2 className="text-lg font-bold text-ink">{it.question}</h2>
-      <ul className="space-y-2">
+      <ul className="space-y-2.5">
         {it.choices.map((choice, i) => (
           <li key={i}>
             <button
               type="button"
               onClick={() => answer(i)}
-              className="block w-full min-h-[44px] rounded-md border border-line bg-card px-4 py-2 text-left text-ink focus-visible:outline focus-visible:outline-2"
+              className="block w-full min-h-[44px] rounded-xl border border-line bg-card px-4 py-3 text-left font-semibold text-ink shadow-sm transition active:scale-[0.99] hover:border-brand-300 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
             >
               {choice}
             </button>

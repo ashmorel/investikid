@@ -1,6 +1,15 @@
 {
-  "hub": { "title": "Penny's Arcade", "subtitle": "Quick games to test what you've learned." },
-  "home": { "cardTitle": "Penny's Arcade", "cardCta": "Play a game" },
+  "hub": {
+    "title": "Penny's Arcade",
+    "subtitle": "Quick games to test what you've learned.",
+    "playChip": "Play",
+    "coinsAria": "{{count}} coins",
+    "moreSoon": "More games coming soon ✨"
+  },
+  "home": {
+    "cardTitle": "Penny's Arcade",
+    "cardCta": "Play a game"
+  },
   "dailyCard": {
     "title": "MoneyWord",
     "play": "Play",

@@ -155,7 +155,12 @@ export default function MoneyWord() {
 
   return (
     <main className="mx-auto max-w-md space-y-4 p-4 text-center">
-      <h1 className="text-xl font-extrabold text-ink">{t('moneyword.name')}</h1>
+      <div className="space-y-0.5">
+        <h1 className="text-xl font-extrabold text-ink">
+          <span aria-hidden="true">🟩 </span>{t('moneyword.name')}
+        </h1>
+        <p className="text-sm text-muted-foreground">{t('moneyword.tagline')}</p>
+      </div>
 
       {/* How to play */}
       <details
@@ -225,7 +230,7 @@ export default function MoneyWord() {
                   key={`${ri}-${ci}`}
                   role="gridcell"
                   aria-label={ariaLabel}
-                  className={`flex h-12 w-12 flex-col items-center justify-center rounded border-2 text-sm font-bold text-ink ${bgClass}`}
+                  className={`flex h-12 w-12 flex-col items-center justify-center rounded-lg border-2 text-base font-extrabold text-ink ${bgClass}`}
                 >
                   <span aria-hidden="true">{letter.toUpperCase()}</span>
                   {symbol && (
@@ -242,13 +247,15 @@ export default function MoneyWord() {
 
       {/* Completed state */}
       {isComplete && (
-        <div className="space-y-3">
+        <div
+          className={`space-y-3 rounded-2xl border p-4 ${solved ? 'border-green-200 bg-green-50' : 'border-line bg-card'}`}
+        >
           {solved ? (
-            <p className="font-extrabold text-green-600">
+            <p className="text-base font-extrabold text-green-700">
               {t('moneyword.solvedMessage', { count: guesses.length })}
             </p>
           ) : (
-            <p className="font-extrabold text-red-600">{t('moneyword.failedMessage')}</p>
+            <p className="text-base font-extrabold text-red-600">{t('moneyword.failedMessage')}</p>
           )}
           {definition && (
             <div className="rounded-lg border border-line bg-card p-3 text-left text-sm text-ink">
@@ -291,7 +298,7 @@ export default function MoneyWord() {
                   aria-label={letter}
                   onClick={() => pressLetter(letter)}
                   disabled={submitting}
-                  className="min-h-[44px] min-w-[44px] rounded border border-line bg-card text-sm font-bold text-ink focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
+                  className="min-h-[44px] min-w-[44px] rounded-lg border border-line bg-card text-sm font-bold text-ink shadow-sm transition active:scale-95 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
                 >
                   {letter}
                 </button>
@@ -303,7 +310,7 @@ export default function MoneyWord() {
               type="button"
               onClick={() => void pressEnter()}
               disabled={submitting || current.length !== (gameState?.length ?? 0)}
-              className="min-h-[44px] rounded bg-brand-600 px-3 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
+              className="min-h-[44px] rounded-lg bg-brand-600 px-3 text-sm font-bold text-white shadow-sm transition active:scale-95 hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
             >
               {t('moneyword.enter')}
             </button>
@@ -312,7 +319,7 @@ export default function MoneyWord() {
               aria-label={t('moneyword.backspace')}
               onClick={pressBackspace}
               disabled={submitting}
-              className="min-h-[44px] min-w-[2.25rem] rounded border border-line bg-card text-sm font-bold text-ink focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
+              className="min-h-[44px] min-w-[2.25rem] rounded-lg border border-line bg-card text-sm font-bold text-ink shadow-sm transition active:scale-95 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
             >
               {'⌫'}
             </button>
