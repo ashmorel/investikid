@@ -99,7 +99,9 @@ async def test_leaderboard_lists_user(client, db_session):
     r = await client.get("/leaderboard")
     assert r.status_code == 200
     entries = r.json()
-    assert any(e["username"] == "gplayer" and e["xp_this_week"] >= 10 for e in entries)
+    # New schema: rank/name/country_code/points/is_me
+    # Viewer always gets their own row (is_me=True) even if not consented
+    assert any(e["is_me"] and e["points"] >= 10 for e in entries)
 
 
 async def test_badges_list_empty_for_new_user(client):

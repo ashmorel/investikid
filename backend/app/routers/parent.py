@@ -21,6 +21,7 @@ from app.schemas.parent import (
     BiometricToggleRequest,
     ChildOut,
     FreezeRequest,
+    LeaderboardConsentRequest,
     MasteryReportOut,
     PremiumRequestOut,
     PushToggleRequest,
@@ -226,6 +227,27 @@ async def set_child_biometric(
     ))
     await session.commit()
     return {"status": "ok", "biometric_allowed": payload.enabled}
+
+
+@router.post("/children/{user_id}/leaderboard-consent")
+async def set_child_leaderboard_consent(
+    user_id: uuid.UUID,
+    payload: LeaderboardConsentRequest,
+    parent_email: str = Depends(get_current_parent),
+    session: AsyncSession = Depends(get_session),
+):
+    """Parent consent for showing the child on public (market/global) boards."""
+    child = await _get_owned_child(session, parent_email, user_id)
+    if child.deleted_at is not None:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Account deleted")
+    child.leaderboard_consent = payload.consent
+    session.add(AuditLog(
+        user_id=child.id,
+        event_type="leaderboard_consent_on" if payload.consent else "leaderboard_consent_off",
+        metadata_json={"actor": f"parent:{parent_email}"},
+    ))
+    await session.commit()
+    return {"status": "ok", "leaderboard_consent": payload.consent}
 
 
 @router.post("/children/{user_id}/tier", response_model=TierOverrideOut)

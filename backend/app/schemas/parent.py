@@ -138,3 +138,7 @@ class PushToggleRequest(BaseModel):
 
 class BiometricToggleRequest(BaseModel):
     enabled: bool
+
+
+class LeaderboardConsentRequest(BaseModel):
+    consent: bool

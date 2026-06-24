@@ -1,15 +1,24 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
+from typing import Literal
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
-from app.models.content import Lesson, LessonCompletion
+from app.core.rate_limit import limiter
 from app.models.gamification import Badge, Challenge, UserBadge, UserChallenge
 from app.models.user import User
 from app.routers.users import get_current_user
-from app.schemas.gamification import BadgeDefinitionOut, BadgeOut, ChallengeOut, LeaderboardEntry
+from app.schemas.gamification import (
+    BadgeDefinitionOut,
+    BadgeOut,
+    ChallengeOut,
+    LeaderboardRowOut,
+)
+from app.services.handles import _handle_taken, ensure_handle, generate_handle
+from app.services.leaderboard_service import leaderboard
 
 router = APIRouter(tags=["gamification"])
 
@@ -79,28 +88,62 @@ async def list_active_challenges(
     return out
 
 
-@router.get("/leaderboard", response_model=list[LeaderboardEntry])
+@router.get("/leaderboard", response_model=list[LeaderboardRowOut])
+@limiter.limit("60/hour")
 async def weekly_leaderboard(
+    request: Request,
+    scope: Literal["market", "global", "friends"] = Query("market"),
+    metric: Literal["xp", "arcade"] = Query("xp"),
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    now = datetime.now(UTC)
-    monday = (now - timedelta(days=now.weekday())).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
-
-    xp_expr = func.sum(Lesson.xp_reward).label("xp_this_week")
-    stmt = (
-        select(User.username, User.country_code, xp_expr)
-        .join(LessonCompletion, LessonCompletion.user_id == User.id)
-        .join(Lesson, Lesson.id == LessonCompletion.lesson_id)
-        .where(LessonCompletion.completed_at >= monday)
-        .group_by(User.id, User.username, User.country_code)
-        .order_by(xp_expr.desc())
-        .limit(50)
-    )
-    rows = (await session.execute(stmt)).all()
+    if not current_user.display_handle:
+        await ensure_handle(session, current_user)
+        await session.commit()
+    rows = await leaderboard(session, viewer=current_user, scope=scope, metric=metric)
     return [
-        LeaderboardEntry(username=u, country_code=c, xp_this_week=x)
-        for u, c, x in rows
+        LeaderboardRowOut(
+            rank=r.rank, name=r.name, country_code=r.country_code,
+            points=r.points, is_me=r.is_me,
+        )
+        for r in rows
     ]
+
+
+@router.get("/me/handle")
+async def get_my_handle(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    handle = await ensure_handle(session, current_user)
+    await session.commit()
+    return {"handle": handle}
+
+
+@router.post("/me/handle/reroll")
+async def reroll_my_handle(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    for _ in range(20):
+        candidate = generate_handle()
+        if candidate != current_user.display_handle and not await _handle_taken(session, candidate):
+            current_user.display_handle = candidate
+            await session.commit()
+            return {"handle": candidate}
+    raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "handle_unavailable")
+
+
+class VisibilityRequest(BaseModel):
+    hidden: bool
+
+
+@router.patch("/me/leaderboard-visibility")
+async def set_my_visibility(
+    payload: VisibilityRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    current_user.leaderboard_hidden = payload.hidden
+    await session.commit()
+    return {"hidden": current_user.leaderboard_hidden}
