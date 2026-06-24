@@ -1,6 +1,8 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProfileMenu } from './ProfileMenu';
+import { Penny } from '@/components/child/ui/Penny';
+import { useEquippedCosmetics } from '@/api/cosmetics';
 import { cn } from '@/lib/utils';
 
 const NAV_LINK_KEYS = [
@@ -13,12 +15,15 @@ const NAV_LINK_KEYS = [
 
 export function TopNav({ username }: { username: string }) {
   const { t } = useTranslation('child');
+  const { accessories, skin } = useEquippedCosmetics();
   return (
     <header className="sticky top-0 z-10 border-b border-brand-200 bg-white/95 backdrop-blur" style={{ paddingTop: 'var(--safe-top)' }}>
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
-        <Link to="/home" className="flex items-center gap-2">
-          <img src="/icons/icon-192.png" alt="" width={32} height={32} className="h-8 w-8 rounded-full" />
-          <span className="text-lg font-extrabold text-gray-900">{t('topNav.homeLink')}</span>
+        <Link to="/home" className="flex items-center gap-2" aria-label={t('topNav.homeAria', { name: username })}>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100" aria-hidden="true">
+            <Penny size={28} accessories={accessories} skin={skin} />
+          </span>
+          <span className="text-lg font-extrabold text-gray-900">{username}</span>
         </Link>
 
         <nav className="ml-6 hidden items-center gap-1 md:flex" aria-label={t('nav.primary')}>

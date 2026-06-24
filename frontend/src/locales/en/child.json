@@ -11,7 +11,8 @@
   },
 
   "topNav": {
-    "homeLink": "InvestiKid"
+    "homeLink": "InvestiKid",
+    "homeAria": "Home — {{name}}"
   },
 
   "shell": {
