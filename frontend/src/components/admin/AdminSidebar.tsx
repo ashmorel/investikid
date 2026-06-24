@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/admin/video-curation', tKey: 'sidebar.items.videoCuration', icon: '🎞️', end: false },
   { to: '/admin/market-content', tKey: 'sidebar.items.marketContent', icon: '🌍', end: false },
   { to: '/admin/arcade-words', tKey: 'sidebar.items.arcadeWordBank', icon: '🃏', end: false },
+  { to: '/admin/collectables', tKey: 'sidebar.items.collectables', icon: '💎', end: false },
   { to: '/admin/analytics', tKey: 'sidebar.items.analytics', icon: '📈', end: false },
   { to: '/admin/settings', tKey: 'sidebar.items.settings', icon: '⚙️', end: false },
 ];

@@ -53,6 +53,7 @@ const AdminSettings = lazy(() => import('@/components/admin/AdminSettings'));
 const AdminAnalytics = lazy(() => import('@/components/admin/AdminAnalytics'));
 const MarketContent = lazy(() => import('@/components/admin/MarketContent'));
 const ArcadeWordBank = lazy(() => import('@/components/admin/ArcadeWordBank'));
+const CollectablesAdmin = lazy(() => import('@/components/admin/CollectablesAdmin'));
 
 function RootRedirect() {
   // Redirect / to /home; if unauthed, /home's Shell will redirect to /login.
@@ -137,6 +138,7 @@ export default function App() {
           <Route path="video-curation" element={<VideoCuration />} />
           <Route path="market-content" element={<MarketContent />} />
           <Route path="arcade-words" element={<ArcadeWordBank />} />
+          <Route path="collectables" element={<CollectablesAdmin />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="analytics" element={<AdminAnalytics />} />
         </Route>
