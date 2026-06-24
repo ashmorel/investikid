@@ -97,6 +97,7 @@ class LessonCompletionResult(BaseModel):
     practice_available: bool = False
     daily_goal_met: bool = False  # True only when THIS completion crossed the daily goal
     reward: RewardGrantOut = RewardGrantOut()
+    granted_collectables: list[str] = []
 
 
 class LevelOut(BaseModel):

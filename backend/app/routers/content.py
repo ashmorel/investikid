@@ -386,7 +386,7 @@ async def complete_lesson(
 
     today = datetime.now(UTC).date()
     event = await get_active_event(session)
-    xp_awarded, already, daily_goal_met = await _award_completion(
+    xp_awarded, already, daily_goal_met, granted_collectables = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today,
         amount=boosted_xp(lesson.xp_reward, event),
     )
@@ -461,6 +461,7 @@ async def complete_lesson(
         practice_available=practice_available,
         daily_goal_met=daily_goal_met,
         reward=reward,
+        granted_collectables=granted_collectables,
     )
 
 
@@ -473,7 +474,7 @@ async def _award_completion(
     today_local,
     *,
     amount: int | None = None,
-) -> tuple[int, bool, bool]:
+) -> tuple[int, bool, bool, list[str]]:
     """Insert a LessonCompletion + award XP once. On repeat, keep the best score."""
     existing = await session.scalar(
         select(LessonCompletion).where(
@@ -486,7 +487,7 @@ async def _award_completion(
         if score is not None and (existing.score is None or score > existing.score):
             existing.score = score
             existing.completed_at = datetime.now(UTC)
-        return 0, True, False
+        return 0, True, False, []
 
     try:
         async with session.begin_nested():
@@ -510,12 +511,14 @@ async def _award_completion(
         ):
             existing.score = score
             existing.completed_at = datetime.now(UTC)
-        return 0, True, False
+        return 0, True, False, []
 
     awarded = amount if amount is not None else lesson.xp_reward
-    goal = await award_xp(session, progress, awarded, today=today_local)
+    # Update streak BEFORE award_xp so grant_eligible (called inside award_xp)
+    # sees the post-completion streak_count when evaluating streak_days drops.
     record_daily_activity(progress, today_local)
-    return awarded, False, goal.goal_met_now
+    goal = await award_xp(session, progress, awarded, today=today_local)
+    return awarded, False, goal.goal_met_now, goal.granted_collectables
 
 
 @router.get("/events/active")

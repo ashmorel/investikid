@@ -260,9 +260,9 @@
     "endsInLessThanHour": "Ending soon",
     "goal": {
       "streak_days": "Day streak",
-      "lessons_completed": "Lessons",
-      "xp_earned": "XP earned",
-      "trades_made": "Trades"
+      "window_xp": "Earn {{threshold}} XP",
+      "window_lessons": "Complete {{threshold}} lessons",
+      "window_arcade": "Score {{threshold}} arcade points"
     }
   },
 
