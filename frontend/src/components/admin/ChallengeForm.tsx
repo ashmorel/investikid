@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useChallenges, useCreateChallenge, useUpdateChallenge, useBadges } from '@/api/admin';
 import type { AdminChallenge, AdminBadge } from '@/api/admin';
+import { FormSection } from './FormSection';
 
 const CHALLENGE_TYPES = ['lessons_completed', 'xp_earned', 'streak'] as const;
 
@@ -67,7 +68,8 @@ function ChallengeFormInner({ existing, badges, isEdit, challengeId }: {
   return (
     <div className="max-w-lg">
       <h2 className="mb-4 text-xl font-semibold text-ink">{isEdit ? t('challenge.editTitle') : t('challenge.newTitle')}</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <FormSection title={t('challenge.form.sectionDetails')}>
         <div>
           <label htmlFor="ch-title" className="mb-1 block text-sm text-ink">{t('challenge.form.title')}</label>
           <input id="ch-title" value={title} onChange={(e) => setTitle(e.target.value)} required
@@ -78,6 +80,9 @@ function ChallengeFormInner({ existing, badges, isEdit, challengeId }: {
           <textarea id="ch-desc" value={description} onChange={(e) => setDescription(e.target.value)} required rows={2}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
         </div>
+        </FormSection>
+
+        <FormSection title={t('challenge.form.sectionGoal')}>
         <div className="flex gap-4">
           <div className="flex-1">
             <label htmlFor="ch-type" className="mb-1 block text-sm text-ink">{t('challenge.form.type')}</label>
@@ -113,6 +118,9 @@ function ChallengeFormInner({ existing, badges, isEdit, challengeId }: {
             {badges.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </div>
+        </FormSection>
+
+        <FormSection title={t('challenge.form.sectionSchedule')}>
         <div className="flex gap-4">
           <div className="flex-1">
             <label htmlFor="ch-starts" className="mb-1 block text-sm text-ink">{t('challenge.form.startsAt')}</label>
@@ -130,7 +138,9 @@ function ChallengeFormInner({ existing, badges, isEdit, challengeId }: {
             className="h-4 w-4 rounded border-input bg-background" />
           <label htmlFor="ch-premium" className="text-sm text-ink">{t('challenge.form.premiumOnly')}</label>
         </div>
-        <div className="mt-2 flex gap-3">
+        </FormSection>
+
+        <div className="mt-1 flex gap-3">
           <button type="submit" className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700">{t('challenge.form.save')}</button>
           <button type="button" onClick={() => navigate('/admin/challenges')}
             className="rounded-md border border-line px-6 py-2 text-sm text-muted-foreground hover:bg-brand-50">{t('challenge.form.cancel')}</button>

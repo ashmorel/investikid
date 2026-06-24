@@ -11,6 +11,7 @@ import OrderArrows from './OrderArrows';
 import LessonForm from './LessonForm';
 import ConfirmDialog from './ConfirmDialog';
 import ModuleEngagement from './ModuleEngagement';
+import { FormSection } from './FormSection';
 
 export default function ModuleForm() {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -119,7 +120,8 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
       <h2 className="mb-4 text-xl font-semibold text-ink">
         {isEdit ? t('moduleForm.editTitle') : t('moduleForm.newTitle')}
       </h2>
-      <form onSubmit={handleSave} className="flex flex-col gap-4">
+      <form onSubmit={handleSave} className="flex flex-col gap-5">
+        <FormSection title={t('moduleForm.sections.basics')}>
         <div>
           <label htmlFor="mod-topic" className="mb-1 block text-sm text-ink">{t('moduleForm.topicLabel')}</label>
           <input id="mod-topic" value={topic} onChange={(e) => setTopic(e.target.value)} required
@@ -142,6 +144,9 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
             <label htmlFor="mod-premium" className="text-sm text-ink">{t('moduleForm.premiumLabel')}</label>
           </div>
         </div>
+        </FormSection>
+
+        <FormSection title={t('moduleForm.sections.availability')} helper={t('moduleForm.sections.availabilityHelper')}>
         <div>
           <span className="mb-1 block text-sm text-ink">{t('moduleForm.countriesLabel')}</span>
           <div className="flex flex-wrap gap-2">
@@ -201,7 +206,9 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
           </div>
           <p className="self-end pb-2 text-xs text-muted-foreground">{t('moduleForm.ageHelp')}</p>
         </div>
+        </FormSection>
 
+        <FormSection title={t('moduleForm.sections.rewards')}>
         {/* Completion cash reward */}
         <div>
           <label htmlFor="mod-cash" className="mb-1 block text-sm text-ink">{t('moduleForm.cashLabel')}</label>
@@ -209,7 +216,9 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
             onChange={(e) => setCompletionCashReward(e.target.value)} placeholder={t('moduleForm.cashPlaceholder')}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-300" />
         </div>
+        </FormSection>
 
+        <FormSection title={t('moduleForm.sections.standards')} helper={t('moduleForm.sections.standardsHelper')}>
         {/* Standards alignment */}
         <div>
           <span className="mb-1 block text-sm text-ink">{t('moduleForm.standardsLabel')}</span>
@@ -297,12 +306,12 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
             {t('moduleForm.addSource')}
           </button>
         </div>
+        </FormSection>
 
         {/* Lessons section — only in edit mode */}
         {isEdit && moduleId && (
-          <div className="mt-4 border-t border-line pt-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-base font-medium text-ink">{t('moduleForm.lessonsHeading', { count: sortedLessons.length })}</h3>
+          <FormSection title={t('moduleForm.lessonsHeading', { count: sortedLessons.length })}>
+            <div className="flex justify-end">
               <button type="button" onClick={() => { setEditingLesson(null); setShowNewLesson(true); }}
                 className="text-sm text-brand-600 hover:text-brand-700">{t('moduleForm.addLesson')}</button>
             </div>
@@ -332,10 +341,10 @@ function ModuleFormInner({ existing, modules, lessons, countries, isEdit, module
               ))}
             </div>
             <ModuleEngagement moduleId={moduleId} />
-          </div>
+          </FormSection>
         )}
 
-        <div className="mt-4 flex gap-3">
+        <div className="mt-1 flex gap-3">
           <button type="submit" className="rounded-md bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700">
             {t('moduleForm.save')}
           </button>

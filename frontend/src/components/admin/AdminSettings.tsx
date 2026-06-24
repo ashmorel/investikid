@@ -203,8 +203,8 @@ export default function AdminSettings() {
         )}
 
         {/* Market reward bonuses (Sub-project D) — coins, live in AppSetting */}
-        <fieldset className="mb-4 rounded-md border border-line bg-card px-4 py-3">
-          <legend className="px-1 text-sm font-semibold text-ink">{t('settings.marketRewards.legend')}</legend>
+        <fieldset className="mb-4 rounded-2xl border border-line bg-card p-5">
+          <legend className="px-1 text-base font-extrabold text-ink">{t('settings.marketRewards.legend')}</legend>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="enroll-bonus" className="mb-1 block text-sm text-ink">{t('settings.marketRewards.enrollBonus')}</label>
@@ -225,8 +225,8 @@ export default function AdminSettings() {
         </fieldset>
 
         {/* Content languages (E1) — kill-switch for serving stored translations */}
-        <fieldset className="mb-4 rounded-md border border-line bg-card px-4 py-3">
-          <legend className="px-1 text-sm font-semibold text-ink">{t('settings.contentLanguages.legend')}</legend>
+        <fieldset className="mb-4 rounded-2xl border border-line bg-card p-5">
+          <legend className="px-1 text-base font-extrabold text-ink">{t('settings.contentLanguages.legend')}</legend>
           <p className="mb-3 text-xs text-muted-foreground">{t('settings.contentLanguages.description')}</p>
           <div className="flex flex-wrap gap-3">
             {CONTENT_LANGUAGE_OPTIONS.map((lang) => (
@@ -252,8 +252,8 @@ export default function AdminSettings() {
         </fieldset>
 
         {/* Translations (E1) — generate batches + coverage view */}
-        <fieldset className="mb-4 rounded-md border border-line bg-card px-4 py-3">
-          <legend className="px-1 text-sm font-semibold text-ink">{t('settings.translations.legend')}</legend>
+        <fieldset className="mb-4 rounded-2xl border border-line bg-card p-5">
+          <legend className="px-1 text-base font-extrabold text-ink">{t('settings.translations.legend')}</legend>
           <p className="mb-3 text-xs text-muted-foreground">{t('settings.translations.generateDescription')}</p>
           <div className="mb-2 flex items-end gap-2">
             <div>
@@ -346,8 +346,8 @@ export default function AdminSettings() {
         </fieldset>
 
         {/* Seasonal event (M9) — deploy-free, lives in AppSetting */}
-        <fieldset className="mb-4 rounded-md border border-line bg-card px-4 py-3">
-          <legend className="px-1 text-sm font-semibold text-ink">{t('settings.seasonalEvent.legend')}</legend>
+        <fieldset className="mb-4 rounded-2xl border border-line bg-card p-5">
+          <legend className="px-1 text-base font-extrabold text-ink">{t('settings.seasonalEvent.legend')}</legend>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1">
               <label htmlFor="ev-title" className="mb-1 block text-sm text-ink">{t('settings.seasonalEvent.title')}</label>

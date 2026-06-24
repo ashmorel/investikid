@@ -365,6 +365,9 @@
     "newTitle": "New Challenge",
     "loading": "Loading…",
     "form": {
+      "sectionDetails": "Details",
+      "sectionGoal": "Goal & reward",
+      "sectionSchedule": "Schedule & access",
       "title": "Title",
       "description": "Description",
       "type": "Type",
@@ -588,6 +591,14 @@
     "editTitle": "Edit Module",
     "newTitle": "New Module",
     "loading": "Loading…",
+    "sections": {
+      "basics": "Basics",
+      "availability": "Availability",
+      "availabilityHelper": "Where and for whom this module appears.",
+      "rewards": "Rewards",
+      "standards": "Standards & sources",
+      "standardsHelper": "Curriculum alignment and reference links."
+    },
     "topicLabel": "Topic",
     "titleLabel": "Title",
     "iconLabel": "Icon",
