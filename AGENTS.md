@@ -43,6 +43,7 @@ Frontend (run from `frontend/`):
 
 ## Feature workflow
 For any non-trivial feature/change: **design spec → implementation plan → TDD**. Write a short spec to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` (goal, scope, data/API, UX, edge cases, test plan), then a task-by-task plan in `docs/superpowers/plans/`, then implement test-first (failing test → minimal code → commit per task). Verify (ruff + pytest; tsc + lint + test + build, plus `vitest-axe` for new UI), push, confirm green CI. Surface trade-offs instead of assuming; minimum code; touch only what the task needs.
+- **UI/visual enhancements go through Figma first.** For any non-trivial UI or visual change (new screens, redesigns, illustrations, avatar/cosmetics/collectables art, theming), mock up the direction in **Figma** (via the Figma MCP), get it approved, then translate the approved direction to code — so the result looks professional and consistent, not improvised. Trivial tweaks (spacing, copy, reusing an existing pattern) are exempt.
 
 ## Domain invariants & criteria (honor in future changes)
 These are settled decisions — match them unless the user explicitly changes them.
