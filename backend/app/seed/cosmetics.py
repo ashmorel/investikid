@@ -44,6 +44,14 @@ CATALOG: list[dict] = [
      "coin_cost": 0, "is_premium": False, "rarity": "legendary",
      "unlock_type": "streak_days", "unlock_threshold": 7, "drop_eligible": True,
      "available_from": _drop_window()[0], "available_until": _drop_window()[1]},
+    # Drop-ready pool art (drop_eligible, no unlock_type/window) — inert until an
+    # admin schedules them on /admin/collectables. Avatar art lives in Penny.tsx.
+    {"slug": "halo", "name": "Angel Halo", "emoji": "😇", "type": "accessory",
+     "coin_cost": 0, "is_premium": False, "drop_eligible": True},
+    {"slug": "winter_beanie", "name": "Winter Beanie", "emoji": "🧢", "type": "accessory",
+     "coin_cost": 0, "is_premium": False, "drop_eligible": True},
+    {"slug": "flower_crown", "name": "Flower Crown", "emoji": "🌸", "type": "accessory",
+     "coin_cost": 0, "is_premium": False, "drop_eligible": True},
 ]
 
 

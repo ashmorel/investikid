@@ -90,6 +90,33 @@ const ACCESSORY_SVG: Record<string, JSX.Element> = {
       <rect x="21" y="10.5" width="14" height="2.6" fill="#ef4444" />
     </>
   ),
+  // ── Limited-drop accessories (B-programme pool art) ──────────────────────
+  // Halo: golden ring floating above the head (own slot — always stacks).
+  halo: (
+    <>
+      <ellipse cx="28" cy="4" rx="9" ry="2.8" fill="#fde68a" fillOpacity="0.35" />
+      <ellipse cx="28" cy="4" rx="9" ry="2.8" fill="none" stroke="#fbbf24" strokeWidth="2" />
+    </>
+  ),
+  // Winter beanie: red dome + white fold band + pom-pom (head slot).
+  winter_beanie: (
+    <>
+      <path d="M13 18 Q28 2 43 18 Z" fill="#ef4444" />
+      <rect x="12" y="16" width="32" height="5" rx="2.5" fill="#f8fafc" />
+      <circle cx="28" cy="4" r="2.8" fill="#f8fafc" />
+    </>
+  ),
+  // Flower crown: green vine + a row of little flowers (head slot).
+  flower_crown: (
+    <>
+      <path d="M12 18 Q28 10 44 18" stroke="#22c55e" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+      <circle cx="14" cy="16" r="2.6" fill="#f472b6" /><circle cx="14" cy="16" r="1" fill="#fde047" />
+      <circle cx="22" cy="13" r="2.6" fill="#fb7185" /><circle cx="22" cy="13" r="1" fill="#fde047" />
+      <circle cx="28" cy="12" r="2.8" fill="#c084fc" /><circle cx="28" cy="12" r="1.1" fill="#fde047" />
+      <circle cx="34" cy="13" r="2.6" fill="#fb7185" /><circle cx="34" cy="13" r="1" fill="#fde047" />
+      <circle cx="42" cy="16" r="2.6" fill="#f472b6" /><circle cx="42" cy="16" r="1" fill="#fde047" />
+    </>
+  ),
 };
 
 export function Penny({
@@ -128,12 +155,17 @@ export function Penny({
           <stop offset="1" stopColor={to} />
         </linearGradient>
       </defs>
-      {/* Head */}
+      {/* Ears — body-toned outer + soft pink inner */}
+      <ellipse cx="11" cy="20" rx="6" ry="7" fill={from} />
+      <ellipse cx="45" cy="20" rx="6" ry="7" fill={from} />
+      <ellipse cx="11" cy="21" rx="3" ry="3.6" fill="#fbcfe8" />
+      <ellipse cx="45" cy="21" rx="3" ry="3.6" fill="#fbcfe8" />
+      {/* Head + soft top highlight */}
       <circle cx="28" cy="28" r="26" fill={`url(#${gradId})`} />
-      <circle cx="28" cy="28" r="22" fill="white" fillOpacity="0.18" />
-      {/* Ears */}
-      <ellipse cx="10" cy="22" rx="5" ry="7" fill="white" fillOpacity="0.4" />
-      <ellipse cx="46" cy="22" rx="5" ry="7" fill="white" fillOpacity="0.4" />
+      <ellipse cx="28" cy="17" rx="16" ry="10" fill="white" fillOpacity="0.2" />
+      {/* Rosy cheeks */}
+      <circle cx="16" cy="33" r="3.3" fill="#fb7185" fillOpacity="0.5" />
+      <circle cx="40" cy="33" r="3.3" fill="#fb7185" fillOpacity="0.5" />
       {/* Eyes */}
       {mood === 'excited' ? (
         <>
@@ -144,20 +176,23 @@ export function Penny({
         </>
       ) : (
         <>
-          <ellipse cx="21" cy="26" rx="3.5" ry="3" fill="white" />
-          <ellipse cx="35" cy="26" rx="3.5" ry="3" fill="white" />
-          <circle cx={mood === 'thinking' ? 22 : 21.5} cy="26" r="2" fill="#0c4a6e" />
-          <circle cx={mood === 'thinking' ? 36 : 35.5} cy="26" r="2" fill="#0c4a6e" />
+          <ellipse cx="21" cy="26" rx="4" ry="3.6" fill="white" />
+          <ellipse cx="35" cy="26" rx="4" ry="3.6" fill="white" />
+          <circle cx={mood === 'thinking' ? 22 : 21.5} cy="26.5" r="2.1" fill="#0c4a6e" />
+          <circle cx={mood === 'thinking' ? 36 : 35.5} cy="26.5" r="2.1" fill="#0c4a6e" />
+          {/* glossy catch-light */}
+          <circle cx={mood === 'thinking' ? 22.8 : 22.3} cy="25.4" r="0.85" fill="white" />
+          <circle cx={mood === 'thinking' ? 36.8 : 36.3} cy="25.4" r="0.85" fill="white" />
         </>
       )}
-      {/* Snout */}
-      <ellipse cx="28" cy="35" rx="6" ry="4" fill="white" fillOpacity="0.35" />
-      <circle cx="26" cy="35" r="1" fill="white" fillOpacity="0.7" />
-      <circle cx="30" cy="35" r="1" fill="white" fillOpacity="0.7" />
+      {/* Snout — pink with nostrils */}
+      <ellipse cx="28" cy="35" rx="6.4" ry="4.4" fill="#f9a8d4" fillOpacity="0.95" />
+      <ellipse cx="25.6" cy="35" rx="1" ry="1.3" fill="#9d174d" />
+      <ellipse cx="30.4" cy="35" rx="1" ry="1.3" fill="#9d174d" />
       {/* Mouth */}
       <path
-        d={mood === 'excited' ? 'M22 39 Q28 44 34 39' : 'M23 38 Q28 42 33 38'}
-        stroke="white"
+        d={mood === 'excited' ? 'M22 40 Q28 46 34 40' : 'M23 39 Q28 44 33 39'}
+        stroke="#0c4a6e"
         strokeWidth="1.8"
         strokeLinecap="round"
         fill="none"

@@ -21,17 +21,18 @@ describe('AvatarStage', () => {
     expect(svgs.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders the background scene aria-hidden with the space fill colour', () => {
+  it('renders the background scene aria-hidden with the polished space art', () => {
     const { container } = render(
       <AvatarStage background="bg_space" skin="skin_sky" accessories={['crown']} label="test" />,
     );
     // The background svg wrapper is aria-hidden
     const bgSvg = container.querySelector('svg[aria-hidden="true"][viewBox="0 0 100 100"]');
     expect(bgSvg).toBeTruthy();
-    // The space bg rect fill is present
-    const rects = bgSvg!.querySelectorAll('rect');
-    const fills = Array.from(rects).map((r) => r.getAttribute('fill'));
-    expect(fills).toContain('#1e1b4b');
+    // Polished space scene: gradient sky filling the rect + a field of stars
+    expect(bgSvg!.querySelector('linearGradient#bgSpaceSky')).toBeTruthy();
+    const rectFills = Array.from(bgSvg!.querySelectorAll('rect')).map((r) => r.getAttribute('fill'));
+    expect(rectFills).toContain('url(#bgSpaceSky)');
+    expect(bgSvg!.querySelectorAll('circle').length).toBeGreaterThan(5);
   });
 
   it('skips the background scene when background is null', () => {

@@ -15,8 +15,8 @@ _EXPECTED_SLUGS = {
     "bg_beach", "bg_forest", "bg_city", "bg_space", "bg_vault",
     # skins (5)
     "skin_pink", "skin_sky", "skin_mint", "skin_gold", "skin_lavender",
-    # limited drops (1)
-    "founders_crown",
+    # limited drops + drop-ready pool art (4)
+    "founders_crown", "halo", "winter_beanie", "flower_crown",
 }
 
 
@@ -29,4 +29,4 @@ async def test_seed_has_new_categories_idempotent(db_session):
     slugs = [r.slug for r in rows]
     assert len(slugs) == len(set(slugs)), "Duplicate slugs found"
     assert _EXPECTED_SLUGS <= set(slugs), f"Missing: {_EXPECTED_SLUGS - set(slugs)}"
-    assert len(rows) == 19, f"Expected 19 rows, got {len(rows)}"
+    assert len(rows) == 22, f"Expected 22 rows, got {len(rows)}"

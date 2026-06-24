@@ -35,9 +35,11 @@ _ACCESSORY_SLOT: dict[str, str] = {
     "crown": "head",
     "top_hat": "head",
     "headphones": "head",
+    "winter_beanie": "head",
+    "flower_crown": "head",
     "sunglasses": "eyes",
     "monocle": "eyes",
-    # "bow" -> its own slot (off to the side; always stacks)
+    # "bow", "halo" -> their own slot (off to the side / above; always stack)
 }
 
 
