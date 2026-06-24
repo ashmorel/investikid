@@ -6,7 +6,7 @@ type Props = { contentJson: { title?: string; body?: string }; onComplete: (scor
 export function CardLesson({ contentJson, onComplete, illustration, onShowPenny, completing = false }: Props) {
   const { t } = useTranslation('lessons');
   return (
-    <div className="space-y-5 rounded-3xl bg-white p-7 text-center shadow-lg shadow-brand-600/10">
+    <div className="space-y-5 rounded-3xl bg-white p-6 text-center shadow-lg shadow-brand-600/10">
       {illustration && <div className="flex justify-center">{illustration}</div>}
       <h2 className="text-2xl font-extrabold leading-tight text-gray-900">{contentJson.title ?? ''}</h2>
       <p className="text-[15px] leading-relaxed text-gray-600">{contentJson.body ?? ''}</p>

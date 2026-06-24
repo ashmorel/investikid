@@ -107,7 +107,7 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
 
   if (!isHosted && !youtubeUrls) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-5 rounded-3xl bg-white p-6 shadow-lg shadow-brand-600/10">
         <p>{t('video.unavailable')}</p>
         <div className="flex justify-end">
           <Button onClick={() => onComplete(null)} disabled={completing}>
@@ -122,8 +122,8 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
   // card (never a raw YouTube error), with the transcript and a Continue button.
   if (isYouTube && phase === 'error') {
     return (
-      <div className="space-y-4">
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+      <div className="space-y-5 rounded-3xl bg-white p-6 shadow-lg shadow-brand-600/10">
+        <div className="rounded-2xl border border-accent-200 bg-accent-50 p-4 text-sm text-accent-700">
           <p className="font-medium">{t('video.error')}</p>
         </div>
         {youtubeUrls && (
@@ -150,11 +150,11 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 rounded-3xl bg-white p-6 shadow-lg shadow-brand-600/10">
       {/* Player: hidden once the video ends so YouTube's related-video end-screen
           never shows — we end into our own "Finished" panel instead. */}
       {!(isYouTube && phase === 'ended') && (
-        <div className="aspect-video overflow-hidden rounded-md border">
+        <div className="aspect-video overflow-hidden rounded-2xl border border-line">
           {isHosted ? (
             <video
               src={contentJson.video_url}
@@ -192,7 +192,7 @@ export function VideoLesson({ contentJson, onComplete, completing = false }: Pro
       )}
 
       {isYouTube && phase === 'ended' && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <div className="rounded-2xl border border-success-100 bg-success-50 p-4 text-sm text-success-700">
           <p className="font-medium">{t('video.finished')}</p>
         </div>
       )}
