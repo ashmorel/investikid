@@ -22,9 +22,9 @@ from app.routers import arcade as arcade_router
 from app.routers import arcade_words_admin as arcade_words_admin_router
 from app.routers import auth as auth_router
 from app.routers import billing as billing_router
+from app.routers import collectables as collectables_router
 from app.routers import consent as consent_router
 from app.routers import content as content_router
-from app.routers import collectables as collectables_router
 from app.routers import cosmetics as cosmetics_router
 from app.routers import feedback as feedback_router
 from app.routers import gamification as gamification_router

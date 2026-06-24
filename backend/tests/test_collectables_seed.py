@@ -1,5 +1,6 @@
 import pytest
 from sqlalchemy import select
+
 from app.models.cosmetics import CosmeticItem
 from app.seed.cosmetics import seed_cosmetics
 
