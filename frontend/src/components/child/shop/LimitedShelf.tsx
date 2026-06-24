@@ -2,38 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectables, type CollectableDrop, type OwnedCollectable } from '@/api/collectables';
 import { useEquipCosmetic } from '@/api/cosmetics';
-
-// ---------------------------------------------------------------------------
-// Rarity badge styling
-// ---------------------------------------------------------------------------
-const RARITY_STYLE: Record<string, string> = {
-  legendary: 'bg-amber-100 text-amber-800',
-  epic:      'bg-purple-100 text-purple-800',
-  rare:      'bg-sky-100 text-sky-800',
-  common:    'bg-gray-100 text-gray-700',
-};
-
-function rarityClass(rarity: string | null): string {
-  return rarity ? (RARITY_STYLE[rarity] ?? RARITY_STYLE.common) : RARITY_STYLE.common;
-}
-
-// ---------------------------------------------------------------------------
-// Countdown to ends_at (pure function — no side-effects)
-// ---------------------------------------------------------------------------
-function formatCountdown(
-  endsAt: string | null,
-  now: number,
-  t: (key: string, opts?: Record<string, unknown>) => string,
-): string {
-  if (!endsAt) return '';
-  const ms = new Date(endsAt).getTime() - now;
-  if (ms <= 0) return '';
-  const days = Math.floor(ms / 86_400_000);
-  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
-  if (days > 0) return t('limited.endsInDays', { count: days });
-  if (hours > 0) return t('limited.endsInHours', { count: hours });
-  return t('limited.endsInLessThanHour');
-}
+import { rarityClass, formatCountdown, ProgressBar } from './collectableBits';
 
 // ---------------------------------------------------------------------------
 // Active drop card
@@ -69,19 +38,7 @@ function ActiveDrop({ drop, now }: { drop: CollectableDrop; now: number }) {
             <span>{goalLabel}</span>
             <span>{drop.goal.current} / {drop.goal.threshold}</span>
           </div>
-          <div
-            className="h-2 overflow-hidden rounded-full bg-gray-100"
-            role="progressbar"
-            aria-label={`${drop.goal.current} / ${drop.goal.threshold}`}
-            aria-valuenow={drop.goal.current}
-            aria-valuemin={0}
-            aria-valuemax={drop.goal.threshold}
-          >
-            <div
-              className="h-full rounded-full bg-brand-500 transition-all"
-              style={{ width: `${Math.min(100, (drop.goal.current / drop.goal.threshold) * 100)}%` }}
-            />
-          </div>
+          <ProgressBar current={drop.goal.current} threshold={drop.goal.threshold} />
         </div>
       )}
     </li>
