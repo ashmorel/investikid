@@ -2,14 +2,16 @@ import { Penny } from './Penny';
 import { BACKGROUND } from './pennyScenes';
 
 export function AvatarStage({
-  background, skin, accessories, label,
-}: { background?: string | null; skin?: string | null; accessories?: string[]; label: string }) {
+  background, skin, accessories, label, hero = false,
+}: { background?: string | null; skin?: string | null; accessories?: string[]; label: string; hero?: boolean }) {
   const scene = background ? BACKGROUND[background] : null;
   return (
     <div
       role="img"
       aria-label={label}
-      className="relative mx-auto flex h-44 w-44 items-center justify-center overflow-hidden rounded-3xl border border-brand-200 bg-brand-50"
+      className={`relative mx-auto flex items-center justify-center overflow-hidden border-brand-200 bg-brand-50 ${
+        hero ? 'h-60 w-full rounded-[1.75rem] border shadow-sm' : 'h-44 w-44 rounded-3xl border'
+      }`}
     >
       {scene && (
         <svg
@@ -21,7 +23,7 @@ export function AvatarStage({
           {scene}
         </svg>
       )}
-      <Penny size={120} skin={skin} accessories={accessories} className="relative" />
+      <Penny size={hero ? 168 : 120} skin={skin} accessories={accessories} className="relative" />
     </div>
   );
 }

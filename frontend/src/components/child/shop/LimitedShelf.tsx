@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectables, type CollectableDrop, type OwnedCollectable } from '@/api/collectables';
 import { useEquipCosmetic } from '@/api/cosmetics';
-import { rarityClass, formatCountdown, ProgressBar } from './collectableBits';
+import { rarityClass, rarityBorder, formatCountdown, ProgressBar } from './collectableBits';
 
 // ---------------------------------------------------------------------------
 // Active drop card
@@ -14,9 +14,9 @@ function ActiveDrop({ drop, now }: { drop: CollectableDrop; now: number }) {
   const goalLabel = t(`limited.goal.${drop.goal.type}`, { defaultValue: drop.goal.type });
 
   return (
-    <li className="flex flex-col gap-2 rounded-2xl border border-brand-200 bg-white p-4">
+    <li className={`flex flex-col gap-2 rounded-2xl border-2 bg-white p-4 ${rarityBorder(drop.rarity)}`}>
       <div className="flex items-center gap-3">
-        <span className="text-3xl" aria-hidden="true">{drop.emoji}</span>
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-3xl" aria-hidden="true">{drop.emoji}</span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-ink">{drop.name}</p>
           <span

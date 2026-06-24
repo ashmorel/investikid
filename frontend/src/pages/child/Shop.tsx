@@ -47,6 +47,9 @@ export default function Shop() {
   ];
 
   const visibleItems = data?.items.filter((i) => i.type === tab) ?? [];
+  const wearingNames = (data?.items ?? [])
+    .filter((i) => i.equipped && i.type === 'accessory')
+    .map((i) => i.name);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
@@ -67,13 +70,26 @@ export default function Shop() {
         {t('shop.description')}
       </p>
 
-      <div className="mt-4">
+      <div className="relative mt-4">
         <AvatarStage
+          hero
           background={eq.background}
           skin={eq.skin}
           accessories={eq.accessories}
           label={t('shop.avatarLabel')}
         />
+        <div className="absolute inset-x-0 bottom-3 flex justify-center px-4">
+          <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-brand-200 bg-white/95 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
+            {wearingNames.length > 0 ? (
+              <>
+                <span className="font-bold uppercase tracking-wide text-muted-foreground">{t('shop.wearing')}</span>
+                <span className="truncate font-extrabold text-brand-800">{wearingNames.join(' · ')}</span>
+              </>
+            ) : (
+              <span className="font-semibold text-muted-foreground">{t('shop.wearingEmpty')}</span>
+            )}
+          </span>
+        </div>
       </div>
 
       {isLoading && <p className="mt-6 text-sm text-muted-foreground">{t('shop.loading')}</p>}
@@ -115,17 +131,28 @@ export default function Shop() {
               return (
                 <li
                   key={item.id}
-                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-brand-200 bg-white p-4 text-center"
+                  className={`relative flex flex-col items-center gap-2 rounded-2xl bg-white p-4 text-center ${
+                    item.equipped ? 'border-2 border-brand-600' : 'border border-brand-200'
+                  }`}
                 >
-                  <span className="text-3xl" aria-hidden="true">{item.emoji}</span>
+                  {item.equipped && (
+                    <span className="absolute right-2 top-2 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                      {t('shop.wearing')}
+                    </span>
+                  )}
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-3xl" aria-hidden="true">{item.emoji}</span>
                   <p className="text-sm font-bold text-ink">
                     {item.name}
                     {item.is_premium && <span aria-hidden="true"> ✨</span>}
                   </p>
-                  <p className="text-xs font-semibold text-muted-foreground">
-                    <span aria-hidden="true">🪙 </span>{item.coin_cost}
-                    {item.is_premium && <span className="sr-only">{t('shop.itemPremiumSr')}</span>}
-                  </p>
+                  {item.owned ? (
+                    <span className="text-xs font-semibold text-muted-foreground">{t('shop.owned')}</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent-100 px-2 py-0.5 text-xs font-extrabold text-accent-700">
+                      <span aria-hidden="true">🪙</span>{item.coin_cost}
+                      {item.is_premium && <span className="sr-only">{t('shop.itemPremiumSr')}</span>}
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => onAction(item)}

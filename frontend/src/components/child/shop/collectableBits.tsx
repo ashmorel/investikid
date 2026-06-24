@@ -13,6 +13,18 @@ export function rarityClass(rarity: string | null): string {
   return rarity ? (RARITY_STYLE[rarity] ?? RARITY_STYLE.common) : RARITY_STYLE.common;
 }
 
+// Rarity-forward card border accent (same conventional ramp as RARITY_STYLE).
+export const RARITY_BORDER: Record<string, string> = {
+  legendary: 'border-amber-300',
+  epic:      'border-purple-300',
+  rare:      'border-sky-300',
+  common:    'border-brand-200',
+};
+
+export function rarityBorder(rarity: string | null): string {
+  return rarity ? (RARITY_BORDER[rarity] ?? RARITY_BORDER.common) : RARITY_BORDER.common;
+}
+
 // Pure: no side-effects, `now` passed in so it is stable across renders.
 export function formatCountdown(
   endsAt: string | null,

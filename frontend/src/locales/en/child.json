@@ -129,6 +129,9 @@
       "keepSaving": "Keep saving"
     },
     "avatarLabel": "Your Penny",
+    "wearing": "Wearing",
+    "wearingEmpty": "Tap an item to dress Penny up",
+    "owned": "Owned",
     "tabs": {
       "accessory": "Accessories",
       "background": "Backgrounds",
