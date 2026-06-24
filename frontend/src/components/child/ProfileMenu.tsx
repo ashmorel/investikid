@@ -410,6 +410,9 @@ export function ProfileMenu({ username }: { username: string }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => navigate('/shop')}>
+            <span aria-hidden="true" className="mr-2">🐷</span>{t('shop.label')}
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={openEditor}>
             {t('nav.profile')}
           </DropdownMenuItem>
