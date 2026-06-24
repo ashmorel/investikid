@@ -174,6 +174,24 @@ async def test_suggest_words_skips_real_words_that_are_not_six_letters(db_sessio
     assert survivor is not None and survivor.length == 6
 
 
+async def test_suggest_words_sends_existing_words_as_avoid_list(db_session):
+    """Existing bank words are passed to the LLM as a do-not-repeat list, so the
+    suggester stops returning words we already have (the '0 queued' bug)."""
+    await seed_arcade_words(db_session)  # seeds BUDGET, CREDIT, INCOME, ...
+
+    mock_client = _mock_llm_client(json.dumps([]))  # response content irrelevant here
+    with patch(
+        "app.services.arcade_word_admin_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        await suggest_words(db_session, language="en")
+
+    messages = mock_client.complete.call_args.args[1]
+    user_content = messages[0]["content"]
+    assert "do NOT return" in user_content
+    assert "BUDGET" in user_content  # a seeded word appears in the avoid list
+
+
 async def test_suggest_words_idempotent_on_second_call(db_session):
     """Running suggest_words twice with the same mock payload skips dupes."""
     await seed_arcade_words(db_session)

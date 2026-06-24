@@ -27,8 +27,9 @@ _SYS = with_generation_framing(
     "5. Add a one-sentence kid-friendly definition (<=180 chars) that does NOT contain the word "
     "itself.\n"
     'Return a JSON array of {"word": "...", "definition": "..."}. '
-    "Examples of valid words: BUDGET, CREDIT, WALLET, INVEST, PROFIT, INCOME, SAVING, LENDER, "
-    "MARKET, REFUND, WEALTH."
+    "Aim for VARIED, less-obvious money words — not just the most common few. "
+    "Format examples only (do NOT simply return these): WALLET, MARKET, LENDER, WEALTH, "
+    "SAVING, BANKER, SALARY, POCKET."
 )
 
 
@@ -45,10 +46,30 @@ def _valid_word(w: str) -> bool:
 async def suggest_words(
     session: AsyncSession, *, language: str = "en", count: int = 10
 ) -> dict:
+    # The set of real, kid-friendly, 6-letter money words is small and the bank
+    # already holds the obvious ones, so without an exclusion list the model
+    # returns words we already have and every one is dedup-skipped (0 created).
+    # Pass the existing words as an explicit "do not repeat" list and ask for
+    # variety. Cap the list so the prompt can't grow unbounded as the bank fills.
+    existing = (
+        await session.scalars(
+            select(ArcadeWord.word)
+            .where(ArcadeWord.language == language)
+            .order_by(ArcadeWord.created_at.desc())
+            .limit(300)
+        )
+    ).all()
+    avoid = ", ".join(sorted({w.upper() for w in existing}))
+    user_msg = f"Generate {count} words."
+    if avoid:
+        user_msg += (
+            f" We ALREADY have these — do NOT return any of them, pick different "
+            f"words: {avoid}."
+        )
     raw = await get_llm_client("authoring").complete(
         _SYS,
-        [{"role": "user", "content": f"Generate {count} words."}],
-        temperature=0.5,
+        [{"role": "user", "content": user_msg}],
+        temperature=0.8,
         max_tokens=1200,
         response_format="json",
     )
