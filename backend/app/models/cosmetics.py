@@ -18,6 +18,11 @@ class CosmeticItem(Base):
     type: Mapped[str] = mapped_column(String(20), nullable=False)
     coin_cost: Mapped[int] = mapped_column(Integer, nullable=False)
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    available_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    available_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    rarity: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    unlock_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    unlock_threshold: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class UserCosmetic(Base):
