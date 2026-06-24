@@ -50,11 +50,11 @@ describe('useChallenges', () => {
 });
 
 describe('useLeaderboard', () => {
-  it('fetches from GET /leaderboard', async () => {
+  it('fetches from GET /leaderboard with scope + metric', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify([]), { status: 200 }),
     );
-    const { result } = renderHook(() => useLeaderboard(), { wrapper });
+    const { result } = renderHook(() => useLeaderboard('market', 'xp'), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual([]);
   });

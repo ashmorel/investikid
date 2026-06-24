@@ -3,12 +3,11 @@ import { useProgress } from '@/hooks/useProgress';
 import { useAllBadges } from '@/hooks/useAllBadges';
 import { useBadges } from '@/hooks/useBadges';
 import { useChallenges } from '@/hooks/useChallenges';
-import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useChildSession } from '@/hooks/useChildSession';
 import { XpSummary } from '@/components/child/stats/XpSummary';
 import { BadgeGrid } from '@/components/child/stats/BadgeGrid';
 import { ChallengeList } from '@/components/child/stats/ChallengeList';
-import { LeaderboardTable } from '@/components/child/stats/LeaderboardTable';
+import { LeaderboardCard } from '@/components/child/stats/LeaderboardCard';
 import { useGroupLeaderboard } from '@/hooks/useGroupLeaderboard';
 import { GroupLeaderboard } from '@/components/child/stats/GroupLeaderboard';
 import { GroupGoals } from '@/components/child/stats/GroupGoals';
@@ -24,7 +23,6 @@ export default function Stats() {
   const allBadges = useAllBadges();
   const earnedBadges = useBadges();
   const challenges = useChallenges();
-  const leaderboard = useLeaderboard();
   const session = useChildSession();
   const groupBoards = useGroupLeaderboard();
 
@@ -76,17 +74,9 @@ export default function Stats() {
       <GroupGoals />
       </section>
 
-      {/* Weekly Leaderboard */}
+      {/* Leaderboard */}
       <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
-        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">{t('stats.leaderboardSection')}</h2>
-        {leaderboard.isLoading ? (
-          <SectionSkeleton />
-        ) : leaderboard.data ? (
-          <LeaderboardTable
-            entries={leaderboard.data}
-            currentUsername={session.data?.username ?? ''}
-          />
-        ) : null}
+        <LeaderboardCard currentName={session.data?.username ?? ''} />
       </section>
     </div>
   );

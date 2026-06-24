@@ -1,66 +1,32 @@
 import { useTranslation } from 'react-i18next';
-import type { LeaderboardEntry } from '@/api/gamification';
+import type { LeaderboardRow } from '@/api/gamification';
 import { countryFlag } from '@/lib/country';
 import { cn } from '@/lib/utils';
 
-type Props = {
-  entries: LeaderboardEntry[];
-  currentUsername: string;
-};
+type Props = { rows: LeaderboardRow[]; currentName: string; pointsLabel: string };
 
-export function LeaderboardTable({ entries, currentUsername }: Props) {
+export function LeaderboardTable({ rows, pointsLabel }: Props) {
   const { t } = useTranslation('child');
-
-  if (entries.length === 0) {
-    return (
-      <p className="py-8 text-center text-muted-foreground">
-        {t('leaderboard.empty')}
-      </p>
-    );
-  }
-
   return (
     <div className="overflow-x-auto rounded-lg border">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="px-4 py-3 text-left font-medium">{t('leaderboard.colRank')}</th>
-            <th className="px-4 py-3 text-left font-medium">{t('leaderboard.colUsername')}</th>
+            <th className="px-4 py-3 text-left font-medium">{t('leaderboard.colName')}</th>
             <th className="px-4 py-3 text-left font-medium">{t('leaderboard.colCountry')}</th>
-            <th className="px-4 py-3 text-right font-medium">{t('leaderboard.colXp')}</th>
+            <th className="px-4 py-3 text-right font-medium">{pointsLabel}</th>
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry, i) => {
-            const isCurrentUser = entry.username === currentUsername;
-            return (
-              <tr
-                key={entry.username}
-                className={cn(
-                  'border-b last:border-b-0',
-                  isCurrentUser && 'bg-primary/5 font-medium',
-                )}
-              >
-                <td className="px-4 py-3">{i + 1}</td>
-                <td className="px-4 py-3">
-                  <span className="flex items-center gap-2">
-                    {entry.username}
-                    {isCurrentUser && (
-                      <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                        {t('leaderboard.youBadge')}
-                      </span>
-                    )}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <span aria-label={entry.country_code}>
-                    {countryFlag(entry.country_code)}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">{entry.xp_this_week}</td>
-              </tr>
-            );
-          })}
+          {rows.map((r) => (
+            <tr key={`${r.rank}-${r.name}`} className={cn('border-b last:border-b-0', r.is_me && 'bg-brand-50 font-bold')}>
+              <td className="px-4 py-3">{r.rank}</td>
+              <td className="px-4 py-3">{r.name}</td>
+              <td className="px-4 py-3" aria-hidden="true">{r.country_code ? countryFlag(r.country_code) : ''}</td>
+              <td className="px-4 py-3 text-right">{r.points}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

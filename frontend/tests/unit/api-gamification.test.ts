@@ -33,12 +33,12 @@ describe('gamificationApi', () => {
     expect(fetch).toHaveBeenCalledWith('/challenges', expect.objectContaining({ method: 'GET' }));
   });
 
-  it('getLeaderboard calls GET /leaderboard', async () => {
+  it('getLeaderboard calls GET /leaderboard with scope + metric', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify([]), { status: 200 }),
     );
-    const result = await gamificationApi.getLeaderboard();
+    const result = await gamificationApi.getLeaderboard('market', 'xp');
     expect(result).toEqual([]);
-    expect(fetch).toHaveBeenCalledWith('/leaderboard', expect.objectContaining({ method: 'GET' }));
+    expect(fetch).toHaveBeenCalledWith('/leaderboard?scope=market&metric=xp', expect.objectContaining({ method: 'GET' }));
   });
 });

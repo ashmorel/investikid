@@ -193,11 +193,28 @@
   },
 
   "leaderboard": {
+    "title": "Leaderboard",
+    "scopeLabel": "Leaderboard scope",
+    "metricLabel": "Points metric",
+    "scope": {
+      "market": "My Market",
+      "global": "Global",
+      "friends": "Friends"
+    },
+    "metric": {
+      "xp": "XP",
+      "arcade": "Arcade"
+    },
     "empty": "No activity this week yet. Complete a lesson to get on the board!",
+    "friendsEmpty": "No friends on the board yet. Ask a parent to join a group!",
+    "loading": "Loading leaderboard…",
+    "error": "Could not load the leaderboard. Please try again.",
     "colRank": "#",
+    "colName": "Name",
     "colUsername": "Username",
     "colCountry": "Country",
     "colXp": "XP This Week",
+    "colPoints": "Arcade Points",
     "youBadge": "You"
   },
 
