@@ -146,7 +146,9 @@ export default function LimitedShelf() {
     );
   }
 
-  if (!data || (data.active.length === 0 && data.owned.length === 0)) {
+  const active = data?.active ?? [];
+  const owned = data?.owned ?? [];
+  if (active.length === 0 && owned.length === 0) {
     return null;
   }
 
@@ -159,25 +161,25 @@ export default function LimitedShelf() {
         {t('limited.title')}
       </h2>
 
-      {data.active.length === 0 && (
+      {active.length === 0 && (
         <p className="mt-2 text-sm text-gray-500">{t('limited.emptyActive')}</p>
       )}
 
-      {data.active.length > 0 && (
+      {active.length > 0 && (
         <ul className="mt-3 space-y-3">
-          {data.active.map((drop) => (
+          {active.map((drop) => (
             <ActiveDrop key={drop.slug} drop={drop} now={now} />
           ))}
         </ul>
       )}
 
-      {data.owned.length > 0 && (
+      {owned.length > 0 && (
         <>
           <h3 className="mt-5 text-sm font-bold text-gray-700">
             {t('limited.ownedTitle')}
           </h3>
           <ul className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {data.owned.map((item) => (
+            {owned.map((item) => (
               <OwnedCard key={item.slug} item={item} />
             ))}
           </ul>
