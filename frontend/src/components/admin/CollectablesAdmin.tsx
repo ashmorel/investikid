@@ -82,10 +82,10 @@ export default function CollectablesAdmin() {
 
       {/* Scheduled drops list */}
       <h3 className="mb-2 text-sm font-bold text-muted-foreground">{t('collectables.scheduledHeading')}</h3>
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-muted/50 text-left">
+            <tr className="border-b border-line bg-muted/50 text-left">
               <th className="px-3 py-2">{t('collectables.colItem')}</th>
               <th className="px-3 py-2">{t('collectables.colRarity')}</th>
               <th className="px-3 py-2">{t('collectables.colUnlock')}</th>
@@ -96,7 +96,7 @@ export default function CollectablesAdmin() {
           </thead>
           <tbody>
             {drops.map((d) => (
-              <tr key={d.item_id} className="border-b last:border-b-0">
+              <tr key={d.item_id} className="border-b last:border-b-0 hover:bg-muted/50">
                 <td className="px-3 py-2"><span aria-hidden="true">{d.emoji}</span> {d.name}</td>
                 <td className="px-3 py-2">{d.rarity}</td>
                 <td className="px-3 py-2">
@@ -118,7 +118,7 @@ export default function CollectablesAdmin() {
                     </>
                   )}
                   {d.status === 'live' && (
-                    <button type="button" className="text-sm font-bold text-red-700"
+                    <button type="button" className="text-sm font-bold text-danger-700"
                       onClick={() => setConfirm({ kind: 'end', drop: d })}>
                       {t('collectables.endEarly')}
                     </button>
@@ -146,7 +146,7 @@ export default function CollectablesAdmin() {
           ) : (
             <label className="flex flex-col gap-1 text-sm">
               {t('collectables.poolItemLabel')}
-              <select className="rounded border px-2 py-2 text-base" value={itemId}
+              <select className="rounded-md border border-line bg-background px-3 py-2 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1" value={itemId}
                 onChange={(e) => setItemId(e.target.value)} required>
                 <option value="" disabled>—</option>
                 {pool.map((p) => <option key={p.item_id} value={p.item_id}>{p.emoji} {p.name}</option>)}
@@ -155,41 +155,41 @@ export default function CollectablesAdmin() {
           )}
           <label className="flex flex-col gap-1 text-sm">
             {t('collectables.rarityLabel')}
-            <select className="rounded border px-2 py-2 text-base" value={rarity}
+            <select className="rounded-md border border-line bg-background px-3 py-2 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1" value={rarity}
               onChange={(e) => setRarity(e.target.value as Rarity)}>
               {RARITIES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
             {t('collectables.unlockTypeLabel')}
-            <select className="rounded border px-2 py-2 text-base" value={unlockType}
+            <select className="rounded-md border border-line bg-background px-3 py-2 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1" value={unlockType}
               onChange={(e) => setUnlockType(e.target.value as UnlockType)}>
               {UNLOCK_TYPES.map((u) => <option key={u} value={u}>{t(`collectables.unlock.${u}`)}</option>)}
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
             {t('collectables.thresholdLabel')}
-            <input type="number" min={1} className="rounded border px-2 py-2 text-base" value={threshold}
+            <input type="number" min={1} className="rounded-md border border-line bg-background px-3 py-2 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1" value={threshold}
               onChange={(e) => setThreshold(Number(e.target.value))} required />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             {t('collectables.fromLabel')}
-            <input type="datetime-local" className="rounded border px-2 py-2 text-base" value={from}
+            <input type="datetime-local" className="rounded-md border border-line bg-background px-3 py-2 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1" value={from}
               onChange={(e) => setFrom(e.target.value)} required />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             {t('collectables.untilLabel')}
-            <input type="datetime-local" className="rounded border px-2 py-2 text-base" value={until}
+            <input type="datetime-local" className="rounded-md border border-line bg-background px-3 py-2 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1" value={until}
               onChange={(e) => setUntil(e.target.value)} required />
           </label>
           <div className="flex gap-3">
             <button type="submit" disabled={schedule.isPending || edit.isPending}
-              className="min-h-[44px] rounded-xl bg-brand-600 px-4 font-bold text-white hover:bg-brand-700">
+              className="min-h-[44px] rounded-md bg-brand-600 px-4 font-bold text-white hover:bg-brand-700 disabled:opacity-50">
               {t('collectables.save')}
             </button>
             {editing && (
               <button type="button" onClick={cancelEdit}
-                className="min-h-[44px] rounded-xl border px-4 font-bold hover:bg-muted">
+                className="min-h-[44px] rounded-md border border-line px-4 font-bold hover:bg-muted">
                 {t('collectables.cancelEdit')}
               </button>
             )}

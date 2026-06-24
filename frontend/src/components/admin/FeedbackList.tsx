@@ -55,7 +55,7 @@ export default function FeedbackList() {
             </thead>
             <tbody>
               {data.items.map((f) => (
-                <tr key={f.id} className="border-b border-line align-top text-ink">
+                <tr key={f.id} className="border-b border-line align-top text-ink hover:bg-muted/50">
                   <td className="py-2 pr-4 whitespace-nowrap">
                     {new Date(f.created_at).toLocaleDateString()}
                   </td>
@@ -81,7 +81,7 @@ export default function FeedbackList() {
 
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
             <button
-              className="rounded border border-line px-3 py-1 disabled:opacity-40"
+              className="min-h-[44px] rounded-md border border-line px-3 py-1 font-semibold hover:bg-muted disabled:opacity-40"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
             >
@@ -89,7 +89,7 @@ export default function FeedbackList() {
             </button>
             <span>{t('feedbackList.pageOf', { page, total: totalPages })}</span>
             <button
-              className="rounded border border-line px-3 py-1 disabled:opacity-40"
+              className="min-h-[44px] rounded-md border border-line px-3 py-1 font-semibold hover:bg-muted disabled:opacity-40"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
             >

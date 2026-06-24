@@ -53,7 +53,7 @@ export default function VideoHealthList() {
           </thead>
           <tbody>
             {data.map((v) => (
-              <tr key={v.lesson_id} className="border-b border-line">
+              <tr key={v.lesson_id} className="border-b border-line hover:bg-muted/50">
                 <td className="py-2 pr-4 text-ink">{v.module_title}</td>
                 <td className="py-2 pr-4 text-ink">{v.lesson_title}</td>
                 <td className="py-2 pr-4 font-mono text-muted-foreground">{v.youtube_id || '∅'}</td>
