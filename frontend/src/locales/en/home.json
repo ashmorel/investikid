@@ -68,5 +68,10 @@
     "body": "Get a friendly daily reminder so your streak keeps growing.",
     "enable": "Enable reminders",
     "dismiss": "Not now"
+  },
+
+  "featuredDrop": {
+    "title": "Limited drop",
+    "ariaLabel": "Limited drop: {{name}}, {{current}} of {{threshold}} — see it in the shop"
   }
 }

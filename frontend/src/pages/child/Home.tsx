@@ -24,6 +24,7 @@ import { trackOncePerSession } from '@/lib/analytics';
 import { EventStrip } from '@/components/child/home/EventStrip';
 import ArcadeHomeCard from '@/components/child/home/ArcadeHomeCard';
 import ArcadeDailyCard from '@/components/child/home/ArcadeDailyCard';
+import FeaturedDropCard from '@/components/child/home/FeaturedDropCard';
 
 export default function Home() {
   const { t } = useTranslation('home');
@@ -136,6 +137,10 @@ export default function Home() {
               badgesTotal={badgesTotal}
               coins={progress?.virtual_coins ?? 0}
             />
+          </div>
+
+          <div className="mt-4">
+            <FeaturedDropCard />
           </div>
 
           <div className="mt-4">
