@@ -9,6 +9,11 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    # Skip major bumps — they're breaking by nature and are done deliberately,
+    # not via auto-PRs. (Dependabot security updates still come through.)
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       backend-minor-patch:
         update-types: ["minor", "patch"]
@@ -20,6 +25,11 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    # Skip major bumps — they're breaking by nature and are done deliberately,
+    # not via auto-PRs. (Dependabot security updates still come through.)
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       frontend-minor-patch:
         update-types: ["minor", "patch"]
@@ -31,6 +41,11 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    # Skip major bumps — they're breaking by nature and are done deliberately,
+    # not via auto-PRs. (Dependabot security updates still come through.)
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       actions:
         patterns: ["*"]
