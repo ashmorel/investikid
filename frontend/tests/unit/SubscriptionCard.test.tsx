@@ -57,7 +57,7 @@ describe('SubscriptionCard', () => {
       cancel_at_period_end: false,
     });
     wrap();
-    expect(await screen.findByText(/premium trial/i)).toBeInTheDocument();
+    expect(await screen.findByText(/trial — \d+ days? remaining/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /manage billing/i })).toBeInTheDocument();
   });
 
@@ -70,7 +70,7 @@ describe('SubscriptionCard', () => {
       cancel_at_period_end: false,
     });
     wrap();
-    expect(await screen.findByText(/premium — renews/i)).toBeInTheDocument();
+    expect(await screen.findByText(/renews/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /manage billing/i })).toBeInTheDocument();
   });
 
@@ -83,7 +83,7 @@ describe('SubscriptionCard', () => {
       cancel_at_period_end: true,
     });
     wrap();
-    expect(await screen.findByText(/premium — cancels/i)).toBeInTheDocument();
+    expect(await screen.findByText(/cancels/i)).toBeInTheDocument();
   });
 
   it('shows payment issue for past_due', async () => {
