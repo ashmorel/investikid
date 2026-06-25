@@ -239,7 +239,17 @@
     "weakConceptsPlural": "{{count}} weak concepts",
     "dueForReview": "{{count}} due for review",
     "startToTrack": "Start this topic to track your progress",
-    "overallMasteryAriaLabel": "Overall mastery: {{pct}}%"
+    "overallMasteryAriaLabel": "Overall mastery: {{pct}}%",
+    "heroHigh": "You're on a roll!",
+    "heroMid": "Keep it going!",
+    "heroLow": "Let's get started!",
+    "summary": "{{strong}} strong · {{practice}} to practice",
+    "dueCta": "{{count}} concepts due — Revise",
+    "topicsZone": "Topics",
+    "filterAll": "All",
+    "filterNeedsPractice": "Needs practice",
+    "filterStrong": "Strong",
+    "filterNew": "New"
   },
 
   "level": {
