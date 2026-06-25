@@ -5,9 +5,13 @@ on:
     - cron: "0 6 * * *"   # daily 06:00 UTC
   workflow_dispatch: {}      # manual "Run workflow" button
 
+permissions:
+  contents: read
+
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # The backend URL is public (the API the app already calls), so it lives here,
     # not in a secret. Only CRON_SECRET is a real secret. Override BACKEND_URL via a
     # repo variable if the domain changes: ${{ vars.BACKEND_URL || '<default>' }}.

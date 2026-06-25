@@ -7,23 +7,26 @@ on:
       - ".github/workflows/**"
       - "backend/**"
       - "frontend/**"
-      - "!docs/**"
   pull_request:
     branches: [main, staging]
     paths:
       - ".github/workflows/**"
       - "backend/**"
       - "frontend/**"
-      - "!docs/**"
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least-privilege default token — none of these jobs write to the repo.
+permissions:
+  contents: read
+
 jobs:
   changes:
     name: Detect changed areas
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
@@ -72,6 +75,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'testing' }}
     defaults:
@@ -106,6 +110,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'testing' }}
     defaults:
@@ -146,6 +151,11 @@ jobs:
       - name: Lint
         run: ruff check .
 
+      - name: Migrations — assert a single Alembic head
+        run: |
+          heads="$(alembic heads | grep -c '(head)' || true)"
+          test "$heads" = "1" || { echo "::error::Expected exactly 1 Alembic head, found $heads. Merge migrations into a single chain."; exit 1; }
+
       - name: Tests
         run: python -m pytest -v
 
@@ -154,6 +164,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'testing' }}
     steps:
@@ -204,6 +215,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'testing' }}
     defaults:
@@ -248,6 +260,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'testing' }}
     defaults:

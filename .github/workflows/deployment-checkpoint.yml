@@ -58,10 +58,14 @@ concurrency:
   group: deployment-checkpoint-${{ inputs.target_environment }}-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   checkpoint:
     name: Checkpoint summary
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     environment:
       name: ${{ inputs.target_environment }}
     steps:
@@ -101,6 +105,7 @@ jobs:
     needs: checkpoint
     if: inputs.run_web
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     environment:
       name: ${{ inputs.target_environment }}
     defaults:
@@ -134,6 +139,7 @@ jobs:
     needs: checkpoint
     if: inputs.run_backend
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     environment:
       name: ${{ inputs.target_environment }}
     defaults:
@@ -179,6 +185,7 @@ jobs:
     needs: checkpoint
     if: inputs.run_security
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     environment:
       name: ${{ inputs.target_environment }}
     steps:
@@ -221,6 +228,7 @@ jobs:
     needs: checkpoint
     if: inputs.run_a11y
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     environment:
       name: ${{ inputs.target_environment }}
     defaults:
@@ -254,6 +262,7 @@ jobs:
     needs: checkpoint
     if: inputs.run_responsive
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     environment:
       name: ${{ inputs.target_environment }}
     defaults:
@@ -281,6 +290,7 @@ jobs:
     needs: checkpoint
     if: inputs.run_ios
     runs-on: macos-latest
+    timeout-minutes: 45
     environment:
       name: ${{ inputs.target_environment }}
     defaults:
@@ -322,6 +332,7 @@ jobs:
     needs: checkpoint
     if: inputs.run_android
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     environment:
       name: ${{ inputs.target_environment }}
     defaults:

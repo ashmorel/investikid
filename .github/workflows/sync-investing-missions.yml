@@ -15,6 +15,9 @@ on:
         required: true
         default: "GB US HK"
 
+permissions:
+  contents: read
+
 jobs:
   sync:
     runs-on: ubuntu-latest
