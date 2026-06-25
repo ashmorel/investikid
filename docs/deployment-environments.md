@@ -181,8 +181,8 @@ These need dashboard access and are not in the repo.
   uses tokens/headers so it's free of the web same-site-cookie constraint). After any `npm run build`, verify
   the synced assets bake it: `grep -roh "api.investikid.ai" frontend/ios/App/App/public/assets/*.js | head -1`
   (and the Android `android/app/src/main/assets/public/assets/*.js` equivalent) print `api.investikid.ai`, no `railway.app`.
-- **Current store-ready builds:** iOS `CURRENT_PROJECT_VERSION` = **14** (MARKETING_VERSION 1.0);
-  Android `versionCode` = **2** (versionName 1.0). Bump both for every new upload (build # / versionCode must increase).
+- **Current store-ready builds:** iOS `CURRENT_PROJECT_VERSION` = **17** (MARKETING_VERSION 1.0);
+  Android `versionCode` = **4** (versionName 1.0). Bump both for every new upload (build # / versionCode must increase). The signed Android AAB lands at `frontend/android/app/build/outputs/bundle/release/app-release.aab` (built via `cd frontend/android && ./gradlew :app:bundleRelease`).
 - **iOS:** `cd frontend && npm run build && npx cap sync ios`, then open `ios/App/App.xcodeproj` in Xcode
   (Capacitor 8 = SwiftPM — open the **.xcodeproj**, not a workspace), archive, upload to TestFlight. Signing/certs are yours.
 - **Android:** `npx cap sync android`, then either open `frontend/android` in Android Studio → Generate Signed Bundle (AAB), **or** build it from the terminal (signs automatically, no wizard): `cd frontend/android && ./gradlew :app:bundleRelease`. Output: `app/build/outputs/bundle/release/app-release.aab` → upload to Play internal.
