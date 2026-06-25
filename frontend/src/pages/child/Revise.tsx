@@ -31,7 +31,7 @@ export default function Revise() {
             <li key={m.module_id}>
               <Link
                 to={`/revise/session?module=${m.module_id}`}
-                className="flex items-center gap-3 rounded-2xl border border-brand-100 bg-card p-4 shadow-sm transition-colors hover:bg-brand-50 min-h-[44px]"
+                className="flex items-center gap-3 rounded-2xl border border-brand-200 bg-card p-4 shadow-sm transition-colors hover:bg-brand-50 min-h-[44px]"
               >
                 <span className="text-2xl" aria-hidden="true">{m.icon}</span>
                 <span className="font-semibold">{m.title}</span>

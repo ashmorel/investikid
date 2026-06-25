@@ -115,7 +115,7 @@ export default function ReviseSession() {
       </div>
 
       <div className="space-y-5 rounded-3xl bg-white p-6 shadow-lg shadow-brand-600/10">
-        <p className="text-lg font-extrabold leading-snug text-gray-900">{q.question}</p>
+        <p className="text-lg font-extrabold leading-snug text-ink">{q.question}</p>
 
         <div className="space-y-3" role="radiogroup" aria-label={t('session.answerChoicesLabel')}>
           {q.choices.map((choice, i) => (

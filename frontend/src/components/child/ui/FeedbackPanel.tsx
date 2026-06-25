@@ -30,7 +30,7 @@ export function FeedbackPanel({ correct, explanation, correctAnswer }: Props) {
         <p className={cn('text-lg font-extrabold', correct ? 'text-success-700' : 'text-danger-700')}>{correct ? t('feedback.correct') : t('feedback.notQuite')}</p>
       </div>
       {!correct && correctAnswer && <p className="mt-2 text-sm font-bold text-danger-700">{t('feedback.correctAnswer', { answer: correctAnswer })}</p>}
-      <p className="mt-2 text-sm leading-relaxed text-gray-700">{explanation}</p>
+      <p className="mt-2 text-sm leading-relaxed text-ink">{explanation}</p>
     </motion.div>
   );
 }
