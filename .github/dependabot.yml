@@ -41,11 +41,8 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    # Skip major bumps — they're breaking by nature and are done deliberately,
-    # not via auto-PRs. (Dependabot security updates still come through.)
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+    # Action majors ARE allowed (low-risk, and they clear the Node-20
+    # deprecation warnings). npm/pip majors stay ignored above.
     groups:
       actions:
         patterns: ["*"]
