@@ -30,7 +30,7 @@ export function ChallengeList({ challenges, isPremium = false }: Props) {
         const locked = c.is_premium && !isPremium;
 
         const card = (
-          <div className="rounded-lg border bg-card p-4">
+          <div className="rounded-xl border-brand-200 bg-card p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

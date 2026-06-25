@@ -10,7 +10,7 @@ export function MarketXpBreakdown() {
   if (rows.length === 0) return null;
   const nameFor = (code: string) => markets?.find((m) => m.code === code)?.name ?? code;
   return (
-    <section aria-label={t('stats.byMarket')} className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm">
+    <section aria-label={t('stats.byMarket')} className="rounded-2xl border border-brand-200 bg-card p-4 shadow-sm">
       <h3 className="mb-2 text-sm font-bold text-foreground">{t('stats.byMarket')}</h3>
       <ul className="space-y-1.5">
         {rows.map((r) => (

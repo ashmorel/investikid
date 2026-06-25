@@ -59,7 +59,7 @@ export function BadgeGrid({ allBadges, earnedBadges }: Props) {
             key={badge.id}
             variants={item}
             className={cn(
-              'relative rounded-lg border p-4',
+              'relative rounded-xl border-brand-200 p-4',
               earned ? 'bg-card' : 'bg-muted/50 opacity-60',
             )}
           >
@@ -67,7 +67,7 @@ export function BadgeGrid({ allBadges, earnedBadges }: Props) {
               <motion.div
                 className={cn(
                   'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-                  earned ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+                  earned ? 'bg-brand-100 text-brand-700' : 'bg-muted text-muted-foreground',
                 )}
                 {...(isNewlyEarned
                   ? {

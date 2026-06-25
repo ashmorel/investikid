@@ -150,7 +150,14 @@
     "badgesSection": "Badges",
     "challengesSection": "Weekly Challenges",
     "groupsSection": "Your groups",
-    "leaderboardSection": "Weekly Leaderboard"
+    "leaderboardSection": "Weekly Leaderboard",
+    "xpUnit": "XP",
+    "streakPill": "🔥 {{count}}-day streak",
+    "toNextLevel": "{{xp}} XP to next level",
+    "heroBadges": "🏅 {{count}} badges",
+    "heroChallenges": "🎯 {{count}} challenges",
+    "zoneProgress": "Your progress",
+    "zoneCommunity": "Community"
   },
 
   "xpSummary": {

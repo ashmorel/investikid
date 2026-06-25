@@ -7,7 +7,7 @@ export function GroupLeaderboard({ boards }: { boards: Board[] }) {
   const { t } = useTranslation('child');
   if (boards.length === 0) {
     return (
-      <p className="rounded-2xl border border-brand-100 bg-card p-4 text-sm text-muted-foreground">
+      <p className="rounded-2xl border border-brand-200 bg-card p-4 text-sm text-muted-foreground">
         {GROUP.noGroupPrompt}
       </p>
     );
@@ -18,16 +18,16 @@ export function GroupLeaderboard({ boards }: { boards: Board[] }) {
         <section
           key={b.group_id}
           aria-label={t('groupLeaderboard.ariaLabel', { name: b.group_name })}
-          className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm"
+          className="rounded-2xl border border-brand-200 bg-card p-4 shadow-sm"
         >
-          <h3 className="mb-2 text-sm font-extrabold text-gray-900">{b.group_name}</h3>
+          <h3 className="mb-2 text-sm font-extrabold text-ink">{b.group_name}</h3>
           <ol className="space-y-1">
             {b.entries.map((e, i) => (
               <li
                 key={e.username}
                 className={cn(
                   'flex items-center justify-between rounded-lg px-3 py-1.5 text-sm',
-                  e.is_me ? 'bg-brand-100 font-bold text-brand-800' : 'text-gray-700',
+                  e.is_me ? 'bg-brand-100 font-bold text-brand-800' : 'text-muted-foreground',
                 )}
               >
                 <span>

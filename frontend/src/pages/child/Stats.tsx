@@ -4,7 +4,7 @@ import { useAllBadges } from '@/hooks/useAllBadges';
 import { useBadges } from '@/hooks/useBadges';
 import { useChallenges } from '@/hooks/useChallenges';
 import { useChildSession } from '@/hooks/useChildSession';
-import { XpSummary } from '@/components/child/stats/XpSummary';
+import { StatsHero } from '@/components/child/stats/StatsHero';
 import { BadgeGrid } from '@/components/child/stats/BadgeGrid';
 import { ChallengeList } from '@/components/child/stats/ChallengeList';
 import { LeaderboardCard } from '@/components/child/stats/LeaderboardCard';
@@ -17,6 +17,10 @@ function SectionSkeleton() {
   return <div className="h-32 animate-pulse rounded-2xl bg-muted" />;
 }
 
+const ZONE = 'text-xs font-bold uppercase tracking-wider text-muted-foreground';
+const CARD = 'rounded-2xl border border-brand-200 bg-card p-4 shadow-sm sm:p-5';
+const CARD_TITLE = 'mb-3 text-sm font-bold text-ink';
+
 export default function Stats() {
   const { t } = useTranslation('child');
   const progress = useProgress();
@@ -27,56 +31,65 @@ export default function Stats() {
   const groupBoards = useGroupLeaderboard();
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-4 sm:space-y-8 sm:py-6">
-      <h1 className="text-2xl font-bold">{t('stats.pageTitle')}</h1>
+    <div className="mx-auto max-w-3xl space-y-6 px-4 py-4 sm:py-6">
+      <h1 className="text-2xl font-extrabold text-ink">{t('stats.pageTitle')}</h1>
 
-      {/* XP Summary */}
+      {/* XP hero */}
       {progress.isLoading ? (
         <SectionSkeleton />
       ) : progress.data ? (
-        <XpSummary
+        <StatsHero
           xp={progress.data.xp}
           streakCount={progress.data.streak_count}
           lastActivityDate={progress.data.last_activity_date}
+          badgeCount={earnedBadges.data?.length ?? 0}
+          challengeCount={challenges.data?.length ?? 0}
         />
       ) : null}
-
       {!progress.isLoading && progress.data ? (
-        <p className="text-xs text-muted-foreground">{t('stats.streakFreeze')}</p>
+        <p className="-mt-3 text-xs text-muted-foreground">{t('stats.streakFreeze')}</p>
       ) : null}
 
-      {/* Per-market XP breakdown */}
-      <MarketXpBreakdown />
+      {/* Zone: Your progress (personal) */}
+      <section className="space-y-3" aria-label={t('stats.zoneProgress')}>
+        <h2 className={ZONE}>{t('stats.zoneProgress')}</h2>
 
-      {/* Badges */}
-      <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
-        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">{t('stats.badgesSection')}</h2>
-        {allBadges.isLoading || earnedBadges.isLoading ? (
-          <SectionSkeleton />
-        ) : allBadges.data && earnedBadges.data ? (
-          <BadgeGrid allBadges={allBadges.data} earnedBadges={earnedBadges.data} />
-        ) : null}
+        <MarketXpBreakdown />
+
+        <div className={CARD}>
+          <h3 className={CARD_TITLE}>{t('stats.badgesSection')}</h3>
+          {allBadges.isLoading || earnedBadges.isLoading ? (
+            <SectionSkeleton />
+          ) : allBadges.data && earnedBadges.data ? (
+            <BadgeGrid allBadges={allBadges.data} earnedBadges={earnedBadges.data} />
+          ) : null}
+        </div>
+
+        <div className={CARD}>
+          <h3 className={CARD_TITLE}>{t('stats.challengesSection')}</h3>
+          {challenges.isLoading ? (
+            <SectionSkeleton />
+          ) : challenges.data ? (
+            <ChallengeList challenges={challenges.data} isPremium={session.data?.is_premium ?? false} />
+          ) : null}
+        </div>
       </section>
 
-      {/* Weekly Challenges */}
-      <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
-        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">{t('stats.challengesSection')}</h2>
-        {challenges.isLoading ? (
-          <SectionSkeleton />
-        ) : challenges.data ? (
-          <ChallengeList challenges={challenges.data} isPremium={session.data?.is_premium ?? false} />
-        ) : null}
-      </section>
+      {/* Zone: Community (social) */}
+      <section className="space-y-3" aria-label={t('stats.zoneCommunity')}>
+        <h2 className={ZONE}>{t('stats.zoneCommunity')}</h2>
 
-      <section className="mt-5" aria-label={t('stats.groupsSection')}>
-        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">{t('stats.groupsSection')}</h2>
-        <GroupLeaderboard boards={groupBoards.data ?? []} />
-      <GroupGoals />
-      </section>
+        <div className={CARD}>
+          <LeaderboardCard />
+        </div>
 
-      {/* Leaderboard */}
-      <section className="rounded-2xl border border-brand-100 bg-card p-4 shadow-sm sm:p-5">
-        <LeaderboardCard />
+        <div className={CARD}>
+          <h3 className={CARD_TITLE}>{t('stats.groupsSection')}</h3>
+          <div className="space-y-3">
+            <GroupLeaderboard boards={groupBoards.data ?? []} />
+            <GroupGoals />
+          </div>
+        </div>
       </section>
     </div>
   );

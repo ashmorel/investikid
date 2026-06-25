@@ -15,7 +15,7 @@ export function LeaderboardCard() {
 
   return (
     <section aria-labelledby="lb-heading">
-      <h2 id="lb-heading" className="mb-3 text-sm font-extrabold uppercase tracking-wider text-gray-700">
+      <h2 id="lb-heading" className="mb-3 text-sm font-extrabold uppercase tracking-wider text-muted-foreground">
         {t('leaderboard.title')}
       </h2>
       <div role="radiogroup" aria-label={t('leaderboard.scopeLabel')} className="mb-2 flex gap-1 rounded-2xl border border-brand-200 bg-brand-50 p-1">
@@ -37,7 +37,7 @@ export function LeaderboardCard() {
         ))}
       </div>
       {isLoading && <p className="py-6 text-center text-sm text-muted-foreground">{t('leaderboard.loading')}</p>}
-      {isError && <p role="alert" className="py-6 text-center text-sm text-red-700">{t('leaderboard.error')}</p>}
+      {isError && <p role="alert" className="py-6 text-center text-sm text-danger-700">{t('leaderboard.error')}</p>}
       {data && (
         data.length === 0
           ? <p className="py-8 text-center text-muted-foreground">{scope === 'friends' ? t('leaderboard.friendsEmpty') : t('leaderboard.empty')}</p>

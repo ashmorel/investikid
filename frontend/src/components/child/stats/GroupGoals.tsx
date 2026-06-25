@@ -20,8 +20,8 @@ export function GroupGoals() {
   return (
     <section aria-label={t('groupGoals.ariaLabel')} className="mt-4 space-y-3">
       {blocks.map((block) => (
-        <div key={block.group_id} className="rounded-2xl border border-brand-200 bg-white p-4">
-          <h3 className="text-sm font-extrabold text-gray-900">
+        <div key={block.group_id} className="rounded-2xl border border-brand-200 bg-card p-4">
+          <h3 className="text-sm font-extrabold text-ink">
             {emoji && <span aria-hidden="true">🎯 </span>}{block.group_name} {t('groupGoals.groupGoalsSuffix')}
           </h3>
           <ul className="mt-2 space-y-3">
@@ -30,8 +30,8 @@ export function GroupGoals() {
               return (
                 <li key={ch.id}>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-bold text-gray-800">{ch.title}</p>
-                    <p className="text-xs font-semibold text-gray-600">
+                    <p className="text-sm font-bold text-ink">{ch.title}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">
                       {ch.completed
                         ? emoji ? t('groupGoals.completed') : t('groupGoals.completedSimple')
                         : `${ch.group_progress} / ${ch.target_value}`}
@@ -50,7 +50,7 @@ export function GroupGoals() {
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <p className="mt-0.5 text-[11px] text-gray-500">{ch.description}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{ch.description}</p>
                 </li>
               );
             })}

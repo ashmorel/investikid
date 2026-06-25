@@ -1,54 +1,61 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { XpSummary } from '@/components/child/stats/XpSummary';
+import { StatsHero } from '@/components/child/stats/StatsHero';
 
-function renderSummary(overrides: Partial<Parameters<typeof XpSummary>[0]> = {}) {
+function renderHero(overrides: Partial<Parameters<typeof StatsHero>[0]> = {}) {
   const defaults = {
     xp: 250,
     streakCount: 5,
     lastActivityDate: '2026-05-08',
+    badgeCount: 4,
+    challengeCount: 2,
     today: new Date('2026-05-08T12:00:00Z'),
   };
-  return render(<XpSummary {...defaults} {...overrides} />);
+  return render(<StatsHero {...defaults} {...overrides} />);
 }
 
-describe('XpSummary', () => {
+describe('StatsHero', () => {
   it('renders correct level from XP (250 XP = Level 3)', () => {
-    renderSummary();
+    renderHero();
     expect(screen.getByText(/Level 3/)).toBeInTheDocument();
   });
 
-  it('renders total XP', () => {
-    renderSummary();
+  it('renders total XP as its own node', () => {
+    renderHero();
     expect(screen.getByText('250')).toBeInTheDocument();
   });
 
-  it('renders progress bar with correct width (250 % 100 = 50%)', () => {
-    renderSummary();
+  it('renders the level-progress bar (250 % 100 = 50%)', () => {
+    renderHero();
     const bar = screen.getByRole('progressbar');
     expect(bar).toHaveAttribute('aria-valuenow', '50');
     expect(bar).toHaveAttribute('aria-valuemax', '100');
   });
 
-  it('renders streak count', () => {
-    renderSummary();
+  it('renders the streak count', () => {
+    renderHero();
     expect(screen.getByText(/5-day/)).toBeInTheDocument();
   });
 
   it('shows active streak state when activity is recent', () => {
-    renderSummary({ lastActivityDate: '2026-05-08', today: new Date('2026-05-08T12:00:00Z') });
+    renderHero({ lastActivityDate: '2026-05-08', today: new Date('2026-05-08T12:00:00Z') });
     expect(screen.getByLabelText(/streak active/i)).toBeInTheDocument();
   });
 
   it('shows inactive streak state when activity is old', () => {
-    renderSummary({ lastActivityDate: '2026-05-01', today: new Date('2026-05-08T12:00:00Z') });
+    renderHero({ lastActivityDate: '2026-05-01', today: new Date('2026-05-08T12:00:00Z') });
     expect(screen.getByLabelText(/streak inactive/i)).toBeInTheDocument();
   });
 
+  it('renders badge and challenge chips from the counts', () => {
+    renderHero();
+    expect(screen.getByText(/4 badges/)).toBeInTheDocument();
+    expect(screen.getByText(/2 challenges/)).toBeInTheDocument();
+  });
+
   it('handles 0 XP (Level 1, 0% progress)', () => {
-    renderSummary({ xp: 0 });
+    renderHero({ xp: 0 });
     expect(screen.getByText(/Level 1/)).toBeInTheDocument();
-    const bar = screen.getByRole('progressbar');
-    expect(bar).toHaveAttribute('aria-valuenow', '0');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
   });
 });
