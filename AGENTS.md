@@ -1,6 +1,6 @@
 # InvestiKid
 
-A children's finance-education app (web + iOS + Android), **in beta testing** — iOS build **1.0 (17)** and Android **versionCode 4** built 2026-06-25 (carrying the completed Figma UI-review programme; pending the TestFlight archive + Play upload). The prior 1.0 (16) / versionCode 3 are on TestFlight / Play Internal testing (the first Android release). This is the active project in this repository.
+A children's finance-education app (web + iOS + Android), **in beta testing** — iOS build **1.0 (17)** (TestFlight) and Android **versionCode 4** (Play Internal testing) built + **uploaded 2026-06-25**, carrying the completed Figma UI-review programme. (Builds 16/3 were the first TestFlight/Play Internal release.) This is the active project in this repository.
 
 ## ▶ Current work — resume here
 **[`docs/MASTER-BACKLOG.md`](docs/MASTER-BACKLOG.md) is the single go-forward tracker** (strategic detail in [`docs/2026-06-12-market-leader-roadmap.md`](docs/2026-06-12-market-leader-roadmap.md); the rebrand-era archive is `docs/superpowers/PROGRESS.md`). Check the backlog first — that's where outstanding work and what's-live both live.

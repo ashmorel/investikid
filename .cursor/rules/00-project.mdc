@@ -5,7 +5,7 @@ alwaysApply: true
 
 # InvestiKid
 
-A children's finance-education app (web + iOS + Android), in beta testing — iOS build 1.0 (17) and Android versionCode 4 built 2026-06-25 (carrying the completed Figma UI-review programme; prior 16/3 on TestFlight / Play Internal testing, the first Android release). The Figma UI-review programme is COMPLETE across all six bottom-nav surfaces + Admin/Parent/Shop/Arcade.
+A children's finance-education app (web + iOS + Android), in beta testing — iOS build 1.0 (17) (TestFlight) and Android versionCode 4 (Play Internal testing) built + uploaded 2026-06-25, carrying the completed Figma UI-review programme (16/3 were the first release). The Figma UI-review programme is COMPLETE across all six bottom-nav surfaces + Admin/Parent/Shop/Arcade.
 
 ## Layout
 - `backend/` — FastAPI + SQLAlchemy 2.0 (async) + Alembic + Postgres. Deployed on **Railway**.
