@@ -42,7 +42,7 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
               <TrendingUp className="h-4 w-4" />
               <span className="text-xs font-semibold uppercase tracking-wide">{t('marketMovers.topGainers')}</span>
             </div>
-            <div className="-mx-1 divide-y divide-gray-100">
+            <div className="-mx-1 divide-y divide-brand-100">
               {data.winners.map((m, i) => <MoverRow key={`${m.exchange}-${m.ticker}`} mover={m} rank={i + 1} />)}
             </div>
           </div>
@@ -53,7 +53,7 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
               <TrendingDown className="h-4 w-4" />
               <span className="text-xs font-semibold uppercase tracking-wide">{t('marketMovers.topLosers')}</span>
             </div>
-            <div className="-mx-1 divide-y divide-gray-100">
+            <div className="-mx-1 divide-y divide-brand-100">
               {data.losers.map((m, i) => <MoverRow key={`${m.exchange}-${m.ticker}`} mover={m} rank={i + 1} />)}
             </div>
           </div>

@@ -49,10 +49,10 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
 
   if (holdings.length === 0) {
     return (
-      <div className="rounded-2xl border border-brand-100 shadow-sm bg-white p-8 text-center space-y-3">
+      <div className="rounded-2xl border border-brand-100 shadow-sm bg-card p-8 text-center space-y-3">
         <span className="text-5xl">📈</span>
-        <p className="font-bold text-gray-900">{t('holdings.noStocksTitle')}</p>
-        <p className="text-sm text-gray-500">{t('holdings.noStocksBody')}</p>
+        <p className="font-bold text-ink">{t('holdings.noStocksTitle')}</p>
+        <p className="text-sm text-muted-foreground">{t('holdings.noStocksBody')}</p>
         <Link
           to="/simulator/market"
           className="inline-block rounded-xl bg-brand-gradient px-5 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity"
@@ -74,7 +74,7 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
             <Link
               key={`${h.exchange}-${h.ticker}`}
               to={`/simulator/stock/${h.exchange}/${h.ticker}`}
-              className="block rounded-xl border border-brand-100 shadow-sm bg-white p-3 transition-shadow hover:shadow-md"
+              className="block rounded-xl border border-brand-100 shadow-sm bg-card p-3 transition-shadow hover:shadow-md"
             >
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
@@ -100,7 +100,7 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
         {showTotals && (
           <div className="rounded-xl border border-brand-200 bg-brand-50 p-3" data-testid="holdings-totals">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-gray-900">{t('holdings.total')}</span>
+              <span className="font-bold text-ink">{t('holdings.total')}</span>
               <TotalPl value={totalUnrealizedPl!} currencyCode={currencyCode!} />
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -170,7 +170,7 @@ export function HoldingsTable({ holdings, holdingsValue, totalUnrealizedPl, curr
         {showTotals && (
           <tfoot className="border-t bg-brand-50" data-testid="holdings-totals">
             <tr>
-              <td className="px-3 py-2 font-bold text-gray-900" colSpan={4}>{t('holdings.total')}</td>
+              <td className="px-3 py-2 font-bold text-ink" colSpan={4}>{t('holdings.total')}</td>
               <td className="px-3 py-2 font-bold">{formatCurrency(holdingsValue!, currencyCode!)}</td>
               <td className="px-3 py-2"><TotalPl value={totalUnrealizedPl!} currencyCode={currencyCode!} /></td>
             </tr>

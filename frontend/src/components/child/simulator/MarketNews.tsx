@@ -59,8 +59,8 @@ function AiSummary() {
 
   if (isLoading) {
     return (
-      <div className="mb-4 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-brand-50 p-4">
-        <div className="flex items-center gap-2 text-purple-700">
+      <div className="mb-4 rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-brand-50 p-4">
+        <div className="flex items-center gap-2 text-brand-700">
           <Sparkles className="h-4 w-4 animate-pulse" />
           <span className="text-sm font-medium">{t('marketNews.aiReading')}</span>
         </div>
@@ -71,16 +71,16 @@ function AiSummary() {
   if (!data || !data.summary) return null;
 
   return (
-    <div className="mb-4 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-brand-50 p-4">
+    <div className="mb-4 rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-brand-50 p-4">
       <div className="mb-2 flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-purple-600" />
-        <span className="text-xs font-semibold uppercase tracking-wide text-purple-700">{t('marketNews.aiSummaryLabel')}</span>
+        <Sparkles className="h-4 w-4 text-brand-600" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-brand-700">{t('marketNews.aiSummaryLabel')}</span>
       </div>
-      <p className="text-sm leading-relaxed text-gray-700">{data.summary}</p>
+      <p className="text-sm leading-relaxed text-muted-foreground">{data.summary}</p>
       {data.tickers_mentioned.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
           {data.tickers_mentioned.map((ticker) => (
-            <span key={ticker} className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+            <span key={ticker} className="rounded bg-brand-100 px-1.5 py-0.5 text-xs font-medium text-brand-700">
               {ticker}
             </span>
           ))}
@@ -112,7 +112,7 @@ export function MarketNews() {
   return (
     <SectionCard title={t('marketNews.sectionTitle')} icon={Newspaper} collapsible defaultOpen={false}>
       <AiSummary />
-      <div className="-mx-1 divide-y divide-gray-100">
+      <div className="-mx-1 divide-y divide-brand-100">
         {data.map((item, i) => (
           <NewsCard key={`${item.related_ticker}-${i}`} item={item} />
         ))}

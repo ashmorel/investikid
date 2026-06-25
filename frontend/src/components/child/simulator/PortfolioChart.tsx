@@ -37,12 +37,12 @@ export function PortfolioChart({ history, variant = 'card' }: Props) {
 
   return (
     <div
-      className={onGrad ? '' : 'mt-4 rounded-2xl border-2 border-brand-200 bg-white p-4'}
+      className={onGrad ? '' : 'mt-4 rounded-2xl border-2 border-brand-200 bg-card p-4'}
       role="img"
       aria-label={summary}
     >
       {!onGrad && (
-        <h3 className="mb-3 text-sm font-semibold text-gray-700">{t('portfolioChart.heading')}</h3>
+        <h3 className="mb-3 text-sm font-semibold text-muted-foreground">{t('portfolioChart.heading')}</h3>
       )}
       <ResponsiveContainer width="100%" height={200}>
         <AreaChart data={history}>

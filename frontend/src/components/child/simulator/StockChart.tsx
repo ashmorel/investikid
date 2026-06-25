@@ -65,12 +65,12 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
 
   return (
     <div
-      className="rounded-2xl border-2 border-brand-200 bg-white p-4"
+      className="rounded-2xl border-2 border-brand-200 bg-card p-4"
       role="img"
       aria-label={chartSummary}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">{t('stockChart.priceHistory')}</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">{t('stockChart.priceHistory')}</h3>
         {hasData && (
           <span className={`text-sm font-semibold ${isPositive ? 'text-success-600' : 'text-danger-600'}`}>
             {isPositive ? '+' : ''}{change.toFixed(2)} ({isPositive ? '+' : ''}{changePct.toFixed(1)}%)
@@ -86,7 +86,7 @@ export function StockChart({ exchange, ticker, currency, onPeriodChange }: Props
             className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors min-h-[44px] min-w-[44px] ${
               period === p.key
                 ? 'bg-brand-600 text-white'
-                : 'bg-brand-50 text-gray-600 hover:bg-brand-100'
+                : 'bg-brand-50 text-muted-foreground hover:bg-brand-100'
             }`}
           >
             {p.label}

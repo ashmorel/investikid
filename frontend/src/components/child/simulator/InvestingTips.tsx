@@ -191,11 +191,11 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
                   </span>
                 )}
               </div>
-              <p className="mb-2 text-xs leading-relaxed text-gray-700">{tip.description}</p>
+              <p className="mb-2 text-xs leading-relaxed text-muted-foreground">{tip.description}</p>
               <div className="overflow-hidden rounded-md">
                 <MiniChart exchange={chartExchange} ticker={chartTicker} />
               </div>
-              <p className="mt-1 text-center text-[10px] text-gray-400">
+              <p className="mt-1 text-center text-[10px] text-muted-foreground">
                 {t('investingTips.chartLabel', { ticker: chartTicker })}
               </p>
             </div>
@@ -215,7 +215,7 @@ export function InvestingTips({ contextTicker, contextExchange }: Props) {
           >
             <span
               className={`inline-block h-1.5 w-1.5 rounded-full ${
-                i === activeIndex ? 'bg-brand-500' : 'bg-gray-200'
+                i === activeIndex ? 'bg-brand-500' : 'bg-brand-200'
               }`}
             />
           </button>

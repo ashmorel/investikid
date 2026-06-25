@@ -59,20 +59,20 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
         <div className="flex items-center justify-between border-b border-brand-100 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">💡</span>
-            <span className="font-bold text-gray-900">{t('chartCoach.name')}</span>
-            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">{t('chartCoach.chartLabel', { ticker })}</span>
+            <span className="font-bold text-ink">{t('chartCoach.name')}</span>
+            <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs text-brand-700">{t('chartCoach.chartLabel', { ticker })}</span>
           </div>
           <div className="flex items-center gap-3">
             {remaining !== null && (
-              <span className="text-xs text-gray-400">{t('chartCoach.messagesLeft', { count: remaining })}</span>
+              <span className="text-xs text-muted-foreground">{t('chartCoach.messagesLeft', { count: remaining })}</span>
             )}
-            <button onClick={onClose} className="text-lg text-gray-400 hover:text-gray-600">{t('chartCoach.closeButton')}</button>
+            <button onClick={onClose} className="text-lg text-muted-foreground hover:text-muted-foreground">{t('chartCoach.closeButton')}</button>
           </div>
         </div>
 
         <div className="max-h-64 space-y-3 overflow-y-auto p-4">
           {messages.length === 0 && (
-            <p className="text-center text-sm text-gray-400">
+            <p className="text-center text-sm text-muted-foreground">
               {t('chartCoach.emptyPrompt', { ticker })}
             </p>
           )}
@@ -82,7 +82,7 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
                 className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
                   m.role === 'user'
                     ? 'bg-brand-gradient text-white'
-                    : 'bg-brand-50 text-gray-800'
+                    : 'bg-brand-50 text-ink'
                 }`}
               >
                 {m.content}
@@ -91,7 +91,7 @@ export function ChartCoachPanel({ ticker, exchange, period, onClose }: Props) {
           ))}
           {sendMessage.isPending && (
             <div className="flex justify-start">
-              <div className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-gray-400">
+              <div className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-muted-foreground">
                 {t('chartCoach.thinking')}
               </div>
             </div>

@@ -19,10 +19,10 @@ import { useOnline } from '@/hooks/useOnline';
 const EXCHANGE_BADGE_COLORS: Record<string, string> = {
   NASDAQ: 'bg-info-100 text-info-600',
   NYSE: 'bg-brand-100 text-brand-700',
-  LSE: 'bg-purple-100 text-purple-800',
+  LSE: 'bg-brand-100 text-brand-700',
   HKEX: 'bg-brand-200 text-brand-800',
-  TSE: 'bg-pink-100 text-pink-800',
-  XETRA: 'bg-teal-100 text-teal-800',
+  TSE: 'bg-brand-100 text-brand-700',
+  XETRA: 'bg-brand-100 text-brand-700',
   TSX: 'bg-success-100 text-success-700',
   ASX: 'bg-success-100 text-success-700',
 };
@@ -74,7 +74,7 @@ function BrowseGroup({
   const Heading = headingLevel === 3 ? 'h3' : 'h2';
   return (
     <section>
-      <Heading className="mb-2 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wider text-gray-700">
+      <Heading className="mb-2 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wider text-muted-foreground">
         {title}
         <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
           {stocks.length}

@@ -39,17 +39,17 @@ export function InvestmentTimeMachine({ exchange, ticker }: Props) {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border-2 border-purple-200 bg-white p-4">
+      <div className="rounded-2xl border-2 border-brand-200 bg-card p-4">
         <div className="mb-3 flex items-center gap-2">
-          <div className="h-5 w-5 animate-pulse rounded bg-purple-200" />
-          <div className="h-4 w-40 animate-pulse rounded bg-purple-100" />
+          <div className="h-5 w-5 animate-pulse rounded bg-brand-200" />
+          <div className="h-4 w-40 animate-pulse rounded bg-brand-100" />
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="rounded-xl bg-purple-50 p-3 text-center">
-              <div className="mx-auto h-3 w-16 animate-pulse rounded bg-purple-200" />
-              <div className="mx-auto my-2 h-6 w-20 animate-pulse rounded bg-purple-200" />
-              <div className="mx-auto h-3 w-10 animate-pulse rounded bg-purple-100" />
+            <div key={i} className="rounded-xl bg-brand-50 p-3 text-center">
+              <div className="mx-auto h-3 w-16 animate-pulse rounded bg-brand-200" />
+              <div className="mx-auto my-2 h-6 w-20 animate-pulse rounded bg-brand-200" />
+              <div className="mx-auto h-3 w-10 animate-pulse rounded bg-brand-100" />
             </div>
           ))}
         </div>
@@ -60,13 +60,13 @@ export function InvestmentTimeMachine({ exchange, ticker }: Props) {
   if (!data || data.periods.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border-2 border-purple-200 bg-white p-4">
+    <div className="rounded-2xl border-2 border-brand-200 bg-card p-4">
       <div className="mb-3 flex items-center gap-2">
-        <Clock className="h-5 w-5 text-purple-600" />
-        <h3 className="text-base font-semibold text-gray-800">{t('timeMachine.heading')}</h3>
+        <Clock className="h-5 w-5 text-brand-600" />
+        <h3 className="text-base font-semibold text-ink">{t('timeMachine.heading')}</h3>
       </div>
 
-      <p className="mb-3 text-sm text-gray-600">
+      <p className="mb-3 text-sm text-muted-foreground">
         {t('timeMachine.hypothetical', { ticker })}
       </p>
 
@@ -74,19 +74,19 @@ export function InvestmentTimeMachine({ exchange, ticker }: Props) {
         {data.periods.map((p) => (
           <div
             key={p.years_ago}
-            className="rounded-xl bg-purple-50 p-3 text-center"
+            className="rounded-xl bg-brand-50 p-3 text-center"
           >
-            <div className="text-xs font-semibold text-purple-700">
+            <div className="text-xs font-semibold text-brand-700">
               {t('timeMachine.yearsAgo', { n: p.years_ago })}
             </div>
             <div className="my-1 text-xl font-bold text-success-600">
               {formatValue(p.current_value, p.currency)}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-muted-foreground">
               +{p.return_pct.toFixed(0)}%
             </div>
             {p.usd_equivalent && (
-              <div className="mt-1 text-xs text-gray-400">
+              <div className="mt-1 text-xs text-muted-foreground">
                 {t('timeMachine.usdEquivalent', { local: formatValue(p.current_value, p.currency), usd: parseFloat(p.usd_equivalent).toLocaleString(undefined, { maximumFractionDigits: 0 }) })}
               </div>
             )}

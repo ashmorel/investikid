@@ -28,7 +28,7 @@ export function SectionCard({
   const inner = (
     <>
       {Icon && <Icon className="h-5 w-5 flex-shrink-0 text-brand-700" aria-hidden="true" />}
-      <span className="text-lg font-semibold text-gray-800">{title}</span>
+      <span className="text-lg font-semibold text-ink">{title}</span>
       {typeof count === 'number' && (
         <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
           {count}
@@ -38,7 +38,7 @@ export function SectionCard({
   );
 
   return (
-    <div className="rounded-2xl border-2 border-brand-200 bg-white p-4">
+    <div className="rounded-2xl border-2 border-brand-200 bg-card p-4">
       <Heading className="m-0">
         {collapsible ? (
           <button

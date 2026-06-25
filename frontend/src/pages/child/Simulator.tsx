@@ -87,7 +87,7 @@ export default function Simulator() {
             onClick={() => setActiveTab('holdings')}
             className={cn(
               'flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-colors',
-              activeTab === 'holdings' ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+              activeTab === 'holdings' ? 'bg-white text-brand-700 shadow-sm' : 'text-muted-foreground hover:text-muted-foreground',
             )}
           >
             {t('portfolio.holdingsTab')}
@@ -98,7 +98,7 @@ export default function Simulator() {
             onClick={() => setActiveTab('history')}
             className={cn(
               'flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-colors',
-              activeTab === 'history' ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+              activeTab === 'history' ? 'bg-white text-brand-700 shadow-sm' : 'text-muted-foreground hover:text-muted-foreground',
             )}
           >
             {t('portfolio.tradeHistoryTab')}
