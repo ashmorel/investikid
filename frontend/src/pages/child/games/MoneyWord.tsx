@@ -288,7 +288,7 @@ export default function MoneyWord() {
 
       {/* On-screen keyboard */}
       {!isComplete && (
-        <div className="space-y-1" role="group" aria-label={t('moneyword.keyboardLabel')}>
+        <div className="mx-auto w-full max-w-xs space-y-1" role="group" aria-label={t('moneyword.keyboardLabel')}>
           {KEYBOARD_ROWS.map((row, ri) => (
             <div key={ri} className="flex justify-center gap-1">
               {row.map((letter) => (
@@ -298,7 +298,7 @@ export default function MoneyWord() {
                   aria-label={letter}
                   onClick={() => pressLetter(letter)}
                   disabled={submitting}
-                  className="min-h-[44px] min-w-[44px] rounded-lg border border-line bg-card text-sm font-bold text-ink shadow-sm transition active:scale-95 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
+                  className="min-h-[44px] w-[calc((100%_-_2.25rem)/10)] rounded-lg border border-line bg-card text-sm font-bold text-ink shadow-sm transition active:scale-95 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
                 >
                   {letter}
                 </button>
