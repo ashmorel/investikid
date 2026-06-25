@@ -1,0 +1,36 @@
+# Dependabot keeps dependencies + GitHub Actions current with weekly PRs.
+# Minor/patch updates are grouped to cut PR noise; majors come individually.
+version: 2
+updates:
+  # Backend — Python (FastAPI / SQLAlchemy / etc.)
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      backend-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # Frontend — npm (React / Vite / Capacitor / etc.)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      frontend-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # CI/CD — GitHub Actions (keeps action versions current + SHA-pinnable)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns: ["*"]

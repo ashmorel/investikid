@@ -1,17 +1,34 @@
-# Invest-Ed Parent Frontend
+# InvestiKid — frontend
 
-React + Vite SPA for parent-facing flows (consent, magic-link login, dashboard).
+The React 18 + Vite + TypeScript web app (also wrapped as the iOS/Android apps
+via Capacitor). See the [root README](../README.md) for the project overview and
+[CONTRIBUTING](../CONTRIBUTING.md) for the full workflow.
 
-## Dev
+## Develop (Node 20)
 
 ```bash
-cd invest-ed/backend && source .venv/bin/activate && uvicorn app.main:app --port 8000 &
-cd invest-ed/frontend && npm install && npm run dev
+npm ci
+npm run dev          # http://127.0.0.1:5173
 ```
 
-Open http://localhost:5173.
+## Checks
 
-## Test
+```bash
+npm run build        # tsc -b && vite build
+npm test             # vitest
+npm run lint         # eslint
+npm run test:e2e     # playwright
+```
 
-- `npm test` — Vitest unit + component
-- `npm run test:e2e` — Playwright (requires backend on :8000)
+## Native (Capacitor)
+
+After a web build, sync the native projects (under `ios/` and `android/`):
+
+```bash
+npm run build && npx cap sync ios       # open in Xcode
+npm run build && npx cap sync android   # open in Android Studio
+```
+
+The native bundle bakes the API base from `frontend/.env.local`
+(`VITE_API_BASE_URL=https://api.investikid.ai`). See
+[`docs/deployment-environments.md`](../docs/deployment-environments.md).
