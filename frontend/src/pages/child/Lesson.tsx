@@ -21,6 +21,7 @@ import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 import { useActiveMissions } from '@/hooks/useActiveMissions';
 import { useMarkets } from '@/hooks/useMarkets';
 import { formatRewardToast } from '@/lib/marketReward';
+import { type CompleteLessonVars } from '@/lib/offlineMutations';
 
 export default function Lesson() {
   const { moduleId, levelId, lessonId } = useParams<{ moduleId: string; levelId: string; lessonId: string }>();
@@ -61,13 +62,12 @@ export default function Lesson() {
     enabled: !!moduleId, retry: false, staleTime: 60_000,
   });
 
-  const complete = useMutation<LessonCompletionResult | null, Error, number | null>({
-    mutationFn: (score) => contentApi.completeLesson(lessonId!, score),
+  const complete = useMutation<LessonCompletionResult | null, Error, CompleteLessonVars>({
+    mutationKey: ['completeLesson'],
+    mutationFn: ({ lessonId: lid, score }) => contentApi.completeLesson(lid, score),
     onSuccess: (result) => {
-      qc.invalidateQueries({ queryKey: ['progress'] });
-      qc.invalidateQueries({ queryKey: ['level-lessons', levelId] });
-      qc.invalidateQueries({ queryKey: ['module-levels', moduleId] });
-      // Celebrate a market-completion reward, but only the first time through.
+      // The default's onSuccess already invalidates progress / module-levels /
+      // level-lessons / lesson. Here: presentational rewards only.
       if (result && !result.already_completed) {
         const marketName = (markets ?? []).find((m) => m.is_selected)?.name ?? '';
         const msg = formatRewardToast(tMarkets, result.reward, marketName);
@@ -195,7 +195,7 @@ export default function Lesson() {
   const onComplete = (score: number | null) => {
     if (completionInFlight.current) return;
     completionInFlight.current = true;
-    complete.mutate(score);
+    complete.mutate({ lessonId: lessonId!, levelId: levelId ?? null, score });
   };
 
   const currentModule = (modulesQ2.data ?? []).find((m) => m.id === moduleId);
