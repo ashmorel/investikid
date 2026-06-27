@@ -7,11 +7,12 @@ vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ prefetchQuery
 vi.mock('@/hooks/useOnline', () => ({ useOnline: vi.fn() }));
 vi.mock('@/api/content', () => ({ contentApi: { getLesson: vi.fn(async () => ({})) } }));
 
+import type { LessonSummary } from '@/api/content';
 import { useOnline } from '@/hooks/useOnline';
 import { usePrefetchLevelLessons } from '../usePrefetchLevelLessons';
 const mockOnline = vi.mocked(useOnline);
 
-const lessons = [{ id: 'a' }, { id: 'b' }] as any;
+const lessons = [{ id: 'a' }, { id: 'b' }] as unknown as LessonSummary[];
 
 beforeEach(() => {
   prefetchQuery.mockClear();
