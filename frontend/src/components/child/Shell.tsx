@@ -1,6 +1,5 @@
 import { useRef, useCallback, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useChildSession } from '@/hooks/useChildSession';
@@ -45,7 +44,6 @@ export function Shell() {
   const session = useChildSession();
   useChildAuthGuard(session.error);
   const location = useLocation();
-  const prefersReducedMotion = useReducedMotion();
   useRouteFocus();
   const { t } = useTranslation('child');
   const { data: recsData } = useRecommendations();
@@ -88,23 +86,17 @@ export function Shell() {
         <VerifyEmailBanner profile={session.data} />
         <div ref={mainRef}>
           <PullToRefreshIndicator {...indicatorProps} />
-          <AnimatePresence mode="wait">
-            <motion.main
-              key={location.pathname}
-              id="main"
-              tabIndex={-1}
-              className="pb-20 md:pb-0 outline-none"
-              style={{ paddingLeft: 'var(--safe-left)', paddingRight: 'var(--safe-right)' }}
-              initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-            >
-              <RouteErrorBoundary>
-                <Outlet />
-              </RouteErrorBoundary>
-            </motion.main>
-          </AnimatePresence>
+          <main
+            key={location.pathname}
+            id="main"
+            tabIndex={-1}
+            className="pb-20 md:pb-0 outline-none animate-route-in"
+            style={{ paddingLeft: 'var(--safe-left)', paddingRight: 'var(--safe-right)' }}
+          >
+            <RouteErrorBoundary>
+              <Outlet />
+            </RouteErrorBoundary>
+          </main>
         </div>
         <BottomTabBar />
         {location.pathname !== '/coach' && (
