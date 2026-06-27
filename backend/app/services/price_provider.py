@@ -64,6 +64,9 @@ class PriceProvider(Protocol):
     def search(self, query: str) -> list[PriceQuote]: ...
     def is_free_tier(self, ticker: str, exchange: str) -> bool: ...
     def get_market_movers(self, region: str) -> dict[str, dict[str, list[MarketMover]]]: ...
+    def get_news(self, holdings: list[tuple[str, str]]) -> list[StockNewsItem]: ...
+    def get_history(self, ticker: str, exchange: str, period: str = "1mo") -> list[PricePoint]: ...
+    def warm_region(self, region: str) -> dict: ...
 
 
 # Yahoo exchange suffix → our display exchange name
@@ -147,6 +150,7 @@ REGION_EXCHANGES: dict[str, list[str]] = {
 _CACHE_TTL = 300  # 5 minutes
 _SEARCH_CACHE_TTL = 120  # 2 minutes
 _HISTORY_CACHE_TTL = 600  # 10 minutes
+_WARM_TTL = 1200  # 20 min — cron-warm entries outlive the ~10-min warm cadence
 
 # Bounded pool for per-ticker quote/news fan-outs (provider stays sync).
 _FANOUT = concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="quotes")
@@ -164,6 +168,46 @@ def _quote_from_dict(d: dict) -> PriceQuote:
         ticker=d["ticker"], exchange=d["exchange"], name=d["name"],
         price=Decimal(d["price"]), currency=d["currency"],
     )
+
+
+def _mover_to_dict(m: MarketMover) -> dict:
+    return {"ticker": m.ticker, "exchange": m.exchange, "name": m.name,
+            "price": str(m.price), "currency": m.currency,
+            "change_percent": m.change_percent}
+
+
+def _mover_from_dict(d: dict) -> MarketMover:
+    return MarketMover(ticker=d["ticker"], exchange=d["exchange"], name=d["name"],
+                       price=Decimal(d["price"]), currency=d["currency"],
+                       change_percent=d["change_percent"])
+
+
+def _movers_to_dict(raw: dict) -> dict:
+    return {exch: {"winners": [_mover_to_dict(m) for m in side["winners"]],
+                   "losers": [_mover_to_dict(m) for m in side["losers"]]}
+            for exch, side in raw.items()}
+
+
+def _movers_from_dict(d: dict) -> dict:
+    return {exch: {"winners": [_mover_from_dict(m) for m in side["winners"]],
+                   "losers": [_mover_from_dict(m) for m in side["losers"]]}
+            for exch, side in d.items()}
+
+
+def _news_to_dict(items: list) -> list:
+    return [dict(i.__dict__) for i in items]
+
+
+def _news_from_dict(d: list) -> list:
+    return [StockNewsItem(**i) for i in d]
+
+
+def _history_to_dict(points: list) -> list:
+    return [dict(p.__dict__) for p in points]
+
+
+def _history_from_dict(d: list) -> list:
+    return [PricePoint(**p) for p in d]
 
 
 def _to_yahoo_symbol(ticker: str, exchange: str) -> str:
@@ -229,6 +273,9 @@ class StaticPriceProvider:
     def get_news(self, holdings: list[tuple[str, str]]) -> list[StockNewsItem]:
         return []
 
+    def warm_region(self, region: str) -> dict:
+        return {"region": region, "featured": 0, "movers": False}
+
 
 class LivePriceProvider:
     """Fetches live prices via yfinance with an in-memory cache."""
@@ -283,7 +330,7 @@ class LivePriceProvider:
 
         return self._fetch_quote(key[0], key[1])
 
-    def _fetch_quote(self, ticker: str, exchange: str) -> PriceQuote:
+    def _fetch_quote(self, ticker: str, exchange: str, *, cache_ttl: int = _CACHE_TTL) -> PriceQuote:
         """Fetch a quote from Yahoo and write both cache layers."""
         key = (ticker.upper(), exchange.upper())
         rkey = f"mkt:quote:{key[0]}:{key[1]}"
@@ -313,7 +360,7 @@ class LivePriceProvider:
             price=live_price, currency=display_currency,
         )
         self._cache[key] = (quote, time.monotonic())
-        price_cache.set_json(rkey, _quote_to_dict(quote), _CACHE_TTL)
+        price_cache.set_json(rkey, _quote_to_dict(quote), cache_ttl)
         return quote
 
     def search(self, query: str) -> list[PriceQuote]:
@@ -399,6 +446,13 @@ class LivePriceProvider:
         if cached and (time.monotonic() - cached[1]) < _HISTORY_CACHE_TTL:
             return cached[0]
 
+        rkey = f"mkt:history:{ticker}:{exchange}:{period}"
+        l2 = price_cache.get_json(rkey)
+        if l2 is not None:
+            points = _history_from_dict(l2)
+            self._history_cache[cache_key] = (points, time.monotonic())
+            return points
+
         yf_symbol = _to_yahoo_symbol(ticker, exchange)
         featured = _FEATURED.get((ticker.upper(), exchange.upper()))
 
@@ -425,7 +479,7 @@ class LivePriceProvider:
                 pass
 
         divisor = 100.0 if pence_convert else 1.0
-        points: list[PricePoint] = []
+        points = []
         for dt, row in hist.iterrows():
             if pd.isna(row[["Open", "High", "Low", "Close", "Volume"]]).any():
                 continue
@@ -439,6 +493,7 @@ class LivePriceProvider:
             ))
 
         self._history_cache[cache_key] = (points, time.monotonic())
+        price_cache.set_json(rkey, _history_to_dict(points), _HISTORY_CACHE_TTL)
         return points
 
     def _quote_change(
@@ -474,9 +529,18 @@ class LivePriceProvider:
             )
             return cached[0]
 
+        rkey = f"mkt:movers:{region}"
+        l2 = price_cache.get_json(rkey)
+        if l2 is not None:
+            result = _movers_from_dict(l2)
+            self._history_cache[cache_key] = (result, time.monotonic())
+            return result
+
         return self._fetch_market_movers(region)
 
-    def _fetch_market_movers(self, region: str) -> dict[str, dict[str, list[MarketMover]]]:
+    def _fetch_market_movers(
+        self, region: str, *, cache_ttl: int = _CACHE_TTL
+    ) -> dict[str, dict[str, list[MarketMover]]]:
         exchanges = REGION_EXCHANGES.get(region, [])
         cache_key = f"_movers:{region}"
 
@@ -515,6 +579,7 @@ class LivePriceProvider:
                 result[exch] = {"winners": winners, "losers": losers}
 
         self._history_cache[cache_key] = (result, time.monotonic())
+        price_cache.set_json(f"mkt:movers:{region}", _movers_to_dict(result), cache_ttl)
         return result
 
     def get_news(self, holdings: list[tuple[str, str]]) -> list[StockNewsItem]:
@@ -529,6 +594,13 @@ class LivePriceProvider:
             )
             return cached[0]
 
+        rkey = "mkt:news:" + ",".join(f"{t}:{e}" for t, e in sorted(holdings))
+        l2 = price_cache.get_json(rkey)
+        if l2 is not None:
+            result = _news_from_dict(l2)
+            self._history_cache[cache_key] = (result, time.monotonic())
+            return result
+
         return self._fetch_news(holdings)
 
     @staticmethod
@@ -541,6 +613,7 @@ class LivePriceProvider:
 
     def _fetch_news(self, holdings: list[tuple[str, str]]) -> list[StockNewsItem]:
         cache_key = "_news:" + ",".join(f"{t}:{e}" for t, e in sorted(holdings))
+        rkey = "mkt:news:" + ",".join(f"{t}:{e}" for t, e in sorted(holdings))
 
         # Bounded parallel news fan-out; map preserves input order.
         raw_news = list(_FANOUT.map(
@@ -581,4 +654,23 @@ class LivePriceProvider:
 
         items.sort(key=lambda x: x.published, reverse=True)
         self._history_cache[cache_key] = (items[:20], time.monotonic())
+        price_cache.set_json(rkey, _news_to_dict(items[:20]), _CACHE_TTL)
         return items[:20]
+
+    def warm_region(self, region: str) -> dict:
+        """Fetch the region's featured quotes + movers and write them to Redis
+        with the long warm TTL so user requests stay cache-warm between crons."""
+        exchanges = REGION_EXCHANGES.get(region, [])
+        featured = [(t, e) for (t, e) in _FEATURED if e in exchanges]
+        for t, e in featured:
+            try:
+                self._fetch_quote(t, e, cache_ttl=_WARM_TTL)
+            except Exception:
+                logger.warning("warm: quote failed for %s:%s", t, e)
+        try:
+            self._fetch_market_movers(region, cache_ttl=_WARM_TTL)
+            movers_ok = True
+        except Exception:
+            logger.warning("warm: movers failed for %s", region)
+            movers_ok = False
+        return {"region": region, "featured": len(featured), "movers": movers_ok}

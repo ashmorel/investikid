@@ -1,11 +1,14 @@
 import math
 from decimal import Decimal
+from unittest.mock import patch
 
 import pandas as pd
 
 import app.services.price_cache as pc
 import app.services.price_provider as ppmod
-from app.services.price_provider import LivePriceProvider, PriceQuote
+from app.services.price_provider import (
+    LivePriceProvider, MarketMover, PricePoint, PriceQuote, StockNewsItem, _WARM_TTL,
+)
 
 
 class _FakeRedis:
@@ -112,3 +115,52 @@ def test_get_history_skips_nan_rows(monkeypatch):
     assert points[0].date == "2024-01-01"
     assert all(math.isfinite(p.close) for p in points)
     assert all(math.isfinite(p.open) for p in points)
+
+
+# ---------------------------------------------------------------------------
+# Task 1: Redis L2 for movers/news/history + warm_region hook
+# ---------------------------------------------------------------------------
+
+def _mover(t="AAPL", e="NASDAQ", pct=1.5):
+    return MarketMover(ticker=t, exchange=e, name="Apple Inc.",
+                       price=Decimal("190.50"), currency="USD", change_percent=pct)
+
+
+def test_movers_round_trip_serialization():
+    raw = {"NASDAQ": {"winners": [_mover()], "losers": []}}
+    restored = ppmod._movers_from_dict(ppmod._movers_to_dict(raw))
+    assert restored == raw
+
+
+def test_get_market_movers_reads_redis_l2_without_fetch():
+    """A warm Redis entry is served without calling yfinance."""
+    provider = LivePriceProvider()
+    cached = ppmod._movers_to_dict({"NASDAQ": {"winners": [_mover()], "losers": []}})
+    with patch.object(ppmod.price_cache, "get_json", return_value=cached) as g, \
+         patch.object(provider, "_fetch_market_movers") as fetch:
+        out = provider.get_market_movers("US")
+    g.assert_called_once_with("mkt:movers:US")
+    fetch.assert_not_called()
+    assert out["NASDAQ"]["winners"][0].ticker == "AAPL"
+
+
+def test_fetch_market_movers_writes_redis_l2():
+    provider = LivePriceProvider()
+    with patch.object(provider, "_quote_change", return_value=(Decimal("190.50"), "USD", 1.5)), \
+         patch.object(ppmod.price_cache, "set_json") as s:
+        provider._fetch_market_movers("US", cache_ttl=_WARM_TTL)
+    # movers key written with the warm TTL
+    assert any(c.args[0] == "mkt:movers:US" and c.args[2] == _WARM_TTL for c in s.call_args_list)
+
+
+def test_warm_region_writes_featured_and_movers_with_warm_ttl():
+    provider = LivePriceProvider()
+    calls = []
+    with patch.object(provider, "_fetch_quote",
+                      side_effect=lambda t, e, *, cache_ttl=None: calls.append(("q", t, e, cache_ttl))), \
+         patch.object(provider, "_fetch_market_movers",
+                      side_effect=lambda r, *, cache_ttl=None: calls.append(("m", r, cache_ttl)) or {}):
+        out = provider.warm_region("US")
+    assert out["region"] == "US"
+    assert out["featured"] > 0 and out["movers"] is True
+    assert all(c[-1] == _WARM_TTL for c in calls)  # everything written with warm TTL
