@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { I18nextProvider } from 'react-i18next';
 import App from './App';
-import { createAppPersister, PERSIST_MAX_AGE, shouldDehydrateQuery } from './lib/queryPersistence';
+import { createAppPersister, PERSIST_MAX_AGE, shouldDehydrateQuery, shouldDehydrateMutation } from './lib/queryPersistence';
+import { registerOfflineMutations } from './lib/offlineMutations';
 import { initConnectivity } from './lib/connectivity';
 import { registerBackButton } from './lib/backButton';
 import { initNativeChrome } from './lib/nativeChrome';
@@ -41,6 +42,7 @@ const queryClient = new QueryClient({
 // (e.g. private browsing), fall back silently to the in-memory cache.
 const persister = createAppPersister();
 void initConnectivity();
+registerOfflineMutations(queryClient);
 
 const appTree = (
   <BrowserRouter>
@@ -57,8 +59,9 @@ const rootTree = (
           persistOptions={{
             persister,
             maxAge: PERSIST_MAX_AGE,
-            dehydrateOptions: { shouldDehydrateQuery },
+            dehydrateOptions: { shouldDehydrateQuery, shouldDehydrateMutation },
           }}
+          onSuccess={() => { void queryClient.resumePausedMutations(); }}
         >
           {appTree}
         </PersistQueryClientProvider>
