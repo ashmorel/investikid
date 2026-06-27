@@ -79,7 +79,7 @@ async def test_generate_tallies_actions(admin_client, db_session):
     async def _stub(session, entity_type, entity, language):
         return (object(), "generated")
 
-    with patch("app.routers.admin.translate_entity", new=AsyncMock(side_effect=_stub)):
+    with patch("app.routers.admin_translations.translate_entity", new=AsyncMock(side_effect=_stub)):
         r = await admin_client.post(
             "/admin/translations/generate",
             json={"language": "fr", "market_code": "GB"},

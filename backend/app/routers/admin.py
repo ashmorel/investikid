@@ -3,22 +3,18 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_session
-from app.core.rate_limit import limiter
-from app.models.content import Lesson, Level, Module
-from app.models.content_translation import ContentTranslation
+from app.models.content import Lesson, Module
 from app.models.gamification import Badge, Challenge, UserBadge
-from app.models.market import Market
-from app.models.market_brief import MarketBrief
 from app.models.user import User
 from app.models.video_asset import VideoAsset
 from app.models.video_health import VideoHealth
-from app.routers import admin_content, admin_drafts, admin_generation
+from app.routers import admin_content, admin_drafts, admin_generation, admin_markets, admin_translations
 from app.routers.admin_auth import get_current_admin
 from app.schemas.admin import (
     AdminSettingsOut,
@@ -29,17 +25,6 @@ from app.schemas.admin import (
     ChallengeCreate,
     ChallengeOut,
     ChallengeUpdate,
-    CoverageBucket,
-    CuratedModuleSuggestion,
-    CuratedTranslationRequest,
-    MarketBriefOut,
-    MarketBriefUpdate,
-    MarketScaffoldResult,
-    ModuleFromSuggestionResult,
-    ModuleSuggestion,
-    TranslationCoverageOut,
-    TranslationGenerateRequest,
-    TranslationGenerateResult,
     VideoHealthCheckResult,
     VideoHealthItem,
     VideoPresignRequest,
@@ -64,176 +49,16 @@ from app.services.app_settings import (
     set_starting_cash,
     set_trade_commission_pct,
 )
-from app.services.content_i18n import extract_bundle, source_hash, validate_bundle
 from app.services.entitlements import set_premium
 from app.services.event_service import EVENT_KEY, set_event
 from app.services.llm_client import probe_all_providers
-from app.services.market_brief_service import (
-    BriefGenerationError,
-    generate_brief,
-)
-from app.services.market_module_suggester import suggest_modules
-from app.services.market_scaffold_service import scaffold_market_from_gb
-from app.services.translation_service import translate_entity
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
 router.include_router(admin_content.router)
 router.include_router(admin_generation.router)
 router.include_router(admin_drafts.router)
-
-
-# ── Market briefs ───────────────────────────────────────────────────
-@router.post("/markets/{code}/brief/generate", response_model=MarketBriefOut)
-@limiter.limit("5/minute")
-async def generate_market_brief(
-    request: Request,
-    code: str,
-    session: AsyncSession = Depends(get_session),
-):
-    market = await session.get(Market, code)
-    if market is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
-    try:
-        brief = await generate_brief(session, market)
-    except (BriefGenerationError, ValueError, json.JSONDecodeError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY, detail="brief generation failed"
-        ) from exc
-    await session.commit()
-    return MarketBriefOut.model_validate(brief)
-
-
-@router.get("/markets/{code}/brief", response_model=MarketBriefOut)
-async def get_market_brief(code: str, session: AsyncSession = Depends(get_session)):
-    brief = await session.get(MarketBrief, code)
-    if brief is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brief not found")
-    return MarketBriefOut.model_validate(brief)
-
-
-@router.put("/markets/{code}/brief", response_model=MarketBriefOut)
-async def update_market_brief(
-    code: str,
-    payload: MarketBriefUpdate,
-    session: AsyncSession = Depends(get_session),
-):
-    brief = await session.get(MarketBrief, code)
-    if brief is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brief not found")
-    if not isinstance(payload.brief_json, dict):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="brief_json must be an object"
-        )
-    brief.brief_json = payload.brief_json
-    await session.commit()
-    return MarketBriefOut.model_validate(brief)
-
-
-@router.post("/markets/{code}/brief/verify", response_model=MarketBriefOut)
-async def verify_market_brief(code: str, session: AsyncSession = Depends(get_session)):
-    brief = await session.get(MarketBrief, code)
-    if brief is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brief not found")
-    brief.status = "verified"
-    await session.commit()
-    return MarketBriefOut.model_validate(brief)
-
-
-@router.post("/markets/{code}/scaffold", response_model=MarketScaffoldResult)
-@limiter.limit("5/minute")
-async def scaffold_market(
-    request: Request,
-    code: str,
-    session: AsyncSession = Depends(get_session),
-):
-    market = await session.get(Market, code)
-    if market is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
-    summary = await scaffold_market_from_gb(session, code)
-    return MarketScaffoldResult.model_validate(summary)
-
-
-@router.post("/markets/{code}/module-suggestions", response_model=list[ModuleSuggestion])
-@limiter.limit("5/minute")
-async def market_module_suggestions(
-    request: Request,
-    code: str,
-    session: AsyncSession = Depends(get_session),
-):
-    market = await session.get(Market, code)
-    if market is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
-    suggestions = await suggest_modules(session, market)
-    return [ModuleSuggestion(**s) for s in suggestions]
-
-
-@router.post(
-    "/markets/{code}/modules/from-suggestion", response_model=ModuleFromSuggestionResult
-)
-@limiter.limit("5/minute")
-async def create_module_from_suggestion(
-    request: Request,
-    code: str,
-    body: CuratedModuleSuggestion,
-    session: AsyncSession = Depends(get_session),
-):
-    """One-click scaffold: create a new module + one starter level (no lessons) in
-    the given market from a curated suggester item. No auto-publish, no auto-delete."""
-    market = await session.get(Market, code)
-    if market is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
-    max_order = await session.scalar(
-        select(func.max(Module.order_index)).where(Module.market_code == code)
-    )
-    module = Module(
-        topic=(body.topic or "general")[:30],
-        title=body.title,
-        country_codes=[],
-        market_code=code,
-        is_premium=False,
-        order_index=(max_order or -1) + 1,
-        prerequisite_ids=[],
-    )
-    session.add(module)
-    await session.flush()
-    level = Level(module_id=module.id, title="Level 1", order_index=0, is_premium=False)
-    session.add(level)
-    await session.commit()
-    return ModuleFromSuggestionResult(
-        module_id=module.id,
-        level_id=level.id,
-        suggested_concepts=body.suggested_concepts,
-    )
-
-
-@router.post("/markets/{code}/publish")
-async def publish_market(code: str, session: AsyncSession = Depends(get_session)):
-    market = await session.get(Market, code)
-    if market is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
-    lesson_count = await session.scalar(
-        select(func.count(Lesson.id))
-        .select_from(Lesson)
-        .join(Module, Module.id == Lesson.module_id)
-        .where(Module.market_code == code)
-    ) or 0
-    if lesson_count == 0:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="market has no lessons to publish"
-        )
-    market.has_content = True
-    await session.commit()
-    return {"code": code, "has_content": True}
-
-
-@router.post("/markets/{code}/unpublish")
-async def unpublish_market(code: str, session: AsyncSession = Depends(get_session)):
-    market = await session.get(Market, code)
-    if market is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Market not found")
-    market.has_content = False
-    await session.commit()
-    return {"code": code, "has_content": False}
+router.include_router(admin_markets.router)
+router.include_router(admin_translations.router)
 
 
 # ── Badges ──────────────────────────────────────────────────────────
@@ -403,130 +228,6 @@ async def update_settings(
         market_completion_bonus_coins=completion_bonus,
         enabled_content_languages=content_languages,
         seasonal_event=json.loads(raw_event) if raw_event else None,
-    )
-
-
-# ── Content translations (i18n pipeline) ────────────────────────────
-@router.post("/translations/generate", response_model=TranslationGenerateResult)
-async def generate_translations(
-    body: TranslationGenerateRequest, session: AsyncSession = Depends(get_session),
-):
-    """Auto-translate all content entities into a language (optionally one market).
-
-    Tallies on the action returned by translate_entity: generated→translated,
-    skipped→skipped_fresh, failed→failed; noop is uncounted.
-    """
-    res = TranslationGenerateResult()
-    mod_q = select(Module)
-    if body.market_code:
-        mod_q = mod_q.where(Module.market_code == body.market_code)
-    modules = (await session.scalars(mod_q)).all()
-    module_ids = [m.id for m in modules]
-    levels = (
-        (await session.scalars(select(Level).where(Level.module_id.in_(module_ids)))).all()
-        if module_ids else []
-    )
-    lessons = (
-        (await session.scalars(select(Lesson).where(Lesson.module_id.in_(module_ids)))).all()
-        if module_ids else []
-    )
-
-    for etype, items in (("module", modules), ("level", levels), ("lesson", lessons)):
-        for ent in items:
-            _row, action = await translate_entity(session, etype, ent, body.language)
-            if action == "generated":
-                res.translated += 1
-            elif action == "skipped":
-                res.skipped_fresh += 1
-            elif action == "failed":
-                res.failed += 1
-            # action == "noop" (empty bundle / unsupported) → not counted
-    await session.commit()
-    return res
-
-
-async def _fetch_entity(session: AsyncSession, entity_type: str, entity_id: uuid.UUID):
-    model = {"module": Module, "level": Level, "lesson": Lesson}.get(entity_type)
-    if model is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"unknown entity_type {entity_type!r}",
-        )
-    return await session.get(model, entity_id)
-
-
-@router.put("/translations/curated")
-async def put_curated_translation(
-    body: CuratedTranslationRequest, session: AsyncSession = Depends(get_session),
-):
-    """Store/replace a human-authored (curated) translation for one entity.
-
-    Validates the bundle against the entity's CURRENT English source; curated
-    content bypasses moderation (human-authored)."""
-    entity = await _fetch_entity(session, body.entity_type, body.entity_id)
-    if entity is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="entity_not_found")
-
-    source = extract_bundle(body.entity_type, entity)
-    if not validate_bundle(body.entity_type, source, body.translated_json):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="translated_json structure does not match the English source",
-        )
-    h = source_hash(source)
-
-    row = await session.scalar(
-        select(ContentTranslation).where(
-            ContentTranslation.entity_type == body.entity_type,
-            ContentTranslation.entity_id == body.entity_id,
-            ContentTranslation.language == body.language,
-        )
-    )
-    if row is None:
-        row = ContentTranslation(
-            entity_type=body.entity_type, entity_id=body.entity_id, language=body.language,
-            translated_json=body.translated_json, source="curated",
-            source_hash=h, status="active",
-        )
-        session.add(row)
-    else:
-        row.translated_json = body.translated_json
-        row.source = "curated"
-        row.source_hash = h
-        row.status = "active"
-    await session.commit()
-    return {"status": "ok", "entity_id": str(body.entity_id), "language": body.language}
-
-
-@router.get("/translations/coverage", response_model=TranslationCoverageOut)
-async def translation_coverage(
-    language: str, session: AsyncSession = Depends(get_session),
-):
-    """Per-entity-type coverage for a language: active/failed/missing rows."""
-    async def _bucket(entity_type: str, model) -> CoverageBucket:
-        total = await session.scalar(select(func.count()).select_from(model)) or 0
-        active = await session.scalar(
-            select(func.count()).select_from(ContentTranslation).where(
-                ContentTranslation.entity_type == entity_type,
-                ContentTranslation.language == language,
-                ContentTranslation.status == "active",
-            )
-        ) or 0
-        failed = await session.scalar(
-            select(func.count()).select_from(ContentTranslation).where(
-                ContentTranslation.entity_type == entity_type,
-                ContentTranslation.language == language,
-                ContentTranslation.status == "failed",
-            )
-        ) or 0
-        missing = max(total - active - failed, 0)
-        return CoverageBucket(active=active, failed=failed, missing=missing)
-
-    return TranslationCoverageOut(
-        language=language,
-        modules=await _bucket("module", Module),
-        levels=await _bucket("level", Level),
-        lessons=await _bucket("lesson", Lesson),
     )
 
 
