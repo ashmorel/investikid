@@ -14,9 +14,23 @@ from app.models.content import Lesson, LessonCompletion
 from app.models.cosmetics import CosmeticItem, UserCosmetic
 from app.models.group import GroupMembership
 from app.models.user import User
+from app.services import price_cache
 
 Scope = Literal["market", "global", "friends"]
 Metric = Literal["xp", "arcade"]
+
+# The public (market/global) top-N board is identical for every viewer in a
+# market, but it re-runs a whole-table aggregation on each view. Cache it in
+# Redis for a short TTL so a busy market shares one computation. Per-viewer
+# fields (is_me, own-row fallback) are applied AFTER the cache, never stored.
+# Production-only: dev/staging/test have no provisioned Redis and must compute
+# live (also avoids any cross-test cache leakage). Matches the rate-limiter gate.
+_BOARD_TTL = 60
+
+
+def _cache_enabled() -> bool:
+    from app.core.config import settings
+    return settings.environment == "production"
 
 
 @dataclass
@@ -85,25 +99,56 @@ async def leaderboard(session: AsyncSession, *, viewer: User, scope: Scope,
         return await _friends(session, viewer=viewer, metric=metric, since=since)
 
     # public (market/global): handle identity, consent-gated population
+    market_code = viewer.active_market_code if scope == "market" else None
+    board = await _cached_public_board(
+        session, scope=scope, market_code=market_code, metric=metric, since=since, limit=limit)
+    out = [
+        LeaderboardRow(rank=i + 1, name=d["handle"] or "—", country_code=d["cc"],
+                       points=d["pts"], is_me=(d["uid"] == str(viewer.id)),
+                       avatar=AvatarData(skin=d["skin"], accessories=d["accessories"]))
+        for i, d in enumerate(board)
+    ]
+    # Ensure the viewer always sees their own row (even if not public / outside top-N).
+    if not any(r.is_me for r in out):
+        out.append(await _own_row(session, viewer=viewer, scope=scope, metric=metric, since=since))
+    return out
+
+
+async def _cached_public_board(session, *, scope, market_code, metric, since, limit) -> list[dict]:
+    """Return the public top-N board as serialisable dicts, cached per
+    (scope, market, metric, week, limit). The week component (Monday's date)
+    means the key rolls over naturally each week; the short TTL keeps it fresh
+    within the week. No per-viewer data is stored here."""
+    key = f"lb:{scope}:{market_code or 'all'}:{metric}:{since.date().isoformat()}:{limit}"
+    if _cache_enabled():
+        cached = price_cache.get_json(key)
+        if cached is not None:
+            return cached
+    board = await _public_board_rows(
+        session, scope=scope, market_code=market_code, metric=metric, since=since, limit=limit)
+    if _cache_enabled():
+        price_cache.set_json(key, board, _BOARD_TTL)
+    return board
+
+
+async def _public_board_rows(session, *, scope, market_code, metric, since, limit) -> list[dict]:
+    """Compute the consent-gated public top-N board (one aggregation), resolving
+    avatars, as JSON-serialisable dicts. Served via ``ix_users_lb_market``."""
     base = select(User.id, User.display_handle, User.country_code)
     base, total = _metric_join(base, metric, since)
     base = base.where(User.leaderboard_consent.is_(True), User.leaderboard_hidden.is_(False))
     if scope == "market":
-        base = base.where(User.active_market_code == viewer.active_market_code)
+        base = base.where(User.active_market_code == market_code)
     base = base.group_by(User.id, User.display_handle, User.country_code)
     base = base.order_by(total.desc(), User.display_handle.asc()).limit(limit)
 
     rows = (await session.execute(base.add_columns(total.label("pts")))).all()
     avatars = await _avatars_for(session, [uid for (uid, *_rest) in rows])
-    out = [
-        LeaderboardRow(rank=i + 1, name=handle or "—", country_code=cc,
-                       points=int(pts), is_me=(uid == viewer.id),
-                       avatar=avatars.get(uid, AvatarData(None, [])))
-        for i, (uid, handle, cc, pts) in enumerate(rows)
-    ]
-    # Ensure the viewer always sees their own row (even if not public / outside top-N).
-    if not any(r.is_me for r in out):
-        out.append(await _own_row(session, viewer=viewer, scope=scope, metric=metric, since=since))
+    out: list[dict] = []
+    for (uid, handle, cc, pts) in rows:
+        av = avatars.get(uid, AvatarData(None, []))
+        out.append({"uid": str(uid), "handle": handle, "cc": cc, "pts": int(pts),
+                    "skin": av.skin, "accessories": av.accessories})
     return out
 
 

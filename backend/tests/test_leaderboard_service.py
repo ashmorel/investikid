@@ -82,3 +82,38 @@ async def test_arcade_metric_uses_arcade_points(client, db_session):
     rows = await leaderboard(db_session, viewer=me, scope="market", metric="arcade")
     mine = next(r for r in rows if r.is_me)
     assert mine.points == 250
+
+
+async def test_public_board_is_cached_in_production(client, db_session, monkeypatch):
+    """In production the public board is cached: a second view serves the cached
+    rows (a DB change in between is not reflected until TTL), while per-viewer
+    is_me is still applied on top of the cached data — never stored."""
+    from app.services import leaderboard_service, price_cache
+
+    # Force the prod-only cache gate on, backed by an in-memory cache stand-in.
+    store: dict = {}
+    monkeypatch.setattr(leaderboard_service, "_cache_enabled", lambda: True)
+    monkeypatch.setattr(price_cache, "get_json", lambda k: store.get(k))
+    monkeypatch.setattr(price_cache, "set_json", lambda k, v, ttl: store.__setitem__(k, v))
+
+    a = await _mk_user(client, db_session, "lbc_a@example.com", market="GB", handle="Alpha")
+    b = await _mk_user(client, db_session, "lbc_b@example.com", market="GB", handle="Bravo")
+    await _add_xp(db_session, a, 50)
+    await _add_xp(db_session, b, 30)
+
+    # First view (as A) populates the cache.
+    rows_a = await leaderboard(db_session, viewer=a, scope="market", metric="xp")
+    assert store, "expected the board to be cached"
+    assert [r.name for r in rows_a][:2] == ["Alpha", "Bravo"]
+    assert next(r for r in rows_a if r.name == "Alpha").is_me
+
+    # Mutate the DB: a brand-new top scorer that WOULD lead if recomputed.
+    c = await _mk_user(client, db_session, "lbc_c@example.com", market="GB", handle="Champ")
+    await _add_xp(db_session, c, 999)
+
+    # Second view (as B) must be served from cache: Champ absent, is_me now Bravo.
+    rows_b = await leaderboard(db_session, viewer=b, scope="market", metric="xp")
+    names_b = [r.name for r in rows_b]
+    assert "Champ" not in names_b, "cache miss — board was recomputed"
+    assert next(r for r in rows_b if r.name == "Bravo").is_me
+    assert not any(r.is_me and r.name == "Alpha" for r in rows_b)

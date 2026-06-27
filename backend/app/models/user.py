@@ -12,6 +12,17 @@ from app.services.age_tier import age_tier as _age_tier
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        # Partial index serving the public leaderboard population (consented,
+        # non-hidden). Covers both market scope (range scan on active_market_code)
+        # and global scope (full partial-index scan), and only indexes the rows
+        # that can ever appear on a board — small + cheap to maintain.
+        sa.Index(
+            "ix_users_lb_market",
+            "active_market_code",
+            postgresql_where=sa.text("leaderboard_consent AND NOT leaderboard_hidden"),
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
