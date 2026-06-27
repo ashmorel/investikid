@@ -76,9 +76,13 @@ paused/persisted mutations — no hand-rolled outbox. Frontend only.
 ### Unit 3 — Wire `Lesson.tsx` to the default
 **Files:** modify `frontend/src/pages/child/Lesson.tsx`.
 
-- Change the `useMutation` to `useMutation({ mutationKey: ['completeLesson'] })`
-  (drop the inline `mutationFn` — the default supplies it). Call site becomes
-  `complete.mutate({ lessonId: lessonId!, levelId, score })`.
+- Change the `useMutation` to add `mutationKey: ['completeLesson']` and object
+  variables; call site becomes `complete.mutate({ lessonId: lessonId!, levelId,
+  score })`. **Keep an inline `mutationFn` (object form)** so the interactive
+  path and the existing Lesson tests (which build their own QueryClient without
+  the default registered) keep working; the *default's* `mutationFn` handles a
+  restored/resumed paused mutation (no observer mounted), and the default's
+  `onMutate`/`onSuccess`/`retry` fire alongside the component's callbacks.
 - Keep the component's own `onSuccess` (navigation, XP toast — reads
   `LessonCompletionResult`); it fires alongside the default's onSuccess when the
   mutation runs interactively. `levelId` comes from the route/lesson.
