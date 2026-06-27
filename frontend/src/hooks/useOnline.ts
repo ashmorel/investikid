@@ -1,19 +1,16 @@
 import { useSyncExternalStore } from 'react';
+import { onlineManager } from '@tanstack/react-query';
 
 function subscribe(onChange: () => void) {
-  window.addEventListener('online', onChange);
-  window.addEventListener('offline', onChange);
-  return () => {
-    window.removeEventListener('online', onChange);
-    window.removeEventListener('offline', onChange);
-  };
+  return onlineManager.subscribe(() => onChange());
 }
 
 function getSnapshot() {
-  return navigator.onLine;
+  return onlineManager.isOnline();
 }
 
-/** True while the browser reports network connectivity. */
+/** True while TanStack's onlineManager reports connectivity (fed by
+ * @capacitor/network — see lib/connectivity.ts). */
 export function useOnline(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot);
 }

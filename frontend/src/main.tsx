@@ -6,6 +6,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { I18nextProvider } from 'react-i18next';
 import App from './App';
 import { createAppPersister, PERSIST_MAX_AGE, shouldDehydrateQuery } from './lib/queryPersistence';
+import { initConnectivity } from './lib/connectivity';
 import { registerBackButton } from './lib/backButton';
 import { initNativeChrome } from './lib/nativeChrome';
 import { ensureAndroidChannel } from './lib/notifications';
@@ -39,6 +40,7 @@ const queryClient = new QueryClient({
 // renders instantly and stays readable offline. If localStorage is unusable
 // (e.g. private browsing), fall back silently to the in-memory cache.
 const persister = createAppPersister();
+void initConnectivity();
 
 const appTree = (
   <BrowserRouter>
