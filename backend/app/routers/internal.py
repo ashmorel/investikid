@@ -1,3 +1,4 @@
+import asyncio
 import secrets
 from datetime import UTC, datetime
 
@@ -11,6 +12,7 @@ from app.services import (
     digest_service,
     investing_missions,
     market_content_pipeline,
+    market_warm_service,
     module_purge_service,
     product_analytics_service,
     retention,
@@ -130,6 +132,20 @@ async def trigger_purge_accounts(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
     purged = await retention.purge_expired_accounts(session, today_utc())
     return {"purged": purged}
+
+
+@router.post("/market-warm/run")
+async def trigger_market_warm(
+    x_cron_secret: str | None = Header(default=None),
+):
+    """Warm the shared market cache (featured quotes + movers) for all regions."""
+    if not settings.cron_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    from app.routers.simulator import get_price_provider
+    provider = get_price_provider()
+    return await asyncio.to_thread(market_warm_service.warm_all, provider)
 
 
 @router.post("/video-candidates/extract")

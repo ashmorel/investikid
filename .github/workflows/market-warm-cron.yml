@@ -1,0 +1,31 @@
+name: Market warm cron
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # every 10 min — keep featured+movers warm in Redis
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BACKEND_URL: ${{ vars.BACKEND_URL || 'https://investikid.up.railway.app' }}
+    steps:
+      - name: Trigger market warm
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -uo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET is empty."; exit 1
+          fi
+          code=$(curl -sS -o /tmp/resp.txt -w "%{http_code}" -X POST \
+            --retry 4 --retry-delay 5 --connect-timeout 15 --max-time 120 \
+            -H "X-Cron-Secret: $CRON_SECRET" \
+            "$BACKEND_URL/internal/market-warm/run" || echo "000")
+          echo "HTTP $code"; cat /tmp/resp.txt 2>/dev/null; echo
+          [ "$code" = "200" ] || { echo "::error::market-warm got $code"; exit 1; }

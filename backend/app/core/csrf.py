@@ -39,6 +39,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/internal/subscriptions/reconcile",
     "/internal/purge-archived-modules",
     "/internal/purge-accounts/run",
+    "/internal/market-warm/run",
     "/internal/market-content",
     "/internal/video-candidates/extract",
     "/internal/collectables/reconcile",
