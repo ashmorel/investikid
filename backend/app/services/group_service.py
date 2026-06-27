@@ -119,25 +119,29 @@ async def group_leaderboard_for_child(session: AsyncSession, child_user_id: uuid
     )).all()
     for group in groups:
         xp_expr = func.coalesce(func.sum(Lesson.xp_reward), 0).label("xp_this_week")
+        # Show the safe display_handle (never the raw username) and honour each
+        # child's "hide me" toggle, even inside a closed parent-created group.
         stmt = (
-            select(User.id, User.username, xp_expr)
+            select(User.id, User.display_handle, xp_expr)
             .join(GroupMembership, GroupMembership.user_id == User.id)
             .outerjoin(
                 LessonCompletion,
                 (LessonCompletion.user_id == User.id) & (LessonCompletion.completed_at >= week_start),
             )
             .outerjoin(Lesson, Lesson.id == LessonCompletion.lesson_id)
-            .where(GroupMembership.group_id == group.id)
-            .group_by(User.id, User.username)
-            .order_by(xp_expr.desc(), User.username.asc())
+            .where(GroupMembership.group_id == group.id, User.leaderboard_hidden.is_(False))
+            .group_by(User.id, User.display_handle)
+            .order_by(xp_expr.desc(), User.display_handle.asc())
         )
         rows = (await session.execute(stmt)).all()
         boards.append({
             "group_id": group.id,
             "group_name": group.name,
+            # Response key stays "username" for API stability, but the value is
+            # the privacy-safe display_handle.
             "entries": [
-                {"username": uname, "xp_this_week": int(xp), "is_me": uid == child_user_id}
-                for uid, uname, xp in rows
+                {"username": handle or "—", "xp_this_week": int(xp), "is_me": uid == child_user_id}
+                for uid, handle, xp in rows
             ],
         })
     return boards

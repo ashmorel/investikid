@@ -64,22 +64,27 @@ async def weekly_leaderboard(
     market_code: str,
     limit: int = 50,
 ) -> list[tuple[str, str, int]]:
-    """Top-N (username, country_code, points_this_week) for a game+market since Monday 00:00 UTC."""
+    """Top-N (display_handle, country_code, points_this_week) for a game+market
+    since Monday 00:00 UTC. Privacy: this board is public market-wide, so it only
+    includes children whose parent consented to leaderboards and who haven't hidden
+    themselves, and it shows the safe ``display_handle`` — never the raw username."""
     now = datetime.now(UTC)
     monday = (now - timedelta(days=now.weekday())).replace(
         hour=0, minute=0, second=0, microsecond=0
     )
     total = func.sum(ArcadeScore.points).label("pts")
     stmt = (
-        select(User.username, User.country_code, total)
+        select(User.display_handle, User.country_code, total)
         .join(ArcadeScore, ArcadeScore.user_id == User.id)
         .where(
             ArcadeScore.game == game,
             ArcadeScore.market_code == market_code,
             ArcadeScore.created_at >= monday,
+            User.leaderboard_consent.is_(True),
+            User.leaderboard_hidden.is_(False),
         )
-        .group_by(User.id, User.username, User.country_code)
+        .group_by(User.id, User.display_handle, User.country_code)
         .order_by(total.desc())
         .limit(limit)
     )
-    return [(u, c, int(p)) for u, c, p in (await session.execute(stmt)).all()]
+    return [(h or "—", c, int(p)) for h, c, p in (await session.execute(stmt)).all()]

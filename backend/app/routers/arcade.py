@@ -53,7 +53,9 @@ async def quiz_rush_score(
     )
     best = await arcade_service.personal_best(session, user_id=user.id, game="quiz_rush")
     board = await arcade_service.weekly_leaderboard(session, game="quiz_rush", market_code=market)
-    rank = next((i + 1 for i, row in enumerate(board) if row[0] == user.username), None)
+    # The board now identifies players by display_handle (privacy-safe). A child
+    # only appears — and so only gets a public rank — when consented + not hidden.
+    rank = next((i + 1 for i, row in enumerate(board) if row[0] == user.display_handle), None)
     await session.commit()
     return QuizScoreOut(
         points=result["points"],

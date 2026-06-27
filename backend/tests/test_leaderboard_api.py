@@ -207,11 +207,12 @@ async def test_own_row_fallback_when_not_consented(client, db_session):
     assert other.display_handle not in names, f"Non-consented other appeared in board: {names}"
 
 
-async def test_friends_scope_shows_usernames(client, db_session):
-    """Friends scope returns member usernames (not handles) and marks is_me correctly.
+async def test_friends_scope_shows_handles_not_usernames(client, db_session):
+    """Friends scope returns member display_handles (never raw usernames) and marks is_me.
 
     Setup: one parent creates a group, adds two children. One of them calls the endpoint.
-    We verify both children appear (by username) and is_me is set for the caller.
+    We verify both children appear, the viewer's row is is_me, and that the raw
+    usernames are NOT exposed (privacy).
     """
     from datetime import timedelta
 
@@ -264,9 +265,15 @@ async def test_friends_scope_shows_usernames(client, db_session):
     rows = r.json()
 
     names = {row["name"] for row in rows}
-    assert "lbfa" in names, f"child_a username not in friends board: {names}"
-    assert "lbfb" in names, f"child_b username not in friends board: {names}"
+    # Privacy: raw usernames must NEVER appear on any leaderboard
+    assert "lbfa" not in names, f"raw username leaked: {names}"
+    assert "lbfb" not in names, f"raw username leaked: {names}"
+    # Both members appear (by safe display_handle); the viewer's row is flagged is_me
+    assert len(rows) == 2
+    assert any(row["is_me"] for row in rows)
 
     my_rows = [row for row in rows if row["is_me"]]
     assert len(my_rows) == 1
-    assert my_rows[0]["name"] == "lbfa"
+    # The viewer's row is identified by is_me + their safe handle, not the username
+    assert my_rows[0]["name"] != "lbfa"
+    assert my_rows[0]["name"] == child_a.display_handle

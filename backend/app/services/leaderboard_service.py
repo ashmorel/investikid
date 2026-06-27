@@ -1,6 +1,7 @@
 """Unified weekly leaderboard: scope (market/global/friends) × metric (xp/arcade).
 Public scopes show display_handle and only consented, non-hidden children.
-Friends shows usernames for all group members (closed, parent-created)."""
+Friends (closed, parent-created groups) shows display_handle for members who
+haven't hidden themselves — never the raw username."""
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Literal
@@ -130,17 +131,20 @@ async def _friends(session, *, viewer, metric, since) -> list[LeaderboardRow]:
         select(GroupMembership.group_id).where(GroupMembership.user_id == viewer.id))).all()
     if not group_ids:
         return []
-    base = select(User.id, User.username, User.country_code)
+    # Closed, parent-created groups, but still honour each child's "hide me"
+    # toggle and show the safe display_handle (never the raw username).
+    base = select(User.id, User.display_handle, User.country_code)
     base, total = _metric_join(base, metric, since)
     base = (base.join(GroupMembership, GroupMembership.user_id == User.id)
-                .where(GroupMembership.group_id.in_(group_ids))
-                .group_by(User.id, User.username, User.country_code)
-                .order_by(total.desc(), User.username.asc()))
+                .where(GroupMembership.group_id.in_(group_ids),
+                       User.leaderboard_hidden.is_(False))
+                .group_by(User.id, User.display_handle, User.country_code)
+                .order_by(total.desc(), User.display_handle.asc()))
     rows = (await session.execute(base.add_columns(total.label("pts")))).all()
     avatars = await _avatars_for(session, [uid for (uid, *_rest) in rows])
     return [
-        LeaderboardRow(rank=i + 1, name=uname, country_code=cc,
+        LeaderboardRow(rank=i + 1, name=handle or "—", country_code=cc,
                        points=int(pts), is_me=(uid == viewer.id),
                        avatar=avatars.get(uid, AvatarData(None, [])))
-        for i, (uid, uname, cc, pts) in enumerate(rows)
+        for i, (uid, handle, cc, pts) in enumerate(rows)
     ]

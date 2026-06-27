@@ -37,8 +37,9 @@ async def test_group_models_roundtrip(db_session):
     assert rows[0].user_id == u.id
 
 
-async def _mk_child(db_session, parent_email, suffix):
-    u = User(username=f"kid_{suffix}", password_hash="x", dob=date(2012, 1, 1),
+async def _mk_child(db_session, parent_email, suffix, *, handle=None, hidden=False):
+    u = User(username=f"kid_{suffix}", display_handle=handle or f"H_{suffix}",
+             leaderboard_hidden=hidden, password_hash="x", dob=date(2012, 1, 1),
              country_code="GB", currency_code="GBP", parent_email=parent_email)
     db_session.add(u)
     await db_session.flush()
@@ -102,8 +103,10 @@ async def test_group_leaderboard_scopes_to_members_and_marks_me(db_session):
     a = await _mk_child(db_session, "p@example.com", "lead_a")
     b = await _mk_child(db_session, "p@example.com", "lead_b")
     outsider = await _mk_child(db_session, "p@example.com", "lead_out")
+    hidden = await _mk_child(db_session, "p@example.com", "lead_hidden", hidden=True)
     await group_service.join_child(db_session, g.code, a, "p@example.com")
     await group_service.join_child(db_session, g.code, b, "p@example.com")
+    await group_service.join_child(db_session, g.code, hidden, "p@example.com")
 
     mod = Module(title="M", topic="budgeting", icon="💰", order_index=0)
     db_session.add(mod)
@@ -122,14 +125,17 @@ async def test_group_leaderboard_scopes_to_members_and_marks_me(db_session):
     assert len(boards) == 1
     board = boards[0]
     assert board["group_id"] == g.id
-    usernames = {e["username"] for e in board["entries"]}
-    assert usernames == {a.username, b.username}
-    assert outsider.username not in usernames
+    names = {e["username"] for e in board["entries"]}
+    # Board shows the safe display_handle, never the raw username
+    assert names == {a.display_handle, b.display_handle}
+    assert a.username not in names and b.username not in names
+    assert outsider.display_handle not in names      # non-member excluded
+    assert hidden.display_handle not in names         # leaderboard_hidden honoured
     by_name = {e["username"]: e for e in board["entries"]}
-    assert by_name[a.username]["xp_this_week"] == 10
-    assert by_name[b.username]["xp_this_week"] == 0
-    assert by_name[a.username]["is_me"] is True
-    assert by_name[b.username]["is_me"] is False
+    assert by_name[a.display_handle]["xp_this_week"] == 10
+    assert by_name[b.display_handle]["xp_this_week"] == 0
+    assert by_name[a.display_handle]["is_me"] is True
+    assert by_name[b.display_handle]["is_me"] is False
 
 
 async def _sign_in_parent(client, db_session, parent_email="gp@example.com", child_dob="2011-01-01"):
@@ -196,4 +202,7 @@ async def test_child_group_leaderboard_endpoint(client, db_session):
     boards = r.json()
     assert len(boards) == 1
     assert boards[0]["group_name"] == "Team"
-    assert any(e["username"] == "teeng" and e["is_me"] for e in boards[0]["entries"])
+    entries = boards[0]["entries"]
+    # My row is present and flagged; the raw username is never exposed
+    assert any(e["is_me"] for e in entries)
+    assert all(e["username"] != "teeng" for e in entries)

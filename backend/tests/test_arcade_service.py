@@ -9,11 +9,14 @@ from app.services import arcade_service as svc
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
-async def _user(db_session, username=None, market="GB"):
+async def _user(db_session, username=None, market="GB", *, handle=None, consent=True, hidden=False):
     if username is None:
         username = f"arcade_{uuid.uuid4().hex[:8]}"
     u = User(
         username=username,
+        display_handle=handle or f"H_{username[:10]}",
+        leaderboard_consent=consent,
+        leaderboard_hidden=hidden,
         password_hash="x",
         dob=date(2012, 1, 1),
         country_code=market,
@@ -44,19 +47,27 @@ async def test_record_score_and_personal_best(db_session):
     assert await svc.personal_best(db_session, user_id=u.id, game="quiz_rush") == 140
 
 
-async def test_leaderboard_is_per_market_and_ranked(db_session):
-    u1, p1 = await _user(db_session, f"lb_a_{uuid.uuid4().hex[:6]}", "GB")
-    u2, p2 = await _user(db_session, f"lb_b_{uuid.uuid4().hex[:6]}", "GB")
-    u3, p3 = await _user(db_session, f"lb_c_{uuid.uuid4().hex[:6]}", "US")
-    await svc.record_score(db_session, user_id=u1.id, game="quiz_rush", points=50, market_code="GB")
-    await svc.record_score(db_session, user_id=u2.id, game="quiz_rush", points=90, market_code="GB")
-    await svc.record_score(db_session, user_id=u3.id, game="quiz_rush", points=200, market_code="US")
+async def test_leaderboard_is_per_market_ranked_and_privacy_gated(db_session):
+    u1, _ = await _user(db_session, f"lb_a_{uuid.uuid4().hex[:6]}", "GB", handle="Alpha")
+    u2, _ = await _user(db_session, f"lb_b_{uuid.uuid4().hex[:6]}", "GB", handle="Bravo")
+    u3, _ = await _user(db_session, f"lb_c_{uuid.uuid4().hex[:6]}", "US", handle="Charlie")
+    u4, _ = await _user(db_session, f"lb_d_{uuid.uuid4().hex[:6]}", "GB", handle="DeltaHidden", hidden=True)
+    u5, _ = await _user(db_session, f"lb_e_{uuid.uuid4().hex[:6]}", "GB", handle="EchoNoConsent", consent=False)
+    for u, pts in [(u1, 50), (u2, 90), (u3, 200), (u4, 70), (u5, 80)]:
+        await svc.record_score(db_session, user_id=u.id, game="quiz_rush", points=pts,
+                               market_code=u.active_market_code)
     board = await svc.weekly_leaderboard(db_session, game="quiz_rush", market_code="GB")
-    usernames = [r[0] for r in board]
-    assert u2.username in usernames
-    assert u1.username in usernames
-    assert u3.username not in usernames            # US child excluded
-    assert usernames.index(u2.username) < usernames.index(u1.username)  # ranked desc
+    names = [r[0] for r in board]
+    # Shows the safe display_handle, ranked descending
+    assert "Bravo" in names and "Alpha" in names
+    assert names.index("Bravo") < names.index("Alpha")
+    # Privacy gating
+    assert "Charlie" not in names        # other market excluded
+    assert "DeltaHidden" not in names    # leaderboard_hidden honoured
+    assert "EchoNoConsent" not in names  # no parental consent
+    # The raw username must NEVER appear on a public board
+    for u in (u1, u2):
+        assert u.username not in names
 
 
 async def test_personal_best_returns_zero_if_none(db_session):
