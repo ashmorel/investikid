@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { GradientButton } from './GradientButton';
 
 type Props = {
@@ -15,12 +14,11 @@ type Props = {
 export function HeroCard({ eyebrow, icon, title, subtitle, cta, to, variant = 'playful', onCtaClick }: Props) {
   const flat = variant === 'flat';
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.35 }}
+    <div
       className={
-        flat
+        (flat
           ? 'overflow-hidden rounded-xl border border-gray-200 bg-white p-5 text-gray-900 shadow-sm'
-          : 'overflow-hidden rounded-3xl bg-brand-gradient p-6 text-white shadow-lg shadow-brand-600/30'
+          : 'overflow-hidden rounded-3xl bg-brand-gradient p-6 text-white shadow-lg shadow-brand-600/30') + ' animate-hero-card-in'
       }
     >
       <p className={`text-xs font-extrabold uppercase tracking-wider ${flat ? 'text-gray-500' : 'opacity-95'}`}>
@@ -45,6 +43,6 @@ export function HeroCard({ eyebrow, icon, title, subtitle, cta, to, variant = 'p
       >
         {cta}<span aria-hidden="true"> →</span>
       </GradientButton>
-    </motion.div>
+    </div>
   );
 }

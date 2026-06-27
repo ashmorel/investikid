@@ -23,6 +23,10 @@ describe('HeroCard variants', () => {
     expect(container.querySelector('.bg-white')).not.toBeNull();
     expect(screen.queryByText('📈')).toBeNull();
   });
+  it('renders with CSS animation class and no framer-motion', () => {
+    const { container } = renderCard();
+    expect(container.querySelector('.animate-hero-card-in')).not.toBeNull();
+  });
   it('has no axe violations in both variants', async () => {
     expect(await axe(renderCard().container)).toHaveNoViolations();
     expect(await axe(renderCard('flat').container)).toHaveNoViolations();
