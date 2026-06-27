@@ -40,6 +40,8 @@
 
   "offline": {
     "notice": "You're offline — live prices need the internet. Your lessons still work!",
+    "download": "Download for offline",
+    "saving": "Saving lessons… {{done}} of {{total}}",
     "available": "Available offline",
     "downloadedTitle": "Downloaded",
     "downloadedLink": "Downloaded",

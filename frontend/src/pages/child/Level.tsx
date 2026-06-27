@@ -11,6 +11,7 @@ import * as offlineStore from '@/lib/offline/contentStore';
 import { LessonRow } from '@/components/child/LessonRow';
 import { BackButton } from '@/components/child/BackButton';
 import { MasteredStamp } from '@/components/child/MasteredStamp';
+import { DownloadLevelButton } from '@/components/child/DownloadLevelButton';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 import { usePrefetchLevelLessons } from '@/hooks/usePrefetchLevelLessons';
 
@@ -134,6 +135,8 @@ export default function Level() {
           </ul>
         </section>
       )}
+
+      <DownloadLevelButton levelId={levelId!} lessons={lessons} />
 
       <div className="mt-4 rounded-2xl border-2 border-brand-200 bg-white overflow-hidden">
         {lessons.map((lesson, i) => {
