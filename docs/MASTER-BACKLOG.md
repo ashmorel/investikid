@@ -110,7 +110,7 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
 ## 🔎 Code-review backlog — 2026-06-25
 
-> From a 5-pass review (security/PII · bugs/structure · scale/cost · FE perf · offline/preload). Severity, effort (S/M/L), and file pointers below. **Shipped: #1, #2, #10 (`b75efeb`) + #4, #6, #7 (`2bcc0c3`) + #8, #9, #5 + all P2 + most P3 + #3 backbone + Goal 5 (2026-06-27)** — green CI → Railway backend + manual Vercel web. **Remaining: paid-quote-API operator decision (behind the #3 seam) · Goal 4 (offline) · 2 deferred P3 refactors (admin god-router split, framer-motion off Shell).**
+> From a 5-pass review (security/PII · bugs/structure · scale/cost · FE perf · offline/preload). Severity, effort (S/M/L), and file pointers below. **Shipped: #1, #2, #10 (`b75efeb`) + #4, #6, #7 (`2bcc0c3`) + #8, #9, #5 + all P2 + most P3 + #3 backbone + Goal 5 (2026-06-27)** — green CI → Railway backend + manual Vercel web. **Remaining: paid-quote-API operator decision (behind the #3 seam) · Goal 4 Phases 2–3 (PWA app-shell, question-bank caching, sync outbox, SQLite) · 2 deferred P3 refactors (admin god-router split, framer-motion off Shell).** (Goal 4 Phase 1 shipped 2026-06-27.)
 
 ### 🔴 P0 — urgent
 | # | Item | Dim | Effort | Where / fix |
@@ -145,8 +145,8 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 - ✅ **DONE (`027ee3e`, `0343f8e`):** Tutor/coach now 503 (not 500) on LLM outage · global `refetchOnWindowFocus` given a 30s `staleTime` floor · added `core/time.today_utc()` (migrated ~14 sites) · added `core/markets.active_market()` (deduped the 4 `active_market_code or "GB"` fallbacks).
 - ⏸️ **DEFERRED (own PR — refactor risk, no functional value):** `routers/admin.py` 1,329-line god-router split (touches every admin feature) · move `framer-motion` off the `Shell` boot path (it drives the route-transition animation on every screen; already vendor-split into its own cacheable chunk by #10).
 
-### 📥 Goal 4 — Offline support *(already ~60% built: Query persistence + `OfflineNotice` banner + manifest; native bundles the shell)*
-- **Phase 1 (S–M, high value):** `@capacitor/network` → React Query `onlineManager` (reliable WKWebView detection + auto sync-on-reconnect); fix allowlist↔key drift (persist `trades`, `quote`); "as of <time>" staleness label on cached prices.
+### 📥 Goal 4 — Offline support *(Query persistence + `OfflineNotice` banner + manifest pre-existing)*
+- **Phase 1 — ✅ DONE 2026-06-27 (`531453d`):** `@capacitor/network` → TanStack `onlineManager` (reliable WKWebView detection + auto pause-offline/refetch-on-reconnect; `useOnline` reads the same source) · persist-allowlist fixed (dropped dead `market-movers`; added `market-snapshot`/`quote`/`trades`/`stock-history`) · `<StaleAsOf>` "Prices as of <time>" label shown only while offline on Market + Stock. Read-only offline. **Operator follow-up: a native rebuild (Xcode/Gradle) ships `@capacitor/network` on device** (web live + `cap sync` done). `analytics.ts`/`Home.tsx` still read `navigator.onLine` directly (non-UI guards; optional later consistency pass).
 - **Phase 2 (M):** `vite-plugin-pwa` for web app-shell offline; cache question banks (read offline; full offline answering needs a sync outbox with idempotency keys).
 - **Phase 3 (M):** move cache to Capacitor Preferences/SQLite once it outgrows localStorage (~5MB).
 
