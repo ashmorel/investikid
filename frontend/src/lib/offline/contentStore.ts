@@ -116,6 +116,71 @@ export async function listAvailableOffline(scope: CacheScope, now: number = Date
   }
 }
 
+export async function removeLevel(scope: CacheScope, levelId: string): Promise<void> {
+  if (!isOfflineDbAvailable()) return;
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await db.run(
+      `DELETE FROM cached_lesson WHERE child_id=? AND market=? AND level_id=?`,
+      [scope.childId, scope.market, levelId],
+    );
+    await db.run(
+      `DELETE FROM cached_level_lessons WHERE child_id=? AND market=? AND level_id=?`,
+      [scope.childId, scope.market, levelId],
+    );
+  } catch {
+    /* best-effort */
+  }
+}
+
+export type DownloadedLevel = { levelId: string; title: string; lessonCount: number };
+
+export async function listDownloadedLevels(
+  scope: CacheScope,
+  now: number = Date.now(),
+): Promise<DownloadedLevel[]> {
+  if (!isOfflineDbAvailable()) return [];
+  try {
+    const db = await getDb();
+    if (!db) return [];
+    const minTs = now - OFFLINE_MAX_AGE;
+    // Get fresh level_id + lesson count per level
+    const rows = await db.query(
+      `SELECT level_id, COUNT(*) AS n FROM cached_lesson
+       WHERE child_id=? AND market=? AND level_id IS NOT NULL AND cached_at>?
+       GROUP BY level_id`,
+      [scope.childId, scope.market, minTs],
+    );
+    if (!rows.values?.length) return [];
+
+    // Build levelId→title map from cached_module_levels rows
+    const levelRows = await db.query(
+      `SELECT payload_json FROM cached_module_levels WHERE child_id=? AND market=?`,
+      [scope.childId, scope.market],
+    );
+    const titleMap = new Map<string, string>();
+    for (const row of (levelRows.values ?? []) as { payload_json: string }[]) {
+      try {
+        const levels = JSON.parse(row.payload_json) as LevelOut[];
+        for (const lv of levels) {
+          titleMap.set(lv.id, lv.title);
+        }
+      } catch {
+        /* skip malformed row */
+      }
+    }
+
+    return (rows.values as { level_id: string; n: number }[]).map((r) => ({
+      levelId: r.level_id,
+      title: titleMap.get(r.level_id) ?? r.level_id,
+      lessonCount: Number(r.n),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function clearForChild(scope: CacheScope): Promise<void> {
   if (!isOfflineDbAvailable()) return;
   try {

@@ -51,8 +51,16 @@ export function useTranslation(ns: string = 'common') {
   const catalog = CATALOGS[ns] ?? CATALOGS['common'] ?? {};
 
   function t(key: string, opts?: Record<string, unknown>): string {
+    // Try exact key first
     const raw = resolve(catalog, key);
     if (typeof raw === 'string') return interpolate(raw, opts);
+    // Try plural suffixes when a `count` option is present
+    if (opts !== undefined && 'count' in opts) {
+      const count = Number(opts['count']);
+      const suffix = count === 1 ? '_one' : '_other';
+      const pluralRaw = resolve(catalog, `${key}${suffix}`);
+      if (typeof pluralRaw === 'string') return interpolate(pluralRaw, opts);
+    }
     return key;
   }
 

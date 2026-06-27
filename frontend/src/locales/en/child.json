@@ -40,7 +40,14 @@
 
   "offline": {
     "notice": "You're offline — live prices need the internet. Your lessons still work!",
-    "available": "Available offline"
+    "available": "Available offline",
+    "downloadedTitle": "Downloaded",
+    "downloadedLink": "Downloaded",
+    "lessonsSaved_one": "{{count}} lesson saved",
+    "lessonsSaved_other": "{{count}} lessons saved",
+    "emptyTitle": "Nothing saved yet",
+    "emptyBody": "Open a level and tap download to read it offline.",
+    "remove": "Remove"
   },
 
   "coach": {

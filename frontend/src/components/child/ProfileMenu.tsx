@@ -29,6 +29,7 @@ import { useProgress } from '@/hooks/useProgress';
 import { disablePush, enablePush, isPushRegistered } from '@/lib/push';
 import { addBioAccount, biometric, getBioAccounts, getDeviceId, removeBioAccount } from '@/lib/biometric';
 import { gamificationApi } from '@/api/gamification';
+import { isOfflineDbAvailable } from '@/lib/offline/sqlite';
 import { scopeFromMe } from '@/lib/offline/scope';
 import { clearForChild } from '@/lib/offline/contentStore';
 
@@ -44,6 +45,7 @@ import { requestReminderPermission, syncStreakReminder } from '@/lib/streakRemin
 export function ProfileMenu({ username }: { username: string }) {
   const { t } = useTranslation('settings');
   const { t: tMarkets } = useTranslation('markets');
+  const { t: tChild } = useTranslation('child');
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: session } = useChildSession();
@@ -423,6 +425,11 @@ export function ProfileMenu({ username }: { username: string }) {
           <DropdownMenuItem onSelect={() => setFeedbackOpen(true)}>
             {t('nav.sendFeedback')}
           </DropdownMenuItem>
+          {isOfflineDbAvailable() && (
+            <DropdownMenuItem onSelect={() => navigate('/downloaded')}>
+              {tChild('offline.downloadedLink')}
+            </DropdownMenuItem>
+          )}
           {session?.is_admin && (
             <DropdownMenuItem onSelect={() => navigate('/admin')}>
               {t('nav.admin')}
