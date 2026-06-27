@@ -11,9 +11,9 @@ import Home from '@/pages/child/Home';
 const Shop = lazy(() => import('@/pages/child/Shop'));
 const ReviseSession = lazy(() => import('@/pages/child/ReviseSession'));
 import Lessons from '@/pages/child/Lessons';
-import Module from '@/pages/child/Module';
+const Module = lazy(() => import('@/pages/child/Module'));
 import Level from '@/pages/child/Level';
-import Lesson from '@/pages/child/Lesson';
+const Lesson = lazy(() => import('@/pages/child/Lesson'));
 // Chart-heavy routes are lazy-loaded so recharts/chart code stays out of the
 // child-facing main bundle (a kid on /home never pays for it).
 const Simulator = lazy(() => import('@/pages/child/Simulator'));
@@ -32,12 +32,12 @@ import ConsentVerify from '@/pages/ConsentVerify';
 import ForgotPassword from '@/pages/ForgotPassword';
 import Privacy from '@/pages/Privacy';
 import DeleteAccount from '@/pages/DeleteAccount';
-import Try from '@/pages/Try';
+const Try = lazy(() => import('@/pages/Try'));
 import ResetPassword from '@/pages/ResetPassword';
 import VerifyEmail from '@/pages/VerifyEmail';
 import ParentLogin from '@/pages/ParentLogin';
 import ParentAuthCallback from '@/pages/ParentAuthCallback';
-import ParentDashboard from '@/pages/ParentDashboard';
+const ParentDashboard = lazy(() => import('@/pages/ParentDashboard'));
 // Admin tree is lazy-loaded so it stays out of the child-facing main bundle.
 const AdminLayout = lazy(() => import('@/components/admin/AdminLayout'));
 const AdminDashboard = lazy(() => import('@/components/admin/AdminDashboard'));
@@ -75,7 +75,7 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/delete-account" element={<DeleteAccount />} />
-        <Route path="/try" element={<Try />} />
+        <Route path="/try" element={<Suspense fallback={null}><Try /></Suspense>} />
         <Route path="/pending-consent" element={<PendingConsent />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -86,9 +86,9 @@ export default function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/lessons" element={<Lessons />} />
-          <Route path="/lessons/:moduleId" element={<Module />} />
+          <Route path="/lessons/:moduleId" element={<Suspense fallback={null}><Module /></Suspense>} />
           <Route path="/lessons/:moduleId/:levelId" element={<Level />} />
-          <Route path="/lessons/:moduleId/:levelId/:lessonId" element={<Lesson />} />
+          <Route path="/lessons/:moduleId/:levelId/:lessonId" element={<Suspense fallback={null}><Lesson /></Suspense>} />
           <Route path="/simulator" element={<Suspense fallback={null}><Simulator /></Suspense>} />
           <Route path="/simulator/market" element={<Suspense fallback={null}><Market /></Suspense>} />
           <Route path="/simulator/stock/:exchange/:ticker" element={<Suspense fallback={null}><Stock /></Suspense>} />
@@ -108,7 +108,7 @@ export default function App() {
         <Route path="/consent/verify" element={<ConsentVerify />} />
         <Route path="/parent/login" element={<ParentLogin />} />
         <Route path="/parent/auth/callback" element={<ParentAuthCallback />} />
-        <Route path="/parent" element={<ParentDashboard />} />
+        <Route path="/parent" element={<Suspense fallback={null}><ParentDashboard /></Suspense>} />
 
         {/* Admin routes */}
         <Route
