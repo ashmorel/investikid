@@ -68,7 +68,11 @@ describe('MoneyWord', () => {
     await userEvent.click(screen.getByRole('button', { name: /share/i }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
-    expect(writeText.mock.calls[0][0]).toContain('🟩🟩🟩🟩🟩');
+    const shared = writeText.mock.calls[0][0] as string;
+    expect(shared).toContain('🟩🟩🟩🟩🟩');
+    // Wordle-style label (date + score) and the app link for sharing.
+    expect(shared).toMatch(/MoneyWord · .+ · 1\/\d+/);
+    expect(shared).toContain('app.investikid.ai');
     // Visible confirmation (the old bug: copied silently, looked broken)
     expect(await screen.findByRole('status')).toHaveTextContent(/copied/i);
 

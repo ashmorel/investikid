@@ -85,11 +85,22 @@ export default function MoneyWord() {
 
   const shareResult = useCallback(async () => {
     if (!gameState) return;
-    const header = t('moneyword.shareHeader');
+    // Wordle-style result: "MoneyWord · 25 Jun · 4/6" + the colour grid + an
+    // app link. Score is guesses/max when solved, X/max when not. The date is
+    // the puzzle's UTC day (it resets at 00:00 UTC), formatted to the locale.
+    const date = new Date().toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'UTC',
+    });
+    const score = gameState.solved
+      ? `${gameState.guesses.length}/${gameState.max_guesses}`
+      : `X/${gameState.max_guesses}`;
+    const label = t('moneyword.shareLabel', { date, score });
     const grid = gameState.guesses
       .map((g) => g.feedback.map((f) => FEEDBACK_EMOJI[f] ?? '⬛').join(''))
       .join('\n');
-    const text = `${header}\n${grid}`;
+    const text = `${label}\n\n${grid}\n\n${t('moneyword.shareLink')}`;
     // Prefer the native share sheet (mobile / iOS Safari); fall back to the
     // clipboard. Either way, give visible + announced confirmation — the old
     // version copied silently, so it looked like nothing happened.
