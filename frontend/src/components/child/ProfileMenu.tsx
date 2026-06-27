@@ -29,6 +29,8 @@ import { useProgress } from '@/hooks/useProgress';
 import { disablePush, enablePush, isPushRegistered } from '@/lib/push';
 import { addBioAccount, biometric, getBioAccounts, getDeviceId, removeBioAccount } from '@/lib/biometric';
 import { gamificationApi } from '@/api/gamification';
+import { scopeFromMe } from '@/lib/offline/scope';
+import { clearForChild } from '@/lib/offline/contentStore';
 
 const GOAL_SIZES: { value: DailyGoalSize; label: string }[] = [
   { value: 10, label: 'Chill' },
@@ -155,7 +157,9 @@ export function ProfileMenu({ username }: { username: string }) {
 
   const logout = useMutation({
     mutationFn: () => authApi.logout(),
-    onSettled: () => {
+    onSettled: async () => {
+      const scope = scopeFromMe(qc.getQueryData<Me>(['me']));
+      if (scope) await clearForChild(scope); // no-op on web
       qc.removeQueries({ queryKey: ['me'] });
       navigate('/login', { replace: true });
     },

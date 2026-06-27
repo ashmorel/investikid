@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Query, Mutation } from '@tanstack/react-query';
+
+vi.mock('../offline/sqlite', () => ({ isOfflineDbAvailable: vi.fn(() => false) }));
+import { isOfflineDbAvailable } from '../offline/sqlite';
+
 import {
   shouldDehydrateQuery,
   shouldDehydrateMutation,
@@ -11,6 +15,8 @@ import {
 function fakeQuery(queryKey: unknown[], status: 'success' | 'error' | 'pending' = 'success') {
   return { queryKey, state: { status } } as unknown as Query;
 }
+// Alias used in the native-trim tests
+const successQuery = (key: unknown[]) => fakeQuery(key);
 
 describe('shouldDehydrateQuery', () => {
   it.each([
@@ -83,6 +89,17 @@ describe('shouldDehydrateQuery', () => {
     expect(shouldDehydrateQuery(fakeQuery(['coach']))).toBe(false); // excluded
     expect(shouldDehydrateQuery(fakeQuery(['quote', 'x'], 'error'))).toBe(false); // non-success
     expect(PERSISTED_QUERY_KEYS).not.toContain('market-movers');
+  });
+
+  it('persists lesson queries on web (DB unavailable)', () => {
+    vi.mocked(isOfflineDbAvailable).mockReturnValue(false);
+    expect(shouldDehydrateQuery(successQuery(['lesson', 'L1']))).toBe(true);
+  });
+
+  it('drops content queries on native (SQLite owns them)', () => {
+    vi.mocked(isOfflineDbAvailable).mockReturnValue(true);
+    expect(shouldDehydrateQuery(successQuery(['lesson', 'L1']))).toBe(false);
+    expect(shouldDehydrateQuery(successQuery(['progress']))).toBe(true); // non-content still persists
   });
 });
 

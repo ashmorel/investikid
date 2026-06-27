@@ -1,8 +1,15 @@
 import type { Mutation, Query } from '@tanstack/react-query';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
+import { isOfflineDbAvailable } from './offline/sqlite';
 
 /** How long persisted queries stay valid on disk (and the matching gcTime). */
 export const PERSIST_MAX_AGE = 24 * 60 * 60 * 1000; // 24h
+
+/**
+ * Content query-key heads that SQLite owns on native. Excluded from the
+ * localStorage persist blob when `isOfflineDbAvailable()` is true.
+ */
+const CONTENT_QUERY_KEYS: readonly string[] = ['modules', 'module-levels', 'level-lessons', 'lesson', 'module'];
 
 /**
  * Allowlist of query-key first segments that are safe + useful to persist:
@@ -32,7 +39,10 @@ export const PERSISTED_QUERY_KEYS: readonly string[] = [
 export function shouldDehydrateQuery(query: Query): boolean {
   if (query.state.status !== 'success') return false;
   const head = query.queryKey[0];
-  return typeof head === 'string' && PERSISTED_QUERY_KEYS.includes(head);
+  if (typeof head !== 'string' || !PERSISTED_QUERY_KEYS.includes(head)) return false;
+  // On native, content lives in SQLite — keep it out of the localStorage blob.
+  if (isOfflineDbAvailable() && CONTENT_QUERY_KEYS.includes(head)) return false;
+  return true;
 }
 
 /** Persist only paused lesson-completion mutations — the offline outbox.
