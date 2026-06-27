@@ -14,6 +14,7 @@ import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { ChartCoachPanel } from '@/components/child/simulator/ChartCoachPanel';
 import { BackButton } from '@/components/child/BackButton';
 import { OfflineNotice } from '@/components/child/OfflineNotice';
+import { StaleAsOf } from '@/components/child/StaleAsOf';
 import { useToast } from '@/hooks/use-toast';
 import { useOnline } from '@/hooks/useOnline';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
@@ -129,6 +130,7 @@ export default function Stock() {
       <BackButton to="/simulator/market" label={t('stockDetail.backLabel')} className="mb-4" />
 
       {!online && <OfflineNotice className="mb-4" />}
+      <StaleAsOf updatedAt={quoteQ.dataUpdatedAt} className="mb-3 text-xs text-muted-foreground" />
 
       <StockHeader
         name={quote.name}

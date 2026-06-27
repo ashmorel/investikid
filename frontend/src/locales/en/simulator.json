@@ -1,4 +1,6 @@
 {
+  "pricesAsOf": "Prices as of {{time}}",
+
   "portfolio": {
     "loading": "Loading portfolio…",
     "practicePortfolio": "Practice Portfolio",

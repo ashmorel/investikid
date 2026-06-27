@@ -12,6 +12,7 @@ import { MarketNews } from '@/components/child/simulator/MarketNews';
 import { InvestingTips } from '@/components/child/simulator/InvestingTips';
 import { BackButton } from '@/components/child/BackButton';
 import { OfflineNotice } from '@/components/child/OfflineNotice';
+import { StaleAsOf } from '@/components/child/StaleAsOf';
 import { SectionCard } from '@/components/child/simulator/SectionCard';
 import { formatCurrency } from '@/lib/currency';
 import { useOnline } from '@/hooks/useOnline';
@@ -134,7 +135,7 @@ export default function Market() {
     return () => clearTimeout(debounceRef.current);
   }, [query]);
 
-  const { data: snapshot, isLoading: featuredLoading } = useQuery<MarketSnapshot | null>({
+  const { data: snapshot, isLoading: featuredLoading, dataUpdatedAt } = useQuery<MarketSnapshot | null>({
     queryKey: ['market-snapshot', region],
     queryFn: () => simulatorApi.getSnapshot(region),
     retry: false,
@@ -236,6 +237,8 @@ export default function Market() {
       <div aria-live="polite" className="sr-only">
         {t('market.stocksAvailable', { count: stocks.length })}
       </div>
+
+      <StaleAsOf updatedAt={dataUpdatedAt} className="mt-1 text-xs text-muted-foreground" />
 
       {!isSearching && (
         <div className="mt-4">
