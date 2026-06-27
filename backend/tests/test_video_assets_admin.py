@@ -10,8 +10,8 @@ async def test_presign_requires_admin(client):
 
 
 async def test_presign_503_when_unconfigured(admin_client, monkeypatch):
-    import app.routers.admin as admin_mod
-    monkeypatch.setattr(admin_mod.storage, "is_configured", lambda: False)
+    import app.routers.admin_media as admin_media_mod
+    monkeypatch.setattr(admin_media_mod.storage, "is_configured", lambda: False)
     r = await admin_client.post("/admin/video-assets/presign",
                                 json={"filename": "a.mp4", "content_type": "video/mp4", "size_bytes": 100})
     assert r.status_code == 503
@@ -19,22 +19,22 @@ async def test_presign_503_when_unconfigured(admin_client, monkeypatch):
 
 
 async def test_presign_rejects_non_mp4(admin_client, monkeypatch):
-    import app.routers.admin as admin_mod
-    monkeypatch.setattr(admin_mod.storage, "is_configured", lambda: True)
+    import app.routers.admin_media as admin_media_mod
+    monkeypatch.setattr(admin_media_mod.storage, "is_configured", lambda: True)
     r = await admin_client.post("/admin/video-assets/presign",
                                 json={"filename": "a.mov", "content_type": "video/quicktime", "size_bytes": 100})
     assert r.status_code == 422 or r.status_code == 400
 
 
 async def test_presign_ok_creates_asset(admin_client, db_session, monkeypatch):
-    import app.routers.admin as admin_mod
-    monkeypatch.setattr(admin_mod.storage, "is_configured", lambda: True)
+    import app.routers.admin_media as admin_media_mod
+    monkeypatch.setattr(admin_media_mod.storage, "is_configured", lambda: True)
     calls = {}
     monkeypatch.setattr(
-        admin_mod.storage, "create_presigned_put",
+        admin_media_mod.storage, "create_presigned_put",
         lambda key, ct, content_length, expires=900: calls.update(content_length=content_length) or "https://r2/PUT",
     )
-    monkeypatch.setattr(admin_mod.storage, "public_url", lambda key: f"https://cdn/{key}")
+    monkeypatch.setattr(admin_media_mod.storage, "public_url", lambda key: f"https://cdn/{key}")
     r = await admin_client.post("/admin/video-assets/presign",
                                 json={"filename": "lesson.mp4", "content_type": "video/mp4", "size_bytes": 1000})
     assert r.status_code == 200
