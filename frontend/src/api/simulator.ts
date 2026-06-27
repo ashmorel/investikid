@@ -99,6 +99,12 @@ export type ExchangeMovers = {
   losers: MarketMover[];
 };
 
+export interface MarketSnapshot {
+  region: RegionCode;
+  featured: QuoteOut[];
+  movers: Record<string, ExchangeMovers>;
+}
+
 export type StockNews = {
   title: string;
   summary: string;
@@ -188,6 +194,9 @@ export const simulatorApi = {
 
   getMarketMovers: (region: RegionCode) =>
     apiFetch<Record<string, ExchangeMovers>>(`/market/movers?region=${region}`),
+
+  getSnapshot: (region: RegionCode) =>
+    apiFetch<MarketSnapshot>(`/market/snapshot?region=${region}`),
 
   getMarketNews: () =>
     apiFetch<StockNews[]>('/market/news'),

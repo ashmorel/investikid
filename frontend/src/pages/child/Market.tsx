@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, Search } from 'lucide-react';
-import { simulatorApi, type QuoteOut } from '@/api/simulator';
+import { simulatorApi, type QuoteOut, type MarketSnapshot } from '@/api/simulator';
 import { authApi, type Me } from '@/api/auth';
 import { REGION_EXCHANGES, toRegionCode, type RegionCode } from '@/lib/region';
 import { RegionSelector } from '@/components/child/simulator/RegionSelector';
@@ -131,13 +131,14 @@ export default function Market() {
     return () => clearTimeout(debounceRef.current);
   }, [query]);
 
-  const { data: featuredStocks, isLoading: featuredLoading } = useQuery<QuoteOut[] | null>({
-    queryKey: ['market-featured'],
-    queryFn: () => simulatorApi.searchMarket(''),
+  const { data: snapshot, isLoading: featuredLoading } = useQuery<MarketSnapshot | null>({
+    queryKey: ['market-snapshot', region],
+    queryFn: () => simulatorApi.getSnapshot(region),
     retry: false,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
+  const featuredStocks = snapshot?.featured ?? null;
 
   const { data: searchResults, isFetching: searchFetching } = useQuery<QuoteOut[] | null>({
     queryKey: ['market-search', debouncedQuery],
@@ -156,12 +157,11 @@ export default function Market() {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const fresh = await simulatorApi.searchMarket('', true);
-      queryClient.setQueryData(['market-featured'], fresh);
+      await queryClient.invalidateQueries({ queryKey: ['market-snapshot', region] });
     } finally {
       setRefreshing(false);
     }
-  }, [queryClient]);
+  }, [queryClient, region]);
 
   if (isLoading && stocks.length === 0) {
     return (

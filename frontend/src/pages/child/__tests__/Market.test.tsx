@@ -11,7 +11,7 @@ import Market from '../Market';
 vi.mock('@/api/simulator', () => ({
   simulatorApi: {
     searchMarket: vi.fn(),
-    getMarketMovers: vi.fn(() => Promise.resolve([])),
+    getSnapshot: vi.fn(() => Promise.resolve({ region: 'GB', featured: [], movers: {} })),
     getMarketNews: vi.fn(() => Promise.resolve([])),
     getNewsSummary: vi.fn(() => Promise.resolve(null)),
     getInvestingTips: vi.fn(() => Promise.resolve([])),
@@ -36,6 +36,7 @@ vi.mock('@/components/child/simulator/MarketNews', () => ({ MarketNews: () => nu
 vi.mock('@/components/child/simulator/InvestingTips', () => ({ InvestingTips: () => null }));
 
 const QUOTE = { ticker: 'NVDA', exchange: 'NASDAQ', name: 'NVIDIA Corp.', price: '525.40', currency: 'USD' };
+const VOD_QUOTE = { ticker: 'VOD', exchange: 'LSE', name: 'Vodafone', price: '70.00', currency: 'GBP' };
 
 function renderWithProviders(route: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -51,8 +52,21 @@ function renderWithProviders(route: string) {
 describe('Market search loading vs empty', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('getSnapshot is called with the active region for featured stocks', async () => {
+    vi.mocked(simulatorApi.getSnapshot).mockResolvedValue({
+      region: 'GB',
+      featured: [VOD_QUOTE],
+      movers: {},
+    });
+    vi.mocked(simulatorApi.searchMarket).mockResolvedValue([]);
+    renderWithProviders('/simulator/market');
+    expect(await screen.findByText('Vodafone')).toBeInTheDocument();
+    expect(simulatorApi.getSnapshot).toHaveBeenCalledWith('GB');
+  });
+
   it('shows a loading indicator (not "No stocks found") while a search is in flight', async () => {
     let resolveSearch: (v: typeof QUOTE[]) => void = () => {};
+    vi.mocked(simulatorApi.getSnapshot).mockResolvedValue({ region: 'GB', featured: [], movers: {} });
     vi.mocked(simulatorApi.searchMarket).mockImplementation((q: string) =>
       q === '' ? Promise.resolve([]) : new Promise<typeof QUOTE[]>((res) => { resolveSearch = res; }));
     renderWithProviders('/simulator/market');
@@ -64,6 +78,7 @@ describe('Market search loading vs empty', () => {
   });
 
   it('shows "No stocks found" only after a search settles empty', async () => {
+    vi.mocked(simulatorApi.getSnapshot).mockResolvedValue({ region: 'GB', featured: [], movers: {} });
     vi.mocked(simulatorApi.searchMarket).mockImplementation(() => Promise.resolve([]));
     renderWithProviders('/simulator/market');
     await userEvent.type(await screen.findByRole('searchbox', { name: /search stocks/i }), 'ZZZZ');
@@ -71,6 +86,7 @@ describe('Market search loading vs empty', () => {
   });
 
   it('defaults the region selector to the child content_region and wires movers', async () => {
+    vi.mocked(simulatorApi.getSnapshot).mockResolvedValue({ region: 'GB', featured: [], movers: {} });
     vi.mocked(simulatorApi.searchMarket).mockImplementation(() => Promise.resolve([]));
     renderWithProviders('/simulator/market');
     expect(await screen.findByRole('radio', { name: /UK/i })).toHaveAttribute('aria-checked', 'true');
@@ -80,6 +96,7 @@ describe('Market search loading vs empty', () => {
   });
 
   it('switching region updates the movers query', async () => {
+    vi.mocked(simulatorApi.getSnapshot).mockResolvedValue({ region: 'GB', featured: [], movers: {} });
     vi.mocked(simulatorApi.searchMarket).mockImplementation(() => Promise.resolve([]));
     const user = userEvent.setup();
     renderWithProviders('/simulator/market');
@@ -88,6 +105,7 @@ describe('Market search loading vs empty', () => {
   });
 
   it('defaults to US when the child is in an unsupported country (no content_region)', async () => {
+    vi.mocked(simulatorApi.getSnapshot).mockResolvedValue({ region: 'US', featured: [], movers: {} });
     vi.mocked(simulatorApi.searchMarket).mockImplementation(() => Promise.resolve([]));
     vi.mocked(authApi.me).mockResolvedValueOnce({
       id: 1, role: 'child', country_code: 'FR', content_region: null,
@@ -98,6 +116,7 @@ describe('Market search loading vs empty', () => {
   });
 
   it('has no axe violations in the loading state', async () => {
+    vi.mocked(simulatorApi.getSnapshot).mockResolvedValue({ region: 'GB', featured: [], movers: {} });
     vi.mocked(simulatorApi.searchMarket).mockImplementation((q: string) =>
       q === '' ? Promise.resolve([]) : new Promise(() => {}));
     const { container } = renderWithProviders('/simulator/market');

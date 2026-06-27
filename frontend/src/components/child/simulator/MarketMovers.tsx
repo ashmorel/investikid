@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { simulatorApi, type ExchangeMovers, type MarketMover } from '@/api/simulator';
+import { simulatorApi, type ExchangeMovers, type MarketMover, type MarketSnapshot } from '@/api/simulator';
 import { type RegionCode } from '@/lib/region';
 import { formatCurrency } from '@/lib/currency';
 import { SectionCard } from './SectionCard';
@@ -65,12 +65,13 @@ function ExchangeSection({ exchange, data }: { exchange: string; data: ExchangeM
 
 export function MarketMovers({ region }: { region: RegionCode }) {
   const { t } = useTranslation('simulator');
-  const { data, isLoading } = useQuery<Record<string, ExchangeMovers> | null>({
-    queryKey: ['market-movers', region],
-    queryFn: () => simulatorApi.getMarketMovers(region),
+  const { data: snapshot, isLoading } = useQuery<MarketSnapshot | null>({
+    queryKey: ['market-snapshot', region],
+    queryFn: () => simulatorApi.getSnapshot(region),
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
+  const movers = snapshot?.movers ?? {};
 
   if (isLoading) {
     return (
@@ -80,15 +81,15 @@ export function MarketMovers({ region }: { region: RegionCode }) {
     );
   }
 
-  if (!data || Object.keys(data).length === 0) return null;
+  if (!snapshot || Object.keys(movers).length === 0) return null;
 
-  const exchanges = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
+  const exchanges = Object.entries(movers).sort(([a], [b]) => a.localeCompare(b));
 
   return (
     <SectionCard title={t('marketMovers.sectionTitle')} icon={TrendingUp}>
       <div className="space-y-5">
-        {exchanges.map(([exchange, movers]) => (
-          <ExchangeSection key={exchange} exchange={exchange} data={movers} />
+        {exchanges.map(([exchange, exchangeMovers]) => (
+          <ExchangeSection key={exchange} exchange={exchange} data={exchangeMovers} />
         ))}
       </div>
     </SectionCard>
