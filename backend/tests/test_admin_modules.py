@@ -2,6 +2,12 @@ import pytest
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
+
+async def test_modules_requires_auth(client):
+    """Unauthenticated request to a moved content route must be rejected (not 200)."""
+    resp = await client.get("/admin/modules")
+    assert resp.status_code in (401, 403)
+
 async def test_module_crud_lifecycle(admin_client):
     """Create → read → update → reorder → delete a module."""
     # Create
