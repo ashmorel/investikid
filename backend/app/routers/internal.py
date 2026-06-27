@@ -12,6 +12,7 @@ from app.services import (
     market_content_pipeline,
     module_purge_service,
     product_analytics_service,
+    retention,
     streak_risk_push,
     subscription_reconcile_service,
     trial_reminder_service,
@@ -112,6 +113,21 @@ async def trigger_purge_archived_modules(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
     purged = await module_purge_service.purge_archived_modules(session, now=datetime.now(UTC))
     await session.commit()
+    return {"purged": purged}
+
+
+@router.post("/purge-accounts/run")
+async def trigger_purge_accounts(
+    x_cron_secret: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+):
+    """Hard-purge PII for accounts soft-deleted past the retention window
+    (the cron equivalent of the `purge-accounts` CLI command)."""
+    if not settings.cron_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    purged = await retention.purge_expired_accounts(session, datetime.now(UTC).date())
     return {"purged": purged}
 
 

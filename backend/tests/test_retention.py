@@ -33,6 +33,43 @@ async def test_purge_overwrites_pii_after_retention(db_session):
     assert n2 == 0
 
 
+async def test_purge_hard_deletes_child_linked_pii(db_session):
+    """Soft-delete leaves child PII in other tables; the purge must hard-delete
+    sent_emails (subject_id), push_devices, and feedback for the purged user."""
+    from sqlalchemy import func, select
+
+    from app.models.consent import SentEmail
+    from app.models.feedback import Feedback
+    from app.models.push_device import PushDevice
+
+    old = datetime.now(UTC) - timedelta(days=40)
+    u = User(
+        email="pii@example.com", username="piichild", password_hash="hash",
+        dob=date(2010, 1, 1), country_code="GB", currency_code="GBP",
+        parent_email="piiparent@example.com",
+        is_active=False, deleted_at=old, deletion_requested_at=old,
+    )
+    db_session.add(u)
+    await db_session.flush()
+
+    db_session.add(SentEmail(to_email="piiparent@example.com", template="consent_request",
+                             body="link", subject_id=u.id))
+    db_session.add(PushDevice(user_id=u.id, platform="ios", token="tok-pii-123"))
+    db_session.add(Feedback(user_id=u.id, submitter_role="child",
+                            feedback_type="bug", message="something broke"))
+    await db_session.flush()
+
+    n = await purge_expired_accounts(db_session, date.today())
+    assert n == 1
+
+    assert await db_session.scalar(
+        select(func.count()).select_from(SentEmail).where(SentEmail.subject_id == u.id)) == 0
+    assert await db_session.scalar(
+        select(func.count()).select_from(PushDevice).where(PushDevice.user_id == u.id)) == 0
+    assert await db_session.scalar(
+        select(func.count()).select_from(Feedback).where(Feedback.user_id == u.id)) == 0
+
+
 async def test_purge_skips_recent_deletions(db_session):
     recent = datetime.now(UTC) - timedelta(days=5)
     u = User(

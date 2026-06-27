@@ -38,6 +38,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/internal/push-streak-risk/run",
     "/internal/subscriptions/reconcile",
     "/internal/purge-archived-modules",
+    "/internal/purge-accounts/run",
     "/internal/market-content",
     "/internal/video-candidates/extract",
     "/internal/collectables/reconcile",
