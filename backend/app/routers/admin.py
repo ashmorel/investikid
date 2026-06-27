@@ -13,21 +13,16 @@ from app.core.rate_limit import limiter
 from app.models.content import Lesson, Level, Module
 from app.models.content_translation import ContentTranslation
 from app.models.gamification import Badge, Challenge, UserBadge
-from app.models.lesson_draft import LessonDraft
 from app.models.market import Market
 from app.models.market_brief import MarketBrief
 from app.models.user import User
 from app.models.video_asset import VideoAsset
 from app.models.video_health import VideoHealth
-from app.routers import admin_content
+from app.routers import admin_content, admin_drafts, admin_generation
 from app.routers.admin_auth import get_current_admin
-from app.routers.admin_content import _lesson_out
 from app.schemas.admin import (
-    AdaptationFlags,
     AdminSettingsOut,
     AdminSettingsUpdate,
-    ApproveDraftsRequest,
-    ApproveDraftsResult,
     BadgeCreate,
     BadgeOut,
     BadgeUpdate,
@@ -37,15 +32,6 @@ from app.schemas.admin import (
     CoverageBucket,
     CuratedModuleSuggestion,
     CuratedTranslationRequest,
-    CurriculumDesignOut,
-    GenerateLessonsRequest,
-    GenerateLessonsResponse,
-    GenerateMarketLessonsRequest,
-    GenerateModuleMarketRequest,
-    GenerateNativeLessonsRequest,
-    LessonDraftOut,
-    LessonDraftUpdate,
-    LessonOut,
     MarketBriefOut,
     MarketBriefUpdate,
     MarketScaffoldResult,
@@ -58,18 +44,9 @@ from app.schemas.admin import (
     VideoHealthItem,
     VideoPresignRequest,
     VideoPresignResponse,
-    validate_lesson_content_json,
 )
 from app.schemas.parent import PremiumToggleRequest
 from app.services import storage, video_health_service
-from app.services.admin_content_generation_service import (
-    _concat_text,
-    generate_level_lessons,
-    generate_market_level_lessons,
-    generate_module_market_lessons,
-    generate_native_level_lessons,
-    regenerate_draft,
-)
 from app.services.app_settings import (
     get_alert_emails,
     get_enabled_content_languages,
@@ -87,228 +64,22 @@ from app.services.app_settings import (
     set_starting_cash,
     set_trade_commission_pct,
 )
-from app.services.content_adaptation_check import find_uk_residue
 from app.services.content_i18n import extract_bundle, source_hash, validate_bundle
 from app.services.entitlements import set_premium
 from app.services.event_service import EVENT_KEY, set_event
-from app.services.lesson_approval_service import approve_level_drafts
 from app.services.llm_client import probe_all_providers
 from app.services.market_brief_service import (
     BriefGenerationError,
     generate_brief,
-    require_verified_brief,
-)
-from app.services.market_curriculum.curriculum_publish_service import publish_market_curriculum
-from app.services.market_curriculum.designer import CurriculumDesignError, design_curriculum
-from app.services.market_curriculum.native_batch import generate_market_native
-from app.services.market_curriculum.proposal_service import (
-    accept_proposal,
-    get_active_proposal,
-    get_proposal_for_generation,
-    save_proposal,
 )
 from app.services.market_module_suggester import suggest_modules
 from app.services.market_scaffold_service import scaffold_market_from_gb
-from app.services.moderation import moderate_output
 from app.services.translation_service import translate_entity
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
 router.include_router(admin_content.router)
-
-
-@router.post("/levels/{level_id}/generate", response_model=GenerateLessonsResponse)
-@limiter.limit("5/minute")
-async def generate_level_lessons_endpoint(
-    request: Request,
-    level_id: uuid.UUID,
-    payload: GenerateLessonsRequest,
-    _admin: User = Depends(get_current_admin),
-    session: AsyncSession = Depends(get_session),
-):
-    level = await session.get(Level, level_id)
-    if level is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
-    result = await generate_level_lessons(
-        session, level, concept=payload.concept, count=payload.count, types=payload.types,
-    )
-    return GenerateLessonsResponse(
-        created=[LessonDraftOut.model_validate(d) for d in result.created],
-        skipped=result.skipped,
-    )
-
-
-@router.post("/levels/{level_id}/generate-market", response_model=GenerateLessonsResponse)
-@limiter.limit("5/minute")
-async def generate_market_level_lessons_endpoint(
-    request: Request,
-    level_id: uuid.UUID,
-    payload: GenerateMarketLessonsRequest,
-    _admin: User = Depends(get_current_admin),
-    session: AsyncSession = Depends(get_session),
-):
-    target_level = await session.get(Level, level_id)
-    if target_level is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
-    source_level = await session.get(Level, payload.source_level_id)
-    if source_level is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source level not found")
-    target_module = await session.get(Module, target_level.module_id)
-    if target_module is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
-    brief = await require_verified_brief(session, target_module.market_code)
-    result = await generate_market_level_lessons(
-        session, target_level, source_level=source_level, brief=brief,
-    )
-    return GenerateLessonsResponse(
-        created=[LessonDraftOut.model_validate(d) for d in result.created],
-        skipped=result.skipped,
-    )
-
-
-@router.post("/modules/{module_id}/generate-market")
-@limiter.limit("5/minute")
-async def generate_module_market_lessons_endpoint(
-    request: Request,
-    module_id: uuid.UUID,
-    payload: GenerateModuleMarketRequest,
-    _admin: User = Depends(get_current_admin),
-    session: AsyncSession = Depends(get_session),
-):
-    module = await session.get(Module, module_id)
-    if module is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
-    brief = await require_verified_brief(session, module.market_code)
-    return await generate_module_market_lessons(
-        session, module, brief=brief, include_populated=payload.include_populated,
-    )
-
-
-@router.post("/levels/{level_id}/generate-native", response_model=GenerateLessonsResponse)
-@limiter.limit("5/minute")
-async def generate_native_level_lessons_endpoint(
-    request: Request,
-    level_id: uuid.UUID,
-    payload: GenerateNativeLessonsRequest,
-    _admin: User = Depends(get_current_admin),
-    session: AsyncSession = Depends(get_session),
-):
-    level = await session.get(Level, level_id)
-    if level is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
-    module = await session.get(Module, level.module_id)
-    if module is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
-    brief = await require_verified_brief(session, module.market_code)
-    result = await generate_native_level_lessons(
-        session, level, brief=brief, concepts=payload.concepts, types=payload.types,
-    )
-    return GenerateLessonsResponse(
-        created=[LessonDraftOut.model_validate(d) for d in result.created],
-        skipped=result.skipped,
-    )
-
-
-@router.get("/levels/{level_id}/drafts", response_model=list[LessonDraftOut])
-async def list_lesson_drafts(
-    level_id: uuid.UUID, session: AsyncSession = Depends(get_session),
-):
-    rows = (await session.scalars(
-        select(LessonDraft).where(LessonDraft.level_id == level_id).order_by(LessonDraft.created_at)
-    )).all()
-
-    def _draft_out(d):
-        residue = find_uk_residue(_concat_text(d.content_json or {}))
-        out = LessonDraftOut.model_validate(d)
-        out.adaptation_flags = AdaptationFlags(uk_residue=residue, suspect=bool(residue))
-        return out
-
-    return [_draft_out(d) for d in rows]
-
-
-@router.put("/lesson-drafts/{draft_id}", response_model=LessonDraftOut)
-async def update_lesson_draft(
-    draft_id: uuid.UUID,
-    payload: LessonDraftUpdate,
-    session: AsyncSession = Depends(get_session),
-):
-    draft = await session.get(LessonDraft, draft_id)
-    if draft is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
-    try:
-        validate_lesson_content_json(draft.type, payload.content_json)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
-    mod = await moderate_output(_concat_text(payload.content_json), surface="lesson")
-    draft.content_json = payload.content_json
-    draft.moderation_safe = mod.safe
-    draft.moderation_category = mod.category
-    await session.commit()
-    return LessonDraftOut.model_validate(draft)
-
-
-@router.post("/lesson-drafts/{draft_id}/approve", response_model=LessonOut)
-async def approve_lesson_draft(
-    draft_id: uuid.UUID,
-    session: AsyncSession = Depends(get_session),
-):
-    draft = await session.get(LessonDraft, draft_id)
-    if draft is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
-    if not draft.moderation_safe:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Draft failed moderation")
-    level = await session.get(Level, draft.level_id)
-    max_order = await session.scalar(
-        select(func.max(Lesson.order_index)).where(Lesson.level_id == draft.level_id)
-    )
-    lesson = Lesson(
-        module_id=level.module_id, level_id=draft.level_id, type=draft.type,
-        content_json=draft.content_json, xp_reward=10, order_index=(max_order or 0) + 1,
-    )
-    session.add(lesson)
-    await session.delete(draft)
-    await session.commit()
-    await session.refresh(lesson)
-    return await _lesson_out(session, lesson)
-
-
-@router.post("/levels/{level_id}/approve-drafts", response_model=ApproveDraftsResult)
-async def approve_level_drafts_endpoint(
-    level_id: uuid.UUID,
-    payload: ApproveDraftsRequest,
-    session: AsyncSession = Depends(get_session),
-):
-    level = await session.get(Level, level_id)
-    if level is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Level not found")
-    return ApproveDraftsResult(**await approve_level_drafts(session, level, replace=payload.replace))
-
-
-@router.post("/lesson-drafts/{draft_id}/regenerate", response_model=LessonDraftOut)
-@limiter.limit("5/minute")
-async def regenerate_lesson_draft(
-    request: Request,
-    draft_id: uuid.UUID,
-    session: AsyncSession = Depends(get_session),
-):
-    draft = await session.get(LessonDraft, draft_id)
-    if draft is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
-    updated = await regenerate_draft(session, draft)
-    if updated is None:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Generation failed")
-    return LessonDraftOut.model_validate(updated)
-
-
-@router.delete("/lesson-drafts/{draft_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def reject_lesson_draft(
-    draft_id: uuid.UUID,
-    session: AsyncSession = Depends(get_session),
-):
-    draft = await session.get(LessonDraft, draft_id)
-    if draft is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
-    await session.delete(draft)
-    await session.commit()
+router.include_router(admin_generation.router)
+router.include_router(admin_drafts.router)
 
 
 # ── Market briefs ───────────────────────────────────────────────────
@@ -854,93 +625,3 @@ async def llm_status() -> list[dict]:
     return await probe_all_providers()
 
 
-# ── Curriculum design ────────────────────────────────────────────────
-@router.post("/markets/{market_code}/curriculum/design", response_model=CurriculumDesignOut)
-@limiter.limit("5/minute")
-async def design_market_curriculum_endpoint(
-    request: Request, market_code: str,
-    _admin: User = Depends(get_current_admin),
-    session: AsyncSession = Depends(get_session),
-):
-    brief = await require_verified_brief(session, market_code)
-    try:
-        proposal, report = await design_curriculum(market_code, brief.brief_json)
-    except CurriculumDesignError:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY,
-                            detail="Could not design a curriculum, try again")
-    row = await save_proposal(session, proposal, report)
-    await session.commit()
-    return CurriculumDesignOut(proposal_id=str(row.id), proposal=row.proposal_json,
-                               coverage=row.coverage_json)
-
-
-@router.get("/markets/{market_code}/curriculum", response_model=CurriculumDesignOut)
-async def get_market_curriculum_endpoint(
-    market_code: str,
-    _admin: User = Depends(get_current_admin),
-    session: AsyncSession = Depends(get_session),
-):
-    # Prefer a staged proposal in progress (proposed/accepted); otherwise fall
-    # back to the published one so a LIVE curriculum stays visible and can be
-    # regenerated (the panel + lesson list key off this).
-    row = await get_active_proposal(session, market_code)
-    if row is None:
-        row = await get_proposal_for_generation(session, market_code)
-    if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No curriculum")
-    return CurriculumDesignOut(proposal_id=str(row.id), proposal=row.proposal_json,
-                               coverage=row.coverage_json)
-
-
-@router.post("/markets/{market_code}/curriculum/accept")
-async def accept_market_curriculum_endpoint(
-    market_code: str,
-    _admin: User = Depends(get_current_admin),
-    session: AsyncSession = Depends(get_session),
-):
-    row = await get_active_proposal(session, market_code)
-    if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No curriculum")
-    try:
-        result = await accept_proposal(session, row)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    await session.commit()
-    return result
-
-
-@router.post("/markets/{market_code}/curriculum/publish")
-async def publish_market_curriculum_endpoint(
-    market_code: str,
-    _admin: User = Depends(get_current_admin),
-    session: AsyncSession = Depends(get_session),
-):
-    try:
-        result = await publish_market_curriculum(session, market_code)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    await session.commit()
-    return result
-
-
-@router.post("/modules/{module_id}/generate-native-batch")
-@limiter.limit("5/minute")
-async def generate_native_batch_endpoint(
-    request: Request, module_id: uuid.UUID,
-    payload: GenerateModuleMarketRequest,
-    _admin: User = Depends(get_current_admin),
-    session: AsyncSession = Depends(get_session),
-):
-    module = await session.get(Module, module_id)
-    if module is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found")
-    brief = await require_verified_brief(session, module.market_code)
-    proposal_row = await get_proposal_for_generation(session, module.market_code)
-    if proposal_row is None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail="No accepted or published curriculum for this market")
-    summary = await generate_market_native(
-        session, module, brief=brief, proposal_row=proposal_row,
-        include_populated=payload.include_populated)
-    await session.commit()
-    return summary

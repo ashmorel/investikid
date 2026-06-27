@@ -79,7 +79,7 @@ async def test_edit_draft_revalidates_and_remoderates(admin_client, db_session):
                         concept="x", model_used="m", moderation_safe=True, moderation_category=None)
     db_session.add(draft)
     await db_session.flush()
-    with patch("app.routers.admin.moderate_output",
+    with patch("app.routers.admin_drafts.moderate_output",
                AsyncMock(return_value=ModerationResult(safe=True, category=None, text="x"))):
         resp = await admin_client.put(f"/admin/lesson-drafts/{draft.id}",
                                       json={"content_json": {"title": "New", "body": "Body"}})
