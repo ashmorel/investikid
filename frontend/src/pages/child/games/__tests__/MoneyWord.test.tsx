@@ -100,6 +100,28 @@ describe('MoneyWord', () => {
     await screen.findByText(/couldn't load/i);
   });
 
+  it('shows the error view (not an infinite spinner) when the request throws', async () => {
+    // apiFetch THROWS on any non-2xx (e.g. 503 no_daily_word) — it never returns
+    // null for an error. The load effect must catch it and fall into the error
+    // view, not stay stuck on "Loading today's puzzle…" forever.
+    vi.mocked(api.getMoneyWordToday).mockRejectedValue(new Error('503 no_daily_word'));
+    render(<MemoryRouter><MoneyWord /></MemoryRouter>);
+    await screen.findByText(/couldn't load/i);
+    expect(screen.queryByText(/loading today/i)).not.toBeInTheDocument();
+  });
+
+  it('recovers (no stuck spinner) when a guess submission throws', async () => {
+    vi.mocked(api.submitMoneyWordGuess).mockRejectedValue(new Error('500'));
+    render(<MemoryRouter><MoneyWord /></MemoryRouter>);
+    await screen.findByRole('grid');
+    for (const letter of ['A', 'S', 'S', 'E', 'T']) {
+      await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${letter}$`, 'i') }));
+    }
+    await userEvent.click(screen.getByRole('button', { name: /enter/i }));
+    // The Enter button must become usable again (not stuck disabled/submitting).
+    await waitFor(() => expect(screen.getByRole('button', { name: /enter/i })).toBeEnabled());
+  });
+
   it('shows completed state immediately when already_played', async () => {
     vi.mocked(api.getMoneyWordToday).mockResolvedValue({
       ...BASE_STATE,

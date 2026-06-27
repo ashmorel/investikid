@@ -36,13 +36,21 @@ export default function MoneyWord() {
   useEffect(() => {
     isMounted.current = true;
     void (async () => {
-      const state = await getMoneyWordToday();
-      if (!isMounted.current) return;
-      if (state === null) {
-        setLoadState('error');
-      } else {
-        setGameState(state);
-        setLoadState('ready');
+      try {
+        // apiFetch THROWS on any non-2xx (e.g. 503 no_daily_word when the word
+        // bank is empty) — it only returns null on HTTP 204. Without this catch
+        // the rejection escaped the IIFE and loadState stayed 'loading' forever
+        // ("Loading today's puzzle…" with no way out). Catch → error view.
+        const state = await getMoneyWordToday();
+        if (!isMounted.current) return;
+        if (state === null) {
+          setLoadState('error');
+        } else {
+          setGameState(state);
+          setLoadState('ready');
+        }
+      } catch {
+        if (isMounted.current) setLoadState('error');
       }
     })();
     return () => {
@@ -66,7 +74,17 @@ export default function MoneyWord() {
     if (!gameState || submitting || gameState.completed) return;
     if (current.length !== gameState.length) return;
     setSubmitting(true);
-    const result = await submitMoneyWordGuess(current);
+    let result;
+    try {
+      result = await submitMoneyWordGuess(current);
+    } catch {
+      // apiFetch throws on non-2xx; without catching, setSubmitting(false) never
+      // ran and the Enter button stayed stuck disabled. Surface a guess error.
+      if (!isMounted.current) return;
+      setSubmitting(false);
+      setAnnouncement(t('moneyword.guessError'));
+      return;
+    }
     if (!isMounted.current) return;
     setSubmitting(false);
     if (result === null) {
