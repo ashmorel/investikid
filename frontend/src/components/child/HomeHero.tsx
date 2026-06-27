@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNextLesson } from '@/hooks/useNextLesson';
 import { useChildSession } from '@/hooks/useChildSession';
@@ -46,25 +45,23 @@ export default function HomeHero() {
           </div>
           <div className="flex min-w-0 flex-col items-start gap-1">
             {cfg.showTierChip && <TierChip />}
-            <motion.p
+            <p
               id="home-hero-greeting"
-              className="rounded-2xl rounded-tl-sm border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-sm"
-              initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+              className="animate-hero-in rounded-2xl rounded-tl-sm border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-sm"
             >
               {greeting}
-            </motion.p>
+            </p>
           </div>
         </div>
       ) : (
         <div className="flex min-w-0 flex-col items-start gap-1">
           {cfg.showTierChip && <TierChip />}
-          <motion.p
+          <p
             id="home-hero-greeting"
-            className="text-lg font-extrabold text-gray-900"
-            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+            className="animate-hero-in text-lg font-extrabold text-gray-900"
           >
             {greeting}
-          </motion.p>
+          </p>
         </div>
       )}
 

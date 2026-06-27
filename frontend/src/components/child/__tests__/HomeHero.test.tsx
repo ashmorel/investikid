@@ -52,4 +52,10 @@ describe('HomeHero', () => {
     const { container } = render(wrap(<HomeHero />));
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it('renders the greeting with CSS entrance animation class', () => {
+    render(wrap(<HomeHero />));
+    const greeting = screen.getByText(/start your money journey/i);
+    expect(greeting).toHaveClass('animate-hero-in');
+  });
 });
