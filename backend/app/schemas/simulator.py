@@ -105,6 +105,12 @@ class ExchangeMoversOut(BaseModel):
     losers: list[MarketMoverOut] = []
 
 
+class MarketSnapshotOut(BaseModel):
+    region: str
+    featured: list[QuoteOut] = []
+    movers: dict[str, ExchangeMoversOut] = {}
+
+
 class StockNewsOut(BaseModel):
     title: str
     summary: str

@@ -23,6 +23,7 @@ from app.schemas.simulator import (
     HoldingOut,
     InvestingTipOut,
     MarketMoverOut,
+    MarketSnapshotOut,
     MissionRewardOut,
     NewsSummaryOut,
     PortfolioOut,
@@ -40,7 +41,7 @@ from app.schemas.simulator import (
     TradeRequest,
     TradeResultOut,
 )
-from app.services import llm_cache
+from app.services import llm_cache, market_snapshot_service
 from app.services.age_tier import age_in_years
 from app.services.app_settings import get_trade_commission_pct
 from app.services.chart_coach_service import (
@@ -179,6 +180,23 @@ async def get_market_movers(
         )
         for exchange, data in raw.items()
     }
+
+
+@router.get("/market/snapshot", response_model=MarketSnapshotOut)
+async def get_market_snapshot(
+    region: Literal["US", "GB", "HK"] = "US",
+    _current: User = Depends(get_current_user),
+    provider=Depends(get_price_provider),
+):
+    snap = await asyncio.to_thread(market_snapshot_service.snapshot, provider, region)
+    return MarketSnapshotOut(
+        region=snap["region"],
+        featured=[QuoteOut(**q) for q in snap["featured"]],
+        movers={exch: ExchangeMoversOut(
+            winners=[MarketMoverOut(**m) for m in side["winners"]],
+            losers=[MarketMoverOut(**m) for m in side["losers"]],
+        ) for exch, side in snap["movers"].items()},
+    )
 
 
 @router.get("/market/news", response_model=list[StockNewsOut])
