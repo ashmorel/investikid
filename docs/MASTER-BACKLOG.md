@@ -130,19 +130,20 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 | 9 | ✅ **DONE (`636449a`)** — **Per-request LLM → linear token cost** — Fixed: prod-only daily Redis cache (`llm_cache`) for home-greeting (keyed on inputs+UTC-day) and news-summary (keyed on holdings/age/lang, 6h TTL, checked before the news fetch + LLM). | Cost | M | `services/llm_cache.py`, `routers/ai.py`, `routers/simulator.py`. |
 | 10 | ✅ **DONE (`b75efeb`)** — **FE: lazy-load chart routes + `manualChunks`** — recharts/framer/confetti/screenshot were all in the 1.3 MB initial bundle. Fixed: Simulator/Market/Stock/Stats are `React.lazy` + `Suspense`; vendor split (`react-vendor`/`charts`/`motion`/`query`). **Entry chunk 1,305 → 148 kB.** | Perf | S | `src/App.tsx`, `vite.config.ts`. |
 
-### 🟡 P2 — medium
+### 🟡 P2 — medium — ✅ ALL DONE 2026-06-27 (`4dda78f`, `0343f8e`, `53e3a32`)
 | # | Item | Dim | Effort | Where |
 |---|---|---|---|---|
-| 11 | Oversized screenshot (>1.4MB cap) → 422 loses the whole feedback incl. text. | Bug | S | `lib/screenshot.ts` cap-check / drop image, keep text. |
-| 12 | MoneyWord winning guess can double-award on concurrent POSTs (no row lock). | Bug | S | `services/moneyword_service.py` → lock row / completion-marker. |
-| 13 | `/portfolio/trades` has no rate limit (heaviest write path). | Bug/scale | S | `routers/simulator.py`. |
-| 14 | DB pool uses defaults (15/instance) → exhausts Railway `max_connections` at ~7–10 instances. | Scale | S | `core/database.py` → explicit pool + `pool_pre_ping` / PgBouncer. |
-| 15 | Cron jobs `.all()` whole tables + per-row loops (digest/reconcile/streak-risk). | Scale | M | batch/paginate. |
-| 16 | Age-from-DOB off-by-one (`days//365`) disagrees with consent age near birthdays. | Bug | S | route all sites through `services/age_tier.py`. |
-| 17 | Dynamic-import `modern-screenshot` + `canvas-confetti` (loaded at boot for rare actions). | Perf | S | `lib/screenshot.ts`, `lib/confetti.ts`. |
+| 11 | ✅ Oversized screenshot (>1.4MB cap) → 422 lost the whole feedback. **Fixed:** drop the image at submit, keep the text (`0343f8e`). | Bug | S | `lib/screenshot.ts`, `FeedbackDialog.tsx`. |
+| 12 | ✅ MoneyWord winning guess could double-award on concurrent POSTs. **Fixed:** lock the play row `FOR UPDATE` (`4dda78f`). | Bug | S | `services/moneyword_service.py`. |
+| 13 | ✅ `/portfolio/trades` had no rate limit. **Fixed:** `30/min` (`4dda78f`). | Bug/scale | S | `routers/simulator.py`. |
+| 14 | ✅ DB pool used defaults. **Fixed:** explicit `5+5`/instance + `pool_pre_ping` + recycle, tunable (`4dda78f`). | Scale | S | `core/database.py`, `core/config.py`. |
+| 15 | ✅ Cron jobs `.all()` whole tables. **Fixed:** keyset-paginate digest/reconcile/streak-risk via `core/pagination.iter_keyset` (`53e3a32`). | Scale | M | as listed. |
+| 16 | ✅ Age-from-DOB off-by-one. **Fixed:** 5 simulator sites routed through `age_in_years` (`4dda78f`). | Bug | S | `routers/simulator.py`. |
+| 17 | ✅ `modern-screenshot` + `canvas-confetti` at boot. **Fixed:** dynamic-import both; confetti is now its own 10.7kB on-demand chunk (`0343f8e`). | Perf | S | `lib/screenshot.ts`, `lib/confetti.ts`, `CompletionPanel.tsx`. |
 
 ### ⚪ P3 — low / cleanup
-Tutor/coach 500s on LLM outage (→503) · `framer-motion` on the boot path via `Shell` · global `refetchOnWindowFocus` with no `staleTime` floor (resume refetch storm) · `routers/admin.py` 1,329-line god-router (split) · no shared `today_utc()` helper (daily-boundary logic copy-pasted ~11× — caused the past stale-reset bug) · dead funcs + duplicated `active_market_code or "GB"`.
+- ✅ **DONE (`027ee3e`, `0343f8e`):** Tutor/coach now 503 (not 500) on LLM outage · global `refetchOnWindowFocus` given a 30s `staleTime` floor · added `core/time.today_utc()` (migrated ~14 sites) · added `core/markets.active_market()` (deduped the 4 `active_market_code or "GB"` fallbacks).
+- ⏸️ **DEFERRED (own PR — refactor risk, no functional value):** `routers/admin.py` 1,329-line god-router split (touches every admin feature) · move `framer-motion` off the `Shell` boot path (it drives the route-transition animation on every screen; already vendor-split into its own cacheable chunk by #10).
 
 ### 📥 Goal 4 — Offline support *(already ~60% built: Query persistence + `OfflineNotice` banner + manifest; native bundles the shell)*
 - **Phase 1 (S–M, high value):** `@capacitor/network` → React Query `onlineManager` (reliable WKWebView detection + auto sync-on-reconnect); fix allowlist↔key drift (persist `trades`, `quote`); "as of <time>" staleness label on cached prices.
