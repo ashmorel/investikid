@@ -44,7 +44,16 @@ def biometric_exchange_key(request) -> str:
 
 # In development the limiter is disabled so test suites and rapid local iteration
 # don't trip per-IP thresholds that exist for production abuse protection.
+#
+# In production the app runs multiple instances, so the counters must be SHARED
+# across them — in-memory buckets would let the effective limits multiply by
+# instance count, defeating the cost/abuse caps the limits exist to enforce.
+# Use the provisioned Redis there (the same instance price_cache uses); keep
+# in-memory ("memory://") for single-instance dev/staging/testing so those envs
+# don't gain a hard Redis dependency.
+_storage_uri = settings.redis_url if settings.environment == "production" else "memory://"
 limiter = Limiter(
     key_func=rate_limit_key,
     enabled=settings.environment != "development",
+    storage_uri=_storage_uri,
 )
