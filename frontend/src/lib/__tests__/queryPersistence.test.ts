@@ -21,8 +21,11 @@ describe('shouldDehydrateQuery', () => {
     ['me'],
     ['progress'],
     ['portfolio'],
-    ['market-movers', 'GB'],
     ['trade-config'],
+    ['market-snapshot', 'GB'],
+    ['quote', 'AAPL'],
+    ['trades'],
+    ['stock-history', 'NVDA'],
   ])('persists allowlisted key %j', (...key) => {
     expect(shouldDehydrateQuery(fakeQuery(key))).toBe(true);
   });
@@ -62,9 +65,23 @@ describe('shouldDehydrateQuery', () => {
       'me',
       'progress',
       'portfolio',
-      'market-movers',
       'trade-config',
+      'market-snapshot',
+      'quote',
+      'trades',
+      'stock-history',
     ]);
+  });
+
+  it('persists the current simulator + content keys, drops dead/excluded ones', () => {
+    for (const head of ['market-snapshot', 'quote', 'trades', 'stock-history', 'portfolio', 'lesson', 'me']) {
+      expect(shouldDehydrateQuery(fakeQuery([head, 'x']))).toBe(true);
+    }
+    expect(shouldDehydrateQuery(fakeQuery(['market-movers', 'US']))).toBe(false); // dead key removed
+    expect(shouldDehydrateQuery(fakeQuery(['market-search', 'aapl']))).toBe(false); // excluded
+    expect(shouldDehydrateQuery(fakeQuery(['coach']))).toBe(false); // excluded
+    expect(shouldDehydrateQuery(fakeQuery(['quote', 'x'], 'error'))).toBe(false); // non-success
+    expect(PERSISTED_QUERY_KEYS).not.toContain('market-movers');
   });
 });
 

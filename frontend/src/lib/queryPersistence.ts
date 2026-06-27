@@ -18,8 +18,14 @@ export const PERSISTED_QUERY_KEYS: readonly string[] = [
   'me',
   'progress',
   'portfolio',
-  'market-movers',
   'trade-config',
+  // Simulator data the child has already seen — kept readable offline.
+  // `market-movers` was removed (dead after Goal 5; the Simulator now reads
+  // `market-snapshot`). `market-search` / news / coach stay excluded.
+  'market-snapshot',
+  'quote',
+  'trades',
+  'stock-history',
 ];
 
 /** Persist only successfully-fetched queries whose key head is allowlisted. */
