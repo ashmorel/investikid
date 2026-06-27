@@ -5,6 +5,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PremiumPaywallProvider } from '@/hooks/usePremiumPaywall';
 import Home from '../Home';
 
+vi.mock('@/api/simulator', () => ({
+  simulatorApi: { getSnapshot: vi.fn().mockResolvedValue(null) },
+}));
+vi.mock('@/lib/simulatorVisited', () => ({
+  hasVisitedSimulator: vi.fn(() => false),
+  markSimulatorVisited: vi.fn(),
+}));
+
 vi.mock('@/components/child/HomeHero', () => ({ default: () => null }));
 vi.mock('@/api/collectables', () => ({
   useCollectables: () => ({
@@ -49,6 +57,15 @@ function renderHome() {
     </QueryClientProvider>,
   );
 }
+
+describe('Home idle prefetch gate', () => {
+  it('does not prefetch when simulator has not been visited', async () => {
+    const { simulatorApi } = await import('@/api/simulator');
+    renderHome();
+    // hasVisitedSimulator() returns false (default mock) → prefetch must not fire
+    expect(simulatorApi.getSnapshot).not.toHaveBeenCalled();
+  });
+});
 
 describe('Home composition (m3)', () => {
   it('renders sections in hierarchy order and no modules grid', () => {

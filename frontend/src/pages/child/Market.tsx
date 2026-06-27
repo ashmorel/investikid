@@ -15,6 +15,7 @@ import { OfflineNotice } from '@/components/child/OfflineNotice';
 import { SectionCard } from '@/components/child/simulator/SectionCard';
 import { formatCurrency } from '@/lib/currency';
 import { useOnline } from '@/hooks/useOnline';
+import { markSimulatorVisited } from '@/lib/simulatorVisited';
 
 const EXCHANGE_BADGE_COLORS: Record<string, string> = {
   NASDAQ: 'bg-info-100 text-info-600',
@@ -121,6 +122,8 @@ export default function Market() {
   const [selectedRegion, setSelectedRegion] = useState<RegionCode | null>(null);
   const region = selectedRegion ?? toRegionCode(me?.content_region ?? me?.country_code);
   const priorityExchanges = REGION_EXCHANGES[region] ?? [];
+
+  useEffect(() => { markSimulatorVisited(); }, []);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useProgress } from '@/hooks/useProgress';
 import { useRecommendations } from '@/api/ai';
@@ -18,6 +18,9 @@ import { usePortfolio } from '@/hooks/usePortfolio';
 import { useAllBadges } from '@/hooks/useAllBadges';
 import { useBadges } from '@/hooks/useBadges';
 import { authApi, type Me } from '@/api/auth';
+import { simulatorApi } from '@/api/simulator';
+import { toRegionCode } from '@/lib/region';
+import { hasVisitedSimulator } from '@/lib/simulatorVisited';
 import { trackOncePerSession } from '@/lib/analytics';
 import { EventStrip } from '@/components/child/home/EventStrip';
 import ArcadeHomeCard from '@/components/child/home/ArcadeHomeCard';
@@ -28,6 +31,7 @@ export default function Home() {
   const { t } = useTranslation('home');
   const { t: tMarkets } = useTranslation('markets');
   const { open: openPaywall } = usePremiumPaywall();
+  const queryClient = useQueryClient();
   useEffect(() => trackOncePerSession('home_view'), []);
   const { data: progress } = useProgress();
   const { data: recs } = useRecommendations();
@@ -42,6 +46,22 @@ export default function Home() {
     retry: false,
     staleTime: 60_000,
   });
+
+  useEffect(() => {
+    if (!navigator.onLine || !hasVisitedSimulator()) return;
+    const region = toRegionCode(me?.content_region ?? me?.country_code);
+    const run = () => queryClient.prefetchQuery({
+      queryKey: ['market-snapshot', region],
+      queryFn: () => simulatorApi.getSnapshot(region),
+      staleTime: 5 * 60 * 1000,
+    });
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(run);
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(run, 1500);
+    return () => clearTimeout(id);
+  }, [me?.content_region, me?.country_code, queryClient]);
 
   const level = progress?.level ?? 1;
   const xp = progress?.xp ?? 0;
