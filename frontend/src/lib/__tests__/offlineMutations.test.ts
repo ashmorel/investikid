@@ -38,12 +38,17 @@ describe('registerOfflineMutations', () => {
     expect((qc.getQueryData(['level-lessons', 'LV1']) as LessonSummary[])[0].completed).toBe(false);
   });
 
-  it('onSuccess invalidates progress + the level list', async () => {
+  it('onSuccess invalidates all five authoritative keys', async () => {
     const { qc, defs } = setup();
     const spy = vi.spyOn(qc, 'invalidateQueries');
     defs.onSuccess(null, vars);
     expect(spy).toHaveBeenCalledWith({ queryKey: ['progress'] });
     expect(spy).toHaveBeenCalledWith({ queryKey: ['level-lessons', 'LV1'] });
+    // the three moved out of Lesson.tsx's component onSuccess in Task 4 —
+    // highest regression risk, so assert them explicitly
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['modules'] });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['module-levels'] });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['lesson', 'L1'] });
   });
 
   it('retry: network errors retry up to 3, ApiError never retries', () => {
