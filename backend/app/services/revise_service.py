@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.time import today_utc
 from app.models.content import Lesson, LessonCompletion, Module
 from app.models.skill_profile import SpacedRepetitionItem, WeakConcept
 from app.models.user import User, UserProgress
@@ -324,7 +325,7 @@ async def record_answer(
             progress = UserProgress(user_id=user.id)
             session.add(progress)
             await session.flush()
-        today = datetime.now(UTC).date()
+        today = today_utc()
         xp = await award_revise_xp(session, progress, today)
         record_daily_activity(progress, today)
         if xp is not None:  # None once the daily revise XP cap is reached

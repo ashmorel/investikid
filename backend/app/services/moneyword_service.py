@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.markets import active_market
 from app.models.arcade_word import ArcadeDailyPlay, ArcadeDailySchedule, ArcadeWord
 from app.models.user import User, UserProgress
 from app.services import arcade_service
@@ -155,7 +156,7 @@ async def play_guess(
         if solved:
             points = max(1, MAX_GUESSES - len(play.guesses) + 1) * 10
             progress = await session.get(UserProgress, user.id)
-            market = user.active_market_code or "GB"
+            market = active_market(user)
             await arcade_service.award_arcade_coins(session, progress, 5, market_code=market)
             await arcade_service.record_score(
                 session, user_id=user.id, game="moneyword", points=points, market_code=market

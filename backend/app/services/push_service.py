@@ -11,13 +11,14 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import delete, select
 
 from app.core.config import settings
+from app.core.time import today_utc
 from app.models.push_device import PushDevice
 from app.models.user import UserProgress
 from app.services import product_analytics_service
@@ -83,7 +84,7 @@ async def send_to_user(
 
     Applies the 1/day cap and prunes dead tokens. Never raises into the caller.
     """
-    today = today or datetime.now(UTC).date()
+    today = today or today_utc()
     progress = await session.get(UserProgress, user_id)
     if progress is None or progress.last_push_sent_date == today:
         return False

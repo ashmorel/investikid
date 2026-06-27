@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.core.time import today_utc
 from app.models.content import Lesson, LessonCompletion, LessonView, Level, LevelMastery, Module
 from app.models.market import Market
 from app.models.user import User, UserProgress
@@ -83,7 +84,7 @@ async def list_modules(
 ):
     result = await session.scalars(select(Module).where(Module.published.is_(True)).order_by(Module.order_index))
     modules = result.all()
-    user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
+    user_age = age_in_years(current_user.dob, today_utc())
 
     lang = current_user.language
     active = await language_active(session, lang)
@@ -384,7 +385,7 @@ async def complete_lesson(
         session.add(progress)
         await session.flush()
 
-    today = datetime.now(UTC).date()
+    today = today_utc()
     event = await get_active_event(session)
     xp_awarded, already, daily_goal_met, granted_collectables = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today,

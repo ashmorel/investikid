@@ -28,6 +28,7 @@ from app.services.content_service import get_accessible_module
 from app.services.entitlements import is_premium
 from app.services.gap_detection_service import get_strengths_and_gaps
 from app.services.home_greeting_service import generate_home_greeting
+from app.services.llm_client import LLMError
 from app.services.premium_config import premium_required_error
 from app.services.recommendation_service import get_recommendations
 from app.services.skill_profile_service import get_mastery_profile
@@ -131,6 +132,9 @@ async def tutor_chat(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
     except TutorLimitReached as exc:
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+    except LLMError as exc:
+        # Provider outage is transient — 503 (retryable), not a 500.
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Coach is unavailable") from exc
 
     return result
 
@@ -155,6 +159,9 @@ async def coach_eddie(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
     except TutorLimitReached as exc:
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+    except LLMError as exc:
+        # Provider outage is transient — 503 (retryable), not a 500.
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Coach is unavailable") from exc
 
     return result
 

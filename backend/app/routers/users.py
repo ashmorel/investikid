@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.security import decode_token, get_token_from_cookie
+from app.core.time import today_utc
 from app.models.push_device import PushDevice
 from app.models.user import User, UserProgress
 from app.schemas.user import (
@@ -109,7 +110,7 @@ async def get_progress(
     progress = await session.get(UserProgress, current_user.id)
     if progress is None:
         return UserProgressOut(xp=0, level=1, streak_count=0, streak_freezes=0, last_activity_date=None)
-    today = datetime.now(UTC).date()
+    today = today_utc()
     xp_today = progress.xp_today if progress.xp_today_date == today else 0
     return UserProgressOut(
         xp=progress.xp,

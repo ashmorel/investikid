@@ -1,10 +1,11 @@
 import uuid
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.time import today_utc
 from app.models.content import Lesson, LessonCompletion, Level, Module
 from app.models.skill_profile import TopicMastery
 from app.models.user import User
@@ -27,7 +28,7 @@ _MAX_ORDER_INDEX = 100  # normalisation ceiling for order_index
 def _calculate_age(dob: date, today: date | None = None) -> int:
     """Calculate age from date of birth (delegates to the shared age_tier helper)."""
     if today is None:
-        today = datetime.now(UTC).date()
+        today = today_utc()
     return age_in_years(dob, today)
 
 

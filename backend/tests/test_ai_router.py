@@ -108,6 +108,21 @@ async def test_tutor_chat_endpoint(auth_client):
     assert "messages_remaining" in data
 
 
+async def test_tutor_chat_returns_503_on_llm_outage(auth_client):
+    """An LLM provider outage is transient — the tutor endpoint must return 503
+    (retryable), not a 500."""
+    from app.services.llm_client import LLMError
+    client, user, module, quiz = auth_client
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(side_effect=LLMError("provider down"))
+    with patch("app.services.tutor_service.get_llm_client", return_value=mock_client):
+        response = await client.post("/tutor/chat", json={
+            "lesson_id": str(quiz.id),
+            "message": "What is a stock?",
+        })
+    assert response.status_code == 503
+
+
 async def test_practice_and_tutor_reject_unpublished_lesson(auth_client, db_session):
     """A child holding a lesson_id whose module is unpublished (e.g. a retired
     curriculum after a live-market regeneration) must be rejected from both

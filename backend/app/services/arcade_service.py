@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.time import today_utc
 from app.models.arcade import ArcadeScore
 from app.models.user import User, UserProgress
 from app.services.market_progress_service import award_xp
@@ -19,7 +20,7 @@ async def award_arcade_coins(
     today: date | None = None,
 ) -> int:
     """Award up to the remaining daily arcade cap (25 XP=coins). Returns coins actually awarded."""
-    today = today or datetime.now(UTC).date()
+    today = today or today_utc()
     if progress.arcade_xp_date != today:
         progress.arcade_xp_date = today
         progress.arcade_xp_today = 0

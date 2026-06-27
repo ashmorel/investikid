@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import TYPE_CHECKING
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.time import today_utc
 from app.services.streak_config import (
     STREAK_FREEZE_CAP,
     STREAK_FREEZE_GAP,
@@ -103,7 +104,7 @@ async def get_accessible_module(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     # Age gate uses the actual age from dob (NEVER the parent tier_override) and
     # mirrors the inaccessible-market behaviour: a plain 404, no content tease.
-    user_age = age_in_years(current_user.dob, datetime.now(UTC).date())
+    user_age = age_in_years(current_user.dob, today_utc())
     if not is_module_age_ok(user_age, module.min_age, module.max_age):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
     if not is_module_premium_ok(module_is_premium=module.is_premium, is_premium_user=is_premium(current_user)):

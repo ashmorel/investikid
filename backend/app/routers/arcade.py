@@ -1,10 +1,11 @@
-from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.core.markets import active_market
 from app.core.rate_limit import limiter
+from app.core.time import today_utc
 from app.models.user import User, UserProgress
 from app.routers.users import get_current_user
 from app.schemas.arcade import (
@@ -43,7 +44,7 @@ async def quiz_rush_score(
     items = [it.model_dump() for it in payload.session_items]
     answers = [a.model_dump() for a in payload.answers]
     result = quiz_rush_service.score_submission(items, answers)
-    market = user.active_market_code or "GB"
+    market = active_market(user)
     progress = await session.get(UserProgress, user.id)
     coins = await arcade_service.award_arcade_coins(
         session, progress, result["correct"], market_code=market
@@ -72,7 +73,7 @@ async def moneyword_today(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> MoneyWordStateOut:
-    today = datetime.now(UTC).date()
+    today = today_utc()
     try:
         state = await moneyword_service.get_today(session, user, today=today, language="en")
     except moneyword_service.NoApprovedWords:
@@ -89,7 +90,7 @@ async def moneyword_guess(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> MoneyWordStateOut:
-    today = datetime.now(UTC).date()
+    today = today_utc()
     try:
         state = await moneyword_service.play_guess(
             session, user, guess=payload.guess, today=today, language="en"
@@ -112,7 +113,7 @@ async def leaderboard(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> LeaderboardOut:
-    market = user.active_market_code or "GB"
+    market = active_market(user)
     rows = await arcade_service.weekly_leaderboard(session, game=game, market_code=market)
     return LeaderboardOut(
         entries=[LeaderboardEntryOut(username=u, country_code=c, points=p) for u, c, p in rows]

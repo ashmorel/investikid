@@ -1,6 +1,6 @@
 import asyncio
 from collections import defaultdict
-from datetime import UTC, date, datetime
+from datetime import date
 from decimal import Decimal
 from typing import Literal
 
@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.rate_limit import limiter
+from app.core.time import today_utc
 from app.models.audit import AuditLog
 from app.models.content import LessonCompletion
 from app.models.simulator import Holding, Portfolio, Trade
@@ -738,7 +739,7 @@ async def place_trade(
         session.add(progress)
         await session.flush()
 
-    today_local = datetime.now(UTC).date()
+    today_local = today_utc()
     xp_awarded = await award_trade_xp(session, progress, today_local)
     streak_extended = record_daily_activity(progress, today_local)
     completed_missions = await evaluate_apply_missions(

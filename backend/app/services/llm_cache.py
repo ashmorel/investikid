@@ -14,9 +14,9 @@ outside production, so callers always fall back to generating live.
 from __future__ import annotations
 
 import hashlib
-from datetime import UTC, datetime
 from typing import Any
 
+from app.core.time import today_utc
 from app.services import price_cache
 
 
@@ -26,7 +26,7 @@ def _enabled() -> bool:
 
 
 def _key(surface: str, parts: list[str]) -> str:
-    day = datetime.now(UTC).date().isoformat()
+    day = today_utc().isoformat()
     digest = hashlib.sha256("|".join(parts).encode()).hexdigest()[:24]
     return f"llm:{surface}:{day}:{digest}"
 

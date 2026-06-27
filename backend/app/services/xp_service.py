@@ -6,9 +6,10 @@ Every XP award (lessons, simulator trades, missions) flows through record_xp so
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import TYPE_CHECKING
 
+from app.core.time import today_utc
 from app.services.content_service import compute_level
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ def record_xp(progress: UserProgress, amount: int, *, today: date | None = None)
     Mutates ``progress`` in place (caller owns the transaction, matching the
     existing award-site convention).
     """
-    today = today or datetime.now(UTC).date()
+    today = today or today_utc()
     # Column defaults only materialise on flush; tolerate fresh in-memory rows.
     goal = progress.daily_goal_xp or 30
     if progress.xp_today_date != today:

@@ -4,6 +4,7 @@ import secrets
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.markets import active_market
 from app.models.content import Lesson, LessonCompletion, Module
 from app.models.user import User
 
@@ -36,7 +37,7 @@ async def build_session(session: AsyncSession, user: User, *, limit: int = 20) -
     market.  If that pool has fewer than COLD_START_MIN items, falls back to
     ALL published, non-archived quiz lessons in the active market.
     """
-    market = user.active_market_code or "GB"
+    market = active_market(user)
 
     unlocked_ids = (await session.scalars(
         select(Lesson.id)

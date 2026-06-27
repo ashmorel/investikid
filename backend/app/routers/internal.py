@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_session
+from app.core.time import today_utc
 from app.services import (
     digest_service,
     investing_missions,
@@ -127,7 +128,7 @@ async def trigger_purge_accounts(
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
     if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
-    purged = await retention.purge_expired_accounts(session, datetime.now(UTC).date())
+    purged = await retention.purge_expired_accounts(session, today_utc())
     return {"purged": purged}
 
 

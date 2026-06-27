@@ -10,12 +10,13 @@ Spec: docs/superpowers/specs/2026-06-12-product-analytics-design.md
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from sqlalchemy import delete
 
 from app.core.config import settings
+from app.core.time import today_utc
 from app.models.analytics import AnalyticsEvent
 from app.services.age_tier import age_tier
 
@@ -79,7 +80,7 @@ async def record(
         premium = None
         if user is not None:
             if getattr(user, "dob", None):
-                tier = age_tier(user.dob, datetime.now(UTC).date())
+                tier = age_tier(user.dob, today_utc())
             premium = bool(getattr(user, "is_premium", False))
         session.add(
             AnalyticsEvent(

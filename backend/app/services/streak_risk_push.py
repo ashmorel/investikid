@@ -6,12 +6,13 @@ registered device. The per-user daily cap lives in push_service.
 """
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
 from sqlalchemy import exists, select
 
 from app.core.pagination import iter_keyset
+from app.core.time import today_utc
 from app.models.push_device import PushDevice
 from app.models.user import User, UserProgress
 from app.services import push_service
@@ -28,7 +29,7 @@ def _copy(streak: int, tier: str) -> tuple[str, str]:
 
 
 async def run(session: AsyncSession, *, today: date | None = None) -> dict:
-    today = today or datetime.now(UTC).date()
+    today = today or today_utc()
     yesterday = today - timedelta(days=1)
 
     stmt = (
