@@ -110,7 +110,7 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
 ## 🔎 Code-review backlog — 2026-06-25
 
-> From a 5-pass review (security/PII · bugs/structure · scale/cost · FE perf · offline/preload). Severity, effort (S/M/L), and file pointers below. **#1, #2, #10 ✅ LIVE IN PROD 2026-06-27 (`b75efeb`, green CI → Railway backend + manual Vercel web)** — the rest await prioritisation.
+> From a 5-pass review (security/PII · bugs/structure · scale/cost · FE perf · offline/preload). Severity, effort (S/M/L), and file pointers below. **Shipped: #1, #2, #10 (`b75efeb`) + #4, #6, #7 (`2bcc0c3`)** — green CI → Railway backend + manual Vercel web. The rest await prioritisation.
 
 ### 🔴 P0 — urgent
 | # | Item | Dim | Effort | Where / fix |
@@ -118,14 +118,14 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 | 1 | ✅ **DONE (`b75efeb`)** — **Leaderboards leaked children's real names** — Arcade/Friends/Group boards returned raw `username` with no consent/hidden gate. Fixed: all three boards now return `display_handle` + filter `leaderboard_consent`/`leaderboard_hidden`; 42 leaderboard/arcade/group tests assert username is never exposed. | Security | S | `services/arcade_service.py`, `leaderboard_service._friends`, `group_service`. |
 | 2 | ✅ **DONE (`b75efeb`)** — **Rate limiter was in-memory → broke on scale-out** — Fixed: `storage_uri=redis_url` in production (memory:// kept for dev/staging/testing so they gain no hard Redis dependency). | Scale | S | `core/rate_limit.py`. |
 | 3 | **yfinance is the simulator's hard ceiling** — unofficial Yahoo scrape (no SLA, IP-blocked), per-holding fan-out, per-instance caches. Biggest scale+cost+availability risk; also the root of the Goal-5 latency. | Scale/cost | L | `services/price_provider.py` → Redis as authoritative cache + cron-warm featured/movers per region; budget a **paid quote API** before wide launch. |
-| 4 | **Sync Stripe/Apple/Google SDKs block the event loop** — billing/webhook handlers call sync SDKs directly in async endpoints; bursty webhooks stall the worker. | Bug | M | `services/{billing,webhook,apple_billing,google_billing}_service.py`, `push_service.py`, `subscription_reconcile_service.py` → wrap in `asyncio.to_thread`. |
+| 4 | ✅ **DONE (`2bcc0c3`)** — **Sync Stripe/Apple/Google SDKs blocked the event loop** — Fixed: every network/crypto SDK call wrapped in `asyncio.to_thread` across billing, webhook, apple_billing, google_billing, push + subscription_reconcile (no session access inside the threads). | Bug | M | as listed. |
 
 ### 🟠 P1 — high
 | # | Item | Dim | Effort | Where / fix |
 |---|---|---|---|---|
 | 5 | **"Delete account" doesn't fully purge PII** — soft-delete means CASCADE never fires; `sent_emails` (parent email + body), push tokens, feedback survive. Purge is **manual-CLI-only** (no cron). | Security | M | `services/retention.py`, `account_deletion_service.py` → explicit DELETEs + add `/internal/purge-accounts` cron (CSRF allowlist). |
-| 6 | **Transactional email is a hard dependency on signup/consent** — Resend outage → 500 → rolls back account creation + parental consent (email sent before commit, no try/except). | Bug | M | `services/email.py` + `routers/{auth,consent,parent_auth}.py` → commit first, send best-effort. |
-| 7 | **`parent_email` logged verbatim** in Stripe webhook logs. | Security | S | `services/webhook_service.py` → log `customer_id`, not email. |
+| 6 | ✅ **DONE (`2bcc0c3`)** — **Transactional email was a hard dependency on signup/consent** — Resend outage 500'd + rolled back account creation/consent. Fixed: the Resend network send is best-effort (try/except) while the SentEmail audit row still persists, so the caller commits regardless. | Bug | M | `services/email.py`. |
+| 7 | ✅ **DONE (`2bcc0c3`)** — **`parent_email` was logged verbatim** in Stripe webhooks. Fixed: log `customer_id` / `subscription_id` instead (checkout.completed + subscription.deleted). | Security | S | `services/webhook_service.py`. |
 | 8 | **Leaderboard ranking scans whole user table per view + missing indexes** (`active_market_code`, `leaderboard_consent/hidden`, `lesson_completions.lesson_id`); rank = 2nd full aggregation. | Scale | M | `leaderboard_service.py` + model indexes → composite/partial index + Redis top-N (60s TTL). *(pairs with #1.)* |
 | 9 | **Per-request LLM, uncached → linear token cost** — `home-greeting` per Home load; `news-summary` per call. | Cost | M | `routers/ai.py`, `routers/simulator.py` → cache per (user/holdings, UTC-day) in Redis. |
 | 10 | ✅ **DONE (`b75efeb`)** — **FE: lazy-load chart routes + `manualChunks`** — recharts/framer/confetti/screenshot were all in the 1.3 MB initial bundle. Fixed: Simulator/Market/Stock/Stats are `React.lazy` + `Suspense`; vendor split (`react-vendor`/`charts`/`motion`/`query`). **Entry chunk 1,305 → 148 kB.** | Perf | S | `src/App.tsx`, `vite.config.ts`. |
