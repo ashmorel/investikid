@@ -39,6 +39,7 @@ from app.schemas.simulator import (
     TradeRequest,
     TradeResultOut,
 )
+from app.services import llm_cache
 from app.services.app_settings import get_trade_commission_pct
 from app.services.chart_coach_service import (
     ChartCoachInputTooLong,
@@ -79,6 +80,11 @@ from app.services.tips_service import (
 )
 
 router = APIRouter(tags=["simulator"])
+
+# News updates intraday, so cache the AI summary for a few hours rather than a
+# full day — cuts the per-view LLM cost massively while keeping it reasonably
+# fresh (the UTC-day key component also rolls it over at midnight).
+_NEWS_CACHE_TTL = 6 * 3600
 
 _price_provider = LivePriceProvider()
 
@@ -219,12 +225,24 @@ async def get_news_summary(
     if not holdings:
         return NewsSummaryOut(summary="Buy some stocks and news about them will appear here!", tickers_mentioned=[])
 
+    age = (date.today() - current_user.dob).days // 365
+    # The summary is an LLM call on every Home/simulator load. It's stable for a
+    # given (holdings, age, language) within a few hours, so cache it and serve
+    # repeat loads without re-billing the model. Keyed on holdings (not the news
+    # items) so we can short-circuit before the news fetch too. Prod-only.
+    cache_parts = [
+        ",".join(sorted({h.ticker for h in holdings})),
+        str(age), current_user.language,
+    ]
+    cached = llm_cache.get("news_summary", cache_parts)
+    if cached:
+        return NewsSummaryOut(summary=cached["summary"], tickers_mentioned=cached["tickers"])
+
     ticker_pairs = [(h.ticker, h.exchange) for h in holdings]
     items = await asyncio.to_thread(provider.get_news, ticker_pairs)
     if not items:
         return NewsSummaryOut(summary="No recent news for your stocks.", tickers_mentioned=[])
 
-    age = (date.today() - current_user.dob).days // 365
     tickers = list({i.related_ticker for i in items})
 
     headlines = "\n".join(
@@ -251,6 +269,7 @@ async def get_news_summary(
     )
 
     llm = get_llm_client(tier="lite")
+    llm_ok = True
     try:
         summary = await llm.complete(
             system_prompt=with_generation_framing(system_prompt, language=current_user.language),
@@ -262,6 +281,7 @@ async def get_news_summary(
         )
     except LLMError:
         summary = "Couldn't generate a summary right now — check back soon!"
+        llm_ok = False
 
     # Kid-safe moderation seam. session + current_user are in scope here, so an
     # AuditLog moderation_block row is written when the model output is unsafe.
@@ -277,6 +297,14 @@ async def get_news_summary(
             metadata_json={"surface": "news_summary", "category": _mod.category},
         ))
         await session.commit()
+
+    # Cache only a genuinely generated, moderation-passed summary — never the
+    # transient LLM-error fallback or a moderation-blocked result.
+    if llm_ok and _mod.safe:
+        llm_cache.put(
+            "news_summary", cache_parts,
+            {"summary": _mod.text, "tickers": tickers}, _NEWS_CACHE_TTL,
+        )
 
     return NewsSummaryOut(summary=_mod.text, tickers_mentioned=tickers)
 

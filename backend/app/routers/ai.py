@@ -21,6 +21,7 @@ from app.schemas.ai import (
     TutorChatRequest,
     TutorChatResponse,
 )
+from app.services import llm_cache
 from app.services.ai_content_service import generate_practice_quiz
 from app.services.coach_service import coach_chat
 from app.services.content_service import get_accessible_module
@@ -34,6 +35,10 @@ from app.services.spaced_repetition_service import record_review
 from app.services.tutor_service import TutorInputTooLong, TutorLimitReached, chat
 
 router = APIRouter(tags=["ai"])
+
+# Greeting is stable for its inputs across the day; cache for the day (the
+# UTC-day key component rolls it over at midnight regardless).
+_GREETING_CACHE_TTL = 86_400
 
 
 @router.get("/recommendations", response_model=CategorisedRecommendations)
@@ -172,6 +177,19 @@ async def home_greeting(
 ):
     if not is_premium(current_user):
         raise premium_required_error("coach", "Coach Penny")
+    # The greeting is deterministic in its inputs for the day, but generated per
+    # Home load — cache it per (inputs, UTC-day) so repeat loads don't re-bill the
+    # LLM. Progress (streak/due/next lesson) changes the key, so a fresh greeting
+    # appears as soon as the child advances. Prod-only; no-ops in dev/test.
+    cache_parts = [
+        current_user.username or payload.name or "",
+        payload.mode, payload.lesson_label or "",
+        str(payload.streak_count), str(payload.due_count),
+        current_user.age_tier, current_user.language,
+    ]
+    cached = llm_cache.get("home_greeting", cache_parts)
+    if cached:
+        return HomeGreetingResponse(greeting=cached)
     try:
         text = await generate_home_greeting(
             name=current_user.username or payload.name,
@@ -184,6 +202,7 @@ async def home_greeting(
         )
     except Exception as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Greeting unavailable") from exc
+    llm_cache.put("home_greeting", cache_parts, text, _GREETING_CACHE_TTL)
     return HomeGreetingResponse(greeting=text)
 
 
