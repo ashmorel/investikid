@@ -110,14 +110,14 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
 ## 🔎 Code-review backlog — 2026-06-25
 
-> From a 5-pass review (security/PII · bugs/structure · scale/cost · FE perf · offline/preload). Severity, effort (S/M/L), and file pointers below. **Shipped: #1, #2, #10 (`b75efeb`) + #4, #6, #7 (`2bcc0c3`) + #8, #9, #5 (2026-06-27)** — green CI → Railway backend + manual Vercel web. **Remaining: #3 (yfinance) + P2/P3 + Goal 4 (offline) + Goal 5 (preload).**
+> From a 5-pass review (security/PII · bugs/structure · scale/cost · FE perf · offline/preload). Severity, effort (S/M/L), and file pointers below. **Shipped: #1, #2, #10 (`b75efeb`) + #4, #6, #7 (`2bcc0c3`) + #8, #9, #5 + all P2 + most P3 + #3 backbone + Goal 5 (2026-06-27)** — green CI → Railway backend + manual Vercel web. **Remaining: paid-quote-API operator decision (behind the #3 seam) · Goal 4 (offline) · 2 deferred P3 refactors (admin god-router split, framer-motion off Shell).**
 
 ### 🔴 P0 — urgent
 | # | Item | Dim | Effort | Where / fix |
 |---|---|---|---|---|
 | 1 | ✅ **DONE (`b75efeb`)** — **Leaderboards leaked children's real names** — Arcade/Friends/Group boards returned raw `username` with no consent/hidden gate. Fixed: all three boards now return `display_handle` + filter `leaderboard_consent`/`leaderboard_hidden`; 42 leaderboard/arcade/group tests assert username is never exposed. | Security | S | `services/arcade_service.py`, `leaderboard_service._friends`, `group_service`. |
 | 2 | ✅ **DONE (`b75efeb`)** — **Rate limiter was in-memory → broke on scale-out** — Fixed: `storage_uri=redis_url` in production (memory:// kept for dev/staging/testing so they gain no hard Redis dependency). | Scale | S | `core/rate_limit.py`. |
-| 3 | **yfinance is the simulator's hard ceiling** — unofficial Yahoo scrape (no SLA, IP-blocked), per-holding fan-out, per-instance caches. Biggest scale+cost+availability risk; also the root of the Goal-5 latency. | Scale/cost | L | `services/price_provider.py` → Redis as authoritative cache + cron-warm featured/movers per region; budget a **paid quote API** before wide launch. |
+| 3 | ✅ **BACKBONE DONE (2026-06-27, `40248d3`)** — **yfinance hardening** — Fixed: Redis L2 added to movers/news/history (was per-instance in-memory → now shared across instances); featured+movers cron-warmed per region (`/internal/market-warm/run`, `market-warm-cron.yml` every 10 min, 20-min warm TTL) so user requests hit warm Redis, never block on yfinance; all behind the formalized `PriceProvider` seam. **OPERATOR DECISION STILL OPEN: budget a paid quote API before wide launch** — now a localized swap behind the seam (reuses the same keys + warm cron + snapshot). | Scale/cost | L | `price_provider.py`, `market_warm_service.py`, `internal.py`, `market-warm-cron.yml`. |
 | 4 | ✅ **DONE (`2bcc0c3`)** — **Sync Stripe/Apple/Google SDKs blocked the event loop** — Fixed: every network/crypto SDK call wrapped in `asyncio.to_thread` across billing, webhook, apple_billing, google_billing, push + subscription_reconcile (no session access inside the threads). | Bug | M | as listed. |
 
 ### 🟠 P1 — high
@@ -150,9 +150,10 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 - **Phase 2 (M):** `vite-plugin-pwa` for web app-shell offline; cache question banks (read offline; full offline answering needs a sync outbox with idempotency keys).
 - **Phase 3 (M):** move cache to Capacitor Preferences/SQLite once it outgrows localStorage (~5MB).
 
-### ⚡ Goal 5 — Preload stock data on Home *(currently zero preloading)*
-- **Phase 1 (S):** on Home mount, `prefetchQuery` the slow Simulator surfaces (featured/movers/news) with the Simulator's exact keys; gate to online + idle + has-visited-Simulator.
-- **Phase 2 (M + backend):** `GET /market/snapshot?region=` (one request, server-cached — keeps the AI news-summary off per-Home-load LLM cost). Shares the backbone with #3.
+### ⚡ Goal 5 — Preload stock data on Home — ✅ **DONE 2026-06-27 (`40248d3`)**
+- **Phase 2 (backend):** `GET /market/snapshot?region=` returns region featured + movers from the warm Redis cache (never 5xxs — static fallback on cold/yf failure). The Simulator's Market page + MarketMovers consume the single `['market-snapshot', region]` query.
+- **Phase 1 (frontend):** Home idle-prefetches `['market-snapshot', region]` gated to online + `requestIdleCallback` + has-visited-Simulator (`ik:visitedSimulator` flag set on first Market open) → Simulator opens instantly. **Note:** featured is now **region-scoped** (was all-regions "More markets"); switch markets via the existing region selector.
+- *(News-summary preload deferred — already cached per #9; idle-prefetch is a later nicety.)*
 
 ---
 
