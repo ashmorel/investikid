@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.pagination import iter_keyset
 from app.models.content import LessonCompletion, Level, LevelMastery, Module
 from app.models.parent_preferences import ParentPreferences
 from app.models.subscription import Subscription
@@ -173,14 +174,19 @@ async def run_weekly_digests(
     """Send weekly digests to every eligible parent. Commits on completion."""
     now = now or datetime.now(UTC)
 
-    parent_emails = (await session.scalars(
+    # Keyset-paginate the distinct parent emails so the cron never loads the whole
+    # parent population into memory at once (and each batch is a fresh query, so
+    # the per-parent digest sub-queries below are free to run on this session).
+    parents_stmt = (
         select(User.parent_email).where(User.parent_email.is_not(None)).distinct()
-    )).all()
+    )
 
     sender = get_email_sender()
     summary = {"sent": 0, "skipped_quiet": 0, "skipped_recent": 0, "skipped_opt_out": 0}
 
-    for parent_email in parent_emails:
+    async for (parent_email,) in iter_keyset(
+        session, parents_stmt, key_col=User.parent_email, key_of=lambda r: r[0]
+    ):
         prefs = await session.get(ParentPreferences, parent_email)
         if prefs is not None and prefs.weekly_digest_opt_out:
             summary["skipped_opt_out"] += 1

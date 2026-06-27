@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.pagination import iter_keyset
 from app.models.subscription import Subscription
 from app.services.entitlements import ACTIVE_SUBSCRIPTION_STATUSES, recompute_household_premium
 
@@ -59,19 +60,18 @@ async def run(session: AsyncSession) -> dict:
     affected households. Best-effort per row; one failure never aborts the run."""
     now = datetime.now(UTC)
     cutoff = now + _AT_RISK_WINDOW
-    rows = (await session.scalars(
-        select(Subscription).where(
-            Subscription.status.in_(ACTIVE_SUBSCRIPTION_STATUSES),
-            or_(
-                Subscription.current_period_end.is_(None),
-                Subscription.current_period_end <= cutoff,
-            ),
-        )
-    )).all()
+    stmt = select(Subscription).where(
+        Subscription.status.in_(ACTIVE_SUBSCRIPTION_STATUSES),
+        or_(
+            Subscription.current_period_end.is_(None),
+            Subscription.current_period_end <= cutoff,
+        ),
+    )
 
     checked = updated = errored = 0
     affected: set[str] = set()
-    for row in rows:
+    # Keyset-paginate so the at-risk set never loads into memory all at once.
+    async for (row,) in iter_keyset(session, stmt, key_col=Subscription.id, key_of=lambda r: r[0].id):
         checked += 1
         try:
             # _repull does a synchronous provider API call (Stripe/Apple/Google).

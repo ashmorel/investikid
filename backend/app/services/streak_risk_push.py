@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import exists, select
 
+from app.core.pagination import iter_keyset
 from app.models.push_device import PushDevice
 from app.models.user import User, UserProgress
 from app.services import push_service
@@ -30,22 +31,21 @@ async def run(session: AsyncSession, *, today: date | None = None) -> dict:
     today = today or datetime.now(UTC).date()
     yesterday = today - timedelta(days=1)
 
-    rows = (
-        await session.execute(
-            select(User, UserProgress)
-            .join(UserProgress, UserProgress.user_id == User.id)
-            .where(
-                User.push_enabled.is_(True),
-                User.is_active.is_(True),
-                UserProgress.streak_count > 0,
-                UserProgress.last_activity_date == yesterday,
-                exists().where(PushDevice.user_id == User.id),
-            )
+    stmt = (
+        select(User, UserProgress)
+        .join(UserProgress, UserProgress.user_id == User.id)
+        .where(
+            User.push_enabled.is_(True),
+            User.is_active.is_(True),
+            UserProgress.streak_count > 0,
+            UserProgress.last_activity_date == yesterday,
+            exists().where(PushDevice.user_id == User.id),
         )
-    ).all()
+    )
 
-    sent = 0
-    for user, progress in rows:
+    candidates = sent = 0
+    async for user, progress in iter_keyset(session, stmt, key_col=User.id, key_of=lambda r: r[0].id):
+        candidates += 1
         tier = age_tier(user.dob, today)
         title, body = _copy(progress.streak_count, tier)
         if await push_service.send_to_user(
@@ -53,4 +53,4 @@ async def run(session: AsyncSession, *, today: date | None = None) -> dict:
         ):
             sent += 1
     await session.commit()
-    return {"candidates": len(rows), "sent": sent}
+    return {"candidates": candidates, "sent": sent}
