@@ -7,6 +7,8 @@ export interface FeedbackPayload {
   feedback_type: FeedbackType;
   message: string;
   page_url: string | null;
+  /** Optional compressed JPEG data URL — attached to the notification email. */
+  screenshot?: string | null;
 }
 
 export interface FeedbackCreateResponse {

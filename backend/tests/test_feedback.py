@@ -198,3 +198,68 @@ async def test_admin_list_feedback_filters_by_type(admin_client):
     assert body["total"] >= 1
     for item in body["items"]:
         assert item["feedback_type"] == "bug"
+
+
+# ---------------------------------------------------------------------------
+# Screenshot attachment
+# ---------------------------------------------------------------------------
+
+async def test_attachment_from_screenshot_variants():
+    from app.services.feedback_service import _attachment_from_screenshot
+
+    assert _attachment_from_screenshot(None) is None
+    assert _attachment_from_screenshot("") is None
+    # empty payload after the data-URL header → nothing to attach
+    assert _attachment_from_screenshot("data:image/png;base64,") is None
+    assert _attachment_from_screenshot("data:image/jpeg;base64,ABC") == {
+        "filename": "feedback-screenshot.jpg", "content": "ABC",
+    }
+    assert _attachment_from_screenshot("data:image/png;base64,XYZ") == {
+        "filename": "feedback-screenshot.png", "content": "XYZ",
+    }
+    # bare base64 (no data-URL prefix) defaults to .jpg
+    assert _attachment_from_screenshot("RAWDATA") == {
+        "filename": "feedback-screenshot.jpg", "content": "RAWDATA",
+    }
+
+
+async def test_notify_feedback_attaches_screenshot(monkeypatch):
+    from app.core.config import settings
+    from app.services import feedback_service
+
+    monkeypatch.setattr(settings, "email_backend", "resend")
+    monkeypatch.setattr(settings, "feedback_notify_email", "admin@example.com")
+
+    captured: dict = {}
+    monkeypatch.setattr(
+        feedback_service.resend.Emails, "send",
+        lambda params: captured.setdefault("params", params),
+    )
+
+    await feedback_service.notify_feedback(
+        submitter="alex", submitter_role="child", feedback_type="bug",
+        message="x", page_url=None,
+        screenshot="data:image/jpeg;base64,SHOTDATA",
+    )
+    atts = captured["params"].get("attachments")
+    assert atts == [{"filename": "feedback-screenshot.jpg", "content": "SHOTDATA"}]
+
+
+async def test_notify_feedback_no_attachment_without_screenshot(monkeypatch):
+    from app.core.config import settings
+    from app.services import feedback_service
+
+    monkeypatch.setattr(settings, "email_backend", "resend")
+    monkeypatch.setattr(settings, "feedback_notify_email", "admin@example.com")
+
+    captured: dict = {}
+    monkeypatch.setattr(
+        feedback_service.resend.Emails, "send",
+        lambda params: captured.setdefault("params", params),
+    )
+
+    await feedback_service.notify_feedback(
+        submitter="alex", submitter_role="child", feedback_type="bug",
+        message="x", page_url=None,
+    )
+    assert "attachments" not in captured["params"]

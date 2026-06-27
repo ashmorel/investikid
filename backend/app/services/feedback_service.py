@@ -42,6 +42,30 @@ async def create_feedback(
     return fb
 
 
+def _attachment_from_screenshot(screenshot: str | None) -> dict | None:
+    """Turn a base64 data URL into a Resend attachment dict, or None.
+
+    Accepts a ``data:image/...;base64,<data>`` URL (or bare base64) and returns
+    ``{"filename", "content"}`` where content is the raw base64 (no prefix).
+    Returns None on anything malformed — a bad screenshot must never block the
+    notification.
+    """
+    if not screenshot:
+        return None
+    data = screenshot.strip()
+    ext = "jpg"
+    if data.startswith("data:"):
+        header, _, payload = data.partition(",")
+        if not payload:
+            return None
+        if "image/png" in header:
+            ext = "png"
+        data = payload
+    if not data:
+        return None
+    return {"filename": f"feedback-screenshot.{ext}", "content": data}
+
+
 async def notify_feedback(
     *,
     submitter: str,
@@ -49,6 +73,7 @@ async def notify_feedback(
     feedback_type: str,
     message: str,
     page_url: str | None,
+    screenshot: str | None = None,
 ) -> None:
     """Best-effort notification email. Never raises."""
     if settings.email_backend != "resend" or not settings.feedback_notify_email:
@@ -69,6 +94,9 @@ async def notify_feedback(
             "subject": subject,
             "text": text,
         }
+        attachment = _attachment_from_screenshot(screenshot)
+        if attachment is not None:
+            params["attachments"] = [attachment]
         await asyncio.to_thread(resend.Emails.send, params)
     except Exception:  # noqa: BLE001 — notification must never fail submission
         logger.exception("Failed to send feedback notification email")

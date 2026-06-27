@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Camera, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BottomSheet } from '@/components/mobile/BottomSheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useToast } from '@/hooks/use-toast';
+import { captureScreen, fileToScreenshot } from '@/lib/screenshot';
 import { useSubmitFeedback, type FeedbackType } from '@/api/feedback';
 
 const MAX = 2000;
+const MAX_FILE_BYTES = 12 * 1024 * 1024; // 12MB raw; compressed far smaller before send
 
 export function FeedbackDialog({
   open,
@@ -25,6 +28,9 @@ export function FeedbackDialog({
   const [type, setType] = useState<FeedbackType>('bug');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [capturing, setCapturing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const TYPE_OPTIONS: { value: FeedbackType; label: string }[] = [
     { value: 'bug', label: t('feedback.type.bug') },
@@ -42,6 +48,7 @@ export function FeedbackDialog({
     setType('bug');
     setMessage('');
     setError('');
+    setScreenshot(null);
   }
 
   function handleOpenChange(v: boolean) {
@@ -49,10 +56,44 @@ export function FeedbackDialog({
     onOpenChange(v);
   }
 
+  // Capture the screen *behind* the dialog: briefly close it (without resetting
+  // the draft — we call the parent setter directly, bypassing reset()), let it
+  // animate out, snapshot, then reopen with the screenshot attached.
+  async function handleCapture() {
+    setError('');
+    setCapturing(true);
+    onOpenChange(false);
+    await new Promise((r) => setTimeout(r, 350));
+    try {
+      setScreenshot(await captureScreen());
+    } catch {
+      setError(t('feedback.captureError'));
+    } finally {
+      onOpenChange(true);
+      setCapturing(false);
+    }
+  }
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file) return;
+    setError('');
+    if (!file.type.startsWith('image/') || file.size > MAX_FILE_BYTES) {
+      setError(t('feedback.uploadError'));
+      return;
+    }
+    try {
+      setScreenshot(await fileToScreenshot(file));
+    } catch {
+      setError(t('feedback.uploadError'));
+    }
+  }
+
   function handleSubmit() {
     setError('');
     submit.mutate(
-      { feedback_type: type, message, page_url: window.location.pathname },
+      { feedback_type: type, message, page_url: window.location.pathname, screenshot },
       {
         onSuccess: () => {
           toast({ title: t('feedback.success') });
@@ -98,6 +139,53 @@ export function FeedbackDialog({
           {message.length} / {MAX}
         </p>
       </div>
+
+      {/* Optional screenshot */}
+      <div className="space-y-2">
+        <span className="text-sm font-medium">{t('feedback.screenshotLabel')}</span>
+        {screenshot ? (
+          <div className="relative inline-block">
+            <img
+              src={screenshot}
+              alt={t('feedback.screenshotAlt')}
+              className="max-h-32 rounded-lg border border-brand-200"
+            />
+            <button
+              type="button"
+              onClick={() => setScreenshot(null)}
+              aria-label={t('feedback.removeScreenshot')}
+              className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ink text-white shadow"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={handleCapture} disabled={capturing}>
+              <Camera className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              {capturing ? t('feedback.capturing') : t('feedback.capture')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={capturing}
+            >
+              <Upload className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              {t('feedback.upload')}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFile}
+            />
+          </div>
+        )}
+      </div>
+
       <p role="alert" aria-live="assertive" className="min-h-[1.25rem] text-sm text-destructive">
         {error}
       </p>

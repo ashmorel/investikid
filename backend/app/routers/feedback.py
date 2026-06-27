@@ -48,6 +48,7 @@ async def submit_feedback(
         feedback_type=payload.feedback_type,
         message=payload.message,
         page_url=payload.page_url,
+        screenshot=payload.screenshot,
     )
     return FeedbackCreateResponse(id=fb.id)
 
@@ -81,6 +82,7 @@ async def submit_parent_feedback(
         feedback_type=payload.feedback_type,
         message=payload.message,
         page_url=payload.page_url,
+        screenshot=payload.screenshot,
     )
     return FeedbackCreateResponse(id=fb.id)
 
