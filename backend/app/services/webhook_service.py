@@ -68,7 +68,11 @@ async def handle_checkout_completed(
     await resolve_premium_requests(session, parent_email)
 
     await session.commit()
-    logger.info("checkout.session.completed: parent=%s", parent_email)
+    # Log non-PII identifiers only — parent_email is PII and must not hit logs.
+    logger.info(
+        "checkout.session.completed: customer=%s sub=%s",
+        customer_id, subscription_id,
+    )
 
 
 async def handle_subscription_updated(
@@ -133,7 +137,8 @@ async def handle_subscription_deleted(
     await recompute_household_premium(session, sub.parent_email)
 
     await session.commit()
-    logger.info("subscription.deleted: parent=%s downgraded", sub.parent_email)
+    # Log non-PII identifiers only — parent_email is PII and must not hit logs.
+    logger.info("subscription.deleted: sub=%s downgraded", subscription_id)
 
 
 async def handle_payment_failed(
