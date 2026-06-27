@@ -91,6 +91,32 @@ export function getLesson(scope: CacheScope, lessonId: string, now: number = Dat
   );
 }
 
+// --- shared private helper: build levelId → { title, lessonsTotal } from cached_module_levels ---
+type LevelMeta = { title: string; lessonsTotal: number };
+
+async function levelMetaMap(
+  db: Awaited<ReturnType<typeof getDb>>,
+  scope: CacheScope,
+): Promise<Map<string, LevelMeta>> {
+  const map = new Map<string, LevelMeta>();
+  if (!db) return map;
+  const levelRows = await db.query(
+    `SELECT payload_json FROM cached_module_levels WHERE child_id=? AND market=?`,
+    [scope.childId, scope.market],
+  );
+  for (const row of (levelRows.values ?? []) as { payload_json: string }[]) {
+    try {
+      const levels = JSON.parse(row.payload_json) as LevelOut[];
+      for (const lv of levels) {
+        map.set(lv.id, { title: lv.title, lessonsTotal: lv.lessons_total });
+      }
+    } catch {
+      /* skip malformed row */
+    }
+  }
+  return map;
+}
+
 export type OfflineAvailability = { levelIds: string[]; lessonCount: number };
 
 export async function listAvailableOffline(scope: CacheScope, now: number = Date.now()): Promise<OfflineAvailability> {
@@ -100,16 +126,33 @@ export async function listAvailableOffline(scope: CacheScope, now: number = Date
     const db = await getDb();
     if (!db) return empty;
     const minTs = now - OFFLINE_MAX_AGE;
-    const levels = await db.query(
-      `SELECT DISTINCT level_id FROM cached_lesson WHERE child_id=? AND market=? AND level_id IS NOT NULL AND cached_at>?`,
+
+    // Per-level fresh cached lesson counts
+    const countRows = await db.query(
+      `SELECT level_id, COUNT(*) AS n FROM cached_lesson
+       WHERE child_id=? AND market=? AND level_id IS NOT NULL AND cached_at>?
+       GROUP BY level_id`,
       [scope.childId, scope.market, minTs],
     );
-    const count = await db.query(
+
+    // Total fresh cached lesson count (all levels)
+    const totalCount = await db.query(
       `SELECT COUNT(*) AS n FROM cached_lesson WHERE child_id=? AND market=? AND cached_at>?`,
       [scope.childId, scope.market, minTs],
     );
-    const levelIds = (levels.values ?? []).map((r) => (r as { level_id: string }).level_id);
-    const lessonCount = Number((count.values?.[0] as { n: number } | undefined)?.n ?? 0);
+
+    const meta = await levelMetaMap(db, scope);
+
+    // Only include levels where ALL lessons are cached
+    const levelIds: string[] = [];
+    for (const row of (countRows.values ?? []) as { level_id: string; n: number }[]) {
+      const m = meta.get(row.level_id);
+      if (m && m.lessonsTotal > 0 && Number(row.n) >= m.lessonsTotal) {
+        levelIds.push(row.level_id);
+      }
+    }
+
+    const lessonCount = Number((totalCount.values?.[0] as { n: number } | undefined)?.n ?? 0);
     return { levelIds, lessonCount };
   } catch {
     return empty;
@@ -145,7 +188,8 @@ export async function listDownloadedLevels(
     const db = await getDb();
     if (!db) return [];
     const minTs = now - OFFLINE_MAX_AGE;
-    // Get fresh level_id + lesson count per level
+
+    // Per-level fresh cached lesson counts
     const rows = await db.query(
       `SELECT level_id, COUNT(*) AS n FROM cached_lesson
        WHERE child_id=? AND market=? AND level_id IS NOT NULL AND cached_at>?
@@ -154,28 +198,21 @@ export async function listDownloadedLevels(
     );
     if (!rows.values?.length) return [];
 
-    // Build levelId→title map from cached_module_levels rows
-    const levelRows = await db.query(
-      `SELECT payload_json FROM cached_module_levels WHERE child_id=? AND market=?`,
-      [scope.childId, scope.market],
-    );
-    const titleMap = new Map<string, string>();
-    for (const row of (levelRows.values ?? []) as { payload_json: string }[]) {
-      try {
-        const levels = JSON.parse(row.payload_json) as LevelOut[];
-        for (const lv of levels) {
-          titleMap.set(lv.id, lv.title);
-        }
-      } catch {
-        /* skip malformed row */
+    const meta = await levelMetaMap(db, scope);
+
+    // Only include fully-downloaded levels (cachedCount >= lessonsTotal && lessonsTotal > 0)
+    const result: DownloadedLevel[] = [];
+    for (const r of (rows.values as { level_id: string; n: number }[])) {
+      const m = meta.get(r.level_id);
+      if (m && m.lessonsTotal > 0 && Number(r.n) >= m.lessonsTotal) {
+        result.push({
+          levelId: r.level_id,
+          title: m.title,
+          lessonCount: m.lessonsTotal,
+        });
       }
     }
-
-    return (rows.values as { level_id: string; n: number }[]).map((r) => ({
-      levelId: r.level_id,
-      title: titleMap.get(r.level_id) ?? r.level_id,
-      lessonCount: Number(r.n),
-    }));
+    return result;
   } catch {
     return [];
   }

@@ -14,10 +14,15 @@ vi.mock('../sqlite', () => ({
 import { isOfflineDbAvailable, getDb } from '../sqlite';
 import type { CacheScope } from '../scope';
 import * as store from '../contentStore';
-import type { LessonOut, ModuleOut } from '@/api/content';
+import type { LessonOut, LevelOut, ModuleOut } from '@/api/content';
 
 const scope: CacheScope = { childId: 'C1', market: 'GB' };
 beforeEach(() => vi.clearAllMocks());
+
+// Helper: build a minimal LevelOut payload row for cached_module_levels
+function moduleLevelsRow(levels: { id: string; title: string; lessons_total: number }[]): { payload_json: string } {
+  return { payload_json: JSON.stringify(levels as LevelOut[]) };
+}
 
 describe('contentStore', () => {
   it('upsertLesson writes a scoped, parameterised UPSERT with level_id + cached_at', async () => {
@@ -93,32 +98,34 @@ describe('contentStore', () => {
   });
 
   describe('listDownloadedLevels', () => {
-    it('returns levelId, title from module-levels cache, and lessonCount', async () => {
-      // First query: level rows
+    it('returns only fully-downloaded levels (cachedCount >= lessonsTotal)', async () => {
+      // query 1: GROUP BY level_id counts
       query.mockResolvedValueOnce({
         values: [
-          { level_id: 'LV1', n: 3 },
-          { level_id: 'LV2', n: 1 },
+          { level_id: 'LV1', n: 3 },  // fully cached (3/3)
+          { level_id: 'LV2', n: 1 },  // partially cached (1/2) — excluded
         ],
       });
-      // Second query: module_levels payload_json rows
+      // query 2: cached_module_levels metadata
       query.mockResolvedValueOnce({
         values: [
-          { payload_json: JSON.stringify([{ id: 'LV1', title: 'Intro to Stocks' }, { id: 'LV2', title: 'Risk Basics' }]) },
+          moduleLevelsRow([
+            { id: 'LV1', title: 'Intro to Stocks', lessons_total: 3 },
+            { id: 'LV2', title: 'Risk Basics', lessons_total: 2 },
+          ]),
         ],
       });
       const result = await store.listDownloadedLevels(scope, 1000);
       expect(result).toEqual([
         { levelId: 'LV1', title: 'Intro to Stocks', lessonCount: 3 },
-        { levelId: 'LV2', title: 'Risk Basics', lessonCount: 1 },
       ]);
     });
 
-    it('falls back to levelId string when title is not in cache', async () => {
+    it('excludes a level when its metadata is absent (conservative — total unknown)', async () => {
       query.mockResolvedValueOnce({ values: [{ level_id: 'LV99', n: 2 }] });
       query.mockResolvedValueOnce({ values: [] }); // no module-levels rows
       const result = await store.listDownloadedLevels(scope, 1000);
-      expect(result).toEqual([{ levelId: 'LV99', title: 'LV99', lessonCount: 2 }]);
+      expect(result).toEqual([]);
     });
 
     it('returns [] when no fresh lessons', async () => {
@@ -136,17 +143,85 @@ describe('contentStore', () => {
       query.mockRejectedValueOnce(new Error('disk'));
       expect(await store.listDownloadedLevels(scope, 1000)).toEqual([]);
     });
+
+    it('partial-vs-full boundary: n===lessonsTotal included, n<lessonsTotal excluded', async () => {
+      query.mockResolvedValueOnce({
+        values: [
+          { level_id: 'LV_FULL', n: 5 },    // exactly 5/5 — included
+          { level_id: 'LV_PART', n: 4 },    // 4/5 — excluded
+        ],
+      });
+      query.mockResolvedValueOnce({
+        values: [
+          moduleLevelsRow([
+            { id: 'LV_FULL', title: 'Full Level', lessons_total: 5 },
+            { id: 'LV_PART', title: 'Partial Level', lessons_total: 5 },
+          ]),
+        ],
+      });
+      const result = await store.listDownloadedLevels(scope, 1000);
+      expect(result).toEqual([
+        { levelId: 'LV_FULL', title: 'Full Level', lessonCount: 5 },
+      ]);
+    });
   });
 
-  describe('availability + clear', () => {
-    it('listAvailableOffline returns distinct fresh level ids + count', async () => {
-      query.mockResolvedValueOnce({ values: [{ level_id: 'LV1' }, { level_id: 'LV2' }] }); // distinct levels
-      query.mockResolvedValueOnce({ values: [{ n: 3 }] }); // count
+  describe('listAvailableOffline', () => {
+    it('returns only fully-cached level ids and total fresh lesson count', async () => {
+      // query 1: GROUP BY level_id counts
+      query.mockResolvedValueOnce({
+        values: [
+          { level_id: 'LV1', n: 3 },  // fully cached (3/3) — included
+          { level_id: 'LV2', n: 1 },  // partially cached (1/4) — excluded
+        ],
+      });
+      // query 2: total fresh lesson count
+      query.mockResolvedValueOnce({ values: [{ n: 4 }] });
+      // query 3: cached_module_levels metadata
+      query.mockResolvedValueOnce({
+        values: [
+          moduleLevelsRow([
+            { id: 'LV1', title: 'Intro to Stocks', lessons_total: 3 },
+            { id: 'LV2', title: 'Risk Basics', lessons_total: 4 },
+          ]),
+        ],
+      });
       const a = await store.listAvailableOffline(scope, 1000);
-      expect(a).toEqual({ levelIds: ['LV1', 'LV2'], lessonCount: 3 });
+      expect(a).toEqual({ levelIds: ['LV1'], lessonCount: 4 });
     });
 
-    it('listAvailableOffline returns empty when unavailable', async () => {
+    it('excludes a level whose metadata is absent (conservative — never over-claim)', async () => {
+      query.mockResolvedValueOnce({ values: [{ level_id: 'LV99', n: 5 }] });
+      query.mockResolvedValueOnce({ values: [{ n: 5 }] });
+      query.mockResolvedValueOnce({ values: [] }); // no metadata
+      const a = await store.listAvailableOffline(scope, 1000);
+      expect(a).toEqual({ levelIds: [], lessonCount: 5 });
+    });
+
+    it('partial-vs-full boundary: only exact/over counts mark a level available', async () => {
+      query.mockResolvedValueOnce({
+        values: [
+          { level_id: 'LV_EXACT', n: 3 },   // 3/3 — included
+          { level_id: 'LV_OVER', n: 4 },    // 4/3 — included (extra stale purge edge case)
+          { level_id: 'LV_PART', n: 2 },    // 2/3 — excluded
+        ],
+      });
+      query.mockResolvedValueOnce({ values: [{ n: 9 }] });
+      query.mockResolvedValueOnce({
+        values: [
+          moduleLevelsRow([
+            { id: 'LV_EXACT', title: 'Exact', lessons_total: 3 },
+            { id: 'LV_OVER', title: 'Over', lessons_total: 3 },
+            { id: 'LV_PART', title: 'Partial', lessons_total: 3 },
+          ]),
+        ],
+      });
+      const a = await store.listAvailableOffline(scope, 1000);
+      expect(a.levelIds).toEqual(['LV_EXACT', 'LV_OVER']);
+      expect(a.lessonCount).toBe(9);
+    });
+
+    it('returns empty when unavailable', async () => {
       vi.mocked(isOfflineDbAvailable).mockReturnValueOnce(false);
       expect(await store.listAvailableOffline(scope, 1000)).toEqual({ levelIds: [], lessonCount: 0 });
     });
