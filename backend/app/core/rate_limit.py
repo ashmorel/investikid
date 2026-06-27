@@ -51,9 +51,33 @@ def biometric_exchange_key(request) -> str:
 # Use the provisioned Redis there (the same instance price_cache uses); keep
 # in-memory ("memory://") for single-instance dev/staging/testing so those envs
 # don't gain a hard Redis dependency.
-_storage_uri = settings.redis_url if settings.environment == "production" else "memory://"
+def _resolve_storage_uri() -> str:
+    """The limiter's counter store, chosen to NEVER hard-depend on a Redis that
+    might be absent or unreachable.
+
+    Outside production: in-memory. In production: the provisioned shared Redis —
+    UNLESS `redis_url` is still the unconfigured localhost default (REDIS_URL not
+    set on the service), in which case fall back to in-memory. Pointing the
+    limiter at a non-existent localhost Redis made *every* rate-limited request
+    500 with a ConnectionError, because — unlike `price_cache` — the limiter is
+    not fail-safe. In-memory keeps the app serving (limits then count per
+    instance) until REDIS_URL is configured.
+    """
+    if settings.environment != "production":
+        return "memory://"
+    url = settings.redis_url
+    if not url or "localhost" in url or "127.0.0.1" in url:
+        return "memory://"
+    return url
+
+
 limiter = Limiter(
     key_func=rate_limit_key,
     enabled=settings.environment != "development",
-    storage_uri=_storage_uri,
+    storage_uri=_resolve_storage_uri(),
+    # Belt-and-braces for a *configured* Redis that goes down at runtime: a
+    # transient storage outage must degrade (allow the request) rather than 500
+    # every rate-limited endpoint. Availability beats enforcing limits during an
+    # outage for a kids' app.
+    swallow_errors=True,
 )
