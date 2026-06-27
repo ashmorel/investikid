@@ -38,6 +38,22 @@ export default defineConfig(({ mode }) => {
     __API_BASE__: JSON.stringify(env.VITE_API_BASE_URL || ''),
     __WEB_ORIGIN__: JSON.stringify(env.VITE_WEB_ORIGIN || ''),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split stable vendors into their own chunks so they stay cached across
+        // app releases (and so charts/motion aren't entangled with app code).
+        // recharts only ships in the lazy chart routes; this keeps it in one
+        // shared chunk loaded on demand rather than duplicated per route.
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          charts: ['recharts'],
+          motion: ['framer-motion'],
+          query: ['@tanstack/react-query', '@tanstack/react-query-persist-client'],
+        },
+      },
+    },
+  },
   plugins: [react(), tailwindcss(), stripCrossorigin()],
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },

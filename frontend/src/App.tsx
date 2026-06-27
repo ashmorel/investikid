@@ -14,11 +14,13 @@ import Lessons from '@/pages/child/Lessons';
 import Module from '@/pages/child/Module';
 import Level from '@/pages/child/Level';
 import Lesson from '@/pages/child/Lesson';
-import Simulator from '@/pages/child/Simulator';
-import Market from '@/pages/child/Market';
+// Chart-heavy routes are lazy-loaded so recharts/chart code stays out of the
+// child-facing main bundle (a kid on /home never pays for it).
+const Simulator = lazy(() => import('@/pages/child/Simulator'));
+const Market = lazy(() => import('@/pages/child/Market'));
 import { Markets } from '@/pages/child/Markets';
-import Stock from '@/pages/child/Stock';
-import Stats from '@/pages/child/Stats';
+const Stock = lazy(() => import('@/pages/child/Stock'));
+const Stats = lazy(() => import('@/pages/child/Stats'));
 import Revise from '@/pages/child/Revise';
 import StrengthsGaps from '@/pages/child/StrengthsGaps';
 import Coach from '@/pages/child/Coach';
@@ -86,11 +88,11 @@ export default function App() {
           <Route path="/lessons/:moduleId" element={<Module />} />
           <Route path="/lessons/:moduleId/:levelId" element={<Level />} />
           <Route path="/lessons/:moduleId/:levelId/:lessonId" element={<Lesson />} />
-          <Route path="/simulator" element={<Simulator />} />
-          <Route path="/simulator/market" element={<Market />} />
-          <Route path="/simulator/stock/:exchange/:ticker" element={<Stock />} />
+          <Route path="/simulator" element={<Suspense fallback={null}><Simulator /></Suspense>} />
+          <Route path="/simulator/market" element={<Suspense fallback={null}><Market /></Suspense>} />
+          <Route path="/simulator/stock/:exchange/:ticker" element={<Suspense fallback={null}><Stock /></Suspense>} />
           <Route path="/markets" element={<Markets />} />
-          <Route path="/stats" element={<Stats />} />
+          <Route path="/stats" element={<Suspense fallback={null}><Stats /></Suspense>} />
           <Route path="/progress" element={<StrengthsGaps />} />
           <Route path="/revise" element={<Revise />} />
           <Route path="/revise/session" element={<Suspense fallback={null}><ReviseSession /></Suspense>} />
