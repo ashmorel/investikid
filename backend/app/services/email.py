@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 from typing import Protocol
 
@@ -6,6 +7,8 @@ import resend
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.consent import SentEmail
+
+logger = logging.getLogger(__name__)
 
 
 class EmailSender(Protocol):
@@ -440,7 +443,11 @@ class ResendEmailSender:
         session.add(SentEmail(to_email=to, template=template, body=plain, subject_id=subject_id))
         await session.flush()
 
-        # Send via Resend
+        # Send via Resend — best-effort. A provider outage must NOT roll back the
+        # caller's transaction (account creation, parental consent, etc.) or 500
+        # the request: the caller commits regardless and the audit row above
+        # records the attempt. Log the failure (no recipient address — that's PII)
+        # so operators can detect and replay.
         resend.api_key = self._api_key
         params: resend.Emails.SendParams = {
             "from": self._from_email,
@@ -449,7 +456,13 @@ class ResendEmailSender:
             "html": html,
             "text": plain,
         }
-        await asyncio.to_thread(resend.Emails.send, params)
+        try:
+            await asyncio.to_thread(resend.Emails.send, params)
+        except Exception:
+            logger.exception(
+                "Resend send failed (best-effort): template=%s subject_id=%s",
+                template, subject_id,
+            )
 
 
 def get_email_sender() -> EmailSender:

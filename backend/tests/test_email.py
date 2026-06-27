@@ -80,7 +80,14 @@ async def test_resend_sender_calls_api_and_persists(db_session):
     assert row.subject_id == sid
 
 
-async def test_resend_sender_raises_on_api_error(db_session):
+async def test_resend_sender_swallows_api_error_and_persists_audit(db_session):
+    """A Resend outage must be best-effort: the send must NOT raise (so the
+    caller's transaction — account creation, parental consent — still commits),
+    and the SentEmail audit row must still be persisted to record the attempt."""
+    from sqlalchemy import func, select
+
+    from app.models.consent import SentEmail
+
     sender = ResendEmailSender(api_key="re_fake", from_email="test@example.com")
 
     context = {
@@ -92,10 +99,18 @@ async def test_resend_sender_raises_on_api_error(db_session):
         "app.services.email.asyncio.to_thread",
         side_effect=Exception("Resend API error"),
     ):
-        with pytest.raises(Exception, match="Resend API error"):
-            await sender.send(
-                db_session, "parent@example.com", "parent_magic_link", context, subject_id=sid
-            )
+        # Must NOT raise — provider failure is swallowed.
+        await sender.send(
+            db_session, "parent@example.com", "parent_magic_link", context, subject_id=sid
+        )
+
+    # Audit row persisted despite the provider failure.
+    count = await db_session.scalar(select(func.count()).select_from(SentEmail))
+    assert count == 1
+    row = await db_session.scalar(select(SentEmail))
+    assert row.to_email == "parent@example.com"
+    assert row.template == "parent_magic_link"
+    assert row.subject_id == sid
 
 
 async def test_verify_email_and_reset_templates_render(db_session):
