@@ -11,6 +11,7 @@ vi.mock('@/hooks/useOnline', () => ({ useOnline: vi.fn(() => true) }));
 vi.mock('@/api/simulator', () => ({
   simulatorApi: {
     searchMarket: vi.fn(() => Promise.resolve([])),
+    getSnapshot: vi.fn(() => Promise.resolve({ region: 'GB', featured: [], movers: {} })),
     getMarketMovers: vi.fn(() => Promise.resolve([])),
     getMarketNews: vi.fn(() => Promise.resolve([])),
     getNewsSummary: vi.fn(() => Promise.resolve(null)),
