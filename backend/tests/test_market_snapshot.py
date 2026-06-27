@@ -1,4 +1,5 @@
 import pytest
+
 from app.services import market_snapshot_service
 from app.services.price_provider import StaticPriceProvider
 

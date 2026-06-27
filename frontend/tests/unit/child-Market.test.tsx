@@ -8,10 +8,17 @@ import type { QuoteOut } from '@/api/simulator';
 
 beforeEach(() => vi.restoreAllMocks());
 
-const allQuotes: QuoteOut[] = [
+// US-region featured stocks (the snapshot is region-scoped; cross-region stocks
+// no longer appear in the featured browse — kids switch markets via the region selector).
+const usQuotes: QuoteOut[] = [
   { ticker: 'AAPL', exchange: 'NASDAQ', name: 'Apple Inc.', price: '185.42', currency: 'USD' },
   { ticker: 'MSFT', exchange: 'NASDAQ', name: 'Microsoft Corp.', price: '420.10', currency: 'USD' },
   { ticker: 'DIS', exchange: 'NYSE', name: 'Walt Disney Co.', price: '95.00', currency: 'USD' },
+];
+
+// Full cross-region pool used only for search results.
+const allQuotes: QuoteOut[] = [
+  ...usQuotes,
   { ticker: 'VOD', exchange: 'LSE', name: 'Vodafone Group', price: '12.34', currency: 'GBP' },
   { ticker: '0700', exchange: 'HKEX', name: 'Tencent Holdings', price: '350.00', currency: 'HKD' },
 ];
@@ -19,12 +26,19 @@ const allQuotes: QuoteOut[] = [
 function makeFetchMock(filterFn?: (q: string) => QuoteOut[]) {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input.toString();
+    if (url.includes('/market/snapshot')) {
+      // Region-scoped: only the active region's (US) stocks are featured.
+      return new Response(
+        JSON.stringify({ region: 'US', featured: usQuotes, movers: {} }),
+        { status: 200 },
+      );
+    }
     if (url.includes('/market/search')) {
       const qParam = new URL(url, 'http://localhost').searchParams.get('q') ?? '';
       const results = filterFn ? filterFn(qParam) : allQuotes;
       return new Response(JSON.stringify(results), { status: 200 });
     }
-    // Other API calls (market movers, news, tips, etc.) return empty/null gracefully
+    // Other API calls (market movers, news, tips, /users/me, etc.) return null gracefully.
     return new Response(JSON.stringify(null), { status: 200 });
   });
 }
@@ -42,20 +56,18 @@ function renderPage(filterFn?: (q: string) => QuoteOut[]) {
 }
 
 describe('Market page', () => {
-  it('shows the selected region first and other markets under a collapsible group', async () => {
+  it('shows only the active region\'s featured stocks (no "More markets" when snapshot is region-scoped)', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('Apple Inc.')).toBeInTheDocument());
-    // Selected region (US) is shown directly
-    expect(screen.getByText(/US Stocks/i)).toBeInTheDocument();
-    // Other regions start hidden behind "More markets"
+    // Active region (US) stocks are shown directly.
+    expect(screen.getByText(/Popular US Stocks/i)).toBeInTheDocument();
+    expect(screen.getByText('Microsoft Corp.')).toBeInTheDocument();
+    expect(screen.getByText('Walt Disney Co.')).toBeInTheDocument();
+    // Cross-region stocks are NOT in the region-scoped snapshot — they don't appear.
     expect(screen.queryByText('Vodafone Group')).not.toBeInTheDocument();
     expect(screen.queryByText('Tencent Holdings')).not.toBeInTheDocument();
-    const more = screen.getByRole('button', { name: /more markets/i });
-    await userEvent.click(more);
-    expect(screen.getByText('Vodafone Group')).toBeInTheDocument();
-    expect(screen.getByText('Tencent Holdings')).toBeInTheDocument();
-    expect(screen.getByText(/UK Stocks/i)).toBeInTheDocument();
-    expect(screen.getByText(/Hong Kong Stocks/i)).toBeInTheDocument();
+    // "More markets" collapsible is absent because all featured stocks belong to the active region.
+    expect(screen.queryByRole('button', { name: /more markets/i })).not.toBeInTheDocument();
   });
 
   it('merges NASDAQ + NYSE into one "Popular US Stocks" section', async () => {
