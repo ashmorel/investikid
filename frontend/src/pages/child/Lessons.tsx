@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { contentApi, type LessonSummary, type ModuleOut } from '@/api/content';
 import { ModuleCard } from '@/components/child/ModuleCard';
@@ -7,16 +7,26 @@ import { authApi, type Me } from '@/api/auth';
 import { orderModulesForTier } from '@/lib/tierModuleOrder';
 import { DEFAULT_TIER, densityGridGap, tierConfig } from '@/lib/ageTier';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
+import { scopeFromMe } from '@/lib/offline/scope';
+import { cacheFirst } from '@/lib/offline/useOfflineContent';
+import * as offlineStore from '@/lib/offline/contentStore';
 
 export default function Lessons() {
   const { t } = useTranslation('lessons');
   const { open: openPaywall } = usePremiumPaywall();
+  const qc = useQueryClient();
 
   const { data: me } = useQuery<Me | null>({ queryKey: ['me'], queryFn: () => authApi.me(), staleTime: 60_000 });
+  const scope = scopeFromMe(qc.getQueryData<Me>(['me']));
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
-    queryFn: () => contentApi.listModules(),
+    queryFn: cacheFirst({
+      scope,
+      fetch: () => contentApi.listModules(),
+      read: (s) => offlineStore.getModules(s),
+      write: (s, data) => offlineStore.upsertModules(s, data ?? []),
+    }),
     retry: false,
     staleTime: 60_000,
   });

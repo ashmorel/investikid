@@ -1,9 +1,13 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { contentApi, type LessonSummary, type LevelOut } from '@/api/content';
 import { ApiError } from '@/api/client';
+import type { Me } from '@/api/auth';
+import { scopeFromMe } from '@/lib/offline/scope';
+import { cacheFirst } from '@/lib/offline/useOfflineContent';
+import * as offlineStore from '@/lib/offline/contentStore';
 import { LessonRow } from '@/components/child/LessonRow';
 import { BackButton } from '@/components/child/BackButton';
 import { MasteredStamp } from '@/components/child/MasteredStamp';
@@ -14,16 +18,28 @@ export default function Level() {
   const { t } = useTranslation('child');
   const { moduleId, levelId } = useParams<{ moduleId: string; levelId: string }>();
   const { open: openPaywall } = usePremiumPaywall();
+  const qc = useQueryClient();
+  const scope = scopeFromMe(qc.getQueryData<Me>(['me']));
 
   const lessonsQ = useQuery<LessonSummary[] | null>({
     queryKey: ['level-lessons', levelId],
-    queryFn: () => contentApi.listLevelLessons(levelId!),
+    queryFn: cacheFirst({
+      scope,
+      fetch: () => contentApi.listLevelLessons(levelId!),
+      read: (s) => offlineStore.getLevelLessons(s, levelId!),
+      write: (s, data) => offlineStore.upsertLevelLessons(s, levelId!, data ?? []),
+    }),
     enabled: !!levelId, retry: false, staleTime: 60_000,
   });
 
   const levelsQ = useQuery<LevelOut[] | null>({
     queryKey: ['module-levels', moduleId],
-    queryFn: () => contentApi.listLevels(moduleId!),
+    queryFn: cacheFirst({
+      scope,
+      fetch: () => contentApi.listLevels(moduleId!),
+      read: (s) => offlineStore.getModuleLevels(s, moduleId!),
+      write: (s, data) => offlineStore.upsertModuleLevels(s, moduleId!, data ?? []),
+    }),
     enabled: !!moduleId, retry: false, staleTime: 60_000,
   });
   const level = levelsQ.data?.find((l) => l.id === levelId);

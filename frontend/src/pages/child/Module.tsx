@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useReducedMotion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { contentApi, type LevelOut, type ModuleOut } from '@/api/content';
+import type { Me } from '@/api/auth';
+import { scopeFromMe } from '@/lib/offline/scope';
+import { cacheFirst } from '@/lib/offline/useOfflineContent';
+import * as offlineStore from '@/lib/offline/contentStore';
 import { playSound } from '@/lib/sound';
 import { haptic } from '@/lib/haptics';
 import { celebrate } from '@/lib/confetti';
@@ -26,16 +30,28 @@ export default function Module() {
   const subtle = tierConfig[tier].celebration === 'subtle';
   const [nudgeDismissed, setNudgeDismissed] = useState(() => isNudgeDismissed(nudgeKey));
   const reducedMotion = useReducedMotion();
+  const qc = useQueryClient();
+  const scope = scopeFromMe(qc.getQueryData<Me>(['me']));
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
-    queryFn: () => contentApi.listModules(),
+    queryFn: cacheFirst({
+      scope,
+      fetch: () => contentApi.listModules(),
+      read: (s) => offlineStore.getModules(s),
+      write: (s, data) => offlineStore.upsertModules(s, data ?? []),
+    }),
     retry: false, staleTime: 60_000,
   });
 
   const levelsQ = useQuery<LevelOut[] | null>({
     queryKey: ['module-levels', moduleId],
-    queryFn: () => contentApi.listLevels(moduleId!),
+    queryFn: cacheFirst({
+      scope,
+      fetch: () => contentApi.listLevels(moduleId!),
+      read: (s) => offlineStore.getModuleLevels(s, moduleId!),
+      write: (s, data) => offlineStore.upsertModuleLevels(s, moduleId!, data ?? []),
+    }),
     enabled: !!moduleId, retry: false, staleTime: 60_000,
   });
 

@@ -4,6 +4,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { contentApi, type LessonOut, type LessonSummary, type LessonCompletionResult, type ModuleOut, type LevelOut } from '@/api/content';
 import { ApiError } from '@/api/client';
+import type { Me } from '@/api/auth';
+import { scopeFromMe } from '@/lib/offline/scope';
+import { cacheFirst } from '@/lib/offline/useOfflineContent';
+import * as offlineStore from '@/lib/offline/contentStore';
 import { CardLesson } from '@/components/child/lesson/CardLesson';
 import { QuizLesson } from '@/components/child/lesson/QuizLesson';
 import { ScenarioLesson } from '@/components/child/lesson/ScenarioLesson';
@@ -26,6 +30,7 @@ import { type CompleteLessonVars } from '@/lib/offlineMutations';
 export default function Lesson() {
   const { moduleId, levelId, lessonId } = useParams<{ moduleId: string; levelId: string; lessonId: string }>();
   const qc = useQueryClient();
+  const scope = scopeFromMe(qc.getQueryData<Me>(['me']));
   const navigate = useNavigate();
   const { toast } = useToast();
   const { open: openPaywall } = usePremiumPaywall();
@@ -40,25 +45,45 @@ export default function Lesson() {
 
   const lessonQ = useQuery<LessonOut | null>({
     queryKey: ['lesson', lessonId],
-    queryFn: () => contentApi.getLesson(lessonId!),
+    queryFn: cacheFirst({
+      scope,
+      fetch: () => contentApi.getLesson(lessonId!),
+      read: (s) => offlineStore.getLesson(s, lessonId!),
+      write: (s, data) => data != null ? offlineStore.upsertLesson(s, data, levelId ?? null) : Promise.resolve(),
+    }),
     enabled: !!lessonId, retry: false,
   });
 
   const lessonsQ = useQuery<LessonSummary[] | null>({
     queryKey: ['level-lessons', levelId],
-    queryFn: () => contentApi.listLevelLessons(levelId!),
+    queryFn: cacheFirst({
+      scope,
+      fetch: () => contentApi.listLevelLessons(levelId!),
+      read: (s) => offlineStore.getLevelLessons(s, levelId!),
+      write: (s, data) => offlineStore.upsertLevelLessons(s, levelId!, data ?? []),
+    }),
     enabled: !!levelId, retry: false, staleTime: 60_000,
   });
 
   const modulesQ2 = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
-    queryFn: () => contentApi.listModules(),
+    queryFn: cacheFirst({
+      scope,
+      fetch: () => contentApi.listModules(),
+      read: (s) => offlineStore.getModules(s),
+      write: (s, data) => offlineStore.upsertModules(s, data ?? []),
+    }),
     retry: false, staleTime: 60_000,
   });
 
   const levelsQ = useQuery<LevelOut[] | null>({
     queryKey: ['module-levels', moduleId],
-    queryFn: () => contentApi.listLevels(moduleId!),
+    queryFn: cacheFirst({
+      scope,
+      fetch: () => contentApi.listLevels(moduleId!),
+      read: (s) => offlineStore.getModuleLevels(s, moduleId!),
+      write: (s, data) => offlineStore.upsertModuleLevels(s, moduleId!, data ?? []),
+    }),
     enabled: !!moduleId, retry: false, staleTime: 60_000,
   });
 

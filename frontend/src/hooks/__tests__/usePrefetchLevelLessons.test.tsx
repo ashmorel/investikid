@@ -3,9 +3,14 @@ import { renderHook } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 const prefetchQuery = vi.fn();
-vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ prefetchQuery }) }));
+vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ prefetchQuery, getQueryData: vi.fn() }) }));
 vi.mock('@/hooks/useOnline', () => ({ useOnline: vi.fn() }));
 vi.mock('@/api/content', () => ({ contentApi: { getLesson: vi.fn(async () => ({})) } }));
+vi.mock('@/lib/offline/scope', () => ({ scopeFromMe: () => ({ childId: 'C1', market: 'GB' }) }));
+vi.mock('@/lib/offline/contentStore', () => ({ upsertLesson: vi.fn(async () => {}) }));
+vi.mock('@/lib/offline/useOfflineContent', () => ({
+  cacheFirst: (opts: { fetch: () => unknown }) => opts.fetch,
+}));
 
 import type { LessonSummary } from '@/api/content';
 import { useOnline } from '@/hooks/useOnline';
