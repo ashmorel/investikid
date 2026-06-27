@@ -74,10 +74,6 @@ async function bootstrap() {
 
   ReactDOM.createRoot(document.getElementById('root')!).render(rootTree);
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js');
-  }
-
   registerBackButton();
   void initNativeChrome();
   void ensureAndroidChannel();
