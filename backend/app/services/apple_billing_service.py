@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 from datetime import UTC, datetime
 
@@ -98,13 +99,16 @@ async def _upsert_and_recompute(session: AsyncSession, *, parent_email: str,
 async def handle_notification(session: AsyncSession, signed_payload: str) -> None:
     """Verify and process an App Store Server Notification V2 payload."""
     _require_apple()
+    # JWS verification (crypto) and the App Store Server API call are synchronous
+    # and blocking — run them off the event loop so webhook bursts don't stall it.
     verifier = _build_verifier()
-    notification = verifier.verify_and_decode_notification(signed_payload)
+    notification = await asyncio.to_thread(
+        verifier.verify_and_decode_notification, signed_payload)
     data = getattr(notification, "data", None)
     signed_tx = getattr(data, "signedTransactionInfo", None) if data is not None else None
     if not signed_tx:
         return
-    tx = verifier.verify_and_decode_signed_transaction(signed_tx)
+    tx = await asyncio.to_thread(verifier.verify_and_decode_signed_transaction, signed_tx)
     otid = tx.originalTransactionId
     # Only act on transactions we already know (associated to a household at verify time)
     sub = await session.scalar(select(Subscription).where(
@@ -112,7 +116,7 @@ async def handle_notification(session: AsyncSession, signed_payload: str) -> Non
     if sub is None:
         return
     try:
-        status_ = _fetch_status(otid)
+        status_ = await asyncio.to_thread(_fetch_status, otid)
     except Exception:
         status_ = _status_from_payload(tx)
     await _upsert_and_recompute(session, parent_email=sub.parent_email,
@@ -125,7 +129,8 @@ async def verify_transaction(session: AsyncSession, *, parent_email: str, jws: s
     """Verify a StoreKit signed transaction (JWS), associate it to the parent via
     appAccountToken, record the subscription, and recompute entitlement."""
     _require_apple()
-    payload = _build_verifier().verify_and_decode_signed_transaction(jws)
+    verifier = _build_verifier()
+    payload = await asyncio.to_thread(verifier.verify_and_decode_signed_transaction, jws)
     token = (getattr(payload, "appAccountToken", "") or "").lower()
     if token and token != household_token(parent_email):
         raise AppleBillingError("appAccountToken does not match the authenticated parent")

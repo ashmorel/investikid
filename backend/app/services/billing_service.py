@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 
 import stripe
@@ -37,7 +38,10 @@ async def get_or_create_subscription(
         return sub
 
     _stripe_client()
-    customer = stripe.Customer.create(
+    # Stripe's SDK is synchronous; run network calls off the event loop so a
+    # slow/bursty Stripe response can't stall the async worker.
+    customer = await asyncio.to_thread(
+        stripe.Customer.create,
         email=parent_email,
         metadata={"parent_email": parent_email},
     )
@@ -67,7 +71,8 @@ async def create_checkout_session(
     if sub.stripe_subscription_id is None:
         subscription_data["trial_period_days"] = 7
 
-    checkout = stripe.checkout.Session.create(
+    checkout = await asyncio.to_thread(
+        stripe.checkout.Session.create,
         mode="subscription",
         customer=sub.stripe_customer_id,
         line_items=[{"price": resolve_stripe_price(plan), "quantity": 1}],
@@ -102,7 +107,7 @@ async def create_portal_session(
     if settings.stripe_portal_config_id:
         kwargs["configuration"] = settings.stripe_portal_config_id
 
-    portal = stripe.billing_portal.Session.create(**kwargs)
+    portal = await asyncio.to_thread(stripe.billing_portal.Session.create, **kwargs)
     return portal.url
 
 

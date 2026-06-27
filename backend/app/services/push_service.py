@@ -8,6 +8,7 @@ both gates allowed to register.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from datetime import UTC, date, datetime
@@ -98,7 +99,9 @@ async def send_to_user(
     sent_any = False
     for device in devices:
         try:
-            _send_fcm(device.token, title, body)
+            # _send_fcm does a synchronous creds refresh + HTTP POST — run it off
+            # the event loop so a slow FCM response can't stall the worker.
+            await asyncio.to_thread(_send_fcm, device.token, title, body)
             sent_any = True
         except Exception as exc:  # noqa: BLE001 — prune dead tokens, log the rest
             name = type(exc).__name__

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 
@@ -73,7 +74,9 @@ async def run(session: AsyncSession) -> dict:
     for row in rows:
         checked += 1
         try:
-            pulled = _repull(row)
+            # _repull does a synchronous provider API call (Stripe/Apple/Google).
+            # Run it off the event loop so the batch can't stall the worker.
+            pulled = await asyncio.to_thread(_repull, row)
             if pulled is None:
                 continue
             status, period_end = pulled

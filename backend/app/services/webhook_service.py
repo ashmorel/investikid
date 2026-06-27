@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import UTC, datetime
 
@@ -36,8 +37,10 @@ async def handle_checkout_completed(
     subscription_id: str = data["subscription"]
     parent_email: str = data["metadata"]["parent_email"]
 
-    # Retrieve the full subscription to get status and period info
-    stripe_sub = stripe.Subscription.retrieve(subscription_id)
+    # Retrieve the full subscription to get status and period info. Stripe's SDK
+    # is synchronous — run it off the event loop so a burst of webhooks can't
+    # stall the worker.
+    stripe_sub = await asyncio.to_thread(stripe.Subscription.retrieve, subscription_id)
 
     now = datetime.now(UTC)
     sub = await session.scalar(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 from datetime import UTC, datetime
@@ -97,7 +98,9 @@ async def verify_purchase(session: AsyncSession, *, parent_email: str,
                           purchase_token: str, product_id: str) -> None:
     """Validate a Play purchase token, bind to the household, acknowledge, record + recompute."""
     _require_google()
-    resp = _fetch_subscription(purchase_token)
+    # The Play Developer API client is synchronous — run network calls off the
+    # event loop so bursty verifies/RTDNs can't stall the async worker.
+    resp = await asyncio.to_thread(_fetch_subscription, purchase_token)
 
     obfuscated = (resp.get("externalAccountIdentifiers") or {}).get("obfuscatedExternalAccountId")
     if obfuscated and obfuscated != household_token(parent_email):
@@ -110,7 +113,7 @@ async def verify_purchase(session: AsyncSession, *, parent_email: str,
 
     if resp.get("acknowledgementState") == "ACKNOWLEDGEMENT_STATE_PENDING":
         try:
-            _acknowledge(line_product, purchase_token)
+            await asyncio.to_thread(_acknowledge, line_product, purchase_token)
         except Exception:
             pass
 
@@ -140,7 +143,7 @@ async def handle_notification(session: AsyncSession, message: dict) -> None:
         Subscription.provider == "google", Subscription.external_id == token))
     if sub is None:
         return
-    resp = _fetch_subscription(token)
+    resp = await asyncio.to_thread(_fetch_subscription, token)
     await _upsert_and_recompute(session, parent_email=sub.parent_email,
                                 purchase_token=token,
                                 status=_map_status(resp.get("subscriptionState")),
