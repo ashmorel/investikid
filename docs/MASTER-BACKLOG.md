@@ -110,7 +110,7 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
 ## 🔎 Code-review backlog — 2026-06-25
 
-> From a 5-pass review (security/PII · bugs/structure · scale/cost · FE perf · offline/preload). Severity, effort (S/M/L), and file pointers below. **Shipped: #1, #2, #10 (`b75efeb`) + #4, #6, #7 (`2bcc0c3`)** — green CI → Railway backend + manual Vercel web. The rest await prioritisation.
+> From a 5-pass review (security/PII · bugs/structure · scale/cost · FE perf · offline/preload). Severity, effort (S/M/L), and file pointers below. **Shipped: #1, #2, #10 (`b75efeb`) + #4, #6, #7 (`2bcc0c3`) + #8, #9, #5 (2026-06-27)** — green CI → Railway backend + manual Vercel web. **Remaining: #3 (yfinance) + P2/P3 + Goal 4 (offline) + Goal 5 (preload).**
 
 ### 🔴 P0 — urgent
 | # | Item | Dim | Effort | Where / fix |
@@ -123,11 +123,11 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 ### 🟠 P1 — high
 | # | Item | Dim | Effort | Where / fix |
 |---|---|---|---|---|
-| 5 | **"Delete account" doesn't fully purge PII** — soft-delete means CASCADE never fires; `sent_emails` (parent email + body), push tokens, feedback survive. Purge is **manual-CLI-only** (no cron). | Security | M | `services/retention.py`, `account_deletion_service.py` → explicit DELETEs + add `/internal/purge-accounts` cron (CSRF allowlist). |
+| 5 | ✅ **DONE (`52897e5`)** — **"Delete account" didn't fully purge PII** — soft-delete skipped CASCADEs so `sent_emails`/push tokens/feedback survived. Fixed: `purge_expired_accounts` now hard-deletes those by subject/user id; added `/internal/purge-accounts/run` (cron-secret + CSRF allowlist) wired into the daily cron. | Security | M | `services/retention.py`, `routers/internal.py`, `core/csrf.py`. |
 | 6 | ✅ **DONE (`2bcc0c3`)** — **Transactional email was a hard dependency on signup/consent** — Resend outage 500'd + rolled back account creation/consent. Fixed: the Resend network send is best-effort (try/except) while the SentEmail audit row still persists, so the caller commits regardless. | Bug | M | `services/email.py`. |
 | 7 | ✅ **DONE (`2bcc0c3`)** — **`parent_email` was logged verbatim** in Stripe webhooks. Fixed: log `customer_id` / `subscription_id` instead (checkout.completed + subscription.deleted). | Security | S | `services/webhook_service.py`. |
-| 8 | **Leaderboard ranking scans whole user table per view + missing indexes** (`active_market_code`, `leaderboard_consent/hidden`, `lesson_completions.lesson_id`); rank = 2nd full aggregation. | Scale | M | `leaderboard_service.py` + model indexes → composite/partial index + Redis top-N (60s TTL). *(pairs with #1.)* |
-| 9 | **Per-request LLM, uncached → linear token cost** — `home-greeting` per Home load; `news-summary` per call. | Cost | M | `routers/ai.py`, `routers/simulator.py` → cache per (user/holdings, UTC-day) in Redis. |
+| 8 | ✅ **DONE (`6525ae0`)** — **Leaderboard scanned the whole user table per view** — Fixed: partial index `ix_users_lb_market` (consented+non-hidden) + `ix_lesson_completions_lesson_id` (migration `e6f7a8b9c0d1`); public market/global top-N cached in Redis (prod-only, 60s TTL, keyed by scope/market/metric/week) with per-viewer is_me applied after the cache. | Scale | M | `leaderboard_service.py`, models, migration. |
+| 9 | ✅ **DONE (`636449a`)** — **Per-request LLM → linear token cost** — Fixed: prod-only daily Redis cache (`llm_cache`) for home-greeting (keyed on inputs+UTC-day) and news-summary (keyed on holdings/age/lang, 6h TTL, checked before the news fetch + LLM). | Cost | M | `services/llm_cache.py`, `routers/ai.py`, `routers/simulator.py`. |
 | 10 | ✅ **DONE (`b75efeb`)** — **FE: lazy-load chart routes + `manualChunks`** — recharts/framer/confetti/screenshot were all in the 1.3 MB initial bundle. Fixed: Simulator/Market/Stock/Stats are `React.lazy` + `Suspense`; vendor split (`react-vendor`/`charts`/`motion`/`query`). **Entry chunk 1,305 → 148 kB.** | Perf | S | `src/App.tsx`, `vite.config.ts`. |
 
 ### 🟡 P2 — medium
