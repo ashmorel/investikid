@@ -8,6 +8,7 @@ import { LessonRow } from '@/components/child/LessonRow';
 import { BackButton } from '@/components/child/BackButton';
 import { MasteredStamp } from '@/components/child/MasteredStamp';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
+import { usePrefetchLevelLessons } from '@/hooks/usePrefetchLevelLessons';
 
 export default function Level() {
   const { t } = useTranslation('child');
@@ -27,6 +28,8 @@ export default function Level() {
   });
   const level = levelsQ.data?.find((l) => l.id === levelId);
   const objectives = level?.learning_objectives ?? [];
+
+  usePrefetchLevelLessons(lessonsQ.data);
 
   const premiumErr = lessonsQ.isError && lessonsQ.error instanceof ApiError
     && lessonsQ.error.code === 'premium_required' ? lessonsQ.error : null;
