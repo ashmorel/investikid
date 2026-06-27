@@ -1,4 +1,4 @@
-import type { Query } from '@tanstack/react-query';
+import type { Mutation, Query } from '@tanstack/react-query';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 
 /** How long persisted queries stay valid on disk (and the matching gcTime). */
@@ -33,6 +33,16 @@ export function shouldDehydrateQuery(query: Query): boolean {
   if (query.state.status !== 'success') return false;
   const head = query.queryKey[0];
   return typeof head === 'string' && PERSISTED_QUERY_KEYS.includes(head);
+}
+
+/** Persist only paused lesson-completion mutations — the offline outbox.
+ * Settled mutations and other keys are not persisted. */
+export function shouldDehydrateMutation(mutation: Mutation): boolean {
+  return (
+    mutation.state.isPaused === true &&
+    Array.isArray(mutation.options.mutationKey) &&
+    mutation.options.mutationKey[0] === 'completeLesson'
+  );
 }
 
 /**

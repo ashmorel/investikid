@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { Query } from '@tanstack/react-query';
+import type { Query, Mutation } from '@tanstack/react-query';
 import {
   shouldDehydrateQuery,
+  shouldDehydrateMutation,
   createAppPersister,
   PERSISTED_QUERY_KEYS,
   PERSIST_MAX_AGE,
@@ -82,6 +83,18 @@ describe('shouldDehydrateQuery', () => {
     expect(shouldDehydrateQuery(fakeQuery(['coach']))).toBe(false); // excluded
     expect(shouldDehydrateQuery(fakeQuery(['quote', 'x'], 'error'))).toBe(false); // non-success
     expect(PERSISTED_QUERY_KEYS).not.toContain('market-movers');
+  });
+});
+
+describe('shouldDehydrateMutation', () => {
+  function m(isPaused: boolean, key: unknown[]): Mutation {
+    return { state: { isPaused }, options: { mutationKey: key } } as unknown as Mutation;
+  }
+
+  it('persists only paused completeLesson mutations', () => {
+    expect(shouldDehydrateMutation(m(true, ['completeLesson']))).toBe(true);
+    expect(shouldDehydrateMutation(m(false, ['completeLesson']))).toBe(false); // settled
+    expect(shouldDehydrateMutation(m(true, ['someOther']))).toBe(false);       // other key
   });
 });
 
