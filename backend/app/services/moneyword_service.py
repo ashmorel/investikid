@@ -81,15 +81,26 @@ class AlreadyCompleted(Exception):
 
 
 async def _load_play(session: AsyncSession, user: User, today: date, language: str) -> ArcadeDailyPlay:
-    play = await session.scalar(
-        select(ArcadeDailyPlay).where(
-            ArcadeDailyPlay.user_id == user.id, ArcadeDailyPlay.puzzle_date == today
+    # Lock the row FOR UPDATE: two concurrent POSTs of the winning guess would
+    # otherwise both read completed=False and both award coins/score. The lock
+    # serialises them — the second waits, then sees completed=True and is rejected.
+    def _locked():
+        return (
+            select(ArcadeDailyPlay)
+            .where(ArcadeDailyPlay.user_id == user.id, ArcadeDailyPlay.puzzle_date == today)
+            .with_for_update()
         )
-    )
+
+    play = await session.scalar(_locked())
     if play is None:
         play = ArcadeDailyPlay(user_id=user.id, puzzle_date=today, language=language, guesses=[])
         session.add(play)
-        await session.flush()
+        try:
+            await session.flush()
+        except IntegrityError:
+            # Concurrent first guess created the row — re-read it under the lock.
+            await session.rollback()
+            play = await session.scalar(_locked())
     return play
 
 

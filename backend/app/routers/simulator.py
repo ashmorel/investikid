@@ -40,6 +40,7 @@ from app.schemas.simulator import (
     TradeResultOut,
 )
 from app.services import llm_cache
+from app.services.age_tier import age_in_years
 from app.services.app_settings import get_trade_commission_pct
 from app.services.chart_coach_service import (
     ChartCoachInputTooLong,
@@ -225,7 +226,7 @@ async def get_news_summary(
     if not holdings:
         return NewsSummaryOut(summary="Buy some stocks and news about them will appear here!", tickers_mentioned=[])
 
-    age = (date.today() - current_user.dob).days // 365
+    age = age_in_years(current_user.dob, date.today())
     # The summary is an LLM call on every Home/simulator load. It's stable for a
     # given (holdings, age, language) within a few hours, so cache it and serve
     # repeat loads without re-billing the model. Keyed on holdings (not the news
@@ -337,7 +338,7 @@ async def get_stock_news_summary(
     if not items:
         return NewsSummaryOut(summary="", tickers_mentioned=[])
 
-    age = (date.today() - current_user.dob).days // 365
+    age = age_in_years(current_user.dob, date.today())
     headlines = "\n".join(f"- {i.title}: {i.summary}" for i in items[:8])
 
     system_prompt = (
@@ -390,7 +391,7 @@ async def get_chart_guide(
     current_user: User = Depends(get_current_user),
     provider=Depends(get_price_provider),
 ):
-    age = (date.today() - current_user.dob).days // 365
+    age = age_in_years(current_user.dob, date.today())
 
     if not hasattr(provider, "get_history"):
         return NewsSummaryOut(summary="", tickers_mentioned=[])
@@ -567,7 +568,7 @@ async def get_time_machine(
 
     fun_fact = ""
     if periods:
-        age = (date.today() - current_user.dob).days // 365
+        age = age_in_years(current_user.dob, date.today())
         best_period = max(periods, key=lambda p: p.return_pct)
         llm = get_llm_client(tier="lite")
         try:
@@ -633,7 +634,7 @@ async def get_investing_tips(
         )
     ) or 0
     stage = learning_stage(completed)
-    age = (date.today() - current_user.dob).days // 365
+    age = age_in_years(current_user.dob, date.today())
 
     personalised, was_unsafe = await generate_personalised_tips(
         user_id=current_user.id, holdings=holdings, stage=stage, age=age, refresh=refresh,
@@ -705,7 +706,9 @@ async def get_trade_config(
 
 
 @router.post("/portfolio/trades", response_model=TradeResultOut, status_code=201)
+@limiter.limit("30/minute")
 async def place_trade(
+    request: Request,
     payload: TradeRequest,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),

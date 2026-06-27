@@ -19,6 +19,13 @@ class Base(DeclarativeBase):
 engine = create_async_engine(
     settings.database_url,
     echo=settings.environment == "development",
+    # Bound connections per instance so N instances don't exhaust Postgres
+    # max_connections; pre_ping drops stale conns (Railway idle timeouts) and
+    # recycle caps connection lifetime.
+    pool_size=settings.db_pool_size,
+    max_overflow=settings.db_max_overflow,
+    pool_pre_ping=True,
+    pool_recycle=1800,
 )
 async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
 

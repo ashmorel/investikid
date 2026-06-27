@@ -31,6 +31,11 @@ class Settings(BaseSettings):
         return self
 
     redis_url: str = "redis://localhost:6379/0"
+    # SQLAlchemy connection pool. Defaults (5 + 5 overflow = 10 max/instance) keep
+    # Railway's Postgres `max_connections` (~100) safe up to ~10 backend instances.
+    # Tune down further if scaling wider, or front with PgBouncer.
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
     jwt_secret: str
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
