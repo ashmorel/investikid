@@ -252,7 +252,7 @@ async def test_llm_status_admin_returns_200_list(admin_client):
         {"provider": "together", "configured": True, "ok": True, "detail": "responded"},
         {"provider": "premium", "model": "gpt-5-mini", "configured": True, "ok": True, "detail": "responded"},
     ]
-    with patch("app.routers.admin.probe_all_providers", AsyncMock(return_value=fake_results)):
+    with patch("app.routers.admin_settings.probe_all_providers", AsyncMock(return_value=fake_results)):
         resp = await admin_client.get("/admin/llm-status")
 
     assert resp.status_code == 200
@@ -270,7 +270,7 @@ async def test_llm_status_response_contains_no_api_keys(admin_client):
         {"provider": "gemini_flash_lite", "configured": True, "ok": False,
          "detail": "AuthError: bad credentials"},
     ]
-    with patch("app.routers.admin.probe_all_providers", AsyncMock(return_value=fake_results)):
+    with patch("app.routers.admin_settings.probe_all_providers", AsyncMock(return_value=fake_results)):
         resp = await admin_client.get("/admin/llm-status")
 
     assert resp.status_code == 200
