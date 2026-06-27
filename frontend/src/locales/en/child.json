@@ -95,6 +95,7 @@
     "error": "Could not send feedback. Please try again.",
     "screenshotLabel": "Add a screenshot (optional)",
     "screenshotAlt": "Attached screenshot",
+    "screenshotTooLarge": "Screenshot was too large to attach — sending your message without it.",
     "capture": "Capture screen",
     "capturing": "Capturing…",
     "upload": "Upload",

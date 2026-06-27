@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { BottomSheet } from '@/components/mobile/BottomSheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useToast } from '@/hooks/use-toast';
-import { captureScreen, fileToScreenshot } from '@/lib/screenshot';
+import { captureScreen, fileToScreenshot, SCREENSHOT_MAX_CHARS } from '@/lib/screenshot';
 import { useSubmitFeedback, type FeedbackType } from '@/api/feedback';
 
 const MAX = 2000;
@@ -92,8 +92,15 @@ export function FeedbackDialog({
 
   function handleSubmit() {
     setError('');
+    // A screenshot over the backend cap would 422 the whole request and lose the
+    // typed message too. Drop the image and send the text rather than failing.
+    let outgoing = screenshot;
+    if (outgoing && outgoing.length > SCREENSHOT_MAX_CHARS) {
+      outgoing = null;
+      toast({ title: t('feedback.screenshotTooLarge') });
+    }
     submit.mutate(
-      { feedback_type: type, message, page_url: window.location.pathname, screenshot },
+      { feedback_type: type, message, page_url: window.location.pathname, screenshot: outgoing },
       {
         onSuccess: () => {
           toast({ title: t('feedback.success') });

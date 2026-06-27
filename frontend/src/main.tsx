@@ -26,7 +26,11 @@ const queryClient = new QueryClient({
     // `visibilitychange`, which fires when the app is foregrounded.
     // gcTime must be >= the persister's maxAge, otherwise allowlisted queries
     // are garbage-collected before they can be restored from disk.
-    queries: { retry: 2, refetchOnWindowFocus: true, gcTime: PERSIST_MAX_AGE },
+    // staleTime floor: without it every query is stale-on-arrival, so each
+    // foreground (visibilitychange) refetches *everything* at once — a refetch
+    // storm on resume. 30s collapses rapid focus flaps while still refreshing
+    // genuinely stale data; per-query staleTime overrides still win.
+    queries: { retry: 2, refetchOnWindowFocus: true, staleTime: 30_000, gcTime: PERSIST_MAX_AGE },
     mutations: { retry: 0 },
   },
 });

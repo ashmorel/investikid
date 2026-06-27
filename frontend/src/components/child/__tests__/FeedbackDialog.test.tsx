@@ -7,6 +7,7 @@ import * as client from '@/api/client';
 // Screenshot capture/compression touches canvas + the modern-screenshot lib,
 // neither of which runs in jsdom — mock the seam.
 vi.mock('@/lib/screenshot', () => ({
+  SCREENSHOT_MAX_CHARS: 1_400_000,
   captureScreen: vi.fn(async () => 'data:image/jpeg;base64,CAPTURED'),
   fileToScreenshot: vi.fn(async () => 'data:image/jpeg;base64,UPLOADED'),
 }));
@@ -69,5 +70,27 @@ describe('FeedbackDialog', () => {
     await waitFor(() => expect(spy).toHaveBeenCalled());
     const bodyStr = (spy.mock.calls[0][1] as { body: string }).body;
     expect(bodyStr).toContain('data:image/jpeg;base64,UPLOADED');
+  });
+
+  it('drops an oversized screenshot but still sends the message', async () => {
+    const { fileToScreenshot } = await import('@/lib/screenshot');
+    const huge = 'data:image/jpeg;base64,' + 'A'.repeat(1_400_001);
+    vi.mocked(fileToScreenshot).mockResolvedValueOnce(huge);
+    const spy = vi.spyOn(client, 'apiFetch').mockResolvedValue({ id: 'abc' });
+    renderDialog();
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['x'], 'big.png', { type: 'image/png' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    await screen.findByRole('img', { name: /attached screenshot/i });
+
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'still here' } });
+    fireEvent.click(screen.getByRole('button', { name: /send feedback/i }));
+
+    await waitFor(() => expect(spy).toHaveBeenCalled());
+    const bodyStr = (spy.mock.calls[0][1] as { body: string }).body;
+    expect(bodyStr).toContain('still here');     // message preserved
+    expect(bodyStr).not.toContain(huge);          // oversized image dropped
+    expect(JSON.parse(bodyStr).screenshot).toBeNull();
   });
 });

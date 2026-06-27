@@ -1,10 +1,16 @@
-import { domToCanvas } from 'modern-screenshot';
+// `modern-screenshot` is heavy and only needed when a user actually captures a
+// feedback screenshot — import it lazily so it stays out of the app's boot bundle.
 
 // Bounds for the attached image: long edge ≤ MAX_DIM, JPEG at QUALITY. Keeps the
-// base64 payload comfortably small (well under the backend's ~1MB cap) so it
+// base64 payload comfortably small (well under the backend's ~1.4M-char cap) so it
 // rides along in the feedback notification email.
 const MAX_DIM = 1280;
 const QUALITY = 0.7;
+
+// Backend rejects the whole request (422) if `screenshot` exceeds this many
+// chars. Callers check against it and drop the image (keeping the text) rather
+// than losing the entire feedback submission. Mirrors schemas/feedback.py.
+export const SCREENSHOT_MAX_CHARS = 1_400_000;
 
 /** Downscale + JPEG-compress any image source to a bounded data URL. */
 async function compress(src: string): Promise<string> {
@@ -33,6 +39,7 @@ async function compress(src: string): Promise<string> {
  * Throws if the DOM can't be rendered (caller should fall back to upload).
  */
 export async function captureScreen(): Promise<string> {
+  const { domToCanvas } = await import('modern-screenshot');
   const canvas = await domToCanvas(document.body, { backgroundColor: '#ffffff' });
   return compress(canvas.toDataURL('image/png'));
 }

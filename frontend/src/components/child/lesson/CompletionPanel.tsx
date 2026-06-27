@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import { useTranslation } from 'react-i18next';
+import { celebrate } from '@/lib/confetti';
 import type { LessonCompletionResult } from '@/api/content';
 import { StatChip } from '@/components/child/ui/StatChip';
 import { XpCountUp } from '@/components/child/ui/XpCountUp';
@@ -31,7 +31,7 @@ export function CompletionPanel({ result, onContinue }: Props) {
       typeof window !== 'undefined' &&
       !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     ) {
-      confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+      celebrate({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
     }
   }, [result.already_completed]);
 
