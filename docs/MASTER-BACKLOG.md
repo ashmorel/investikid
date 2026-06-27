@@ -147,7 +147,8 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
 ### 📥 Goal 4 — Offline support *(Query persistence + `OfflineNotice` banner + manifest pre-existing)*
 - **Phase 1 — ✅ DONE 2026-06-27 (`531453d`):** `@capacitor/network` → TanStack `onlineManager` (reliable WKWebView detection + auto pause-offline/refetch-on-reconnect; `useOnline` reads the same source) · persist-allowlist fixed (dropped dead `market-movers`; added `market-snapshot`/`quote`/`trades`/`stock-history`) · `<StaleAsOf>` "Prices as of <time>" label shown only while offline on Market + Stock. Read-only offline. **Operator follow-up: a native rebuild (Xcode/Gradle) ships `@capacitor/network` on device** (web live + `cap sync` done). `analytics.ts`/`Home.tsx` still read `navigator.onLine` directly (non-UI guards; optional later consistency pass).
-- **Phase 2 (M):** `vite-plugin-pwa` for web app-shell offline; cache question banks (read offline; full offline answering needs a sync outbox with idempotency keys).
+- **Phase 2a (reads) — ✅ DONE 2026-06-27 (`e66d50e`):** `vite-plugin-pwa@1.3.0` (Workbox `autoUpdate` app-shell precache, replacing the no-op stub `sw.js`) → web app opens offline (`/sw.js` live); `usePrefetchLevelLessons` online+idle-prefetches a level's lessons into the Phase-1-persisted `['lesson', id]` cache → a whole level reads offline after one online visit. Web-only/native-inert (native bundles the shell — no native rebuild needed for 2a).
+- **Phase 2b (writes) — NEXT:** sync outbox — queue lesson completions + quiz/review answers made offline, replay on reconnect with idempotency keys, optimistic local state (trades stay online-only).
 - **Phase 3 (M):** move cache to Capacitor Preferences/SQLite once it outgrows localStorage (~5MB).
 
 ### ⚡ Goal 5 — Preload stock data on Home — ✅ **DONE 2026-06-27 (`40248d3`)**
