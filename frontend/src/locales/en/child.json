@@ -39,7 +39,8 @@
   },
 
   "offline": {
-    "notice": "You're offline — live prices need the internet. Your lessons still work!"
+    "notice": "You're offline — live prices need the internet. Your lessons still work!",
+    "available": "Available offline"
   },
 
   "coach": {

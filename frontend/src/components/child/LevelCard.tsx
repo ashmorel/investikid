@@ -3,14 +3,16 @@ import { useTranslation } from 'react-i18next';
 import type { LevelOut } from '@/api/content';
 import { PremiumBadge } from './PremiumBadge';
 import { MasteredStamp } from './MasteredStamp';
+import { OfflineBadge } from './OfflineBadge';
 
 type Props = {
   level: LevelOut;
   onOpen: () => void;
   onLockedClick: () => void;
+  isOfflineAvailable?: boolean;
 };
 
-export function LevelCard({ level, onOpen, onLockedClick }: Props) {
+export function LevelCard({ level, onOpen, onLockedClick, isOfflineAvailable }: Props) {
   const { t } = useTranslation('lessons');
   const locked = level.state === 'locked';
   const premium = level.locked_reason === 'premium';
@@ -29,6 +31,7 @@ export function LevelCard({ level, onOpen, onLockedClick }: Props) {
     >
       <span className="text-2xl" aria-hidden="true">{level.icon}</span>
       <h2 className="text-sm font-bold text-gray-900">{level.title}</h2>
+      {isOfflineAvailable && <OfflineBadge />}
       {level.mastered_at ? (
         <MasteredStamp masteredAt={level.mastered_at} />
       ) : level.state === 'completed' ? (

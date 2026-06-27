@@ -12,6 +12,7 @@ import { playSound } from '@/lib/sound';
 import { haptic } from '@/lib/haptics';
 import { celebrate } from '@/lib/confetti';
 import { LevelCard } from '@/components/child/LevelCard';
+import { useOfflineAvailability } from '@/hooks/useOfflineAvailability';
 import { BackButton } from '@/components/child/BackButton';
 import { useToast } from '@/hooks/use-toast';
 import { usePremiumPaywall } from '@/hooks/usePremiumPaywall';
@@ -32,6 +33,7 @@ export default function Module() {
   const reducedMotion = useReducedMotion();
   const qc = useQueryClient();
   const scope = scopeFromMe(qc.getQueryData<Me>(['me']));
+  const offlineAvailability = useOfflineAvailability();
 
   const modulesQ = useQuery<ModuleOut[] | null>({
     queryKey: ['modules'],
@@ -149,6 +151,7 @@ export default function Module() {
             <LevelCard
               key={level.id}
               level={level}
+              isOfflineAvailable={offlineAvailability.levelIds.has(level.id)}
               onOpen={() => navigate(`/lessons/${moduleId}/${level.id}`)}
               onLockedClick={() => {
                 if (level.locked_reason === 'premium') {
