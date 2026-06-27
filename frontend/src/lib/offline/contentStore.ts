@@ -90,3 +90,41 @@ export function getLesson(scope: CacheScope, lessonId: string, now: number = Dat
     [scope.childId, scope.market, lessonId], now,
   );
 }
+
+export type OfflineAvailability = { levelIds: string[]; lessonCount: number };
+
+export async function listAvailableOffline(scope: CacheScope, now: number = Date.now()): Promise<OfflineAvailability> {
+  const empty: OfflineAvailability = { levelIds: [], lessonCount: 0 };
+  if (!isOfflineDbAvailable()) return empty;
+  try {
+    const db = await getDb();
+    if (!db) return empty;
+    const minTs = now - OFFLINE_MAX_AGE;
+    const levels = await db.query(
+      `SELECT DISTINCT level_id FROM cached_lesson WHERE child_id=? AND market=? AND level_id IS NOT NULL AND cached_at>?`,
+      [scope.childId, scope.market, minTs],
+    );
+    const count = await db.query(
+      `SELECT COUNT(*) AS n FROM cached_lesson WHERE child_id=? AND market=? AND cached_at>?`,
+      [scope.childId, scope.market, minTs],
+    );
+    const levelIds = (levels.values ?? []).map((r) => (r as { level_id: string }).level_id);
+    const lessonCount = Number((count.values?.[0] as { n: number } | undefined)?.n ?? 0);
+    return { levelIds, lessonCount };
+  } catch {
+    return empty;
+  }
+}
+
+export async function clearForChild(scope: CacheScope): Promise<void> {
+  if (!isOfflineDbAvailable()) return;
+  try {
+    const db = await getDb();
+    if (!db) return;
+    for (const table of ['cached_modules', 'cached_module_levels', 'cached_level_lessons', 'cached_lesson']) {
+      await db.run(`DELETE FROM ${table} WHERE child_id=? AND market=?`, [scope.childId, scope.market]);
+    }
+  } catch {
+    /* ignore */
+  }
+}

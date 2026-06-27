@@ -67,4 +67,28 @@ describe('contentStore', () => {
     query.mockRejectedValueOnce(new Error('disk'));
     expect(await store.getModules(scope, 1000)).toBeNull();
   });
+
+  describe('availability + clear', () => {
+    it('listAvailableOffline returns distinct fresh level ids + count', async () => {
+      query.mockResolvedValueOnce({ values: [{ level_id: 'LV1' }, { level_id: 'LV2' }] }); // distinct levels
+      query.mockResolvedValueOnce({ values: [{ n: 3 }] }); // count
+      const a = await store.listAvailableOffline(scope, 1000);
+      expect(a).toEqual({ levelIds: ['LV1', 'LV2'], lessonCount: 3 });
+    });
+
+    it('listAvailableOffline returns empty when unavailable', async () => {
+      vi.mocked(isOfflineDbAvailable).mockReturnValueOnce(false);
+      expect(await store.listAvailableOffline(scope, 1000)).toEqual({ levelIds: [], lessonCount: 0 });
+    });
+
+    it('clearForChild deletes from all four tables for the scope', async () => {
+      await store.clearForChild(scope);
+      expect(run).toHaveBeenCalledTimes(4);
+      for (const call of run.mock.calls) {
+        const [sql, values] = call as unknown as [string, unknown[]];
+        expect(values).toEqual(['C1', 'GB']);
+        expect(sql).toContain('DELETE FROM cached_');
+      }
+    });
+  });
 });
