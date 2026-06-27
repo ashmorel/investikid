@@ -108,6 +108,53 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
 ---
 
+## 🔎 Code-review backlog — 2026-06-25
+
+> From a 5-pass review (security/PII · bugs/structure · scale/cost · FE perf · offline/preload). Severity, effort (S/M/L), and file pointers below. **P0 #1, #2, #10 are being tackled immediately this session** (move to "Live in prod" as they ship).
+
+### 🔴 P0 — urgent
+| # | Item | Dim | Effort | Where / fix |
+|---|---|---|---|---|
+| 1 | **Leaderboards leak children's real names** — Arcade/Friends/Group boards return raw self-chosen `username` to other families with **no consent + no `leaderboard_hidden` gate** (XP board gates both). Live PII exposure. | Security | S | `services/arcade_service.py`, `leaderboard_service._friends`, `group_service` → use `display_handle` + add `leaderboard_consent`/`leaderboard_hidden` filters. **Fixing now.** |
+| 2 | **Rate limiter is in-memory → breaks on scale-out** — slowapi has no `storage_uri`; each instance counts separately, so caps multiply by instance count (cost+safety). | Scale | S | `core/rate_limit.py` → `storage_uri=<redis>` (Redis already provisioned). **Fixing now.** |
+| 3 | **yfinance is the simulator's hard ceiling** — unofficial Yahoo scrape (no SLA, IP-blocked), per-holding fan-out, per-instance caches. Biggest scale+cost+availability risk; also the root of the Goal-5 latency. | Scale/cost | L | `services/price_provider.py` → Redis as authoritative cache + cron-warm featured/movers per region; budget a **paid quote API** before wide launch. |
+| 4 | **Sync Stripe/Apple/Google SDKs block the event loop** — billing/webhook handlers call sync SDKs directly in async endpoints; bursty webhooks stall the worker. | Bug | M | `services/{billing,webhook,apple_billing,google_billing}_service.py`, `push_service.py`, `subscription_reconcile_service.py` → wrap in `asyncio.to_thread`. |
+
+### 🟠 P1 — high
+| # | Item | Dim | Effort | Where / fix |
+|---|---|---|---|---|
+| 5 | **"Delete account" doesn't fully purge PII** — soft-delete means CASCADE never fires; `sent_emails` (parent email + body), push tokens, feedback survive. Purge is **manual-CLI-only** (no cron). | Security | M | `services/retention.py`, `account_deletion_service.py` → explicit DELETEs + add `/internal/purge-accounts` cron (CSRF allowlist). |
+| 6 | **Transactional email is a hard dependency on signup/consent** — Resend outage → 500 → rolls back account creation + parental consent (email sent before commit, no try/except). | Bug | M | `services/email.py` + `routers/{auth,consent,parent_auth}.py` → commit first, send best-effort. |
+| 7 | **`parent_email` logged verbatim** in Stripe webhook logs. | Security | S | `services/webhook_service.py` → log `customer_id`, not email. |
+| 8 | **Leaderboard ranking scans whole user table per view + missing indexes** (`active_market_code`, `leaderboard_consent/hidden`, `lesson_completions.lesson_id`); rank = 2nd full aggregation. | Scale | M | `leaderboard_service.py` + model indexes → composite/partial index + Redis top-N (60s TTL). *(pairs with #1.)* |
+| 9 | **Per-request LLM, uncached → linear token cost** — `home-greeting` per Home load; `news-summary` per call. | Cost | M | `routers/ai.py`, `routers/simulator.py` → cache per (user/holdings, UTC-day) in Redis. |
+| 10 | **FE: lazy-load chart routes + `manualChunks`** — recharts/framer/confetti/screenshot all in the 1.3 MB initial bundle. | Perf | S | `src/App.tsx` (lazy Simulator/Stock/Market/Stats), `vite.config.ts` (vendor split). **Fixing now.** |
+
+### 🟡 P2 — medium
+| # | Item | Dim | Effort | Where |
+|---|---|---|---|---|
+| 11 | Oversized screenshot (>1.4MB cap) → 422 loses the whole feedback incl. text. | Bug | S | `lib/screenshot.ts` cap-check / drop image, keep text. |
+| 12 | MoneyWord winning guess can double-award on concurrent POSTs (no row lock). | Bug | S | `services/moneyword_service.py` → lock row / completion-marker. |
+| 13 | `/portfolio/trades` has no rate limit (heaviest write path). | Bug/scale | S | `routers/simulator.py`. |
+| 14 | DB pool uses defaults (15/instance) → exhausts Railway `max_connections` at ~7–10 instances. | Scale | S | `core/database.py` → explicit pool + `pool_pre_ping` / PgBouncer. |
+| 15 | Cron jobs `.all()` whole tables + per-row loops (digest/reconcile/streak-risk). | Scale | M | batch/paginate. |
+| 16 | Age-from-DOB off-by-one (`days//365`) disagrees with consent age near birthdays. | Bug | S | route all sites through `services/age_tier.py`. |
+| 17 | Dynamic-import `modern-screenshot` + `canvas-confetti` (loaded at boot for rare actions). | Perf | S | `lib/screenshot.ts`, `lib/confetti.ts`. |
+
+### ⚪ P3 — low / cleanup
+Tutor/coach 500s on LLM outage (→503) · `framer-motion` on the boot path via `Shell` · global `refetchOnWindowFocus` with no `staleTime` floor (resume refetch storm) · `routers/admin.py` 1,329-line god-router (split) · no shared `today_utc()` helper (daily-boundary logic copy-pasted ~11× — caused the past stale-reset bug) · dead funcs + duplicated `active_market_code or "GB"`.
+
+### 📥 Goal 4 — Offline support *(already ~60% built: Query persistence + `OfflineNotice` banner + manifest; native bundles the shell)*
+- **Phase 1 (S–M, high value):** `@capacitor/network` → React Query `onlineManager` (reliable WKWebView detection + auto sync-on-reconnect); fix allowlist↔key drift (persist `trades`, `quote`); "as of <time>" staleness label on cached prices.
+- **Phase 2 (M):** `vite-plugin-pwa` for web app-shell offline; cache question banks (read offline; full offline answering needs a sync outbox with idempotency keys).
+- **Phase 3 (M):** move cache to Capacitor Preferences/SQLite once it outgrows localStorage (~5MB).
+
+### ⚡ Goal 5 — Preload stock data on Home *(currently zero preloading)*
+- **Phase 1 (S):** on Home mount, `prefetchQuery` the slow Simulator surfaces (featured/movers/news) with the Simulator's exact keys; gate to online + idle + has-visited-Simulator.
+- **Phase 2 (M + backend):** `GET /market/snapshot?region=` (one request, server-cached — keeps the AI news-summary off per-Home-load LLM cost). Shares the backbone with #3.
+
+---
+
 ## 🔴 Now — launch-critical path (mostly human)
 
 | Item | Owner | Notes |
