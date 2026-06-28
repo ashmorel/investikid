@@ -18,6 +18,7 @@ import { useRecommendations } from '@/api/ai';
 import { PennyFAB } from './PennyFAB';
 import { CoachPanel } from './CoachPanel';
 import { useStreakReminder } from '@/hooks/useStreakReminder';
+import { useOfflineMarketSync } from '@/hooks/useOfflineMarketSync';
 import { PremiumPaywallProvider, usePremiumPaywall } from '@/hooks/usePremiumPaywall';
 
 function CoachLauncher({ dueCount, isPremium }: { dueCount: number; isPremium: boolean }) {
@@ -61,6 +62,7 @@ export function Shell() {
   const { indicatorProps } = usePullToRefresh({ ref: mainRef, onRefresh: handleRefresh });
 
   useStreakReminder();
+  useOfflineMarketSync();
 
   if (session.isLoading) {
     return (
