@@ -251,9 +251,10 @@ async def trigger_concept_classify(
     session: AsyncSession = Depends(get_session),
 ):
     """Idempotent LLM-based backfill: classify published lessons without a
-    concept_id by asking the lite LLM to pick from the topic's taxonomy.
+    concept_id by asking the lite LLM to pick from the full concept taxonomy
+    (matching is global by unique slug, independent of the module's topic).
     The model can NEVER invent a concept — every pick is validated via
-    resolve_concept_slug before being written.  Safe to run repeatedly."""
+    resolve_slug_global before being written.  Safe to run repeatedly."""
     if not settings.cron_secret:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
     if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
