@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.time import today_utc
 from app.models.content import Lesson, LessonCompletion, Module
@@ -36,7 +37,19 @@ REVISE_XP_DAILY_CAP = 25
 
 
 def _concept_of(lesson: Lesson) -> str:
-    """Same derivation the practice flow uses (ai.py practice_quiz)."""
+    """Return the concept name for a lesson.
+
+    If the lesson has a taxonomy concept linked (concept_id is set and the
+    ``concept`` relationship is loaded), the canonical name from the Concept
+    table is returned.  Otherwise the legacy free-text derivation is used,
+    keeping behaviour byte-identical for un-tagged lessons.
+
+    Callers MUST ensure the ``concept`` relationship is eagerly loaded before
+    calling this function (selectin/joined eager load on the query that fetches
+    the lesson) to avoid an async lazy-load error on a detached instance.
+    """
+    if lesson.concept_id is not None and lesson.concept is not None:
+        return lesson.concept.name
     c = lesson.content_json or {}
     return c.get("question") or c.get("title") or c.get("prompt") or "general"
 
@@ -76,13 +89,15 @@ async def _lesson_for_concept(
 ) -> tuple[Lesson, Module] | None:
     """Find a published, market-scoped lesson in `topic` whose derived concept equals `concept`."""
     rows = await session.execute(
-        select(Lesson, Module).join(Module, Module.id == Lesson.module_id)
+        select(Lesson, Module)
+        .join(Module, Module.id == Lesson.module_id)
         .where(
             Module.topic == topic,
             Module.published.is_(True),
             Module.market_code == market_code,
         )
         .order_by(Lesson.order_index)  # deterministic when concept strings collide
+        .options(selectinload(Lesson.concept))
     )
     for lesson, module in rows.all():
         if _concept_of(lesson) == concept:
@@ -216,6 +231,7 @@ async def build_session(
             Module.market_code == user.active_market_code,
         )
         .order_by(LessonCompletion.completed_at.asc())  # stable rotation; oldest first
+        .options(selectinload(Lesson.concept))
     )
     if module_id:
         comp_q = comp_q.where(Module.id == module_id)
@@ -309,6 +325,7 @@ async def record_answer(
         if wc is None:
             wc = WeakConcept(
                 user_id=user.id, topic=data["topic"], concept=data["concept"],
+                concept_id=lesson.concept_id,  # set FK when lesson is taxonomy-tagged
                 resolved=correct, market_code=user.active_market_code,
             )
             session.add(wc)

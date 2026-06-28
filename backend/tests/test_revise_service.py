@@ -5,10 +5,12 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy import select
 
+from app.models.concept import Concept
 from app.models.content import Lesson, LessonCompletion, Module
 from app.models.skill_profile import SpacedRepetitionItem, WeakConcept
 from app.models.user import User, UserProgress
 from app.services.revise_service import (
+    _concept_of,
     build_session,
     decode_ref,
     encode_ref,
@@ -317,3 +319,89 @@ async def test_build_session_skips_not_yet_due_refresher(db_session):
         session = await build_session(db_session, user, module_id=None)
 
     assert session == []  # recently revised -> not due -> excluded -> nothing to revise
+
+
+# ---------------------------------------------------------------------------
+# Task 3: _concept_of() taxonomy-aware
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_concept_of_returns_taxonomy_name_when_concept_linked(db_session):
+    """When a lesson has concept_id set, _concept_of returns concept.name."""
+    concept = Concept(
+        topic="stocks",
+        slug="what-is-a-share",
+        name="What is a Share?",
+        difficulty_tier=1,
+        order_index=1,
+    )
+    db_session.add(concept)
+    await db_session.flush()
+
+    module = Module(
+        topic="stocks", title="Stocks 101", country_codes=[],
+        is_premium=False, order_index=0, icon="📈",
+    )
+    db_session.add(module)
+    await db_session.flush()
+
+    lesson = Lesson(
+        module_id=module.id,
+        concept_id=concept.id,
+        type="quiz",
+        xp_reward=10,
+        order_index=0,
+        content_json={"question": "Legacy free-text question?", "choices": ["a"], "answer_index": 0},
+    )
+    db_session.add(lesson)
+    await db_session.flush()
+
+    # Eagerly refresh so the relationship is populated
+    await db_session.refresh(lesson, ["concept"])
+
+    result = _concept_of(lesson)
+    assert result == "What is a Share?"
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_concept_of_falls_back_to_legacy_when_no_concept_id(db_session):
+    """When concept_id is None, _concept_of returns the exact legacy expression."""
+    module = Module(
+        topic="saving", title="Saving 101", country_codes=[],
+        is_premium=False, order_index=0, icon="🐷",
+    )
+    db_session.add(module)
+    await db_session.flush()
+
+    # question key present -> legacy returns the question string
+    lesson_q = Lesson(
+        module_id=module.id, concept_id=None,
+        type="quiz", xp_reward=10, order_index=0,
+        content_json={"question": "Why save?", "choices": ["a"], "answer_index": 0},
+    )
+    db_session.add(lesson_q)
+    await db_session.flush()
+    await db_session.refresh(lesson_q, ["concept"])
+    assert _concept_of(lesson_q) == "Why save?"
+
+    # no question, title present
+    lesson_t = Lesson(
+        module_id=module.id, concept_id=None,
+        type="card", xp_reward=10, order_index=1,
+        content_json={"title": "The basics of saving"},
+    )
+    db_session.add(lesson_t)
+    await db_session.flush()
+    await db_session.refresh(lesson_t, ["concept"])
+    assert _concept_of(lesson_t) == "The basics of saving"
+
+    # nothing -> "general"
+    lesson_none = Lesson(
+        module_id=module.id, concept_id=None,
+        type="card", xp_reward=10, order_index=2,
+        content_json={},
+    )
+    db_session.add(lesson_none)
+    await db_session.flush()
+    await db_session.refresh(lesson_none, ["concept"])
+    assert _concept_of(lesson_none) == "general"
