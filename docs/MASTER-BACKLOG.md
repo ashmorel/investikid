@@ -1,6 +1,6 @@
 # InvestiKid — Master Backlog
 
-**Updated:** 2026-06-25 (latest session: **Figma-first UI-review programme COMPLETE** across all six bottom-nav surfaces [Home·Learn·Revise·Progress·Simulator·Stats] + Admin/Parent/Shop/Arcade — incl. the Progress mastery-hero, the Stats zoned redesign, and the Simulator purple-"AI"→brand rebrand; **MoneyWord daily-reset + keyboard-overflow fixes**; a **Frontend-CI test fix** (`fa011ab`, the job had been red since `72c39ab`); **native builds rev'd + uploaded — iOS 1.0 (17) → TestFlight, Android versionCode 4 → Play Internal testing** (16/3 were the first release); and a repo-health pass (**CodeQL default setup enabled**, stale env removed). Earlier base, 2026-06-22: tiered lesson depth + module archive/purge + server-side content pipeline; **GB/US/HK content LIVE**; markets tab; LLM credit-fallback; CI speed-up + beta straight-to-main) · **Launch-polish pass (pm):** Learn-tab market switcher, `has_content` deploy-reset fix, route-level ErrorBoundary, scroll-to-top on nav, unified "Back to App", Gemini quota/thinking + provider-agnostic alert. **iOS build 1.0 (16) → TestFlight and Android versionCode 3 → Play Internal testing are UPLOADED (2026-06-25)** — the first Android release; the native bundle carries the full Figma-first UI-review programme + Penny's Shop + the MoneyWord daily-reset fix (native API base = `api.investikid.ai`). See [`docs/launch/2026-06-22-pre-testflight-readiness-checklist.md`](launch/2026-06-22-pre-testflight-readiness-checklist.md).
+**Updated:** 2026-06-28 (latest session: added the **🎓 Beta → 9.5 programme** [proof · focus · trust] from the Codex beta review + a PM session — new Theme A (learning-evidence: concept taxonomy, pre/post checks, onboarding diagnostic-as-pretest, mastery-led parent report, public evidence page) and Theme B (focus & retention: canonical "Today" action, arcade-subordination rule, ratings flywheel, streak emotional-beat polish); store/billing/teen/school/device-QA already tracked under M5/M11/M12/M10/post-launch. Prior session: **Figma-first UI-review programme COMPLETE** across all six bottom-nav surfaces [Home·Learn·Revise·Progress·Simulator·Stats] + Admin/Parent/Shop/Arcade — incl. the Progress mastery-hero, the Stats zoned redesign, and the Simulator purple-"AI"→brand rebrand; **MoneyWord daily-reset + keyboard-overflow fixes**; a **Frontend-CI test fix** (`fa011ab`, the job had been red since `72c39ab`); **native builds rev'd + uploaded — iOS 1.0 (17) → TestFlight, Android versionCode 4 → Play Internal testing** (16/3 were the first release); and a repo-health pass (**CodeQL default setup enabled**, stale env removed). Earlier base, 2026-06-22: tiered lesson depth + module archive/purge + server-side content pipeline; **GB/US/HK content LIVE**; markets tab; LLM credit-fallback; CI speed-up + beta straight-to-main) · **Launch-polish pass (pm):** Learn-tab market switcher, `has_content` deploy-reset fix, route-level ErrorBoundary, scroll-to-top on nav, unified "Back to App", Gemini quota/thinking + provider-agnostic alert. **iOS build 1.0 (16) → TestFlight and Android versionCode 3 → Play Internal testing are UPLOADED (2026-06-25)** — the first Android release; the native bundle carries the full Figma-first UI-review programme + Penny's Shop + the MoneyWord daily-reset fix (native API base = `api.investikid.ai`). See [`docs/launch/2026-06-22-pre-testflight-readiness-checklist.md`](launch/2026-06-22-pre-testflight-readiness-checklist.md).
 **Purpose:** the single go-forward list of what's left. Strategic context + per-M
 detail live in [`docs/2026-06-12-market-leader-roadmap.md`](2026-06-12-market-leader-roadmap.md);
 this is the actionable tracker. Update it as items ship — **and update it (plus any
@@ -158,6 +158,46 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 - **Phase 2 (backend):** `GET /market/snapshot?region=` returns region featured + movers from the warm Redis cache (never 5xxs — static fallback on cold/yf failure). The Simulator's Market page + MarketMovers consume the single `['market-snapshot', region]` query.
 - **Phase 1 (frontend):** Home idle-prefetches `['market-snapshot', region]` gated to online + `requestIdleCallback` + has-visited-Simulator (`ik:visitedSimulator` flag set on first Market open) → Simulator opens instantly. **Note:** featured is now **region-scoped** (was all-regions "More markets"); switch markets via the existing region selector.
 - *(News-summary preload deferred — already cached per #9; idle-prefetch is a later nicety.)*
+
+---
+
+## 🎓 Beta → 9.5 programme — proof · focus · trust (NEW 2026-06-28)
+
+> **Source:** Codex beta review (8.7 beta / 8.2 consumer) + a PM working session. The
+> review's headline: **the blockers to 9.5 are not features — they are *proof* (evidence
+> the learning works), *focus* (one obvious daily action), and *trust* (parents/schools).**
+> Most launch/store/teen/school items the review names are **already tracked** below
+> (M5/M11 store+billing, M12 device-QA, M10 teen validation, school packaging in
+> post-launch bets) — this section adds only what's **missing**, and is deliberately
+> small. Positioning locked: **virtual-only simulator is an asset, not a gap** — "a
+> risk-free lab to make and learn from investing mistakes before real money is involved."
+> Do NOT chase card/allowance/real-money utility (Greenlight/GoHenry lane).
+
+### Theme A — Prove the learning works *(the moat — entirely new; highest leverage)*
+
+| # | Item | Owner | Notes / acceptance |
+|---|---|---|---|
+| **A1** | **Concept-mastery taxonomy** | 💻🤔 | Define ~30–50 core concepts (compound interest, diversification, risk/reward, needs-vs-wants, inflation, fees…); tag every lesson, quiz, Revise card, and simulator mission to ≥1. **Nothing else in Theme A is measurable without it.** Riskiest design problem: a taxonomy clean enough that a short diagnostic yields a *credible* mastery score, not junk a school would dismiss. |
+| **A2** | **Pre/post concept checks** | 💻 | Short diagnostic captured per child, re-checked after N sessions. Output the headline metric: *"mastery +X% after Y sessions."* Per-concept, feeds A4. |
+| **A3** | **Onboarding diagnostic = the pre-test** ⏰ | 💻 | One day-one placement quiz that (a) personalises the path, (b) delivers a fast "aha," (c) sets the A2 pre-test baseline. **GATES BETA RESEARCH VALUE — must ship before beta cohorts start, or the pre-test baseline is lost forever (no second first-session).** Critical-path despite "P0-evidence" framing. |
+| **A4** | **Parent report leads with mastery** | 💻 | Make weak-areas + standards alignment + conversation prompts the subscription hero (extends the live Mastery Report), not coins/cosmetics. "Make the parent report the paid product." |
+| **A5** | **Public learning-evidence page** | 💻⚙️ | Curriculum standards, how mastery is measured, safety/moderation/privacy posture. The trust artifact for cautious parents **and** the B2B school door (feeds the post-launch school packaging bet). |
+
+### Theme B — Focus & retention polish *(new; the review's #1 named risk is focus)*
+
+| # | Item | Owner | Notes / acceptance |
+|---|---|---|---|
+| **B1** | **One canonical "Today" action** | 💻🤔 | Audit every child screen against "what do I do next?"; ensure a single unmissable daily action, everything else demoted. Feature-richness (lessons/revise/sim/arcade/shop/markets/groups) makes focus the top risk. Largely an IA/design pass, not new systems. |
+| **B3** | **Arcade-subordination rule** | 💻🤔 | Written design-system law: every game maps to a tagged concept (A1); **learning is the primary path to coins**, play is secondary. Kills the "coin economy with finance attached" failure mode (a one-star-review risk with parents). |
+| **B5** | **Ratings & reviews flywheel** | 💻 | Prompt for an App Store/Play rating at moments of delight (streak milestone, mastery level-up, strong parent-report week) — never at friction. Most direct lever on "top-rated"; currently unowned. |
+| **B6** | **Streak emotional-beat polish** | 💻 | The streak engine is already Duolingo-grade (freezes/goal/UTC/push). Gaps are cheap: (a) **"streak saved!"** celebration when a freeze is silently consumed; (b) freeze **visibility/countdown** ("2 days to your next freeze"); (c) **coin-funded streak repair** (spend earned coins to fix a just-broken streak — on-theme, no real money). |
+
+### Already tracked (no duplication — see sections below)
+- **Teen validation (review: "validate teens separately")** → **M10** (🔵 Later / 🟡 Soon).
+- **Store + billing readiness** → **M5 pricing go-live** + **M11 listing** (🟠 Next).
+- **Real-device reliability gates** → **M12 launch readiness** (🔵 Later).
+- **School/teacher pilot** → **School/teacher packaging** (⚪ Post-launch bets).
+- **Beta-as-research** → **Recruit + distribute beta cohort (M2)** below — *extend it* with A2/A3 measurement (activation, completion, return rate, **concept retention**) segmented by the 8–10 / 11–13 / 15–18 bands.
 
 ---
 
