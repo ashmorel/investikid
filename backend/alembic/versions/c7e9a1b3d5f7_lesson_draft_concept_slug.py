@@ -4,7 +4,7 @@ Adds a nullable concept_slug column to lesson_drafts so that the LLM
 generation pipeline can store the concept slug it emitted for later
 resolution to concept_id at approval time.
 
-Revision ID: b1c2d3e4f5a6
+Revision ID: c7e9a1b3d5f7
 Revises: a0b1c2d3e4f5
 Create Date: 2026-06-28
 """
@@ -13,7 +13,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-revision = "b1c2d3e4f5a6"
+revision = "c7e9a1b3d5f7"
 down_revision = "a0b1c2d3e4f5"
 branch_labels = None
 depends_on = None
