@@ -130,3 +130,17 @@ async def test_server_time_is_iso8601(client, db_session):
 async def test_unauthenticated_returns_401(client):
     resp = await client.get("/offline-bundle")
     assert resp.status_code == 401
+
+
+async def test_naive_since_returns_200_not_500(client, db_session):
+    """A tz-naive since value must be coerced to UTC, not raise a 500."""
+    gb_mod, gb_level, gb_lessons, _, _ = await _seed_market(db_session)
+    await _register_and_login(client, email="naive@example.com", username="naivekid")
+
+    # No timezone offset — a naive ISO string that previously caused TypeError.
+    resp = await client.get("/offline-bundle", params={"since": "2025-01-01T00:00:00"})
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    # Lesson 1 has updated_at=_FUTURE (2030) so it's updated after 2025-01-01 naive→UTC.
+    bumped = gb_lessons[1]
+    assert {lsn["id"] for lsn in body["lessons"]} == {str(bumped.id)}
