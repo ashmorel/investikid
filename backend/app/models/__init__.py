@@ -6,6 +6,7 @@ from app.models.arcade_word import ArcadeDailyPlay, ArcadeDailySchedule, ArcadeW
 from app.models.audit import AuditLog  # noqa: F401
 from app.models.biometric import BiometricCredential  # noqa: F401
 from app.models.cash_grant import CashGrant  # noqa: F401
+from app.models.concept import Concept  # noqa: F401
 from app.models.consent import OneTimeToken, SentEmail  # noqa: F401
 from app.models.content import (  # noqa: F401
     Lesson,

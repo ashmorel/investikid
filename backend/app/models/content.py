@@ -1,6 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -17,6 +18,9 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.concept import Concept
 
 
 class Module(Base):
@@ -90,6 +94,9 @@ class Lesson(Base):
     level_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("levels.id", ondelete="CASCADE"), nullable=True, index=True
     )
+    concept_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("concepts.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     type: Mapped[str] = mapped_column(String(20), nullable=False)
     content_json: Mapped[dict] = mapped_column(JSON, nullable=False)
     xp_reward: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
@@ -99,6 +106,7 @@ class Lesson(Base):
     )
 
     module: Mapped["Module"] = relationship("Module", back_populates="lessons")
+    concept: Mapped["Concept | None"] = relationship("Concept", foreign_keys=[concept_id])
 
 
 class LessonCompletion(Base):
