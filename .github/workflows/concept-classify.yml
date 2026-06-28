@@ -13,7 +13,7 @@ permissions:
 jobs:
   classify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       BACKEND_URL: ${{ vars.BACKEND_URL || 'https://investikid.up.railway.app' }}
       RESET: ${{ inputs.reset }}
@@ -38,12 +38,15 @@ jobs:
           # Each lesson is attempted at most once (concept_classified_at marker),
           # so the drain strictly advances and re-runs never re-bill the LLM.
           # Loop bounded batches until the backend reports nothing left to do.
+          # Small per-request batches: each request does N synchronous LLM
+          # calls, so keep N low enough to finish well under the gateway
+          # timeout (~60s). ~15 lessons/request ≈ 20-30s.
           total_tagged=0
-          for i in $(seq 1 24); do
-            resp=$(curl -sS --fail -X POST --retry 4 --retry-delay 5 \
-              --connect-timeout 15 --max-time 180 \
+          for i in $(seq 1 120); do
+            resp=$(curl -sS --fail -X POST --retry 2 --retry-delay 10 \
+              --connect-timeout 15 --max-time 90 \
               -H "X-Cron-Secret: $CRON_SECRET" \
-              "$BACKEND_URL/internal/concepts/classify?limit=200")
+              "$BACKEND_URL/internal/concepts/classify?limit=15")
             echo "batch $i: $resp"
             seen=$(echo "$resp" | jq -r '.lessons_seen // 0')
             tagged=$(echo "$resp" | jq -r '.lessons_tagged // 0')
@@ -52,5 +55,6 @@ jobs:
               echo "Drain complete — no untagged published lessons remain."
               break
             fi
+            sleep 2
           done
           echo "::notice::Concept classification finished. Total newly tagged this run: $total_tagged"
