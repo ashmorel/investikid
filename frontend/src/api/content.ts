@@ -81,7 +81,7 @@ export type OfflineBundle = {
 
 export function getOfflineBundle(since: string | null): Promise<OfflineBundle | null> {
   return apiFetch<OfflineBundle>(
-    '/content/offline-bundle' + (since ? `?since=${encodeURIComponent(since)}` : ''),
+    '/offline-bundle' + (since ? `?since=${encodeURIComponent(since)}` : ''),
   );
 }
 
