@@ -43,6 +43,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/internal/market-content",
     "/internal/video-candidates/extract",
     "/internal/collectables/reconcile",
+    "/internal/concepts/backfill",
     "/parent/auth/oauth/google",
     "/parent/auth/oauth/apple",
 })

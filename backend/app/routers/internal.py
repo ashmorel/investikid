@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.core.time import today_utc
 from app.services import (
+    concept_backfill_service,
     digest_service,
     investing_missions,
     market_content_pipeline,
@@ -213,3 +214,20 @@ async def market_content_step(
     raise HTTPException(
         status.HTTP_400_BAD_REQUEST, "action must be scaffold|generate|publish|sync-missions"
     )
+
+
+@router.post("/concepts/backfill")
+async def trigger_concept_backfill(
+    x_cron_secret: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+):
+    """Idempotent backfill: map existing WeakConcept + published Lesson rows without
+    a concept_id to taxonomy concepts.  Safe to run repeatedly — only NULL rows are
+    touched and already-tagged rows are never modified."""
+    if not settings.cron_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    result = await concept_backfill_service.run_backfill(session)
+    await session.commit()
+    return result
