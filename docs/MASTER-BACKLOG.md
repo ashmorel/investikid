@@ -165,8 +165,8 @@ BottomSheet portal, ChildCard wrap, toasts) · **app icon** finalised.
 
 | Item | Owner | Notes |
 |---|---|---|
-| **iOS 1.0 (17) → TestFlight** | ✅ 2026-06-25 | Archived in Xcode + uploaded (latest; supersedes build 16). Bundles the whole programme incl. the **completed Figma UI-review** (Progress/Stats/Revise/Simulator) + MoneyWord keyboard fix + native biometric/push. Next: add the processed build to a TestFlight group + assign testers. |
-| **Android versionCode 4 (1.0) → Play** | ✅ 2026-06-25 | Signed AAB uploaded to **Internal testing** (latest; supersedes vCode 3, the first Android release; Play App Signing enrolled). ⚠️ Kids-app store gates still required before wider tracks/production: Families / target-audience, Data safety, content rating, privacy-policy URL. |
+| **iOS 1.0 (19) → TestFlight** | ✅ 2026-06-28 | Archived in Xcode + uploaded (latest; supersedes builds 16/17/18). Bundles everything through **Goal 4 Phase 3b — offline market auto-sync** (whole active market caches offline by default; premium-gated) + the completed Figma UI-review + MoneyWord/AI-news fixes + native biometric/push. Next: add the processed build to a TestFlight group + assign testers. |
+| **Android versionCode 6 (1.0) → Play** | ✅ 2026-06-28 | Signed AAB uploaded to **Internal testing** (latest; supersedes vCode 3/4/5). Carries Goal 4 Phase 3b offline auto-sync + all prior web work. ⚠️ Kids-app store gates still required before wider tracks/production: Families / target-audience, Data safety, content rating, privacy-policy URL. |
 | **Recruit + distribute beta cohort (M2)** | 👤 | 10–20 families across **8–10 / 11–13 / 15–18** bands (the teen band feeds M10). Comp premium generously. Share the TestFlight + Play Internal opt-in links. |
 
 ## 🟠 Next — operator config to transact & submit (no code)
