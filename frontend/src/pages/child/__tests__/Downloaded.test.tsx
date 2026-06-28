@@ -57,7 +57,7 @@ describe('Downloaded page', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Nothing saved yet'),
     );
-    expect(screen.getByText(/open a level and tap download/i)).toBeInTheDocument();
+    expect(screen.getByText(/save automatically for offline/i)).toBeInTheDocument();
   });
 
   it('renders a row per downloaded level with title and lesson count', async () => {
