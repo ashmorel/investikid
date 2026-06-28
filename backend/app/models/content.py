@@ -49,6 +49,9 @@ class Module(Base):
     archived_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, index=True
     )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
     lessons: Mapped[list["Lesson"]] = relationship("Lesson", back_populates="module")
 
@@ -72,6 +75,9 @@ class Level(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 class Lesson(Base):
@@ -88,6 +94,9 @@ class Lesson(Base):
     content_json: Mapped[dict] = mapped_column(JSON, nullable=False)
     xp_reward: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False, index=True
+    )
 
     module: Mapped["Module"] = relationship("Module", back_populates="lessons")
 
