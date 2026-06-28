@@ -69,6 +69,22 @@ export type LevelOut = {
   mastered_at?: string | null;
 };
 
+export type OfflineBundle = {
+  market: string;
+  server_time: string;
+  modules: ModuleOut[];
+  module_levels: Record<string, LevelOut[]>;
+  level_lessons: Record<string, LessonSummary[]>;
+  lessons: LessonOut[];
+  current_ids: { modules: string[]; levels: string[]; lessons: string[] };
+};
+
+export function getOfflineBundle(since: string | null): Promise<OfflineBundle | null> {
+  return apiFetch<OfflineBundle>(
+    '/content/offline-bundle' + (since ? `?since=${encodeURIComponent(since)}` : ''),
+  );
+}
+
 export type LessonCompletionResult = {
   xp_awarded: number;
   already_completed: boolean;
