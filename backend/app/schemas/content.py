@@ -118,6 +118,31 @@ class LevelOut(BaseModel):
     mastered_at: datetime | None = None
 
 
+class OfflineBundleIds(BaseModel):
+    """The full current id sets (as strings) the client evicts stale rows against."""
+    modules: list[str] = []
+    levels: list[str] = []
+    lessons: list[str] = []
+
+
+class OfflineBundleOut(BaseModel):
+    """One-shot offline-sync snapshot for the user's active market.
+
+    Reuses the exact `ModuleOut`/`LevelOut`/`LessonSummary`/`LessonOut` shapes the
+    per-item content routes return so the device SQLite cache matches byte-for-byte.
+    `lessons` is delta'd against `since`; the metadata maps + `current_ids` are
+    always the full current set. `server_time` (DB clock, ISO8601) is the client's
+    next `since`.
+    """
+    market: str
+    server_time: str
+    modules: list[ModuleOut]
+    module_levels: dict[str, list[LevelOut]]
+    level_lessons: dict[str, list[LessonSummary]]
+    lessons: list[LessonOut]
+    current_ids: OfflineBundleIds
+
+
 class NextLessonOut(BaseModel):
     module_id: uuid.UUID
     module_title: str

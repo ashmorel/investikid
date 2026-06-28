@@ -20,22 +20,26 @@ from app.schemas.content import (
     LevelOut,
     ModuleOut,
     NextLessonEnvelope,
+    OfflineBundleOut,
     RewardGrantOut,
 )
-from app.services import product_analytics_service
+from app.services import offline_bundle_service, product_analytics_service
 from app.services.age_tier import age_in_years
 from app.services.content_localize import (
     language_active,
     load_translations,
     localize_fields,
 )
+from app.services.content_serialize import (
+    serialize_lesson,
+    serialize_lesson_summaries,
+    serialize_levels,
+    serialize_modules,
+)
 from app.services.content_service import (
     derive_lesson_title,
     get_accessible_module,
     grant_module_completion_cash,
-    is_module_age_ok,
-    is_module_premium_ok,
-    is_module_visible,
     record_daily_activity,
 )
 from app.services.entitlements import is_premium, market_locked_for
@@ -44,7 +48,6 @@ from app.services.gamification_service import (
     evaluate_and_award_badges,
     update_challenge_progress,
 )
-from app.services.level_service import LevelStateInput, derive_level_states
 from app.services.market_progress_service import (
     award_xp,
     grant_market_completion_reward,
@@ -77,6 +80,32 @@ async def get_next_lesson(
     return NextLessonEnvelope(next=await resolve_next_lesson(session, current_user))
 
 
+def _parse_iso(value: str) -> datetime | None:
+    """Tolerant ISO8601 parse for the `since` cursor. None on blank/invalid input."""
+    value = value.strip()
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+@router.get("/offline-bundle", response_model=OfflineBundleOut)
+async def offline_bundle(
+    since: str | None = None,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """One-shot offline-sync snapshot for the user's active market (Task 2).
+
+    `since` (ISO8601, the previous response's `server_time`) deltas the `lessons`
+    list; blank/invalid → full set. Metadata + `current_ids` are always full.
+    """
+    parsed = _parse_iso(since) if since else None
+    return await offline_bundle_service.build_bundle(session, current_user, parsed)
+
+
 @router.get("/modules", response_model=list[ModuleOut])
 async def list_modules(
     current_user: User = Depends(get_current_user),
@@ -93,29 +122,10 @@ async def list_modules(
         if active else {}
     )
 
-    out: list[ModuleOut] = []
-    for m in modules:
-        if not is_module_visible(m, current_user.active_market_code):
-            continue
-        # Hidden, not teased: out-of-age modules never appear in the list
-        # (actual age from dob — the parent tier_override must not unlock these).
-        if not is_module_age_ok(user_age, m.min_age, m.max_age):
-            continue
-        accessible = is_module_premium_ok(module_is_premium=m.is_premium, is_premium_user=is_premium(current_user))
-        title = m.title
-        machine_translated = False
-        if active:
-            fields, machine_translated = localize_fields(
-                "module", {"title": m.title}, module_translations.get(m.id)
-            )
-            title = fields["title"]
-        out.append(ModuleOut(
-            id=m.id, topic=m.topic, title=title,
-            country_codes=m.country_codes, is_premium=m.is_premium,
-            order_index=m.order_index, icon=m.icon, locked=not accessible,
-            standards_alignment=m.standards_alignment, sources=m.sources,
-            machine_translated=machine_translated,
-        ))
+    out = serialize_modules(
+        current_user, list(modules), user_age=user_age,
+        translations_active=active, module_translations=module_translations,
+    )
     pref = current_user.topic_path
     if pref and pref in {m.topic for m in modules}:
         out.sort(key=lambda mo: (0 if mo.topic == pref else 1))
@@ -216,12 +226,6 @@ async def list_levels(
             completed_ids.add(lid)
             scores[lid] = score
 
-    states = derive_level_states(
-        [LevelStateInput(lv.id, lv.order_index, lv.is_premium, lv.pass_threshold) for lv in levels],
-        lessons_by_level=lessons_by_level,
-        completed_ids=completed_ids, scores=scores,
-        user_is_premium=is_premium(current_user),
-    )
     mastered_at_by_level: dict = {}
     if levels:
         mastery_rows = (await session.execute(
@@ -231,18 +235,11 @@ async def list_levels(
             )
         )).all()
         mastered_at_by_level = dict(mastery_rows)
-    return [
-        LevelOut(
-            id=lv.id, module_id=lv.module_id, title=lv.title, order_index=lv.order_index,
-            is_premium=lv.is_premium, icon=lv.icon,
-            state=states[lv.id].state, locked_reason=states[lv.id].locked_reason,
-            passed=states[lv.id].passed, lessons_total=states[lv.id].lessons_total,
-            lessons_completed=states[lv.id].lessons_completed,
-            learning_objectives=lv.learning_objectives,
-            mastered_at=mastered_at_by_level.get(lv.id),
-        )
-        for lv in levels
-    ]
+    return serialize_levels(
+        current_user, levels,
+        lessons_by_level=lessons_by_level, completed_ids=completed_ids, scores=scores,
+        mastered_at_by_level=mastered_at_by_level,
+    )
 
 
 @router.get("/levels/{level_id}/lessons", response_model=list[LessonSummary])
@@ -270,22 +267,10 @@ async def list_level_lessons(
         if active else {}
     )
 
-    summaries: list[LessonSummary] = []
-    for lsn in lessons:
-        content_json = lsn.content_json or {}
-        machine_translated = False
-        if active:
-            content_json, machine_translated = localize_fields(
-                "lesson", content_json, lesson_translations.get(lsn.id)
-            )
-        summaries.append(LessonSummary(
-            id=lsn.id, type=lsn.type,
-            title=derive_lesson_title(lsn.type, content_json),
-            xp_reward=lsn.xp_reward, order_index=lsn.order_index,
-            completed=lsn.id in completed_ids,
-            machine_translated=machine_translated,
-        ))
-    return summaries
+    return serialize_lesson_summaries(
+        lessons, completed_ids=completed_ids,
+        translations_active=active, lesson_translations=lesson_translations,
+    )
 
 
 @router.get("/lessons/{lesson_id}", response_model=LessonOut)
@@ -307,20 +292,16 @@ async def get_lesson(
         )
     )
 
-    content_json = lesson.content_json
-    machine_translated = False
     lang = current_user.language
-    if await language_active(session, lang):
+    active = await language_active(session, lang)
+    translation = None
+    if active:
         translations = await load_translations(session, "lesson", [lesson.id], lang)
-        content_json, machine_translated = localize_fields(
-            "lesson", lesson.content_json or {}, translations.get(lesson.id)
-        )
+        translation = translations.get(lesson.id)
 
-    return LessonOut(
-        id=lesson.id, module_id=lesson.module_id, type=lesson.type,
-        content_json=content_json, xp_reward=lesson.xp_reward,
-        order_index=lesson.order_index, completed=completed is not None, locked=False,
-        machine_translated=machine_translated,
+    return serialize_lesson(
+        lesson, completed=completed is not None,
+        translations_active=active, translation=translation,
     )
 
 
