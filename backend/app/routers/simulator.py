@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_session
 from app.core.rate_limit import limiter
 from app.core.time import today_utc
@@ -62,6 +63,7 @@ from app.services.moderation import moderate_output
 from app.services.premium_config import premium_required_error
 from app.services.price_provider import (
     LivePriceProvider,
+    PriceProvider,
     TickerNotAvailableError,
 )
 from app.services.simulator_rewards import (
@@ -89,7 +91,18 @@ router = APIRouter(tags=["simulator"])
 # fresh (the UTC-day key component also rolls it over at midnight).
 _NEWS_CACHE_TTL = 6 * 3600
 
-_price_provider = LivePriceProvider()
+
+def _make_price_provider() -> PriceProvider:
+    """Return a TwelveDataProvider when the prototype flag + API key are both set;
+    otherwise return LivePriceProvider (yfinance) — the default, never cut over."""
+    if settings.price_provider == "twelvedata" and settings.twelvedata_api_key:
+        from app.services.twelvedata_provider import TwelveDataProvider
+
+        return TwelveDataProvider(api_key=settings.twelvedata_api_key)
+    return LivePriceProvider()
+
+
+_price_provider = _make_price_provider()
 
 _QUOTE_CONCURRENCY = 8
 

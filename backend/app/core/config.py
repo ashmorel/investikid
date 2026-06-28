@@ -111,6 +111,11 @@ class Settings(BaseSettings):
     google_play_product_id: str = ""
     google_play_product_id_annual: str = ""
 
+    # Market-data provider selection (prototype — default stays yfinance)
+    # Set price_provider="twelvedata" AND twelvedata_api_key="<key>" to enable.
+    price_provider: str = "yfinance"
+    twelvedata_api_key: str = ""
+
     # Cloudflare R2 — self-hosted curated video uploads (admin)
     r2_account_id: str = ""
     r2_access_key_id: str = ""
