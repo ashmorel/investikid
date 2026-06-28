@@ -1,14 +1,14 @@
 """LLM-based concept classification backfill.
 
 Classifies existing published lessons (concept_id IS NULL AND
-concept_classified_at IS NULL) into their topic's taxonomy using the lite LLM
-tier. The model can NEVER invent a concept — every pick is validated through
-``resolve_concept_slug`` before being written.
+concept_classified_at IS NULL) into the FULL taxonomy using the lite LLM tier.
+The model can NEVER invent a concept — every pick is validated through
+``resolve_slug_global`` before being written.
 
 Monotonic drain guarantee:
 - ``concept_classified_at`` is set on EVERY lesson the service processes,
   whether it gets tagged, is unmatched (LLM abstain/hallucinate), or is
-  skipped pre-LLM (no text / no topic / no taxonomy for topic).
+  skipped pre-LLM (no text).
 - The query filters ``concept_classified_at IS NULL``, so each lesson is
   attempted at most once — re-runs never re-bill.
 - A drain loop whose stop condition is ``lessons_seen == 0`` is guaranteed to
@@ -18,6 +18,11 @@ Safe to run multiple times:
 - Already-tagged rows (``concept_id IS NOT NULL``) are excluded by the query
   (they also have ``concept_classified_at`` set from the run that tagged them).
 - Already-attempted rows (``concept_classified_at IS NOT NULL``) are excluded.
+
+Why global? The regenerated curriculum uses free-form module topics (e.g.
+"growing-your-money") that don't match the 9 canonical taxonomy topics, so the
+old per-topic candidate lookup returned empty and every lesson was skipped.
+``Concept.slug`` is UNIQUE, so global matching is safe and correct.
 """
 from __future__ import annotations
 
@@ -31,7 +36,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.concept import Concept
 from app.models.content import Lesson, Module
-from app.services.concept_mapper import resolve_concept_slug
+from app.services.concept_mapper import resolve_slug_global
 from app.services.guardrails import with_generation_framing
 from app.services.llm_client import get_llm_client
 
@@ -50,19 +55,19 @@ def _lesson_text(lesson: Lesson) -> str | None:
     return c.get("question") or c.get("title") or c.get("prompt") or None
 
 
-async def _fetch_concepts_for_topic(
-    session: AsyncSession, topic: str
-) -> list[dict]:
-    """Return concept dicts (slug, name, blurb) for a topic, ordered by order_index."""
+async def _fetch_all_concepts(session: AsyncSession) -> list[dict]:
+    """Return ALL concept dicts (slug, name, blurb, topic) ordered by topic then
+    order_index.  Fetched once per classify run and cached by the caller.
+
+    Including ``topic`` lets the prompt group concepts by topic for readability.
+    """
     rows = (
         await session.scalars(
-            select(Concept)
-            .where(Concept.topic == topic)
-            .order_by(Concept.order_index)
+            select(Concept).order_by(Concept.topic, Concept.order_index)
         )
     ).all()
     return [
-        {"slug": c.slug, "name": c.name, "blurb": c.blurb or ""}
+        {"slug": c.slug, "name": c.name, "blurb": c.blurb or "", "topic": c.topic}
         for c in rows
     ]
 
@@ -70,7 +75,7 @@ async def _fetch_concepts_for_topic(
 def _build_prompt(lesson_text: str, concepts: list[dict]) -> str:
     """Build the classification system prompt, wrapped in generation framing."""
     candidate_lines = "\n".join(
-        f'  - slug="{c["slug"]}" name="{c["name"]}"'
+        f'  - slug="{c["slug"]}" name="{c["name"]}" [topic: {c["topic"]}]'
         + (f' ({c["blurb"]})' if c["blurb"] else "")
         for c in concepts
     )
@@ -80,7 +85,7 @@ def _build_prompt(lesson_text: str, concepts: list[dict]) -> str:
         "You MUST return a JSON object with a single key 'concept_slug' whose value is "
         "the slug of the best-matching concept from the list below, "
         "or null if no concept clearly fits.\n\n"
-        f"Taxonomy concepts for this topic:\n{candidate_lines}\n\n"
+        f"Full taxonomy concepts (grouped by topic):\n{candidate_lines}\n\n"
         "Rules:\n"
         "- Only use slugs from the list above — never invent a new slug.\n"
         "- If no concept is a clear match, return {\"concept_slug\": null}.\n"
@@ -106,7 +111,7 @@ async def classify_untagged_lessons(
         lessons_unmatched — how many the LLM was called for but abstained or
                             hallucinated (i.e. pick did not resolve to a concept)
         lessons_skipped   — how many were skipped before calling the LLM
-                            (no topic / no text / no taxonomy for topic)
+                            (no text, or the entire taxonomy is empty)
         lessons_errored   — how many raised an unexpected exception (skipped)
 
     Invariant: tagged + unmatched + skipped + errored == seen
@@ -135,37 +140,34 @@ async def classify_untagged_lessons(
     lessons_skipped = 0
     lessons_errored = 0
 
-    # Cache concept lists per topic to avoid redundant DB round-trips.
-    concepts_cache: dict[str, list[dict]] = {}
+    # Fetch the full taxonomy ONCE for the whole batch — no per-topic scoping.
+    all_concepts = await _fetch_all_concepts(session)
+
+    # Degenerate guard: if the taxonomy is entirely empty, skip everything.
+    if not all_concepts:
+        for lesson in lesson_rows:
+            lesson.concept_classified_at = now
+            lessons_skipped += 1
+        await session.flush()
+        return {
+            "lessons_seen": lessons_seen,
+            "lessons_tagged": lessons_tagged,
+            "lessons_unmatched": lessons_unmatched,
+            "lessons_skipped": lessons_skipped,
+            "lessons_errored": lessons_errored,
+        }
 
     client = get_llm_client("lite")
 
     for lesson in lesson_rows:
         try:
-            topic = lesson.module.topic if lesson.module else None
-            if not topic:
-                lesson.concept_classified_at = now
-                lessons_skipped += 1
-                continue
-
             text = _lesson_text(lesson)
             if not text:
                 lesson.concept_classified_at = now
                 lessons_skipped += 1
                 continue
 
-            # Fetch candidate concepts (cached per topic).
-            if topic not in concepts_cache:
-                concepts_cache[topic] = await _fetch_concepts_for_topic(session, topic)
-            concepts = concepts_cache[topic]
-
-            if not concepts:
-                # No taxonomy for this topic yet — skip.
-                lesson.concept_classified_at = now
-                lessons_skipped += 1
-                continue
-
-            system_prompt = _build_prompt(text, concepts)
+            system_prompt = _build_prompt(text, all_concepts)
             user_msg = f"Lesson text: {text}"
 
             raw = await client.complete(
@@ -186,8 +188,8 @@ async def classify_untagged_lessons(
             except (json.JSONDecodeError, ValueError, AttributeError):
                 pick = None
 
-            # Validate — only a real taxonomy match is ever written.
-            concept_id = await resolve_concept_slug(session, pick, topic)
+            # Validate globally — only a real taxonomy match is ever written.
+            concept_id = await resolve_slug_global(session, pick)
 
             # Stamp as attempted regardless of outcome.
             lesson.concept_classified_at = now
@@ -199,7 +201,7 @@ async def classify_untagged_lessons(
                 logger.info(
                     "concept_classify_unmatched lesson=%s topic=%s pick=%s",
                     lesson.id,
-                    topic,
+                    lesson.module.topic if lesson.module else None,
                     pick,
                 )
                 lessons_unmatched += 1

@@ -1,7 +1,8 @@
 """Concept taxonomy mapper.
 
 ``resolve_concept_slug`` looks up an existing Concept by slug within a topic.
-It NEVER inserts concepts — the taxonomy is authored-only.
+``resolve_slug_global`` looks up an existing Concept by slug across ALL topics.
+Neither function inserts concepts — the taxonomy is authored-only.
 """
 from __future__ import annotations
 
@@ -19,6 +20,47 @@ def _normalize(s: str) -> str:
     s = s.lower().strip()
     s = re.sub(r"[\s_-]+", "-", s)
     return s
+
+
+async def resolve_slug_global(
+    session: AsyncSession,
+    slug: str | None,
+) -> uuid.UUID | None:
+    """Return the concept id for ``slug`` across ALL topics, or ``None``.
+
+    ``Concept.slug`` has a UNIQUE constraint so there is at most one exact
+    match across the whole taxonomy — no topic axis is needed.
+
+    Resolution order:
+    1. Exact slug match across all concepts (uses the unique index).
+    2. Normalized fuzzy match (lower-case, whitespace/underscores/hyphens all
+       become a single hyphen) against slug and name for every concept.
+
+    This function only reads — it MUST NEVER insert a Concept row.
+    """
+    if not slug:
+        return None
+
+    # 1. Exact slug match (unique constraint → at most one row).
+    row = await session.scalar(
+        select(Concept).where(Concept.slug == slug)
+    )
+    if row is not None:
+        return row.id
+
+    # 2. Normalized fuzzy match across all concepts.
+    normalized_input = _normalize(slug)
+    if not normalized_input:
+        return None
+
+    all_concepts = (await session.scalars(select(Concept))).all()
+    for c in all_concepts:
+        if _normalize(c.slug) == normalized_input:
+            return c.id
+        if _normalize(c.name) == normalized_input:
+            return c.id
+
+    return None
 
 
 async def resolve_concept_slug(

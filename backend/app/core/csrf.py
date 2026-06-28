@@ -45,6 +45,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/internal/collectables/reconcile",
     "/internal/concepts/backfill",
     "/internal/concepts/classify",
+    "/internal/concepts/classify/reset",
     "/parent/auth/oauth/google",
     "/parent/auth/oauth/apple",
 })

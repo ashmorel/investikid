@@ -217,6 +217,33 @@ async def market_content_step(
     )
 
 
+@router.post("/concepts/classify/reset")
+async def trigger_concept_classify_reset(
+    x_cron_secret: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+):
+    """Reset concept_classified_at to NULL for lessons that are still untagged
+    (concept_id IS NULL).  This lets the corrected global-matching classifier
+    retry lessons the previous topic-scoped run stamped-and-skipped.
+
+    ONLY lessons with concept_id IS NULL are touched — already-tagged lessons
+    (concept_id IS NOT NULL) are never modified.  Returns the reset count."""
+    if not settings.cron_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    from sqlalchemy import update
+
+    from app.models.content import Lesson
+    result = await session.execute(
+        update(Lesson)
+        .where(Lesson.concept_id.is_(None), Lesson.concept_classified_at.isnot(None))
+        .values(concept_classified_at=None)
+    )
+    await session.commit()
+    return {"reset": result.rowcount}
+
+
 @router.post("/concepts/classify")
 async def trigger_concept_classify(
     limit: int = 200,

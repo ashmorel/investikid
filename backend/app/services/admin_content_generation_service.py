@@ -162,11 +162,16 @@ def _concat_text(parsed: dict) -> str:
     return "\n".join(parts)
 
 
-async def _fetch_concept_slugs(session: AsyncSession, topic: str) -> list[str]:
-    """Return all concept slugs for the given topic, ordered by order_index."""
+async def _fetch_all_concept_slugs(session: AsyncSession) -> list[str]:
+    """Return ALL concept slugs from the full taxonomy, ordered by topic then order_index.
+
+    The full taxonomy is passed to the LLM so it can emit a taxonomy-valid slug
+    regardless of what free-form topic the module carries.  Slug uniqueness is
+    guaranteed by the UNIQUE constraint on Concept.slug.
+    """
     rows = (
         await session.scalars(
-            select(Concept.slug).where(Concept.topic == topic).order_by(Concept.order_index)
+            select(Concept.slug).order_by(Concept.topic, Concept.order_index)
         )
     ).all()
     return list(rows)
@@ -282,9 +287,10 @@ async def generate_native_level_lessons(session: AsyncSession, level, *, brief, 
     else:
         pairs = [(concepts[(n // n_types) % len(concepts)], type_cycle[n % n_types])
                  for n in range(target_count)]
-    # Fetch concept slugs for this topic so the generator can guide the LLM to
-    # emit a taxonomy-valid slug (resolved to concept_id at approval time).
-    slugs_for_topic = await _fetch_concept_slugs(session, module.topic)
+    # Fetch ALL concept slugs (full taxonomy) so the generator can guide the LLM
+    # to emit a taxonomy-valid slug regardless of the module's free-form topic.
+    # Slug is globally unique, so this is safe and matches how approval resolves it.
+    slugs_for_topic = await _fetch_all_concept_slugs(session)
     # Sibling-aware: tell each lesson which scenarios/characters are already used in
     # this level so it picks a distinctly different one (kills the "every question
     # is the same Maya-walks-the-dog" repetition).
