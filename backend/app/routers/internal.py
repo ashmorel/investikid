@@ -10,6 +10,7 @@ from app.core.database import get_session
 from app.core.time import today_utc
 from app.services import (
     concept_backfill_service,
+    concept_classify_service,
     digest_service,
     investing_missions,
     market_content_pipeline,
@@ -214,6 +215,28 @@ async def market_content_step(
     raise HTTPException(
         status.HTTP_400_BAD_REQUEST, "action must be scaffold|generate|publish|sync-missions"
     )
+
+
+@router.post("/concepts/classify")
+async def trigger_concept_classify(
+    limit: int = 200,
+    x_cron_secret: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+):
+    """Idempotent LLM-based backfill: classify published lessons without a
+    concept_id by asking the lite LLM to pick from the topic's taxonomy.
+    The model can NEVER invent a concept — every pick is validated via
+    resolve_concept_slug before being written.  Safe to run repeatedly."""
+    if not settings.cron_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    effective_limit = max(1, min(limit, 500))
+    result = await concept_classify_service.classify_untagged_lessons(
+        session, limit=effective_limit
+    )
+    await session.commit()
+    return result
 
 
 @router.post("/concepts/backfill")
