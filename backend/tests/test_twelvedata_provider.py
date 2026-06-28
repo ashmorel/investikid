@@ -4,7 +4,7 @@ All HTTP calls are mocked — the live Twelve Data API is never hit.
 """
 
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -16,8 +16,7 @@ from app.services.price_provider import (
     PriceQuote,
     TickerNotAvailableError,
 )
-from app.services.twelvedata_provider import TwelveDataProvider, TwelveDataError
-
+from app.services.twelvedata_provider import TwelveDataError, TwelveDataProvider
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -102,10 +101,6 @@ def test_get_quote_unknown_ticker_raises(monkeypatch):
 def test_get_quote_reads_l2_cache(monkeypatch):
     """L2 (Redis) hit should skip the live API call entirely."""
     p = make_provider()
-    cached_q = PriceQuote(
-        ticker="MSFT", exchange="NASDAQ", name="Microsoft Corp.",
-        price=Decimal("400.00"), currency="USD",
-    )
     monkeypatch.setattr(
         "app.services.twelvedata_provider.price_cache.get_json",
         lambda key: {
