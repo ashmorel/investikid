@@ -1,7 +1,7 @@
 # App Store Listing Kit — InvestiKid (M11)
 
-**Date:** 2026-06-15
-**Status:** Draft for review — copy is ready to paste; operator items flagged.
+**Date:** 2026-06-15 · **Finalized:** 2026-06-28
+**Status:** ✅ Paste-ready — copy refreshed to current features; contact + age-rating/category decisions resolved (§6, §7). Only the in-console operator steps remain (paste, screenshots, questionnaires, demo creds).
 **Scope:** Apple App Store (primary). Google Play notes at the end.
 **Framing:** parent-outcome story ("your child *masters* real money skills"), not a
 feature list — consistent with the M6 outcome-led paywall.
@@ -46,7 +46,10 @@ WHY FAMILIES CHOOSE INVESTIKID
   prices, and an AI coach that keeps explanations age-appropriate and kind.
 • Grows with your child — an Explorer mode for younger kids and a cleaner
   Investor mode for teens.
-• Daily habits that stick — a kid-sized daily goal, streaks, and gentle reminders.
+• Daily habits that stick — a kid-sized daily goal, streaks, gentle reminders, and
+  Penny's Arcade (quick money games and a daily word puzzle) that make coming back fun.
+• Made to be remembered — smart revision brings back the trickiest ideas at just the
+  right time (spaced repetition), so skills actually last.
 • Built safe by default — no third-party ad trackers, parent-managed accounts,
   and content that's always moderated. It's a kids' app, designed to the highest
   child-safety standards.
@@ -70,32 +73,38 @@ those. Tune after launch using Search Ads / impressions.)
 ## 5. What's New (first release notes)
 
 > First public release. Bite-size money lessons, a safe play-money investing
-> simulator, an AI coach, daily goals and streaks, and a parent dashboard with a
-> monthly Mastery Report. One subscription covers all your children.
+> simulator, an AI coach, smart revision that helps skills stick, Penny's Arcade
+> games, daily goals and streaks, and a parent dashboard with a monthly Mastery
+> Report. One subscription covers all your children.
 
-## 6. Category, URLs, contact
+## 6. Category, URLs, contact  *(RESOLVED 2026-06-28)*
 
 - **Primary category:** Education · **Secondary:** Finance
-- **Privacy Policy URL:** `https://app.investikid.ai/privacy` (the in-app notice,
-  version `PRIVACY_NOTICE_VERSION`)
-- **Support URL / email:** confirm the support email used in-app (Send Feedback) and
-  a support page URL.
+- **Privacy Policy URL:** `https://app.investikid.ai/privacy` ✅ (route live, `Privacy.tsx`; version `PRIVACY_NOTICE_VERSION`)
+- **Support / contact email:** **`privacy@investikid.ai`** ✅ (the live inbox used in-app for account deletion + parent settings; Cloudflare-routed). Use this as the App Review contact + the App Privacy "Contact" address.
+- **Support URL:** `https://app.investikid.ai` (no dedicated `/support` page yet — the marketing/app URL + the in-app "Send Feedback" cover it; a 1-page `/support` with the email + an FAQ would be a nice-to-have, not a blocker).
 - **Marketing URL (optional):** `https://app.investikid.ai`
 
-## 7. Age rating (App Store Connect questionnaire)
+## 7. Age rating + category  *(RESOLVED 2026-06-28 — recommendation below)*
 
-The simulator is **play-money investing education — not gambling** (no real-money
-wagering, no prizes of value). Answer the questionnaire honestly; expected result:
+**Category: list under Education, NOT the Kids Category.** Decisive reason: InvestiKid
+targets **8–18** (Explorer + Investor modes; the 15–18 teen band feeds M10), but
+Apple's **Kids Category is capped at under-11** (bands: 5-&-under / 6–8 / 9–11) — a
+teen-inclusive app doesn't fit it. Education is the correct home, not a shortcut.
+(You still follow all kids-data rules since the audience includes minors — parental
+gate, no third-party trackers — which the app already does.)
 
-- **Recommended: 4+** (no objectionable content; education).
-- The roadmap flagged a possible **9+/12+** if you'd rather position it as a
-  finance app for older kids — that's a positioning choice, not a content
-  requirement. **Decision needed from you.** If you target Apple's **Kids
-  category** (under-11 band), note the stricter rules: no third-party
-  analytics/ads (already true), and external links/purchases behind a **parental
-  gate** (already true via the parent flow) — but Kids-category review is
-  stricter. Listing under **Education** (not the Kids category) is the simpler
-  path and still appropriate.
+**Age rating: 4+** (play-money investing education is **not** "Simulated Gambling" —
+no real-money wagering, no prizes of value; answer that question **No**).
+
+> ⚠️ **AI-coach questionnaire nuance (Apple's 2025 age-rating update).** The
+> questionnaire now asks about **AI chatbots / AI-generated content** and
+> **unrestricted web access**. Answer honestly but precisely: the coach is
+> **moderated, curriculum-bounded, age-appropriate (guardrails), with NO
+> unrestricted web access and NO user-to-user messaging** (leaderboards use safe
+> handles only). Framed that way it stays **4+**; if the AI questions nudge it,
+> **9+ is acceptable** and still broad. Do NOT describe the coach as an open/general
+> chatbot — that can force 17+.
 
 ## 8. Privacy "nutrition" labels (App Store Connect → App Privacy)
 
@@ -147,11 +156,14 @@ into each frame; lead with screenshots 1 and 4 (the conversion pair).
   content: declare children + **Designed for Families** if you opt in (stricter,
   like Apple's Kids category).
 
-## Operator checklist (what's left for you in the consoles)
+## Operator checklist (what's left for you in App Store Connect)
 
-- [ ] Decide age rating (4+ vs 9+/12+) and Kids-category vs Education-only.
-- [ ] Capture + upload the 5 screenshots (per §9) for each required device size.
-- [ ] Enter the App Privacy answers (§8) + confirm they match `/privacy`.
-- [ ] Confirm support email + URLs (§6).
-- [ ] Paste name/subtitle/promo/description/keywords (§1–4).
-- [ ] (Play) Fill Data safety + content rating; decide Designed for Families.
+- [x] **Age rating + category decided** — Education (not Kids Category, per §7) + 4+; answer the AI-coach questions as "moderated/restricted" (§7).
+- [x] **Support email + URLs confirmed** — `privacy@investikid.ai` + `https://app.investikid.ai` (§6).
+- [ ] Paste name / subtitle / promotional text / description / keywords (§1–4).
+- [ ] Run the age-rating questionnaire → confirm it lands 4+ (watch the gambling + AI questions, §7).
+- [ ] Enter the App Privacy answers (§8); confirm they match `/privacy`.
+- [ ] Capture + upload the 5 screenshots (§9) for each required device size (6.7" + 6.5").
+- [ ] **App Review notes — REQUIRED or Apple rejects (Guideline 2.1):** add a **demo child account (DOB 8–16) + a parent account** (username + password), plus the "virtual/educational, not a real brokerage" statement. See [`app-store-review-prep.md`](app-store-review-prep.md).
+- [ ] Subscription metadata (display name, description, review screenshot) for the Premium IAP — needs M5 pricing done first.
+- [ ] (Play) Fill Data safety + content rating (IARC); decide Designed for Families.
