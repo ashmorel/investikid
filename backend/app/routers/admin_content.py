@@ -14,6 +14,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_session
 from app.models.apply_mission import ApplyMission
+from app.models.concept import Concept
 from app.models.content import Lesson, Level, Module
 from app.models.gamification import Badge, Challenge
 from app.models.lesson_draft import LessonDraft
@@ -31,8 +32,20 @@ from app.schemas.admin import (
     ModuleUpdate,
     ReorderRequest,
 )
+from app.schemas.concept import (
+    ConceptIn,
+    ConceptOut,
+    ConceptPatch,
+    LessonConceptPatch,
+    TopicGroup,
+)
 from app.services.engagement_service import get_module_engagement
 from app.services.level_service import premium_for_position
+
+_TOPIC_ORDER = [
+    "stocks", "savings", "real_estate", "budgeting", "risk",
+    "crypto", "taxes", "debt", "entrepreneurship",
+]
 
 router = APIRouter()
 
@@ -406,3 +419,118 @@ async def admin_create_level_lesson(
     await session.commit()
     await session.refresh(lesson)
     return await _lesson_out(session, lesson)
+
+
+# ── Concepts ────────────────────────────────────────────────────────
+
+async def _concept_lesson_count(session: AsyncSession, concept_id: uuid.UUID) -> int:
+    n = await session.scalar(
+        select(func.count()).select_from(Lesson).where(Lesson.concept_id == concept_id)
+    )
+    return n or 0
+
+
+async def _unmapped_count_for_topic(session: AsyncSession, topic: str) -> int:
+    """Count lessons whose module belongs to *topic* and whose concept_id is NULL."""
+    n = await session.scalar(
+        select(func.count())
+        .select_from(Lesson)
+        .join(Module, Lesson.module_id == Module.id)
+        .where(Module.topic == topic, Lesson.concept_id.is_(None))
+    )
+    return n or 0
+
+
+@router.get("/concepts", response_model=list[TopicGroup])
+async def list_concepts(session: AsyncSession = Depends(get_session)) -> list[TopicGroup]:
+    """Return concepts grouped by topic with per-concept lesson_count and per-topic unmapped_count."""
+    result = await session.scalars(
+        select(Concept).order_by(Concept.topic, Concept.order_index, Concept.name)
+    )
+    concepts = list(result.all())
+
+    # Group by topic preserving canonical order.
+    topic_map: dict[str, list[Concept]] = {}
+    for c in concepts:
+        topic_map.setdefault(c.topic, []).append(c)
+
+    groups: list[TopicGroup] = []
+    for topic in _TOPIC_ORDER:
+        topic_concepts = topic_map.get(topic, [])
+        concept_outs = []
+        for c in topic_concepts:
+            lc = await _concept_lesson_count(session, c.id)
+            concept_outs.append(ConceptOut(
+                id=c.id, topic=c.topic, slug=c.slug, name=c.name,
+                blurb=c.blurb, difficulty_tier=c.difficulty_tier,
+                order_index=c.order_index, lesson_count=lc,
+            ))
+        unmapped = await _unmapped_count_for_topic(session, topic)
+        groups.append(TopicGroup(topic=topic, unmapped_count=unmapped, concepts=concept_outs))
+    return groups
+
+
+@router.post("/concepts", response_model=ConceptOut, status_code=status.HTTP_201_CREATED)
+async def create_concept(
+    payload: ConceptIn, session: AsyncSession = Depends(get_session)
+) -> ConceptOut:
+    existing = await session.scalar(select(Concept).where(Concept.slug == payload.slug))
+    if existing is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="slug already exists")
+    concept = Concept(
+        topic=payload.topic,
+        slug=payload.slug,
+        name=payload.name,
+        blurb=payload.blurb,
+        difficulty_tier=payload.difficulty_tier,
+        order_index=payload.order_index,
+    )
+    session.add(concept)
+    await session.commit()
+    await session.refresh(concept)
+    return ConceptOut(
+        id=concept.id, topic=concept.topic, slug=concept.slug, name=concept.name,
+        blurb=concept.blurb, difficulty_tier=concept.difficulty_tier,
+        order_index=concept.order_index, lesson_count=0,
+    )
+
+
+@router.patch("/concepts/{concept_id}", response_model=ConceptOut)
+async def patch_concept(
+    concept_id: uuid.UUID, payload: ConceptPatch, session: AsyncSession = Depends(get_session)
+) -> ConceptOut:
+    concept = await session.get(Concept, concept_id)
+    if concept is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Concept not found")
+    data = payload.model_dump(exclude_unset=True)
+    # Slug uniqueness check if slug is being changed.
+    if "slug" in data and data["slug"] != concept.slug:
+        clash = await session.scalar(select(Concept).where(Concept.slug == data["slug"]))
+        if clash is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="slug already exists")
+    for field, value in data.items():
+        setattr(concept, field, value)
+    await session.commit()
+    await session.refresh(concept)
+    lc = await _concept_lesson_count(session, concept.id)
+    return ConceptOut(
+        id=concept.id, topic=concept.topic, slug=concept.slug, name=concept.name,
+        blurb=concept.blurb, difficulty_tier=concept.difficulty_tier,
+        order_index=concept.order_index, lesson_count=lc,
+    )
+
+
+@router.patch("/lessons/{lesson_id}/concept")
+async def patch_lesson_concept(
+    lesson_id: uuid.UUID, payload: LessonConceptPatch, session: AsyncSession = Depends(get_session)
+) -> dict:
+    lesson = await session.get(Lesson, lesson_id)
+    if lesson is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found")
+    if payload.concept_id is not None:
+        concept = await session.get(Concept, payload.concept_id)
+        if concept is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Concept not found")
+    lesson.concept_id = payload.concept_id
+    await session.commit()
+    return {"id": str(lesson.id), "concept_id": str(lesson.concept_id) if lesson.concept_id else None}
