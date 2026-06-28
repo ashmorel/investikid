@@ -1,0 +1,42 @@
+name: Concept taxonomy classify (LLM backfill, one-off)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BACKEND_URL: ${{ vars.BACKEND_URL || 'https://investikid.up.railway.app' }}
+    steps:
+      - name: Drain concept classification
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -uo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET is empty (add it under Actions → Secrets)."; exit 1
+          fi
+          # LLM-classify untagged published lessons into the concept taxonomy.
+          # Each lesson is attempted at most once (concept_classified_at marker),
+          # so the drain strictly advances and re-runs never re-bill the LLM.
+          # Loop bounded batches until the backend reports nothing left to do.
+          total_tagged=0
+          for i in $(seq 1 24); do
+            resp=$(curl -sS --fail -X POST --retry 4 --retry-delay 5 \
+              --connect-timeout 15 --max-time 180 \
+              -H "X-Cron-Secret: $CRON_SECRET" \
+              "$BACKEND_URL/internal/concepts/classify?limit=200")
+            echo "batch $i: $resp"
+            seen=$(echo "$resp" | jq -r '.lessons_seen // 0')
+            tagged=$(echo "$resp" | jq -r '.lessons_tagged // 0')
+            total_tagged=$((total_tagged + tagged))
+            if [ "$seen" -eq 0 ]; then
+              echo "Drain complete — no untagged published lessons remain."
+              break
+            fi
+          done
+          echo "::notice::Concept classification finished. Total newly tagged this run: $total_tagged"
