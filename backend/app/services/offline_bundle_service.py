@@ -36,6 +36,7 @@ from app.services.content_serialize import (
     serialize_modules,
     user_age_for,
 )
+from app.services.entitlements import is_premium
 
 
 async def build_bundle(
@@ -66,6 +67,17 @@ async def build_bundle(
         translations_active=active, module_translations=module_translations,
     )
     visible_module_ids = [m.id for m in modules]
+
+    # Premium gate: free users must not receive lesson content_json for
+    # premium-locked modules. The serialized ModuleOut already carries
+    # locked=True for premium modules a free user can't access.
+    # Compute the accessible (non-locked) module id set once; it is used
+    # to filter lesson content in `bundle.lessons` and `current_ids.lessons`
+    # while keeping metadata (modules, module_levels, level_lessons) intact.
+    if is_premium(current_user):
+        accessible_module_ids: set[uuid.UUID] = set(visible_module_ids)
+    else:
+        accessible_module_ids = {m.id for m in modules if not m.locked}
 
     # Nothing visible → empty bundle (still a valid snapshot).
     if not visible_module_ids:
@@ -149,9 +161,13 @@ async def build_bundle(
         )
 
     # --- lessons delta (full LessonOut shape, same as get_lesson). ---
+    # Only include full lesson content for accessible (non-premium-locked) modules.
+    accessible_lessons = [lsn for lsn in all_lessons if lsn.module_id in accessible_module_ids]
+    accessible_lesson_ids = [lsn.id for lsn in accessible_lessons]
+
     delta_lessons = (
-        all_lessons if since is None
-        else [lsn for lsn in all_lessons if lsn.updated_at > since]
+        accessible_lessons if since is None
+        else [lsn for lsn in accessible_lessons if lsn.updated_at > since]
     )
     lessons = [
         serialize_lesson(
@@ -164,7 +180,7 @@ async def build_bundle(
     current_ids = OfflineBundleIds(
         modules=[str(mid) for mid in visible_module_ids],
         levels=[str(lid) for lid in level_ids],
-        lessons=[str(lid) for lid in all_lesson_ids],
+        lessons=[str(lid) for lid in accessible_lesson_ids],
     )
 
     return OfflineBundleOut(

@@ -1,8 +1,10 @@
 from datetime import UTC, datetime
 
 import pytest
+from sqlalchemy import select
 
 from app.models.content import Lesson, Level, Module
+from app.models.user import User
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -144,3 +146,107 @@ async def test_naive_since_returns_200_not_500(client, db_session):
     # Lesson 1 has updated_at=_FUTURE (2030) so it's updated after 2025-01-01 naive→UTC.
     bumped = gb_lessons[1]
     assert {lsn["id"] for lsn in body["lessons"]} == {str(bumped.id)}
+
+
+async def _seed_premium_market(db_session):
+    """Seed a GB market with a free module and a premium module, each with one lesson."""
+    free_mod = Module(
+        topic="budgeting", title="Free Module GB",
+        country_codes=[], is_premium=False,
+        order_index=10, market_code="GB",
+    )
+    prem_mod = Module(
+        topic="investing", title="Premium Module GB",
+        country_codes=[], is_premium=True,
+        order_index=11, market_code="GB",
+    )
+    db_session.add_all([free_mod, prem_mod])
+    await db_session.flush()
+
+    free_level = Level(module_id=free_mod.id, title="Free L1", order_index=0, is_premium=False)
+    prem_level = Level(module_id=prem_mod.id, title="Prem L1", order_index=0, is_premium=True)
+    db_session.add_all([free_level, prem_level])
+    await db_session.flush()
+
+    free_lesson = Lesson(
+        module_id=free_mod.id, level_id=free_level.id,
+        type="card", content_json={"title": "Free lesson"}, xp_reward=10, order_index=0,
+    )
+    prem_lesson = Lesson(
+        module_id=prem_mod.id, level_id=prem_level.id,
+        type="card", content_json={"title": "Premium lesson — secret"}, xp_reward=20, order_index=0,
+    )
+    db_session.add_all([free_lesson, prem_lesson])
+    await db_session.commit()
+    return free_mod, prem_mod, free_level, prem_level, free_lesson, prem_lesson
+
+
+async def test_free_user_bundle_excludes_premium_lesson_content(client, db_session):
+    """A free user's bundle must NOT include full lesson content from premium-locked modules.
+
+    The premium module still appears in `modules` (locked=True) and its metadata
+    (module_levels, level_lessons) must still be present for paywall UI. But the
+    premium lesson must not appear in `bundle.lessons` or `current_ids.lessons`.
+    """
+    free_mod, prem_mod, free_level, prem_level, free_lesson, prem_lesson = (
+        await _seed_premium_market(db_session)
+    )
+    await _register_and_login(client, email="freegate@example.com", username="freegate")
+
+    resp = await client.get("/offline-bundle")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    # Free lesson IS in full content list.
+    lesson_content_ids = {lsn["id"] for lsn in body["lessons"]}
+    assert str(free_lesson.id) in lesson_content_ids, "free lesson missing from bundle.lessons"
+
+    # Premium lesson is NOT in full content list.
+    assert str(prem_lesson.id) not in lesson_content_ids, (
+        "premium lesson content leaked to free user in bundle.lessons"
+    )
+
+    # current_ids.lessons must not include the premium lesson either (eviction safety).
+    current_lesson_ids = set(body["current_ids"]["lessons"])
+    assert str(free_lesson.id) in current_lesson_ids
+    assert str(prem_lesson.id) not in current_lesson_ids, (
+        "premium lesson id leaked into current_ids.lessons for free user"
+    )
+
+    # Premium module still appears in modules list (for paywall UI) with locked=True.
+    module_map = {m["id"]: m for m in body["modules"]}
+    assert str(prem_mod.id) in module_map, "premium module missing from modules list"
+    assert module_map[str(prem_mod.id)]["locked"] is True
+
+    # Metadata (module_levels, level_lessons) still present for the premium module.
+    assert str(prem_mod.id) in body["module_levels"], "premium module missing from module_levels"
+    assert str(prem_level.id) in body["level_lessons"], "premium level missing from level_lessons"
+
+
+async def test_premium_user_bundle_includes_premium_lesson_content(client, db_session):
+    """A premium user's bundle must include lesson content from premium modules (regression guard)."""
+    free_mod, prem_mod, free_level, prem_level, free_lesson, prem_lesson = (
+        await _seed_premium_market(db_session)
+    )
+    await _register_and_login(client, email="premgate@example.com", username="premgate")
+
+    # Flip is_premium directly on the DB row after registration.
+    user = await db_session.scalar(select(User).where(User.username == "premgate"))
+    user.is_premium = True
+    await db_session.flush()
+
+    resp = await client.get("/offline-bundle")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    lesson_content_ids = {lsn["id"] for lsn in body["lessons"]}
+    assert str(free_lesson.id) in lesson_content_ids, "free lesson missing for premium user"
+    assert str(prem_lesson.id) in lesson_content_ids, (
+        "premium lesson wrongly excluded for premium user"
+    )
+
+    current_lesson_ids = set(body["current_ids"]["lessons"])
+    assert str(free_lesson.id) in current_lesson_ids
+    assert str(prem_lesson.id) in current_lesson_ids, (
+        "premium lesson id missing from current_ids.lessons for premium user"
+    )
