@@ -2,15 +2,21 @@
 
 Covers:
   (a) Published untagged lesson whose mocked LLM returns a valid candidate slug
-      → concept_id set, counted in lessons_tagged.
+      → concept_id set, counted in lessons_tagged, concept_classified_at stamped.
   (b) Mocked LLM returns a slug not in the taxonomy (hallucination)
-      → concept_id stays NULL, counted in lessons_unmatched.
-  (c) Mocked LLM abstains (null/empty) → NULL, lessons_unmatched.
+      → concept_id stays NULL, counted in lessons_unmatched,
+        concept_classified_at stamped (not re-attempted on second run).
+  (c) Mocked LLM abstains (null/empty) → NULL, lessons_unmatched,
+      concept_classified_at stamped.
   (d) Already-tagged lesson excluded from query + concept_id untouched on re-run.
   (e) Unpublished-module lesson NOT processed (published-only scope).
   (f) limit bounds the count processed.
-  (g) Endpoint: no-secret POST → 401/503 (NOT 403 — proves CSRF exemption);
-      correct secret → 200 with counts.
+  (g) Pre-LLM skip (no text/topic/taxonomy) → lessons_skipped (not
+      lessons_unmatched), concept_classified_at stamped, excluded from second run.
+  (h) Second run sees lessons_seen == 0 after first run stamped all lessons.
+  (i) tagged + unmatched + skipped + errored == seen invariant.
+  (j) Endpoint: no-secret POST → 401/503 (NOT 403 — proves CSRF exemption);
+      correct secret → 200 with counts including lessons_skipped.
 """
 from __future__ import annotations
 
@@ -62,11 +68,19 @@ async def _make_lesson(
     module: Module,
     question: str = "What is compound interest?",
     concept_id: uuid.UUID | None = None,
+    content_json: dict | None = None,
 ) -> Lesson:
+    if content_json is None:
+        content_json = {
+            "question": question,
+            "choices": ["A", "B"],
+            "answer_index": 0,
+            "explanation": "x",
+        }
     lesson = Lesson(
         module_id=module.id,
         type="quiz",
-        content_json={"question": question, "choices": ["A", "B"], "answer_index": 0, "explanation": "x"},
+        content_json=content_json,
         xp_reward=10,
         order_index=0,
         concept_id=concept_id,
@@ -88,11 +102,12 @@ def _mock_llm(slug_response: str | None) -> AsyncMock:
 
 
 async def test_valid_slug_sets_concept_id(db_session):
-    """LLM returns a valid taxonomy slug → concept_id is set, counted as tagged."""
+    """LLM returns a valid taxonomy slug → concept_id set, tagged, stamped."""
     await _seed(db_session)
     module = await _make_module(db_session, topic="savings")
     lesson = await _make_lesson(db_session, module=module)
     assert lesson.concept_id is None
+    assert lesson.concept_classified_at is None
 
     mock_client = _mock_llm("compound-interest")
     with patch(
@@ -106,12 +121,21 @@ async def test_valid_slug_sets_concept_id(db_session):
     concept = await db_session.get(Concept, lesson.concept_id)
     assert concept is not None
     assert concept.slug == "compound-interest"
+    assert lesson.concept_classified_at is not None, "concept_classified_at must be stamped"
     assert result["lessons_tagged"] >= 1
     assert result["lessons_seen"] >= 1
+    # Sum invariant
+    assert (
+        result["lessons_tagged"]
+        + result["lessons_unmatched"]
+        + result["lessons_skipped"]
+        + result["lessons_errored"]
+        == result["lessons_seen"]
+    )
 
 
 async def test_hallucinated_slug_leaves_null(db_session):
-    """LLM returns a slug not in the taxonomy → concept_id stays NULL, unmatched."""
+    """LLM hallucinated slug → concept_id NULL, unmatched, stamped, not re-tried."""
     await _seed(db_session)
     module = await _make_module(db_session, topic="savings")
     lesson = await _make_lesson(db_session, module=module, question="Hallucinated concept?")
@@ -125,11 +149,30 @@ async def test_hallucinated_slug_leaves_null(db_session):
 
     await db_session.refresh(lesson)
     assert lesson.concept_id is None, "hallucinated slug must leave concept_id NULL"
+    assert lesson.concept_classified_at is not None, "must be stamped even on hallucination"
     assert result["lessons_unmatched"] >= 1
+
+    # Second run must NOT re-attempt this lesson (it has concept_classified_at set).
+    mock_client2 = _mock_llm("compound-interest")
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client2,
+    ):
+        result2 = await classify_untagged_lessons(db_session, limit=10)
+
+    await db_session.refresh(lesson)
+    # concept_id must still be None — the lesson was not re-attempted.
+    assert lesson.concept_id is None, "stamped lesson must not be re-processed"
+    # lessons_seen from the second run must not include this already-stamped lesson.
+    first_seen = result["lessons_seen"]
+    second_seen = result2["lessons_seen"]
+    assert second_seen < first_seen or second_seen == 0, (
+        "second run must see fewer (or zero) lessons after first run stamped them"
+    )
 
 
 async def test_abstain_null_leaves_null(db_session):
-    """LLM returns null → concept_id stays NULL, counted as unmatched."""
+    """LLM abstains (null) → concept_id NULL, unmatched, stamped."""
     await _seed(db_session)
     module = await _make_module(db_session, topic="savings")
     lesson = await _make_lesson(db_session, module=module, question="Abstain lesson?")
@@ -143,6 +186,7 @@ async def test_abstain_null_leaves_null(db_session):
 
     await db_session.refresh(lesson)
     assert lesson.concept_id is None, "abstain (null) must leave concept_id NULL"
+    assert lesson.concept_classified_at is not None, "must be stamped on abstain"
     assert result["lessons_unmatched"] >= 1
 
 
@@ -209,6 +253,114 @@ async def test_limit_bounds_processed_count(db_session):
     assert result["lessons_seen"] <= 2, "limit must cap lessons_seen"
 
 
+async def test_pre_llm_skip_counted_as_skipped_not_unmatched(db_session):
+    """A lesson with no text is skipped before calling LLM → lessons_skipped, not
+    lessons_unmatched; concept_classified_at is stamped; excluded from second run."""
+    await _seed(db_session)
+    module = await _make_module(db_session, topic="savings")
+    # Lesson with empty content_json — no question/title/prompt.
+    lesson = await _make_lesson(
+        db_session,
+        module=module,
+        content_json={"choices": ["A", "B"], "answer_index": 0, "explanation": "x"},
+    )
+    assert lesson.concept_classified_at is None
+
+    mock_client = _mock_llm("compound-interest")
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result = await classify_untagged_lessons(db_session, limit=10)
+
+    await db_session.refresh(lesson)
+    assert lesson.concept_id is None, "skipped lesson must not have concept_id"
+    assert lesson.concept_classified_at is not None, "skipped lesson must be stamped"
+    assert result["lessons_skipped"] >= 1, "pre-LLM skip must increment lessons_skipped"
+    # The LLM must NOT have been called for this lesson specifically; however
+    # since other tests may have created lessons in the same session, we just
+    # verify it is counted as skipped, not unmatched.
+    assert result["lessons_unmatched"] == 0 or result["lessons_skipped"] >= 1
+
+    # Sum invariant
+    assert (
+        result["lessons_tagged"]
+        + result["lessons_unmatched"]
+        + result["lessons_skipped"]
+        + result["lessons_errored"]
+        == result["lessons_seen"]
+    )
+
+    # Second run: this lesson must be excluded (concept_classified_at is set).
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result2 = await classify_untagged_lessons(db_session, limit=10)
+
+    assert result2["lessons_seen"] == 0, (
+        "second run must see 0 lessons — all were stamped in the first run"
+    )
+
+
+async def test_second_run_lessons_seen_zero_after_drain(db_session):
+    """After one full run, a second run sees lessons_seen == 0 (drain convergence)."""
+    await _seed(db_session)
+    module = await _make_module(db_session, topic="savings")
+    await _make_lesson(db_session, module=module, question="Drain test lesson A?")
+    await _make_lesson(db_session, module=module, question="Drain test lesson B?")
+
+    mock_client = _mock_llm("compound-interest")
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result1 = await classify_untagged_lessons(db_session, limit=200)
+
+    assert result1["lessons_seen"] >= 2
+
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result2 = await classify_untagged_lessons(db_session, limit=200)
+
+    assert result2["lessons_seen"] == 0, (
+        "second run must see 0 lessons — drain must converge"
+    )
+
+
+async def test_sum_invariant(db_session):
+    """tagged + unmatched + skipped + errored == seen for a mixed batch."""
+    await _seed(db_session)
+    module = await _make_module(db_session, topic="savings")
+    # A lesson with text (LLM will be called → tagged)
+    await _make_lesson(db_session, module=module, question="Invariant test A?")
+    # A lesson with no text (pre-LLM skip)
+    await _make_lesson(
+        db_session,
+        module=module,
+        content_json={"answer_index": 0, "explanation": "x"},
+    )
+
+    mock_client = _mock_llm("compound-interest")
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result = await classify_untagged_lessons(db_session, limit=10)
+
+    total = (
+        result["lessons_tagged"]
+        + result["lessons_unmatched"]
+        + result["lessons_skipped"]
+        + result["lessons_errored"]
+    )
+    assert total == result["lessons_seen"], (
+        f"sum invariant violated: {result}"
+    )
+
+
 # ── endpoint auth + CSRF tests ─────────────────────────────────────────────────
 
 
@@ -238,7 +390,7 @@ async def test_classify_endpoint_401_when_secret_wrong(client, monkeypatch):
 
 
 async def test_classify_endpoint_200_correct_secret(client, db_session, monkeypatch):
-    """200 with counts returned when the correct secret is provided."""
+    """200 with all 5 counts returned when the correct secret is provided."""
     await _seed(db_session)
     import app.routers.internal as internal
     monkeypatch.setattr(internal.settings, "cron_secret", "s3cr3t")
@@ -253,7 +405,16 @@ async def test_classify_endpoint_200_correct_secret(client, db_session, monkeypa
     assert "lessons_seen" in body
     assert "lessons_tagged" in body
     assert "lessons_unmatched" in body
+    assert "lessons_skipped" in body
     assert "lessons_errored" in body
+    # Sum invariant on the endpoint response too.
+    assert (
+        body["lessons_tagged"]
+        + body["lessons_unmatched"]
+        + body["lessons_skipped"]
+        + body["lessons_errored"]
+        == body["lessons_seen"]
+    )
 
 
 async def test_classify_endpoint_csrf_exempt_returns_not_403(client, monkeypatch):

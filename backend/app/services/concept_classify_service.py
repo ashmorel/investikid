@@ -1,19 +1,29 @@
 """LLM-based concept classification backfill.
 
-Classifies existing published lessons (concept_id IS NULL) into their topic's
-taxonomy using the lite LLM tier. The model can NEVER invent a concept — every
-pick is validated through ``resolve_concept_slug`` before being written.
+Classifies existing published lessons (concept_id IS NULL AND
+concept_classified_at IS NULL) into their topic's taxonomy using the lite LLM
+tier. The model can NEVER invent a concept — every pick is validated through
+``resolve_concept_slug`` before being written.
+
+Monotonic drain guarantee:
+- ``concept_classified_at`` is set on EVERY lesson the service processes,
+  whether it gets tagged, is unmatched (LLM abstain/hallucinate), or is
+  skipped pre-LLM (no text / no topic / no taxonomy for topic).
+- The query filters ``concept_classified_at IS NULL``, so each lesson is
+  attempted at most once — re-runs never re-bill.
+- A drain loop whose stop condition is ``lessons_seen == 0`` is guaranteed to
+  converge even if some lessons are permanently unmatchable.
 
 Safe to run multiple times:
-- Only rows with ``concept_id IS NULL`` are touched.
-- Already-tagged rows (``concept_id IS NOT NULL``) are excluded by the query.
-- Unmatched / abstained rows are left NULL (no error).
-- One bad lesson never aborts the batch (best-effort try/except per lesson).
+- Already-tagged rows (``concept_id IS NOT NULL``) are excluded by the query
+  (they also have ``concept_classified_at`` set from the run that tagged them).
+- Already-attempted rows (``concept_classified_at IS NOT NULL``) are excluded.
 """
 from __future__ import annotations
 
 import json
 import logging
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -84,15 +94,25 @@ async def classify_untagged_lessons(
     *,
     limit: int = 200,
 ) -> dict[str, int]:
-    """Classify published lessons with concept_id IS NULL using the lite LLM tier.
+    """Classify published lessons with concept_id IS NULL and concept_classified_at
+    IS NULL using the lite LLM tier.
+
+    Each lesson is stamped with ``concept_classified_at`` regardless of outcome,
+    so no lesson is ever re-attempted on subsequent runs (monotonic drain).
 
     Returns counts:
-        lessons_seen      — how many untagged published lessons were processed
+        lessons_seen      — how many unclassified published lessons were processed
         lessons_tagged    — how many got a valid concept_id written
-        lessons_unmatched — how many the model abstained or hallucinated for
+        lessons_unmatched — how many the LLM was called for but abstained or
+                            hallucinated (i.e. pick did not resolve to a concept)
+        lessons_skipped   — how many were skipped before calling the LLM
+                            (no topic / no text / no taxonomy for topic)
         lessons_errored   — how many raised an unexpected exception (skipped)
+
+    Invariant: tagged + unmatched + skipped + errored == seen
     """
     effective_limit = min(limit, _MAX_LIMIT)
+    now = datetime.now(UTC)
 
     lesson_rows = (
         await session.scalars(
@@ -100,6 +120,7 @@ async def classify_untagged_lessons(
             .join(Lesson.module)
             .where(
                 Lesson.concept_id.is_(None),
+                Lesson.concept_classified_at.is_(None),
                 Module.published.is_(True),
             )
             .options(selectinload(Lesson.module))
@@ -111,6 +132,7 @@ async def classify_untagged_lessons(
     lessons_seen = len(lesson_rows)
     lessons_tagged = 0
     lessons_unmatched = 0
+    lessons_skipped = 0
     lessons_errored = 0
 
     # Cache concept lists per topic to avoid redundant DB round-trips.
@@ -122,12 +144,14 @@ async def classify_untagged_lessons(
         try:
             topic = lesson.module.topic if lesson.module else None
             if not topic:
-                lessons_unmatched += 1
+                lesson.concept_classified_at = now
+                lessons_skipped += 1
                 continue
 
             text = _lesson_text(lesson)
             if not text:
-                lessons_unmatched += 1
+                lesson.concept_classified_at = now
+                lessons_skipped += 1
                 continue
 
             # Fetch candidate concepts (cached per topic).
@@ -137,7 +161,8 @@ async def classify_untagged_lessons(
 
             if not concepts:
                 # No taxonomy for this topic yet — skip.
-                lessons_unmatched += 1
+                lesson.concept_classified_at = now
+                lessons_skipped += 1
                 continue
 
             system_prompt = _build_prompt(text, concepts)
@@ -164,6 +189,9 @@ async def classify_untagged_lessons(
             # Validate — only a real taxonomy match is ever written.
             concept_id = await resolve_concept_slug(session, pick, topic)
 
+            # Stamp as attempted regardless of outcome.
+            lesson.concept_classified_at = now
+
             if concept_id is not None:
                 lesson.concept_id = concept_id
                 lessons_tagged += 1
@@ -189,5 +217,6 @@ async def classify_untagged_lessons(
         "lessons_seen": lessons_seen,
         "lessons_tagged": lessons_tagged,
         "lessons_unmatched": lessons_unmatched,
+        "lessons_skipped": lessons_skipped,
         "lessons_errored": lessons_errored,
     }

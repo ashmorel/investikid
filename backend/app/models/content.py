@@ -97,6 +97,11 @@ class Lesson(Base):
     concept_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("concepts.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    # Set when the classifier has attempted this lesson (tagged, skipped, or
+    # unmatched). NULL = never attempted. Prevents re-billing on re-runs.
+    concept_classified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     type: Mapped[str] = mapped_column(String(20), nullable=False)
     content_json: Mapped[dict] = mapped_column(JSON, nullable=False)
     xp_reward: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
