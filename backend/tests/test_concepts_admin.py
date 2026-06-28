@@ -244,3 +244,56 @@ async def test_admin_reassign_lesson_not_found(admin_client):
         "concept_id": None,
     })
     assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# VALID_TOPICS enforcement
+# ---------------------------------------------------------------------------
+
+async def test_create_concept_invalid_topic_rejected(admin_client):
+    """POST /admin/concepts with an unknown topic must return 422 (not persisted)."""
+    r = await admin_client.post("/admin/concepts", json={
+        "topic": "nonsense",
+        "slug": f"invalid-topic-{uuid.uuid4().hex[:6]}",
+        "name": "Bad Topic Concept",
+        "difficulty_tier": 1,
+        "order_index": 0,
+    })
+    assert r.status_code == 422
+
+
+async def test_patch_concept_invalid_topic_rejected(admin_client, db_session):
+    """PATCH /admin/concepts/{id} with an unknown topic must return 422."""
+    concept = _concept(slug=f"valid-topic-patch-{uuid.uuid4().hex[:6]}")
+    db_session.add(concept)
+    await db_session.commit()
+
+    r = await admin_client.patch(f"/admin/concepts/{concept.id}", json={
+        "topic": "nonsense",
+    })
+    assert r.status_code == 422
+
+
+async def test_create_concept_valid_topic_accepted(admin_client):
+    """POST /admin/concepts with a valid topic must succeed (200-level)."""
+    r = await admin_client.post("/admin/concepts", json={
+        "topic": "crypto",
+        "slug": f"crypto-intro-{uuid.uuid4().hex[:6]}",
+        "name": "Crypto Intro",
+        "difficulty_tier": 2,
+        "order_index": 1,
+    })
+    assert r.status_code == 201, r.text
+
+
+async def test_patch_concept_omitting_topic_accepted(admin_client, db_session):
+    """PATCH /admin/concepts/{id} without a topic field must still succeed."""
+    concept = _concept(slug=f"no-topic-patch-{uuid.uuid4().hex[:6]}")
+    db_session.add(concept)
+    await db_session.commit()
+
+    r = await admin_client.patch(f"/admin/concepts/{concept.id}", json={
+        "name": "Renamed Without Topic Change",
+    })
+    assert r.status_code == 200, r.text
+    assert r.json()["name"] == "Renamed Without Topic Change"
