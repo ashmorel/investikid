@@ -166,6 +166,128 @@ describe('contentStore', () => {
     });
   });
 
+  // -----------------------------------------------------------------------
+  // sync_meta helpers
+  // -----------------------------------------------------------------------
+  describe('setLastSync / getLastSync', () => {
+    it('round-trips a value: set then get returns the same ISO string', async () => {
+      const iso = '2026-06-28T10:00:00.000Z';
+      query.mockResolvedValueOnce({ values: [{ last_sync: iso }] });
+      await store.setLastSync(scope, iso);
+      const result = await store.getLastSync(scope);
+      // setLastSync calls run; getLastSync calls query
+      expect(run).toHaveBeenCalledTimes(1);
+      const [sql, values] = run.mock.calls[0] as unknown as [string, unknown[]];
+      expect(sql).toContain('sync_meta');
+      expect(sql).toContain('ON CONFLICT');
+      expect(values).toEqual(['C1', 'GB', iso]);
+      expect(result).toBe(iso);
+    });
+
+    it('getLastSync returns null when no row is present', async () => {
+      query.mockResolvedValueOnce({ values: [] });
+      const result = await store.getLastSync(scope);
+      expect(result).toBeNull();
+    });
+
+    it('getLastSync returns null when the DB is unavailable', async () => {
+      vi.mocked(isOfflineDbAvailable).mockReturnValueOnce(false);
+      const result = await store.getLastSync(scope);
+      expect(result).toBeNull();
+      expect(getDb).not.toHaveBeenCalled();
+    });
+
+    it('getLastSync uses scoped query params (child_id, market)', async () => {
+      query.mockResolvedValueOnce({ values: [] });
+      await store.getLastSync(scope);
+      const [sql, values] = query.mock.calls[0] as unknown as [string, unknown[]];
+      expect(sql).toContain('FROM sync_meta');
+      expect(values).toEqual(['C1', 'GB']);
+    });
+
+    it('different scopes are isolated (different child_id)', async () => {
+      const other: CacheScope = { childId: 'C2', market: 'GB' };
+      query.mockResolvedValueOnce({ values: [] }); // no row for C2
+      const result = await store.getLastSync(other);
+      expect(result).toBeNull();
+      const [, values] = query.mock.calls[0] as unknown as [string, unknown[]];
+      expect(values).toEqual(['C2', 'GB']);
+    });
+
+    it('swallows DB errors and returns null', async () => {
+      query.mockRejectedValueOnce(new Error('disk'));
+      expect(await store.getLastSync(scope)).toBeNull();
+    });
+  });
+
+  describe('reconcileIds', () => {
+    it('issues a scoped DELETE NOT IN for cached_lesson by lesson_id', async () => {
+      await store.reconcileIds(scope, { modules: ['M1'], levels: ['LV1'], lessons: ['LS1', 'LS2'] });
+      // Three DELETEs: one per table (module_levels, level_lessons, lesson)
+      expect(run).toHaveBeenCalledTimes(3);
+      const lessonCall = (run.mock.calls as unknown as [string, unknown[]][]).find(
+        ([sql]) => sql.includes('cached_lesson') && !sql.includes('cached_level_lessons'),
+      );
+      expect(lessonCall).toBeDefined();
+      const [sql, values] = lessonCall!;
+      expect(sql).toMatch(/DELETE FROM cached_lesson/);
+      expect(sql).toMatch(/WHERE child_id=\? AND market=\?/);
+      expect(sql).toMatch(/lesson_id NOT IN/);
+      expect(values).toEqual(['C1', 'GB', 'LS1', 'LS2']);
+    });
+
+    it('issues a scoped DELETE NOT IN for cached_level_lessons by level_id', async () => {
+      await store.reconcileIds(scope, { modules: ['M1'], levels: ['LV1', 'LV2'], lessons: ['LS1'] });
+      const levelCall = (run.mock.calls as unknown as [string, unknown[]][]).find(
+        ([sql]) => sql.includes('cached_level_lessons'),
+      );
+      expect(levelCall).toBeDefined();
+      const [sql, values] = levelCall!;
+      expect(sql).toMatch(/DELETE FROM cached_level_lessons/);
+      expect(sql).toMatch(/level_id NOT IN/);
+      expect(values).toEqual(['C1', 'GB', 'LV1', 'LV2']);
+    });
+
+    it('issues a scoped DELETE NOT IN for cached_module_levels by module_id', async () => {
+      await store.reconcileIds(scope, { modules: ['M1', 'M2'], levels: ['LV1'], lessons: ['LS1'] });
+      const modCall = (run.mock.calls as unknown as [string, unknown[]][]).find(
+        ([sql]) => sql.includes('cached_module_levels'),
+      );
+      expect(modCall).toBeDefined();
+      const [sql, values] = modCall!;
+      expect(sql).toMatch(/DELETE FROM cached_module_levels/);
+      expect(sql).toMatch(/module_id NOT IN/);
+      expect(values).toEqual(['C1', 'GB', 'M1', 'M2']);
+    });
+
+    it('an empty lesson list deletes ALL lesson rows for the scope', async () => {
+      await store.reconcileIds(scope, { modules: ['M1'], levels: ['LV1'], lessons: [] });
+      const lessonCall = (run.mock.calls as unknown as [string, unknown[]][]).find(
+        ([sql]) => sql.includes('cached_lesson') && !sql.includes('cached_level_lessons'),
+      );
+      expect(lessonCall).toBeDefined();
+      const [sql, values] = lessonCall!;
+      // Should be a simple scoped DELETE with no NOT IN clause
+      expect(sql).toMatch(/DELETE FROM cached_lesson/);
+      expect(sql).toMatch(/WHERE child_id=\? AND market=\?/);
+      expect(sql).not.toMatch(/NOT IN/);
+      expect(values).toEqual(['C1', 'GB']);
+    });
+
+    it('no-ops when the DB is unavailable', async () => {
+      vi.mocked(isOfflineDbAvailable).mockReturnValueOnce(false);
+      await store.reconcileIds(scope, { modules: ['M1'], levels: ['LV1'], lessons: ['LS1'] });
+      expect(run).not.toHaveBeenCalled();
+    });
+
+    it('swallows DB errors', async () => {
+      run.mockRejectedValueOnce(new Error('disk'));
+      await expect(
+        store.reconcileIds(scope, { modules: ['M1'], levels: ['LV1'], lessons: ['LS1'] }),
+      ).resolves.toBeUndefined();
+    });
+  });
+
   describe('listAvailableOffline', () => {
     it('returns only fully-cached level ids and total fresh lesson count', async () => {
       // query 1: GROUP BY level_id counts

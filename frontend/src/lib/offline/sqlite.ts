@@ -5,9 +5,9 @@ import { isNativeApp } from '@/lib/platform';
 export const OFFLINE_MAX_AGE = 24 * 60 * 60 * 1000;
 
 const DB_NAME = 'investikid';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
-/** Schema v1. All content tables are scoped by (child_id, market). */
+/** Schema v2. All content tables are scoped by (child_id, market). */
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS cached_modules (
   child_id TEXT NOT NULL, market TEXT NOT NULL,
@@ -28,6 +28,10 @@ CREATE TABLE IF NOT EXISTS cached_lesson (
   child_id TEXT NOT NULL, market TEXT NOT NULL, lesson_id TEXT NOT NULL,
   level_id TEXT, payload_json TEXT NOT NULL, cached_at INTEGER NOT NULL,
   PRIMARY KEY (child_id, market, lesson_id)
+);
+CREATE TABLE IF NOT EXISTS sync_meta (
+  child_id TEXT NOT NULL, market TEXT NOT NULL, last_sync TEXT NOT NULL,
+  PRIMARY KEY (child_id, market)
 );
 `;
 

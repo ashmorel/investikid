@@ -218,6 +218,100 @@ export async function listDownloadedLevels(
   }
 }
 
+// --- sync_meta helpers ---
+
+/** Returns the stored ISO cursor for a scope, or null when absent / unavailable. */
+export async function getLastSync(scope: CacheScope): Promise<string | null> {
+  if (!isOfflineDbAvailable()) return null;
+  try {
+    const db = await getDb();
+    if (!db) return null;
+    const res = await db.query(
+      `SELECT last_sync FROM sync_meta WHERE child_id=? AND market=?`,
+      [scope.childId, scope.market],
+    );
+    const row = (res.values?.[0] ?? null) as { last_sync: string } | null;
+    return row?.last_sync ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Upserts the ISO cursor for a scope. */
+export async function setLastSync(scope: CacheScope, iso: string): Promise<void> {
+  if (!isOfflineDbAvailable()) return;
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await db.run(
+      `INSERT INTO sync_meta (child_id, market, last_sync) VALUES (?,?,?)
+       ON CONFLICT(child_id, market) DO UPDATE SET last_sync=excluded.last_sync`,
+      [scope.childId, scope.market, iso],
+    );
+  } catch {
+    /* best-effort; ignore */
+  }
+}
+
+/** Evicts stale rows from the three per-id cache tables for a scope.
+ *  Each id list is the COMPLETE current set from the server.
+ *  An empty list means "evict all of that type for this scope".
+ */
+export async function reconcileIds(
+  scope: CacheScope,
+  ids: { modules: string[]; levels: string[]; lessons: string[] },
+): Promise<void> {
+  if (!isOfflineDbAvailable()) return;
+  try {
+    const db = await getDb();
+    if (!db) return;
+
+    // cached_module_levels — keyed by module_id
+    if (ids.modules.length > 0) {
+      const placeholders = ids.modules.map(() => '?').join(',');
+      await db.run(
+        `DELETE FROM cached_module_levels WHERE child_id=? AND market=? AND module_id NOT IN (${placeholders})`,
+        [scope.childId, scope.market, ...ids.modules],
+      );
+    } else {
+      await db.run(
+        `DELETE FROM cached_module_levels WHERE child_id=? AND market=?`,
+        [scope.childId, scope.market],
+      );
+    }
+
+    // cached_level_lessons — keyed by level_id
+    if (ids.levels.length > 0) {
+      const placeholders = ids.levels.map(() => '?').join(',');
+      await db.run(
+        `DELETE FROM cached_level_lessons WHERE child_id=? AND market=? AND level_id NOT IN (${placeholders})`,
+        [scope.childId, scope.market, ...ids.levels],
+      );
+    } else {
+      await db.run(
+        `DELETE FROM cached_level_lessons WHERE child_id=? AND market=?`,
+        [scope.childId, scope.market],
+      );
+    }
+
+    // cached_lesson — keyed by lesson_id
+    if (ids.lessons.length > 0) {
+      const placeholders = ids.lessons.map(() => '?').join(',');
+      await db.run(
+        `DELETE FROM cached_lesson WHERE child_id=? AND market=? AND lesson_id NOT IN (${placeholders})`,
+        [scope.childId, scope.market, ...ids.lessons],
+      );
+    } else {
+      await db.run(
+        `DELETE FROM cached_lesson WHERE child_id=? AND market=?`,
+        [scope.childId, scope.market],
+      );
+    }
+  } catch {
+    /* best-effort; ignore */
+  }
+}
+
 export async function clearForChild(scope: CacheScope): Promise<void> {
   if (!isOfflineDbAvailable()) return;
   try {
