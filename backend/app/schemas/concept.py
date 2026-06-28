@@ -68,11 +68,21 @@ class ConceptOut(BaseModel):
 
 
 class TopicGroup(BaseModel):
-    """All concepts for a single topic, plus the per-topic unmapped lesson count."""
+    """All concepts for a single topic."""
 
     topic: str
-    unmapped_count: int
     concepts: list[ConceptOut]
+
+
+class ConceptsOverview(BaseModel):
+    """Top-level response for GET /admin/concepts.
+
+    ``unmapped_lessons`` is the global count of published-module lessons
+    whose ``concept_id`` is NULL (i.e. not yet tagged with any concept).
+    """
+
+    unmapped_lessons: int
+    groups: list[TopicGroup]
 
 
 class LessonConceptPatch(BaseModel):

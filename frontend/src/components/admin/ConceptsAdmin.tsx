@@ -37,7 +37,9 @@ const EMPTY_FORM: FormState = {
 
 export default function ConceptsAdmin() {
   const { t } = useTranslation('admin');
-  const { data: groups = [], isLoading } = useConcepts();
+  const { data: overview, isLoading } = useConcepts();
+  const groups = overview?.groups ?? [];
+  const unmappedLessons = overview?.unmapped_lessons ?? 0;
   const create = useCreateConcept();
   const patch = usePatchConcept();
 
@@ -110,6 +112,13 @@ export default function ConceptsAdmin() {
 
       {isLoading && <p className="text-sm text-muted-foreground">{t('concepts.loading')}</p>}
 
+      {/* Global unmapped lessons banner */}
+      {!isLoading && (
+        <p className="text-sm text-muted-foreground">
+          {t('concepts.unmappedTotal', { count: unmappedLessons })}
+        </p>
+      )}
+
       {/* Topic-grouped concept list */}
       {groups.map((group) => (
         <section key={group.topic} aria-labelledby={`topic-${group.topic}`}>
@@ -120,14 +129,6 @@ export default function ConceptsAdmin() {
             >
               {group.topic}
             </h3>
-            {group.unmapped_count > 0 && (
-              <span
-                className="rounded-full bg-warning-100 px-2 py-0.5 text-xs font-semibold text-warning-800"
-                aria-label={t('concepts.unmappedAriaLabel', { count: group.unmapped_count })}
-              >
-                {t('concepts.unmappedBadge', { count: group.unmapped_count })}
-              </span>
-            )}
           </div>
           {group.concepts.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('concepts.noConcepts')}</p>

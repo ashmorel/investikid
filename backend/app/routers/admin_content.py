@@ -36,6 +36,7 @@ from app.schemas.concept import (
     ConceptIn,
     ConceptOut,
     ConceptPatch,
+    ConceptsOverview,
     LessonConceptPatch,
     TopicGroup,
 )
@@ -430,18 +431,17 @@ async def _concept_lesson_count(session: AsyncSession, concept_id: uuid.UUID) ->
     return n or 0
 
 
-async def _unmapped_count_for_topic(session: AsyncSession, topic: str) -> int:
-    """Count published-module lessons in *topic* whose concept_id is NULL.
+async def _global_unmapped_lessons(session: AsyncSession) -> int:
+    """Count published-module lessons (across all topics) whose concept_id is NULL.
 
-    Matches the backfill scope (concept_backfill_service only resolves published
-    lessons) so the admin badge reflects what the backfill can actually clear.
+    This is the global figure shown in the admin header.  It matches the backfill
+    scope (concept_backfill_service only resolves published lessons).
     """
     n = await session.scalar(
         select(func.count())
         .select_from(Lesson)
         .join(Module, Lesson.module_id == Module.id)
         .where(
-            Module.topic == topic,
             Module.published.is_(True),
             Lesson.concept_id.is_(None),
         )
@@ -449,9 +449,9 @@ async def _unmapped_count_for_topic(session: AsyncSession, topic: str) -> int:
     return n or 0
 
 
-@router.get("/concepts", response_model=list[TopicGroup])
-async def list_concepts(session: AsyncSession = Depends(get_session)) -> list[TopicGroup]:
-    """Return concepts grouped by topic with per-concept lesson_count and per-topic unmapped_count."""
+@router.get("/concepts", response_model=ConceptsOverview)
+async def list_concepts(session: AsyncSession = Depends(get_session)) -> ConceptsOverview:
+    """Return concepts grouped by topic with per-concept lesson_count and a global unmapped_lessons count."""
     result = await session.scalars(
         select(Concept).order_by(Concept.topic, Concept.order_index, Concept.name)
     )
@@ -473,9 +473,10 @@ async def list_concepts(session: AsyncSession = Depends(get_session)) -> list[To
                 blurb=c.blurb, difficulty_tier=c.difficulty_tier,
                 order_index=c.order_index, lesson_count=lc,
             ))
-        unmapped = await _unmapped_count_for_topic(session, topic)
-        groups.append(TopicGroup(topic=topic, unmapped_count=unmapped, concepts=concept_outs))
-    return groups
+        groups.append(TopicGroup(topic=topic, concepts=concept_outs))
+
+    unmapped_lessons = await _global_unmapped_lessons(session)
+    return ConceptsOverview(unmapped_lessons=unmapped_lessons, groups=groups)
 
 
 @router.post("/concepts", response_model=ConceptOut, status_code=status.HTTP_201_CREATED)

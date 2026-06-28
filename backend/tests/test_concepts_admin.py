@@ -1,13 +1,15 @@
-"""Task 6 — Admin Concepts API TDD.
+"""Task 6 → A1.2 Task 2 — Admin Concepts API TDD.
 
 Covers:
 - Unauth → 401 on all concept admin endpoints.
-- Admin can list concepts grouped by topic (with lesson_count + unmapped_count).
+- Admin can list concepts: response has top-level unmapped_lessons (global) + groups list.
 - Admin can create a concept.
 - Admin can edit a concept (name / blurb / difficulty_tier / order_index / topic).
 - Admin can reassign a lesson's concept_id (and clear it).
 - lesson_count reflects linked lessons.
-- unmapped_count reflects published lessons in a topic with concept_id IS NULL.
+- unmapped_lessons = count of published lessons (across ALL topics) with concept_id IS NULL.
+- unmapped_lessons excludes unpublished-module lessons.
+- unmapped_lessons excludes tagged (concept_id IS NOT NULL) lessons.
 """
 import uuid
 
@@ -158,7 +160,8 @@ async def test_lesson_count_reflects_linked_lessons(admin_client, db_session):
 
     r = await admin_client.get("/admin/concepts")
     assert r.status_code == 200
-    groups = r.json()
+    body = r.json()
+    groups = body["groups"]
     savings_group = next((g for g in groups if g["topic"] == "savings"), None)
     assert savings_group is not None
     matched = [c for c in savings_group["concepts"] if c["id"] == str(concept.id)]
@@ -167,30 +170,66 @@ async def test_lesson_count_reflects_linked_lessons(admin_client, db_session):
 
 
 # ---------------------------------------------------------------------------
-# unmapped_count
+# unmapped_lessons (global, top-level)
 # ---------------------------------------------------------------------------
 
-async def test_unmapped_count_reflects_null_concept_lessons(admin_client, db_session):
-    # Create a module in "budgeting" topic with 3 lessons, 2 unmapped (NULL concept_id)
-    # and 1 mapped.
+async def test_list_concepts_response_shape(admin_client):
+    """GET /admin/concepts returns {unmapped_lessons: int, groups: [...]}."""
+    r = await admin_client.get("/admin/concepts")
+    assert r.status_code == 200
+    body = r.json()
+    assert "unmapped_lessons" in body, "top-level unmapped_lessons key missing"
+    assert "groups" in body, "top-level groups key missing"
+    assert isinstance(body["unmapped_lessons"], int)
+    assert isinstance(body["groups"], list)
+    # TopicGroup must NOT have unmapped_count
+    for g in body["groups"]:
+        assert "unmapped_count" not in g, "per-topic unmapped_count must be removed"
+
+
+async def test_unmapped_lessons_counts_published_null_concept_globally(admin_client, db_session):
+    """unmapped_lessons reflects published lessons with NULL concept_id across all topics."""
+    # Published module with 2 unmapped + 1 tagged lessons
     concept = _concept(slug=f"budg-{uuid.uuid4().hex[:6]}", topic="budgeting")
     db_session.add(concept)
-    mod = await _module(db_session, topic="budgeting")
+    pub_mod = Module(
+        topic="budgeting",
+        title=f"PubBudg-{uuid.uuid4().hex[:6]}",
+        country_codes=[], is_premium=False, order_index=0, icon="📚",
+        published=True,
+    )
+    db_session.add(pub_mod)
     await db_session.flush()
-    # 2 unmapped lessons
-    await _lesson(db_session, mod.id, concept_id=None)
-    await _lesson(db_session, mod.id, concept_id=None)
-    # 1 mapped lesson
-    await _lesson(db_session, mod.id, concept_id=concept.id)
+    await _lesson(db_session, pub_mod.id, concept_id=None)
+    await _lesson(db_session, pub_mod.id, concept_id=None)
+    await _lesson(db_session, pub_mod.id, concept_id=concept.id)
+
+    # Unpublished module with 1 unmapped lesson — must NOT be counted
+    draft_mod = Module(
+        topic="budgeting",
+        title=f"DraftBudg-{uuid.uuid4().hex[:6]}",
+        country_codes=[], is_premium=False, order_index=1, icon="📚",
+        published=False,
+    )
+    db_session.add(draft_mod)
+    await db_session.flush()
+    await _lesson(db_session, draft_mod.id, concept_id=None)
     await db_session.commit()
+
+    # Get the actual published+null count from the DB for a precise assertion
+    published_null = await db_session.scalar(
+        sa_select(func.count())
+        .select_from(Lesson)
+        .join(Module, Lesson.module_id == Module.id)
+        .where(Module.published.is_(True), Lesson.concept_id.is_(None))
+    )
 
     r = await admin_client.get("/admin/concepts")
     assert r.status_code == 200
-    groups = r.json()
-    budg_group = next((g for g in groups if g["topic"] == "budgeting"), None)
-    assert budg_group is not None
-    # unmapped_count should be >= 2 (may include other tests' data)
-    assert budg_group["unmapped_count"] >= 2
+    body = r.json()
+    assert body["unmapped_lessons"] == published_null, (
+        f"unmapped_lessons {body['unmapped_lessons']} != DB count {published_null}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -302,21 +341,17 @@ async def test_patch_concept_omitting_topic_accepted(admin_client, db_session):
 
 
 # ---------------------------------------------------------------------------
-# Finding 2 — unmapped_count only counts published-module lessons
+# A1.2 Task 2 — unmapped_lessons excludes unpublished-module lessons (global)
 # ---------------------------------------------------------------------------
 
-async def test_unmapped_count_excludes_unpublished_module_lessons(admin_client, db_session):
-    """An unpublished module's untagged lessons must NOT be included in
-    unmapped_count, because the backfill only resolves published lessons.
-    The admin badge should match what the backfill can actually clear."""
-    # Use "entrepreneurship" — a valid _TOPIC_ORDER topic unlikely to conflict
-    # with other tests' data (most tests use stocks/savings/budgeting/etc.).
-    topic = "entrepreneurship"
-
-    # Published module with 1 unmapped lesson — should be counted.
+async def test_unmapped_lessons_excludes_unpublished_module_lessons(admin_client, db_session):
+    """Unpublished modules' untagged lessons must NOT be included in the global
+    unmapped_lessons figure — it must match the DB count of published-only null-concept
+    lessons across ALL topics."""
+    # Published module with 1 unmapped lesson
     pub_mod = Module(
-        topic=topic,
-        title=f"Pub-{uuid.uuid4().hex[:6]}",
+        topic="entrepreneurship",
+        title=f"EntPub-{uuid.uuid4().hex[:6]}",
         country_codes=[], is_premium=False, order_index=0, icon="📚",
         published=True,
     )
@@ -331,8 +366,8 @@ async def test_unmapped_count_excludes_unpublished_module_lessons(admin_client, 
 
     # Unpublished module with 1 unmapped lesson — must NOT be counted.
     draft_mod = Module(
-        topic=topic,
-        title=f"Draft-{uuid.uuid4().hex[:6]}",
+        topic="entrepreneurship",
+        title=f"EntDraft-{uuid.uuid4().hex[:6]}",
         country_codes=[], is_premium=False, order_index=1, icon="📚",
         published=False,
     )
@@ -346,37 +381,25 @@ async def test_unmapped_count_excludes_unpublished_module_lessons(admin_client, 
     db_session.add(draft_lesson)
     await db_session.commit()
 
-    r = await admin_client.get("/admin/concepts")
-    assert r.status_code == 200
-    groups = r.json()
-    ent_group = next((g for g in groups if g["topic"] == topic), None)
-    assert ent_group is not None, f"{topic} topic group missing from response"
-
-    # The unmapped_count must include the published lesson…
-    assert ent_group["unmapped_count"] >= 1, "published unmapped lesson not counted"
-
-    # …and must match the DB count of published-only unmapped lessons.
-    # If drafts were included, total_raw would be higher — the assertion below
-    # catches a regression where the published filter is removed.
-    total_raw = await db_session.scalar(
-        sa_select(func.count())
-        .select_from(Lesson)
-        .join(Module, Lesson.module_id == Module.id)
-        .where(Module.topic == topic, Lesson.concept_id.is_(None))
-    )
+    # Compute expected from DB (global, published only)
     published_raw = await db_session.scalar(
         sa_select(func.count())
         .select_from(Lesson)
         .join(Module, Lesson.module_id == Module.id)
-        .where(
-            Module.topic == topic,
-            Module.published.is_(True),
-            Lesson.concept_id.is_(None),
-        )
+        .where(Module.published.is_(True), Lesson.concept_id.is_(None))
     )
-    # API must match the published-only count, not the total-including-drafts count.
-    assert ent_group["unmapped_count"] == published_raw, (
-        f"unmapped_count {ent_group['unmapped_count']} != published_raw {published_raw}; "
+    total_raw = await db_session.scalar(
+        sa_select(func.count())
+        .select_from(Lesson)
+        .join(Module, Lesson.module_id == Module.id)
+        .where(Lesson.concept_id.is_(None))
+    )
+
+    r = await admin_client.get("/admin/concepts")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["unmapped_lessons"] == published_raw, (
+        f"unmapped_lessons {body['unmapped_lessons']} != published_raw {published_raw}; "
         f"total_including_drafts={total_raw}"
     )
     assert total_raw > published_raw, "test setup error: draft lesson should inflate total"

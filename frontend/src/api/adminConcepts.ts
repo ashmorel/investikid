@@ -16,8 +16,12 @@ export interface ConceptOut {
 
 export interface TopicGroup {
   topic: string;
-  unmapped_count: number;
   concepts: ConceptOut[];
+}
+
+export interface ConceptsOverview {
+  unmapped_lessons: number;
+  groups: TopicGroup[];
 }
 
 export interface ConceptIn {
@@ -47,7 +51,7 @@ const CONCEPTS_KEY = ['admin', 'concepts'];
 export function useConcepts() {
   return useQuery({
     queryKey: CONCEPTS_KEY,
-    queryFn: () => apiFetch<TopicGroup[]>('/admin/concepts') as Promise<TopicGroup[]>,
+    queryFn: () => apiFetch<ConceptsOverview>('/admin/concepts') as Promise<ConceptsOverview>,
   });
 }
 

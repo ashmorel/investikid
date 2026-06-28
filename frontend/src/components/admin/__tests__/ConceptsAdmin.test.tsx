@@ -8,30 +8,31 @@ import ConceptsAdmin from '../ConceptsAdmin';
 const createMut = vi.fn().mockResolvedValue({});
 const patchMut = vi.fn().mockResolvedValue({});
 
-const mockGroups = [
-  {
-    topic: 'stocks',
-    unmapped_count: 3,
-    concepts: [
-      {
-        id: 'c1', topic: 'stocks', slug: 'stocks-basics', name: 'Stocks Basics',
-        blurb: 'Intro', difficulty_tier: 1, order_index: 0, lesson_count: 5,
-      },
-      {
-        id: 'c2', topic: 'stocks', slug: 'dividends', name: 'Dividends',
-        blurb: null, difficulty_tier: 2, order_index: 1, lesson_count: 2,
-      },
-    ],
-  },
-  {
-    topic: 'savings',
-    unmapped_count: 0,
-    concepts: [],
-  },
-];
+const mockOverview = {
+  unmapped_lessons: 7,
+  groups: [
+    {
+      topic: 'stocks',
+      concepts: [
+        {
+          id: 'c1', topic: 'stocks', slug: 'stocks-basics', name: 'Stocks Basics',
+          blurb: 'Intro', difficulty_tier: 1, order_index: 0, lesson_count: 5,
+        },
+        {
+          id: 'c2', topic: 'stocks', slug: 'dividends', name: 'Dividends',
+          blurb: null, difficulty_tier: 2, order_index: 1, lesson_count: 2,
+        },
+      ],
+    },
+    {
+      topic: 'savings',
+      concepts: [],
+    },
+  ],
+};
 
 vi.mock('@/api/adminConcepts', () => ({
-  useConcepts: () => ({ data: mockGroups, isLoading: false }),
+  useConcepts: () => ({ data: mockOverview, isLoading: false }),
   useCreateConcept: () => ({ mutateAsync: createMut, isPending: false }),
   usePatchConcept: () => ({ mutateAsync: patchMut, isPending: false }),
 }));
@@ -64,17 +65,17 @@ describe('ConceptsAdmin', () => {
     expect(screen.getByText('Dividends')).toBeInTheDocument();
   });
 
-  it('shows unmapped count badge for topics with unmapped lessons', () => {
+  it('renders the global unmapped lessons figure once', () => {
     render(<ConceptsAdmin />);
-    // stocks group has unmapped_count: 3
-    expect(screen.getByText('concepts.unmappedBadge:3')).toBeInTheDocument();
+    // unmapped_lessons: 7 → t('concepts.unmappedTotal', { count: 7 }) → 'concepts.unmappedTotal:7'
+    expect(screen.getByText('concepts.unmappedTotal:7')).toBeInTheDocument();
   });
 
-  it('does not show unmapped badge when count is 0', () => {
+  it('does not render any per-topic unmapped badge', () => {
     render(<ConceptsAdmin />);
-    // savings group has unmapped_count: 0 — badge should be absent
-    const badges = screen.queryAllByText(/concepts\.unmappedBadge:0/);
-    expect(badges).toHaveLength(0);
+    // The old per-topic badge keys must no longer appear
+    expect(screen.queryByText(/concepts\.unmappedBadge/)).toBeNull();
+    expect(screen.queryByText(/concepts\.unmappedAriaLabel/)).toBeNull();
   });
 
   it('switches form to edit mode on Edit click', () => {
