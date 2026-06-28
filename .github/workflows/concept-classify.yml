@@ -39,16 +39,23 @@ jobs:
           # so the drain strictly advances and re-runs never re-bill the LLM.
           # Loop bounded batches until the backend reports nothing left to do.
           # Small per-request batches: each request does N synchronous LLM
-          # calls, so keep N low enough to finish well under the gateway
-          # timeout (~60s). ~15 lessons/request ≈ 20-30s.
+          # calls, so keep N low enough to finish under the gateway timeout
+          # (~60s). ~10 lessons/request ≈ 15-20s. The loop is RESILIENT: a
+          # transient 502/timeout on one batch is logged and skipped (the
+          # one-attempt marker keeps the drain idempotent), never aborting.
           total_tagged=0
-          for i in $(seq 1 120); do
-            resp=$(curl -sS --fail -X POST --retry 2 --retry-delay 10 \
-              --connect-timeout 15 --max-time 90 \
+          fails=0
+          for i in $(seq 1 220); do
+            resp=$(curl -sS -X POST --connect-timeout 15 --max-time 75 \
               -H "X-Cron-Secret: $CRON_SECRET" \
-              "$BACKEND_URL/internal/concepts/classify?limit=15")
+              "$BACKEND_URL/internal/concepts/classify?limit=10") \
+              || { echo "batch $i: request failed, continuing"; fails=$((fails+1)); sleep 5; continue; }
+            seen=$(echo "$resp" | jq -r '.lessons_seen // empty' 2>/dev/null || true)
+            if [ -z "$seen" ]; then
+              echo "batch $i: unparseable response, continuing: ${resp:0:120}"
+              fails=$((fails+1)); sleep 5; continue
+            fi
             echo "batch $i: $resp"
-            seen=$(echo "$resp" | jq -r '.lessons_seen // 0')
             tagged=$(echo "$resp" | jq -r '.lessons_tagged // 0')
             total_tagged=$((total_tagged + tagged))
             if [ "$seen" -eq 0 ]; then
@@ -57,4 +64,5 @@ jobs:
             fi
             sleep 2
           done
+          echo "::notice::Batches with transient failures (skipped, retried next pass): $fails"
           echo "::notice::Concept classification finished. Total newly tagged this run: $total_tagged"
