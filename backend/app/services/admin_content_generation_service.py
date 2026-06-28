@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit import AuditLog
+from app.models.concept import Concept
 from app.models.content import Lesson, Level, Module
 from app.models.lesson_draft import LessonDraft
 from app.schemas.admin import validate_lesson_content_json
@@ -24,9 +25,15 @@ _TIER_DEPTH = {
 }
 
 _SCHEMA_HINT = {
-    "card": '{"title": str, "body": str}',
-    "quiz": '{"question": str, "choices": [str, str, ...(2-5)], "answer_index": int, "explanation": str}',
-    "scenario": '{"prompt": str, "choices": [{"label": str, "outcome": str}, ...(>=2)], "correct_index": int}',
+    "card": '{"title": str, "body": str, "concept_slug": str}',
+    "quiz": (
+        '{"question": str, "choices": [str, str, ...(2-5)], '
+        '"answer_index": int, "explanation": str, "concept_slug": str}'
+    ),
+    "scenario": (
+        '{"prompt": str, "choices": [{"label": str, "outcome": str}, ...(>=2)], '
+        '"correct_index": int, "concept_slug": str}'
+    ),
 }
 
 # Lessons generated per level, by complexity tier (1 foundational … 3 advanced).
@@ -91,8 +98,15 @@ def _system_prompt(
     source_text: str | None = None,
     complexity_tier: int | None = None,
     avoid: list[str] | None = None,
+    concept_slugs: list[str] | None = None,
 ) -> str:
     age = f"ages {module.min_age}-{module.max_age}" if module.min_age else "children 8-16"
+    slug_hint = ""
+    if concept_slugs:
+        slug_hint = (
+            f" For 'concept_slug', choose the single most relevant slug from this "
+            f"taxonomy list (use exact spelling): {concept_slugs}."
+        )
     prompt = (
         f"You write a single financial-education {lesson_type} lesson for {age} on the topic "
         f"'{module.topic}' (module '{module.title}', '{level.title}'). Keep it simple, encouraging, "
@@ -100,6 +114,7 @@ def _system_prompt(
         f"Use a fresh, concrete everyday scenario with a varied character name (rotate genders, "
         f"backgrounds and situations — do NOT default to one go-to name or example). "
         f"Respond with ONLY a JSON object matching exactly: {_SCHEMA_HINT[lesson_type]}"
+        f"{slug_hint}"
         f"{_CONCISION_RULES}"
     )
     if avoid:
@@ -147,13 +162,25 @@ def _concat_text(parsed: dict) -> str:
     return "\n".join(parts)
 
 
+async def _fetch_concept_slugs(session: AsyncSession, topic: str) -> list[str]:
+    """Return all concept slugs for the given topic, ordered by order_index."""
+    rows = (
+        await session.scalars(
+            select(Concept.slug).where(Concept.topic == topic).order_by(Concept.order_index)
+        )
+    ).all()
+    return list(rows)
+
+
 @llm_usage.surface("admin_content_gen")
 async def _generate_one(session, *, level, module, concept: str, lesson_type: str,
                         brief: dict | None = None, source_text: str | None = None,
-                        complexity_tier: int | None = None, avoid: list[str] | None = None):
+                        complexity_tier: int | None = None, avoid: list[str] | None = None,
+                        concept_slugs: list[str] | None = None):
     client = get_llm_client("authoring")
     system = _system_prompt(lesson_type, module, level, brief=brief, source_text=source_text,
-                            complexity_tier=complexity_tier, avoid=avoid)
+                            complexity_tier=complexity_tier, avoid=avoid,
+                            concept_slugs=concept_slugs)
     user = f"Create a {lesson_type} lesson teaching: {concept}."
     parsed = None
     for attempt in range(2):
@@ -170,11 +197,19 @@ async def _generate_one(session, *, level, module, concept: str, lesson_type: st
             parsed = None
             if attempt == 1:
                 return None
+    # Extract the concept_slug the LLM emitted (may be absent or invalid — stored
+    # as-is; resolved to concept_id at approval time via the concept mapper).
+    emitted_slug = parsed.pop("concept_slug", None)
+    if isinstance(emitted_slug, str):
+        emitted_slug = emitted_slug.strip() or None
+    else:
+        emitted_slug = None
     mod = await moderate_output(_concat_text(parsed), surface="lesson")
     draft = LessonDraft(
         level_id=level.id, type=lesson_type, content_json=parsed, concept=concept,
         model_used=get_model_name("authoring"),
         moderation_safe=mod.safe, moderation_category=mod.category,
+        concept_slug=emitted_slug,
     )
     session.add(draft)
     if not mod.safe:
@@ -247,6 +282,9 @@ async def generate_native_level_lessons(session: AsyncSession, level, *, brief, 
     else:
         pairs = [(concepts[(n // n_types) % len(concepts)], type_cycle[n % n_types])
                  for n in range(target_count)]
+    # Fetch concept slugs for this topic so the generator can guide the LLM to
+    # emit a taxonomy-valid slug (resolved to concept_id at approval time).
+    slugs_for_topic = await _fetch_concept_slugs(session, module.topic)
     # Sibling-aware: tell each lesson which scenarios/characters are already used in
     # this level so it picks a distinctly different one (kills the "every question
     # is the same Maya-walks-the-dog" repetition).
@@ -257,6 +295,7 @@ async def generate_native_level_lessons(session: AsyncSession, level, *, brief, 
             lesson_type=lesson_type,
             brief=brief.brief_json, source_text=None, complexity_tier=complexity_tier,
             avoid=avoid[-12:],
+            concept_slugs=slugs_for_topic or None,
         )
         if draft is None:
             result.skipped += 1

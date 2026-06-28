@@ -21,6 +21,8 @@ class LessonDraft(Base):
     model_used: Mapped[str] = mapped_column(String(100), nullable=False)
     moderation_safe: Mapped[bool] = mapped_column(Boolean, nullable=False)
     moderation_category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # Slug emitted by the LLM during generation; resolved to concept_id at approval time.
+    concept_slug: Mapped[str | None] = mapped_column(String(60), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
