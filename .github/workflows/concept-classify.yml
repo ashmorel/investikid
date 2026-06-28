@@ -1,6 +1,11 @@
 name: Concept taxonomy classify (LLM backfill, one-off)
 on:
   workflow_dispatch:
+    inputs:
+      reset:
+        description: "Reset classification markers first (retry all still-untagged lessons)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -11,6 +16,7 @@ jobs:
     timeout-minutes: 30
     env:
       BACKEND_URL: ${{ vars.BACKEND_URL || 'https://investikid.up.railway.app' }}
+      RESET: ${{ inputs.reset }}
     steps:
       - name: Drain concept classification
         env:
@@ -19,6 +25,14 @@ jobs:
           set -uo pipefail
           if [ -z "${CRON_SECRET:-}" ]; then
             echo "::error::CRON_SECRET is empty (add it under Actions → Secrets)."; exit 1
+          fi
+          if [ "${RESET:-false}" = "true" ]; then
+            echo "Resetting classification markers for still-untagged lessons…"
+            reset_resp=$(curl -sS --fail -X POST --retry 4 --retry-delay 5 \
+              --connect-timeout 15 --max-time 120 \
+              -H "X-Cron-Secret: $CRON_SECRET" \
+              "$BACKEND_URL/internal/concepts/classify/reset")
+            echo "reset: $reset_resp"
           fi
           # LLM-classify untagged published lessons into the concept taxonomy.
           # Each lesson is attempted at most once (concept_classified_at marker),
