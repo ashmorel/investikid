@@ -7,6 +7,7 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import func, select
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -39,16 +40,24 @@ REVISE_XP_DAILY_CAP = 25
 def _concept_of(lesson: Lesson) -> str:
     """Return the concept name for a lesson.
 
-    If the lesson has a taxonomy concept linked (concept_id is set and the
-    ``concept`` relationship is loaded), the canonical name from the Concept
-    table is returned.  Otherwise the legacy free-text derivation is used,
-    keeping behaviour byte-identical for un-tagged lessons.
+    If the lesson has a taxonomy concept linked (concept_id is set) AND the
+    ``concept`` relationship is already in memory (i.e. was eagerly loaded),
+    the canonical name from the Concept table is returned.  Otherwise the
+    legacy free-text derivation is used, keeping behaviour byte-identical for
+    un-tagged lessons.
 
-    Callers MUST ensure the ``concept`` relationship is eagerly loaded before
-    calling this function (selectin/joined eager load on the query that fetches
-    the lesson) to avoid an async lazy-load error on a detached instance.
+    The load-state check uses SQLAlchemy's ``inspect(lesson).unloaded`` API so
+    the ``concept`` attribute is NEVER accessed when it is not already in
+    memory.  This prevents an async lazy-load (``MissingGreenlet``) if a
+    future caller fetches the lesson without an eager load option.  The two
+    existing call sites still use ``selectinload(Lesson.concept)`` so their
+    behaviour is unchanged.
     """
-    if lesson.concept_id is not None and lesson.concept is not None:
+    if (
+        lesson.concept_id is not None
+        and "concept" not in sa_inspect(lesson).unloaded
+        and lesson.concept is not None
+    ):
         return lesson.concept.name
     c = lesson.content_json or {}
     return c.get("question") or c.get("title") or c.get("prompt") or "general"
@@ -332,6 +341,8 @@ async def record_answer(
             await session.flush()
         elif not correct:
             wc.resolved = False  # a missed refresher becomes an active weakness
+            if lesson.concept_id is not None:
+                wc.concept_id = lesson.concept_id  # backfill FK on rows created before tagging
         await record_review(session, user.id, wc.id, correct=correct)
 
     xp_awarded = 0
