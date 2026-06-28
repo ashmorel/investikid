@@ -1,7 +1,9 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import select as sa_select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_session
 from app.core.rate_limit import limiter
@@ -31,6 +33,7 @@ from app.services.home_greeting_service import generate_home_greeting
 from app.services.llm_client import LLMError
 from app.services.premium_config import premium_required_error
 from app.services.recommendation_service import get_recommendations
+from app.services.revise_service import _concept_of
 from app.services.skill_profile_service import get_mastery_profile
 from app.services.spaced_repetition_service import record_review
 from app.services.tutor_service import TutorInputTooLong, TutorLimitReached, chat
@@ -60,15 +63,22 @@ async def practice_quiz(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    lesson = await session.get(Lesson, lesson_id)
+    # Eager-load the concept relationship so _concept_of can use the taxonomy
+    # name for tagged lessons without triggering an async lazy-load.
+    row = await session.scalar(
+        sa_select(Lesson)
+        .where(Lesson.id == lesson_id)
+        .options(selectinload(Lesson.concept))
+    )
+    lesson = row
     if not lesson:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
 
     module = await get_accessible_module(session, lesson.module_id, current_user)
 
-    # Derive concept from lesson title
-    content = lesson.content_json or {}
-    concept = content.get("question") or content.get("title") or content.get("prompt") or "general"
+    # Derive concept using the same logic as the revise path so tagged lessons
+    # produce a consistent concept string across both flows.
+    concept = _concept_of(lesson)
 
     result = await generate_practice_quiz(
         session,
@@ -84,8 +94,6 @@ async def practice_quiz(
     # If wrong_answer_index is provided, the user answered wrong previously
     if payload.wrong_answer_index is not None:
         # Find or create a weak concept for this topic+concept
-        from sqlalchemy import select as sa_select
-
         from app.models.skill_profile import WeakConcept
         weak = await session.scalar(
             sa_select(WeakConcept).where(

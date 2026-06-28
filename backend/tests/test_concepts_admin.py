@@ -12,6 +12,8 @@ Covers:
 import uuid
 
 import pytest
+from sqlalchemy import func
+from sqlalchemy import select as sa_select
 
 from app.models.concept import Concept
 from app.models.content import Lesson, Module
@@ -297,3 +299,84 @@ async def test_patch_concept_omitting_topic_accepted(admin_client, db_session):
     })
     assert r.status_code == 200, r.text
     assert r.json()["name"] == "Renamed Without Topic Change"
+
+
+# ---------------------------------------------------------------------------
+# Finding 2 — unmapped_count only counts published-module lessons
+# ---------------------------------------------------------------------------
+
+async def test_unmapped_count_excludes_unpublished_module_lessons(admin_client, db_session):
+    """An unpublished module's untagged lessons must NOT be included in
+    unmapped_count, because the backfill only resolves published lessons.
+    The admin badge should match what the backfill can actually clear."""
+    # Use "entrepreneurship" — a valid _TOPIC_ORDER topic unlikely to conflict
+    # with other tests' data (most tests use stocks/savings/budgeting/etc.).
+    topic = "entrepreneurship"
+
+    # Published module with 1 unmapped lesson — should be counted.
+    pub_mod = Module(
+        topic=topic,
+        title=f"Pub-{uuid.uuid4().hex[:6]}",
+        country_codes=[], is_premium=False, order_index=0, icon="📚",
+        published=True,
+    )
+    db_session.add(pub_mod)
+    await db_session.flush()
+    pub_lesson = Lesson(
+        module_id=pub_mod.id, type="card",
+        content_json={"title": "T", "body": "B"},
+        xp_reward=10, order_index=0, concept_id=None,
+    )
+    db_session.add(pub_lesson)
+
+    # Unpublished module with 1 unmapped lesson — must NOT be counted.
+    draft_mod = Module(
+        topic=topic,
+        title=f"Draft-{uuid.uuid4().hex[:6]}",
+        country_codes=[], is_premium=False, order_index=1, icon="📚",
+        published=False,
+    )
+    db_session.add(draft_mod)
+    await db_session.flush()
+    draft_lesson = Lesson(
+        module_id=draft_mod.id, type="card",
+        content_json={"title": "T", "body": "B"},
+        xp_reward=10, order_index=0, concept_id=None,
+    )
+    db_session.add(draft_lesson)
+    await db_session.commit()
+
+    r = await admin_client.get("/admin/concepts")
+    assert r.status_code == 200
+    groups = r.json()
+    ent_group = next((g for g in groups if g["topic"] == topic), None)
+    assert ent_group is not None, f"{topic} topic group missing from response"
+
+    # The unmapped_count must include the published lesson…
+    assert ent_group["unmapped_count"] >= 1, "published unmapped lesson not counted"
+
+    # …and must match the DB count of published-only unmapped lessons.
+    # If drafts were included, total_raw would be higher — the assertion below
+    # catches a regression where the published filter is removed.
+    total_raw = await db_session.scalar(
+        sa_select(func.count())
+        .select_from(Lesson)
+        .join(Module, Lesson.module_id == Module.id)
+        .where(Module.topic == topic, Lesson.concept_id.is_(None))
+    )
+    published_raw = await db_session.scalar(
+        sa_select(func.count())
+        .select_from(Lesson)
+        .join(Module, Lesson.module_id == Module.id)
+        .where(
+            Module.topic == topic,
+            Module.published.is_(True),
+            Lesson.concept_id.is_(None),
+        )
+    )
+    # API must match the published-only count, not the total-including-drafts count.
+    assert ent_group["unmapped_count"] == published_raw, (
+        f"unmapped_count {ent_group['unmapped_count']} != published_raw {published_raw}; "
+        f"total_including_drafts={total_raw}"
+    )
+    assert total_raw > published_raw, "test setup error: draft lesson should inflate total"

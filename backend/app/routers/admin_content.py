@@ -431,12 +431,20 @@ async def _concept_lesson_count(session: AsyncSession, concept_id: uuid.UUID) ->
 
 
 async def _unmapped_count_for_topic(session: AsyncSession, topic: str) -> int:
-    """Count lessons whose module belongs to *topic* and whose concept_id is NULL."""
+    """Count published-module lessons in *topic* whose concept_id is NULL.
+
+    Matches the backfill scope (concept_backfill_service only resolves published
+    lessons) so the admin badge reflects what the backfill can actually clear.
+    """
     n = await session.scalar(
         select(func.count())
         .select_from(Lesson)
         .join(Module, Lesson.module_id == Module.id)
-        .where(Module.topic == topic, Lesson.concept_id.is_(None))
+        .where(
+            Module.topic == topic,
+            Module.published.is_(True),
+            Lesson.concept_id.is_(None),
+        )
     )
     return n or 0
 

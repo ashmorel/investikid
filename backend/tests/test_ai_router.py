@@ -3,10 +3,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
+from sqlalchemy.orm import selectinload
 
 from app.core.security import hash_password
+from app.models.concept import Concept
 from app.models.content import Lesson, Module
 from app.models.user import User, UserProgress
+from app.services.revise_service import _concept_of
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -152,3 +155,85 @@ async def test_practice_and_tutor_reject_unpublished_lesson(auth_client, db_sess
         "/tutor/chat", json={"lesson_id": str(staged_quiz.id), "message": "hi"}
     )
     assert r2.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Finding 1 — concept derivation parity between practice path and revise path
+# ---------------------------------------------------------------------------
+
+async def test_concept_of_tagged_lesson_returns_concept_name(db_session):
+    """For a lesson with a taxonomy concept linked, _concept_of returns the
+    Concept.name — matching what the revise path produces when loaded with
+    selectinload(Lesson.concept)."""
+    from sqlalchemy import select
+
+    concept = Concept(
+        topic="stocks",
+        slug=f"parity-tagged-{__import__('uuid').uuid4().hex[:8]}",
+        name="Concept Parity Name",
+        blurb="test",
+        difficulty_tier=1,
+        order_index=0,
+    )
+    db_session.add(concept)
+    await db_session.flush()
+
+    mod = Module(
+        topic="stocks", title="Parity Mod", country_codes=[],
+        is_premium=False, order_index=99, icon="📈", published=True,
+    )
+    db_session.add(mod)
+    await db_session.flush()
+
+    lesson = Lesson(
+        module_id=mod.id, type="quiz", xp_reward=10, order_index=0,
+        content_json={"question": "What is a stock?"},
+        concept_id=concept.id,
+    )
+    db_session.add(lesson)
+    await db_session.commit()
+
+    # Reload with selectinload so the relationship is in memory (as both the
+    # practice path and revise path now do).
+    loaded = await db_session.scalar(
+        select(Lesson)
+        .where(Lesson.id == lesson.id)
+        .options(selectinload(Lesson.concept))
+    )
+    assert loaded is not None
+
+    # Both paths must agree: the concept name, NOT the content_json question.
+    result = _concept_of(loaded)
+    assert result == "Concept Parity Name"
+
+
+async def test_concept_of_untagged_lesson_returns_legacy_text(db_session):
+    """For a lesson with no taxonomy concept, _concept_of returns the legacy
+    content_json derivation — same as what the old practice path produced."""
+    mod = Module(
+        topic="stocks", title="Legacy Parity Mod", country_codes=[],
+        is_premium=False, order_index=98, icon="📈", published=True,
+    )
+    db_session.add(mod)
+    await db_session.flush()
+
+    lesson = Lesson(
+        module_id=mod.id, type="quiz", xp_reward=10, order_index=0,
+        content_json={"question": "Legacy question text?"},
+        concept_id=None,
+    )
+    db_session.add(lesson)
+    await db_session.commit()
+
+    # Even with selectinload, concept is None for an untagged lesson.
+    from sqlalchemy import select
+    loaded = await db_session.scalar(
+        select(Lesson)
+        .where(Lesson.id == lesson.id)
+        .options(selectinload(Lesson.concept))
+    )
+    assert loaded is not None
+
+    result = _concept_of(loaded)
+    # Must match the legacy derivation: question field takes priority.
+    assert result == "Legacy question text?"
