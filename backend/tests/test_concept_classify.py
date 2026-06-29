@@ -432,3 +432,97 @@ async def test_classify_endpoint_csrf_exempt_returns_not_403(client, monkeypatch
         f"did you forget to add {_CLASSIFY_PATH!r} to _DEFAULT_EXEMPT_PATHS in core/csrf.py?"
     )
     assert r.status_code in (401, 503)
+
+
+# ── tier param tests ───────────────────────────────────────────────────────────
+
+
+async def test_service_default_tier_is_lite(db_session):
+    """classify_untagged_lessons with no tier= arg calls get_llm_client('lite')."""
+    await _seed(db_session)
+    module = await _make_module(db_session, topic="savings")
+    await _make_lesson(db_session, module=module, question="Default tier lesson?")
+
+    mock_client = _mock_llm("compound-interest")
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ) as mock_get:
+        await classify_untagged_lessons(db_session, limit=10)
+
+    mock_get.assert_called_once_with("lite")
+
+
+async def test_service_explicit_premium_tier(db_session):
+    """classify_untagged_lessons(tier='premium') calls get_llm_client('premium')."""
+    await _seed(db_session)
+    module = await _make_module(db_session, topic="savings")
+    await _make_lesson(db_session, module=module, question="Premium tier lesson?")
+
+    mock_client = _mock_llm("compound-interest")
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ) as mock_get:
+        await classify_untagged_lessons(db_session, limit=10, tier="premium")
+
+    mock_get.assert_called_once_with("premium")
+
+
+async def test_endpoint_tier_premium_calls_service_with_premium(client, db_session, monkeypatch):
+    """?tier=premium passes tier='premium' down to the service."""
+    await _seed(db_session)
+    import app.routers.internal as internal
+    monkeypatch.setattr(internal.settings, "cron_secret", "s3cr3t")
+
+    mock_client = _mock_llm("compound-interest")
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ) as mock_get:
+        r = await client.post(
+            _CLASSIFY_PATH,
+            params={"tier": "premium"},
+            headers={"X-Cron-Secret": "s3cr3t"},
+        )
+
+    assert r.status_code == 200
+    mock_get.assert_called_once_with("premium")
+
+
+async def test_endpoint_tier_default_is_lite(client, db_session, monkeypatch):
+    """No ?tier= param → service is called with tier='lite'."""
+    await _seed(db_session)
+    import app.routers.internal as internal
+    monkeypatch.setattr(internal.settings, "cron_secret", "s3cr3t")
+
+    mock_client = _mock_llm("compound-interest")
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ) as mock_get:
+        r = await client.post(
+            _CLASSIFY_PATH,
+            headers={"X-Cron-Secret": "s3cr3t"},
+        )
+
+    assert r.status_code == 200
+    mock_get.assert_called_once_with("lite")
+
+
+async def test_endpoint_bogus_tier_rejected(client, monkeypatch):
+    """?tier=bogus is rejected with 422 (or 400) and the LLM is never called."""
+    import app.routers.internal as internal
+    monkeypatch.setattr(internal.settings, "cron_secret", "s3cr3t")
+
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+    ) as mock_get:
+        r = await client.post(
+            _CLASSIFY_PATH,
+            params={"tier": "bogus"},
+            headers={"X-Cron-Secret": "s3cr3t"},
+        )
+
+    assert r.status_code in (400, 422), f"Expected 400/422 for bogus tier, got {r.status_code}"
+    mock_get.assert_not_called()

@@ -98,9 +98,10 @@ async def classify_untagged_lessons(
     session: AsyncSession,
     *,
     limit: int = 200,
+    tier: str = "lite",
 ) -> dict[str, int]:
     """Classify published lessons with concept_id IS NULL and concept_classified_at
-    IS NULL using the lite LLM tier.
+    IS NULL using the specified LLM tier (default: "lite").
 
     Each lesson is stamped with ``concept_classified_at`` regardless of outcome,
     so no lesson is ever re-attempted on subsequent runs (monotonic drain).
@@ -157,7 +158,7 @@ async def classify_untagged_lessons(
             "lessons_errored": lessons_errored,
         }
 
-    client = get_llm_client("lite")
+    client = get_llm_client(tier)
 
     for lesson in lesson_rows:
         try:

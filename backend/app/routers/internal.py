@@ -244,24 +244,36 @@ async def trigger_concept_classify_reset(
     return {"reset": result.rowcount}
 
 
+_CLASSIFY_ALLOWED_TIERS = {"lite", "standard", "premium"}
+
+
 @router.post("/concepts/classify")
 async def trigger_concept_classify(
     limit: int = 200,
+    tier: str = "lite",
     x_cron_secret: str | None = Header(default=None),
     session: AsyncSession = Depends(get_session),
 ):
     """Idempotent LLM-based backfill: classify published lessons without a
-    concept_id by asking the lite LLM to pick from the full concept taxonomy
+    concept_id by asking the LLM to pick from the full concept taxonomy
     (matching is global by unique slug, independent of the module's topic).
     The model can NEVER invent a concept — every pick is validated via
-    resolve_slug_global before being written.  Safe to run repeatedly."""
+    resolve_slug_global before being written.  Safe to run repeatedly.
+
+    tier ∈ {lite, standard, premium} (default: lite).  Use standard or premium
+    for a coverage pass over lessons the lite model abstained on."""
     if not settings.cron_secret:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
     if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    if tier not in _CLASSIFY_ALLOWED_TIERS:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"tier must be one of {sorted(_CLASSIFY_ALLOWED_TIERS)}",
+        )
     effective_limit = max(1, min(limit, 500))
     result = await concept_classify_service.classify_untagged_lessons(
-        session, limit=effective_limit
+        session, limit=effective_limit, tier=tier
     )
     await session.commit()
     return result
