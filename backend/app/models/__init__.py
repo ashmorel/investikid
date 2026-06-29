@@ -18,6 +18,7 @@ from app.models.content import (  # noqa: F401
 )
 from app.models.content_translation import ContentTranslation  # noqa: F401
 from app.models.cosmetics import CosmeticItem, UserCosmetic  # noqa: F401
+from app.models.diagnostic import DiagnosticItem  # noqa: F401
 from app.models.feedback import Feedback  # noqa: F401
 from app.models.gamification import Badge, Challenge, GroupChallengeCompletion, UserBadge, UserChallenge  # noqa: F401
 from app.models.generated_content import GeneratedContent  # noqa: F401
