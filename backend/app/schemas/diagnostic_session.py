@@ -40,6 +40,9 @@ class DiagnosticSubmitRequest(BaseModel):
     session_id: uuid.UUID
     # item_id (str) → chosen answer index (int)
     answers: dict[str, int]
+    # When True the child explicitly skipped the diagnostic; the session is
+    # closed immediately with a kind="skipped" checkpoint (no scoring).
+    skipped: bool = False
 
 
 class CheckpointTopicOut(BaseModel):

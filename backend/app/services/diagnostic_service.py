@@ -211,6 +211,7 @@ async def submit_diagnostic(
     session_id: uuid.UUID,
     answers: dict[str, int],
     session_count: int = 0,
+    skipped: bool = False,
 ) -> MasteryCheckpoint:
     """Score a diagnostic session server-side and write an immutable MasteryCheckpoint.
 
@@ -224,6 +225,7 @@ async def submit_diagnostic(
     - Unanswered items count as attempted-and-incorrect (denominator = session size).
     - overall_score = total_correct / total_attempted  (None when attempted == 0).
     - Empty session (item_ids == []) → kind="skipped", overall_score=None, no topic rows.
+    - skipped=True (explicit child skip) → same short-circuit as empty session.
     - Bumps times_correct on each correctly-answered item (calibration).
     - Calls update_mastery_on_completion for each item (warm-start TopicMastery).
     - Does NOT touch XP, streak, coins, or any reward/activity paths.
@@ -237,8 +239,8 @@ async def submit_diagnostic(
     if diag_session.completed_at is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Diagnostic session already completed")
 
-    # 2. Empty session → skipped checkpoint, no scoring
-    if not diag_session.item_ids:
+    # 2. Empty session OR explicit skip → skipped checkpoint, no scoring
+    if skipped or not diag_session.item_ids:
         checkpoint = MasteryCheckpoint(
             user_id=user.id,
             market_code=diag_session.market_code,

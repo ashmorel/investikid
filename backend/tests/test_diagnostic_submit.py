@@ -363,6 +363,120 @@ async def test_submit_no_reward_side_effects(client, db_session):
 
 
 # ---------------------------------------------------------------------------
+# Task 1 — skipped=True submit path
+# ---------------------------------------------------------------------------
+
+
+async def test_skipped_true_on_nonempty_session(client, db_session):
+    """skipped=True on a non-empty session → kind='skipped', overall_score None, no topic rows,
+    session completed, times_correct unchanged, no TopicMastery rows created."""
+    user = await _register_and_login(client, db_session, suffix="_sk1")
+
+    item_bud = await _seed_item(db_session, topic="budgeting", answer_index=0)
+    item_sav = await _seed_item(db_session, topic="savings", answer_index=1)
+    before_bud_correct = item_bud.times_correct
+    before_sav_correct = item_sav.times_correct
+
+    diag = await _create_session(db_session, user, [item_bud, item_sav])
+
+    # Submit with skipped=True on a non-empty session
+    resp = await client.post(
+        "/diagnostic/submit",
+        json={"session_id": str(diag.id), "answers": {}, "skipped": True},
+    )
+    assert resp.status_code == 200, resp.text
+
+    data = resp.json()
+    assert data["kind"] == "skipped"
+    assert data["overall_score"] is None
+    assert data["topics"] == []
+    assert data["session_count"] == 0
+
+    # Verify checkpoint in DB
+    checkpoint = await db_session.scalar(
+        select(MasteryCheckpoint).where(MasteryCheckpoint.user_id == user.id)
+    )
+    assert checkpoint is not None
+    assert checkpoint.kind == "skipped"
+    assert checkpoint.overall_score is None
+
+    # No topic rows
+    topic_rows = (
+        await db_session.scalars(
+            select(MasteryCheckpointTopic).where(
+                MasteryCheckpointTopic.checkpoint_id == checkpoint.id
+            )
+        )
+    ).all()
+    assert len(topic_rows) == 0
+
+    # Session marked completed
+    await db_session.refresh(diag)
+    assert diag.completed_at is not None
+
+    # times_correct NOT bumped
+    await db_session.refresh(item_bud)
+    await db_session.refresh(item_sav)
+    assert item_bud.times_correct == before_bud_correct
+    assert item_sav.times_correct == before_sav_correct
+
+    # No TopicMastery rows created
+    bud_mastery = await db_session.get(TopicMastery, (user.id, "budgeting"))
+    sav_mastery = await db_session.get(TopicMastery, (user.id, "savings"))
+    assert bud_mastery is None
+    assert sav_mastery is None
+
+
+async def test_skipped_true_enforces_ownership(client, db_session):
+    """skipped=True still enforces ownership (other user → 403/404)."""
+    victim_email = "victim_sk@example.com"
+    victim = User(
+        email=victim_email,
+        username="victimsk",
+        password_hash="x",
+        dob=datetime(2012, 1, 1).date(),
+        country_code="GB",
+        currency_code="GBP",
+    )
+    db_session.add(victim)
+    await db_session.flush()
+
+    item = await _seed_item(db_session, topic="budgeting")
+    victim_session = await _create_session(db_session, victim, [item])
+
+    # Log in as attacker
+    await _register_and_login(client, db_session, suffix="_skatk")
+
+    resp = await client.post(
+        "/diagnostic/submit",
+        json={"session_id": str(victim_session.id), "answers": {}, "skipped": True},
+    )
+    assert resp.status_code in (403, 404), f"Expected 403/404, got {resp.status_code}"
+
+
+async def test_skipped_true_enforces_already_completed_409(client, db_session):
+    """skipped=True on an already-completed session → 409."""
+    user = await _register_and_login(client, db_session, suffix="_sk409")
+
+    item = await _seed_item(db_session, topic="budgeting", answer_index=0)
+    diag = DiagnosticSession(
+        user_id=user.id,
+        market_code=_DEFAULT_MARKET,
+        kind="baseline",
+        item_ids=[str(item.id)],
+        completed_at=datetime.now(UTC),  # already completed
+    )
+    db_session.add(diag)
+    await db_session.flush()
+
+    resp = await client.post(
+        "/diagnostic/submit",
+        json={"session_id": str(diag.id), "answers": {}, "skipped": True},
+    )
+    assert resp.status_code == 409, f"Expected 409, got {resp.status_code}"
+
+
+# ---------------------------------------------------------------------------
 # Unanswered items count as attempted-incorrect
 # ---------------------------------------------------------------------------
 

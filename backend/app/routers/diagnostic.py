@@ -68,6 +68,7 @@ async def submit_diagnostic(
         user,
         session_id=body.session_id,
         answers=body.answers,
+        skipped=body.skipped,
     )
     await session.commit()
     # Reload topic rows (flush guarantees they are persisted)
