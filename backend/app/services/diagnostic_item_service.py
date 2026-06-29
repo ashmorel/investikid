@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 import uuid
 from datetime import UTC, datetime
 
@@ -211,7 +212,6 @@ async def verify_item(
         item.verifier_answer_index = None
         # Store a short error hint — don't include the full traceback
         try:
-            import sys
             exc = sys.exc_info()[1]
             item.verifier_note = f"error: {type(exc).__name__}: {exc}"[:200]
         except Exception:

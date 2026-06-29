@@ -7,9 +7,6 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-# Valid LLM tier values — shared between schemas and the router.
-VALID_TIERS = frozenset({"lite", "standard", "premium"})
-
 
 class DiagnosticItemRead(BaseModel):
     """Public read schema for a diagnostic item."""

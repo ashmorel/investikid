@@ -68,7 +68,7 @@ export interface VerifyParams {
   status?: string;
   limit?: number;
   only_unverified?: boolean;
-  tier?: 1 | 2 | 3;
+  tier?: 'lite' | 'standard' | 'premium';
 }
 
 export interface VerifyFlaggedItem {
