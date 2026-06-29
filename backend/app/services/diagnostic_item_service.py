@@ -1,4 +1,4 @@
-"""Diagnostic item generation service.
+"""Diagnostic item service — generation + CRUD/lifecycle.
 
 ``generate_items`` asks the LLM to draft ``count`` multiple-choice questions
 for a given market, topic, and difficulty tier.  Each candidate is validated
@@ -7,13 +7,20 @@ as DiagnosticItem rows with status="draft", source="generated".
 
 The function is *best-effort per item*: a single bad or erroring candidate
 never aborts the whole batch.
+
+``list_items`` queries with optional filters plus a coverage summary.
+``get_item`` fetches a single item by id.
+``patch_item`` edits draft-only fields.
+``approve_item`` / ``reject_item`` / ``retire_item`` handle lifecycle.
 """
 from __future__ import annotations
 
 import json
 import logging
+import uuid
+from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.concept import Concept
@@ -222,3 +229,123 @@ async def generate_items(
             continue
 
     return persisted
+
+
+# ---------------------------------------------------------------------------
+# CRUD / lifecycle helpers
+# ---------------------------------------------------------------------------
+
+
+async def get_item(
+    session: AsyncSession, item_id: uuid.UUID
+) -> DiagnosticItem | None:
+    """Return a DiagnosticItem by id, or None."""
+    return await session.get(DiagnosticItem, item_id)
+
+
+async def list_items(
+    session: AsyncSession,
+    *,
+    market_code: str | None = None,
+    topic: str | None = None,
+    status: str | None = None,
+) -> tuple[list[DiagnosticItem], list[dict]]:
+    """Return (items, coverage) for the given filters.
+
+    ``coverage`` is the count of **approved** items per (topic, difficulty_tier)
+    cell within the filtered market (if provided).  The ≥2 target is informational;
+    callers decide what to display.
+    """
+    q = select(DiagnosticItem)
+    if market_code:
+        q = q.where(DiagnosticItem.market_code == market_code)
+    if topic:
+        q = q.where(DiagnosticItem.topic == topic)
+    if status:
+        q = q.where(DiagnosticItem.status == status)
+    q = q.order_by(DiagnosticItem.created_at.desc())
+    items = list((await session.scalars(q)).all())
+
+    # Coverage: approved counts per (topic, difficulty_tier) in the filtered market
+    cov_q = (
+        select(
+            DiagnosticItem.topic,
+            DiagnosticItem.difficulty_tier,
+            func.count().label("approved_count"),
+        )
+        .where(DiagnosticItem.status == "approved")
+        .group_by(DiagnosticItem.topic, DiagnosticItem.difficulty_tier)
+    )
+    if market_code:
+        cov_q = cov_q.where(DiagnosticItem.market_code == market_code)
+    if topic:
+        cov_q = cov_q.where(DiagnosticItem.topic == topic)
+    cov_rows = (await session.execute(cov_q)).all()
+    coverage = [
+        {"topic": r.topic, "difficulty_tier": r.difficulty_tier, "approved_count": r.approved_count}
+        for r in cov_rows
+    ]
+
+    return items, coverage
+
+
+async def patch_item(
+    session: AsyncSession,
+    item: DiagnosticItem,
+    *,
+    question: str | None = None,
+    choices: list[str] | None = None,
+    answer_index: int | None = None,
+    explanation: str | None = None,
+    difficulty_tier: int | None = None,
+    concept_id: uuid.UUID | None = None,
+) -> DiagnosticItem:
+    """Update editable fields on a draft item and flush."""
+    if question is not None:
+        item.question = question
+    if choices is not None:
+        item.choices = choices
+    if answer_index is not None:
+        item.answer_index = answer_index
+    if explanation is not None:
+        item.explanation = explanation
+    if difficulty_tier is not None:
+        item.difficulty_tier = difficulty_tier
+    if concept_id is not None:
+        item.concept_id = concept_id
+    await session.flush()
+    return item
+
+
+async def approve_item(
+    session: AsyncSession,
+    item: DiagnosticItem,
+    *,
+    admin_id: uuid.UUID,
+) -> DiagnosticItem:
+    """Transition draft → approved."""
+    item.status = "approved"
+    item.approved_by = admin_id
+    item.approved_at = datetime.now(UTC)
+    await session.flush()
+    return item
+
+
+async def reject_item(
+    session: AsyncSession,
+    item: DiagnosticItem,
+) -> DiagnosticItem:
+    """Transition draft → retired (kept for audit)."""
+    item.status = "retired"
+    await session.flush()
+    return item
+
+
+async def retire_item(
+    session: AsyncSession,
+    item: DiagnosticItem,
+) -> DiagnosticItem:
+    """Transition approved → retired."""
+    item.status = "retired"
+    await session.flush()
+    return item

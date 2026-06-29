@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.routers import (
     admin_content,
+    admin_diagnostic,
     admin_drafts,
     admin_gamification,
     admin_generation,
@@ -21,3 +22,4 @@ router.include_router(admin_translations.router)
 router.include_router(admin_gamification.router)
 router.include_router(admin_settings.router)
 router.include_router(admin_media.router)
+router.include_router(admin_diagnostic.router)
