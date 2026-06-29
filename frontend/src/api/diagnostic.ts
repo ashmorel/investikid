@@ -30,6 +30,7 @@ export interface DiagnosticResult {
 }
 
 export interface DiagnosticEvidence {
+  has_baseline: boolean;
   session_count: number;
   last_session_at: string | null;
   topics: DiagnosticTopicResult[];

@@ -1,6 +1,7 @@
 import { useRef, useCallback, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useEvidence } from '@/api/diagnostic';
 import { useTranslation } from 'react-i18next';
 import { useChildSession } from '@/hooks/useChildSession';
 import { useChildAuthGuard } from '@/hooks/useChildAuthGuard';
@@ -64,6 +65,14 @@ export function Shell() {
   useStreakReminder();
   useOfflineMarketSync();
 
+  // ── Diagnostic gate (Task 3) ─────────────────────────────────────────────
+  // Called unconditionally (Rules of Hooks) — before early returns below.
+  // Only redirect when definitively loaded with has_baseline === false.
+  // Fail-open: loading or error → render normally (never trap the child).
+  const { data: evidenceData, isLoading: evidenceLoading, isError: evidenceError } = useEvidence();
+  const needsDiagnostic =
+    !evidenceLoading && !evidenceError && evidenceData?.has_baseline === false;
+
   if (session.isLoading) {
     return (
       <div className="min-h-screen bg-surface">
@@ -75,6 +84,10 @@ export function Shell() {
 
   if (!session.data) {
     return null;
+  }
+
+  if (needsDiagnostic) {
+    return <Navigate to="/onboarding/diagnostic" replace />;
   }
 
   return (

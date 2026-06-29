@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { Shell } from '@/components/child/Shell';
 import { BiometricGate } from '@/components/auth/BiometricGate';
@@ -68,9 +69,15 @@ function RootRedirect() {
 
 function OnboardingDiagnosticRoute() {
   const nav = useNavigate();
+  const queryClient = useQueryClient();
+  function handleComplete() {
+    // Invalidate the evidence cache so the Shell gate stops redirecting.
+    void queryClient.invalidateQueries({ queryKey: ['diagnostic', 'evidence'] });
+    nav('/home', { replace: true });
+  }
   return (
     <Suspense fallback={null}>
-      <OnboardingDiagnostic onComplete={() => nav('/home', { replace: true })} />
+      <OnboardingDiagnostic onComplete={handleComplete} />
     </Suspense>
   );
 }
