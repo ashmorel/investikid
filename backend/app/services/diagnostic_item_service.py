@@ -8,6 +8,10 @@ as DiagnosticItem rows with status="draft", source="generated".
 The function is *best-effort per item*: a single bad or erroring candidate
 never aborts the whole batch.
 
+``verify_item`` runs an independent blind solve of each item's question via the
+premium LLM (never shown the declared answer) and sets the verifier_* fields.
+It is best-effort — any failure sets verifier_status="error" and never raises.
+
 ``list_items`` queries with optional filters plus a coverage summary.
 ``get_item`` fetches a single item by id.
 ``patch_item`` edits draft-only fields.
@@ -113,6 +117,106 @@ def _validate_candidate(raw: object) -> dict | None:
         "explanation": explanation.strip(),
         "concept_slug": raw.get("concept_slug"),
     }
+
+
+def _build_verifier_prompt(item: DiagnosticItem) -> str:
+    """Build a BLIND verifier prompt — contains only the question and choices.
+
+    The declared answer_index and explanation are deliberately excluded so the
+    model must solve the question independently.
+    """
+    choices_text = "\n".join(
+        f"{i}. {choice}" for i, choice in enumerate(item.choices)
+    )
+    prompt = (
+        "You are an independent answer checker for InvestiKid, a children's "
+        "personal-finance app. You will be given a multiple-choice question and "
+        "its answer choices. Your task is to pick the single best answer WITHOUT "
+        "being told which answer is declared correct — solve it yourself from "
+        "first principles.\n\n"
+        f"Question:\n{item.question}\n\n"
+        f"Choices:\n{choices_text}\n\n"
+        "Respond with ONLY a JSON object with these keys:\n"
+        '  "answer_index": <int 0-3, your independently chosen best answer>,\n'
+        '  "ambiguous": <bool, true if more than one choice is defensibly correct>,\n'
+        '  "note": <str, one-line reason for your choice>\n'
+        "Do not copy or reference any declared correct answer — you have not been "
+        "given one."
+    )
+    return with_generation_framing(prompt)
+
+
+async def verify_item(
+    session: AsyncSession,
+    item: DiagnosticItem,
+    *,
+    tier: str = "premium",
+) -> None:
+    """Independently verify a diagnostic item by asking the LLM to solve it blind.
+
+    Mutates the item's verifier_* fields in-place (does NOT flush to the DB).
+    Best-effort: any LLM or parse failure sets verifier_status="error" and never
+    raises.  Never modifies answer_index or status — advisory only.
+
+    Status logic:
+      "agree"     — model's pick matches declared answer_index AND not ambiguous.
+      "ambiguous" — model flagged more than one defensible answer.
+      "mismatch"  — model's pick differs from declared answer_index (and not ambiguous).
+      "error"     — any LLM call or parse failure.
+    """
+    now = datetime.now(UTC)
+    try:
+        system = _build_verifier_prompt(item)
+        client = get_llm_client(tier)
+        raw = await client.complete(
+            system_prompt=system,
+            messages=[{"role": "user", "content": "Solve this question independently."}],
+            temperature=0.0,
+            max_tokens=200,
+            response_format="json",
+        )
+        parsed = json.loads(raw)
+        # Normalise: response_format=json may wrap in an object under an arbitrary key
+        if isinstance(parsed, dict) and "answer_index" not in parsed:
+            # Try to unwrap a single nested object
+            for v in parsed.values():
+                if isinstance(v, dict) and "answer_index" in v:
+                    parsed = v
+                    break
+
+        verifier_index = parsed.get("answer_index")
+        ambiguous = bool(parsed.get("ambiguous", False))
+        note = str(parsed.get("note", ""))
+
+        if not isinstance(verifier_index, int) or isinstance(verifier_index, bool):
+            raise ValueError(f"answer_index missing or invalid: {verifier_index!r}")
+
+        item.verifier_answer_index = verifier_index
+        item.verifier_note = note
+        item.verified_at = now
+
+        if ambiguous:
+            item.verifier_status = "ambiguous"
+        elif verifier_index == item.answer_index:
+            item.verifier_status = "agree"
+        else:
+            item.verifier_status = "mismatch"
+
+    except Exception:
+        logger.exception(
+            "diagnostic_item_service: verifier failed for item question=%r",
+            getattr(item, "question", "?")[:80],
+        )
+        item.verifier_status = "error"
+        item.verifier_answer_index = None
+        # Store a short error hint — don't include the full traceback
+        try:
+            import sys
+            exc = sys.exc_info()[1]
+            item.verifier_note = f"error: {type(exc).__name__}: {exc}"[:200]
+        except Exception:
+            item.verifier_note = "error: unknown"
+        item.verified_at = now
 
 
 async def _fetch_concept_slugs(session: AsyncSession, topic: str) -> list[str]:
@@ -221,6 +325,10 @@ async def generate_items(
             session.add(item)
             await session.flush()
             persisted.append(item)
+
+            # Best-effort blind verification — a verifier error sets
+            # verifier_status="error" but never aborts the batch.
+            await verify_item(session, item, tier="premium")
         except Exception:
             logger.exception(
                 "diagnostic_item_service: error processing candidate for topic=%s; skipping",
