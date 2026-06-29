@@ -68,7 +68,8 @@ async def _seen_item_ids(session: AsyncSession, user_id: uuid.UUID) -> frozenset
     rows = (
         await session.scalars(
             select(DiagnosticSession.item_ids).where(
-                DiagnosticSession.user_id == user_id
+                DiagnosticSession.user_id == user_id,
+                DiagnosticSession.completed_at.isnot(None),
             )
         )
     ).all()
