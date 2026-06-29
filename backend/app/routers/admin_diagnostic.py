@@ -109,6 +109,7 @@ async def edit_diagnostic_item(
     item = await patch_item(
         session,
         item,
+        fields_set=payload.model_fields_set,
         question=payload.question,
         choices=payload.choices,
         answer_index=payload.answer_index,

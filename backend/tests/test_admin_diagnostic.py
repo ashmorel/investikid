@@ -250,10 +250,10 @@ async def test_approve_already_approved_is_409(admin_client, db_session):
     assert resp.status_code == 409
 
 
-async def test_approve_retired_is_409(admin_client, db_session):
+async def test_retire_already_retired_is_409(admin_client, db_session):
     row = await _seed_item(db_session, status="retired")
     resp = await admin_client.post(f"/admin/diagnostic-items/{row.id}/retire")
-    # retire on an already-retired item should also fail (not approved)
+    # retire on an already-retired item fails (must be approved)
     assert resp.status_code == 409
 
 
@@ -306,6 +306,33 @@ async def test_edit_validates_answer_index_range(admin_client, db_session):
         json={"answer_index": 5},  # out of range for 4 choices
     )
     assert resp.status_code == 422
+
+
+async def test_patch_concept_id_null_clears_it(admin_client, db_session):
+    """Explicitly sending concept_id=null must clear an existing concept_id."""
+    concept_id = uuid.uuid4()
+    row = await _seed_item(db_session, status="draft", concept_id=concept_id)
+    assert row.concept_id == concept_id
+
+    resp = await admin_client.patch(
+        f"/admin/diagnostic-items/{row.id}",
+        json={"concept_id": None},  # explicitly provided as null
+    )
+    assert resp.status_code == 200
+    assert resp.json()["concept_id"] is None
+
+
+async def test_patch_omitting_concept_id_leaves_it_unchanged(admin_client, db_session):
+    """Omitting concept_id from the patch must leave the existing value untouched."""
+    concept_id = uuid.uuid4()
+    row = await _seed_item(db_session, status="draft", concept_id=concept_id)
+
+    resp = await admin_client.patch(
+        f"/admin/diagnostic-items/{row.id}",
+        json={"explanation": "Updated explanation."},  # concept_id NOT in payload
+    )
+    assert resp.status_code == 200
+    assert resp.json()["concept_id"] == str(concept_id)
 
 
 # ---------------------------------------------------------------------------

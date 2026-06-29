@@ -293,6 +293,7 @@ async def patch_item(
     session: AsyncSession,
     item: DiagnosticItem,
     *,
+    fields_set: set[str],
     question: str | None = None,
     choices: list[str] | None = None,
     answer_index: int | None = None,
@@ -300,18 +301,24 @@ async def patch_item(
     difficulty_tier: int | None = None,
     concept_id: uuid.UUID | None = None,
 ) -> DiagnosticItem:
-    """Update editable fields on a draft item and flush."""
-    if question is not None:
+    """Update editable fields on a draft item and flush.
+
+    Only fields present in *fields_set* (the caller's ``model_fields_set``) are
+    written.  This means an explicitly-provided ``concept_id=null`` clears the
+    field, while an omitted ``concept_id`` leaves the existing value untouched.
+    """
+    if "question" in fields_set and question is not None:
         item.question = question
-    if choices is not None:
+    if "choices" in fields_set and choices is not None:
         item.choices = choices
-    if answer_index is not None:
+    if "answer_index" in fields_set and answer_index is not None:
         item.answer_index = answer_index
-    if explanation is not None:
+    if "explanation" in fields_set and explanation is not None:
         item.explanation = explanation
-    if difficulty_tier is not None:
+    if "difficulty_tier" in fields_set and difficulty_tier is not None:
         item.difficulty_tier = difficulty_tier
-    if concept_id is not None:
+    if "concept_id" in fields_set:
+        # concept_id may be explicitly null (to clear it) — assign regardless.
         item.concept_id = concept_id
     await session.flush()
     return item
