@@ -70,8 +70,7 @@ async def test_get_progress_zero_defaults_for_brand_new_user(client, db_session)
 
 
 async def test_get_progress_reflects_lesson_completion(client, db_session):
-    from datetime import date
-
+    from app.core.time import today_utc
     from app.models.content import Lesson, Module
 
     await _register_and_login(client, email="lp@example.com", username="lpuser")
@@ -94,7 +93,7 @@ async def test_get_progress_reflects_lesson_completion(client, db_session):
     assert data["xp"] == 10
     assert data["level"] >= 1
     assert data["streak_count"] == 1
-    assert data["last_activity_date"] == date.today().isoformat()
+    assert data["last_activity_date"] == today_utc().isoformat()
 
 
 async def test_get_progress_unauthenticated(client):
