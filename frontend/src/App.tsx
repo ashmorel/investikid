@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { Shell } from '@/components/child/Shell';
 import { BiometricGate } from '@/components/auth/BiometricGate';
@@ -33,6 +33,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import Privacy from '@/pages/Privacy';
 import DeleteAccount from '@/pages/DeleteAccount';
 const Try = lazy(() => import('@/pages/Try'));
+const OnboardingDiagnostic = lazy(() => import('@/pages/child/OnboardingDiagnostic'));
 import ResetPassword from '@/pages/ResetPassword';
 import VerifyEmail from '@/pages/VerifyEmail';
 import ParentLogin from '@/pages/ParentLogin';
@@ -65,6 +66,15 @@ function RootRedirect() {
   return <Navigate to="/home" replace />;
 }
 
+function OnboardingDiagnosticRoute() {
+  const nav = useNavigate();
+  return (
+    <Suspense fallback={null}>
+      <OnboardingDiagnostic onComplete={() => nav('/home', { replace: true })} />
+    </Suspense>
+  );
+}
+
 export default function App() {
   return (
     <LiveRegion>
@@ -79,6 +89,7 @@ export default function App() {
         <Route path="/delete-account" element={<DeleteAccount />} />
         <Route path="/try" element={<Suspense fallback={null}><Try /></Suspense>} />
         <Route path="/pending-consent" element={<PendingConsent />} />
+        <Route path="/onboarding/diagnostic" element={<OnboardingDiagnosticRoute />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />

@@ -1,0 +1,23 @@
+{
+  "loading": "Getting your questions ready…",
+  "welcome": "Welcome to InvestiKid!",
+  "welcomeSub": "Let's see what you already know.",
+
+  "quiz": {
+    "progress": "{{current}} of {{total}}",
+    "answerChoicesLabel": "Answer choices",
+    "checkAnswer": "Check answer",
+    "next": "Next",
+    "finish": "Finish",
+    "skip": "Skip for now"
+  },
+
+  "results": {
+    "heading_explorer": "Here's what you already know! 💡",
+    "heading_investor": "Here's what you already know.",
+    "subExplorer": "Great start — we'll build on this as you learn.",
+    "subInvestor": "Good baseline. We'll tailor your learning from here.",
+    "topicChipAriaLabel": "Topic: {{topic}}",
+    "cta": "Let's go!"
+  }
+}
