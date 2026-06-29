@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { describe, expect, it, vi } from 'vitest';
 import { useTranslation } from 'react-i18next';
-import { i18n, initI18n } from '../../src/i18n';
+import { i18n, initI18n, NAMESPACES } from '../../src/i18n';
 
 function Probe() {
   const { t } = useTranslation();
@@ -25,5 +25,18 @@ describe('i18n init', () => {
       </I18nextProvider>,
     );
     expect(screen.getByText('InvestiKid')).toBeInTheDocument();
+  });
+
+  it('registers the diagnostic namespace so onboarding keys resolve', async () => {
+    // Guard: 'diagnostic' must appear in NAMESPACES so loadCatalog feeds
+    // diagnostic.json into i18next — without this, useTranslation('diagnostic')
+    // returns raw keys at runtime (e.g. "loading", "quiz.skip", "results.cta").
+    expect(NAMESPACES).toContain('diagnostic');
+
+    // Verify the bundle is actually loaded after init (runtime check).
+    await initI18n('en');
+    await i18n.changeLanguage('en');
+    expect(i18n.hasResourceBundle('en', 'diagnostic')).toBe(true);
+    expect(i18n.t('loading', { ns: 'diagnostic' })).toBe('Getting your questions ready…');
   });
 });
