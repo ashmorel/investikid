@@ -6,6 +6,11 @@ on:
         description: "Reset classification markers first (retry all still-untagged lessons)"
         type: boolean
         default: false
+      tier:
+        description: "LLM model tier for classification"
+        type: choice
+        options: [lite, standard, premium]
+        default: lite
 
 permissions:
   contents: read
@@ -17,6 +22,7 @@ jobs:
     env:
       BACKEND_URL: ${{ vars.BACKEND_URL || 'https://investikid.up.railway.app' }}
       RESET: ${{ inputs.reset }}
+      TIER: ${{ inputs.tier || 'lite' }}
     steps:
       - name: Drain concept classification
         env:
@@ -48,7 +54,7 @@ jobs:
           for i in $(seq 1 220); do
             resp=$(curl -sS -X POST --connect-timeout 15 --max-time 75 \
               -H "X-Cron-Secret: $CRON_SECRET" \
-              "$BACKEND_URL/internal/concepts/classify?limit=10") \
+              "$BACKEND_URL/internal/concepts/classify?limit=10&tier=$TIER") \
               || { echo "batch $i: request failed, continuing"; fails=$((fails+1)); sleep 5; continue; }
             seen=$(echo "$resp" | jq -r '.lessons_seen // empty' 2>/dev/null || true)
             if [ -z "$seen" ]; then
