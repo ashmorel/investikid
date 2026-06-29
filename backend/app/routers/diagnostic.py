@@ -2,6 +2,7 @@
 
 Task 2: POST /diagnostic/start  — item selection + session creation.
 Task 3: POST /diagnostic/submit — server-side scoring + checkpoint.
+Task 4: GET  /diagnostic/evidence — read-only baseline vs progress comparison.
 """
 from __future__ import annotations
 
@@ -84,3 +85,23 @@ async def submit_diagnostic(
             for t in checkpoint.topics
         ],
     )
+
+
+@router.get("/evidence")
+async def get_evidence(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Return the read-only evidence comparison for the authenticated child.
+
+    Compares the child's baseline checkpoint (earliest baseline/skipped) to
+    their most recent progress checkpoint, computing per-topic and overall
+    mastery deltas.
+
+    States:
+    - No baseline  → {has_baseline: false, ...nulls}
+    - Skipped baseline → {has_baseline: true, baseline_skipped: true, baseline: null, ...}
+    - Baseline only → baseline present, latest/deltas null/empty
+    - Baseline + progress → full comparison including deltas
+    """
+    return await diagnostic_service.get_evidence(session, user)

@@ -322,3 +322,137 @@ async def submit_diagnostic(
     await session.flush()
 
     return checkpoint
+
+
+# ---------------------------------------------------------------------------
+# Task 4 — get_evidence  (read-only aggregation)
+# ---------------------------------------------------------------------------
+
+
+def _topics_from_checkpoint(checkpoint: MasteryCheckpoint) -> dict[str, float | None]:
+    """Return {topic: score} from a checkpoint's topic rows, excluding 'unknown'."""
+    result: dict[str, float | None] = {}
+    for t in checkpoint.topics:
+        if t.topic == "unknown":
+            continue
+        score: float | None = t.correct / t.attempted if t.attempted > 0 else None
+        result[t.topic] = score
+    return result
+
+
+async def get_evidence(session: AsyncSession, user: User) -> dict:
+    """Return a read-only evidence dict comparing baseline vs latest progress checkpoint.
+
+    States:
+    - No baseline  → {has_baseline: false, ...nulls}
+    - Skipped      → {has_baseline: true, baseline_skipped: true, baseline: null, ...nulls}
+    - Baseline only → baseline present, latest/delta null/empty
+    - Baseline + progress → full comparison with deltas
+    """
+    # Load all checkpoints for this user, ordered oldest-first
+    rows = (
+        await session.scalars(
+            select(MasteryCheckpoint)
+            .where(MasteryCheckpoint.user_id == user.id)
+            .order_by(MasteryCheckpoint.taken_at.asc())
+        )
+    ).all()
+
+    # Eagerly load topics for each checkpoint
+    for cp in rows:
+        await session.refresh(cp, ["topics"])
+
+    # Identify baseline: earliest kind in ("baseline", "skipped")
+    baseline_cp: MasteryCheckpoint | None = None
+    for cp in rows:
+        if cp.kind in ("baseline", "skipped"):
+            baseline_cp = cp
+            break
+
+    # Identify latest progress: most recent kind=="progress"
+    latest_cp: MasteryCheckpoint | None = None
+    for cp in reversed(rows):
+        if cp.kind == "progress":
+            latest_cp = cp
+            break
+
+    # ---- No baseline at all ----
+    if baseline_cp is None:
+        return {
+            "has_baseline": False,
+            "baseline_skipped": False,
+            "baseline": None,
+            "latest": None,
+            "overall_delta": None,
+            "topic_deltas": [],
+            "session_count": None,
+        }
+
+    # ---- Skipped baseline ----
+    if baseline_cp.kind == "skipped":
+        return {
+            "has_baseline": True,
+            "baseline_skipped": True,
+            "baseline": None,
+            "latest": None,
+            "overall_delta": None,
+            "topic_deltas": [],
+            "session_count": baseline_cp.session_count,
+        }
+
+    # ---- Baseline exists (and is not skipped) ----
+    baseline_topics = _topics_from_checkpoint(baseline_cp)
+    baseline_out = {
+        "overall_score": baseline_cp.overall_score,
+        "session_count": baseline_cp.session_count,
+        "topics": [{"topic": k, "score": v} for k, v in baseline_topics.items()],
+    }
+
+    if latest_cp is None:
+        return {
+            "has_baseline": True,
+            "baseline_skipped": False,
+            "baseline": baseline_out,
+            "latest": None,
+            "overall_delta": None,
+            "topic_deltas": [],
+            "session_count": baseline_cp.session_count,
+        }
+
+    # ---- Baseline + progress ----
+    latest_topics = _topics_from_checkpoint(latest_cp)
+    latest_out = {
+        "overall_score": latest_cp.overall_score,
+        "session_count": latest_cp.session_count,
+        "topics": [{"topic": k, "score": v} for k, v in latest_topics.items()],
+    }
+
+    # overall_delta
+    overall_delta: float | None = None
+    if baseline_cp.overall_score is not None and latest_cp.overall_score is not None:
+        overall_delta = latest_cp.overall_score - baseline_cp.overall_score
+
+    # per-topic deltas (only where both baseline and latest have a score)
+    topic_deltas: list[dict] = []
+    for topic in sorted(set(baseline_topics) & set(latest_topics)):
+        b_score = baseline_topics[topic]
+        l_score = latest_topics[topic]
+        if b_score is not None and l_score is not None:
+            topic_deltas.append(
+                {
+                    "topic": topic,
+                    "baseline_score": b_score,
+                    "latest_score": l_score,
+                    "delta": l_score - b_score,
+                }
+            )
+
+    return {
+        "has_baseline": True,
+        "baseline_skipped": False,
+        "baseline": baseline_out,
+        "latest": latest_out,
+        "overall_delta": overall_delta,
+        "topic_deltas": topic_deltas,
+        "session_count": latest_cp.session_count,
+    }
