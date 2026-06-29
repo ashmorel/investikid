@@ -3,9 +3,12 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, model_validator
+
+# Valid LLM tier values — shared between schemas and the router.
+VALID_TIERS = frozenset({"lite", "standard", "premium"})
 
 
 class DiagnosticItemRead(BaseModel):
@@ -27,6 +30,11 @@ class DiagnosticItemRead(BaseModel):
     approved_by: uuid.UUID | None
     approved_at: datetime | None
     created_at: datetime
+    # Verifier fields (NULL until the item has been verified)
+    verifier_status: str | None = None
+    verifier_answer_index: int | None = None
+    verifier_note: str | None = None
+    verified_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -74,3 +82,42 @@ class DiagnosticListResponse(BaseModel):
 
     items: list[DiagnosticItemRead]
     coverage: list[CoverageCell]
+
+
+# ---------------------------------------------------------------------------
+# Sweep (verify) endpoint schemas
+# ---------------------------------------------------------------------------
+
+
+class DiagnosticSweepRequest(BaseModel):
+    """Request body for POST /admin/diagnostic-items/verify."""
+
+    market_code: str | None = None
+    topic: str | None = None
+    status: str | None = None
+    limit: Annotated[int, Field(ge=0, le=500)] = 50
+    only_unverified: bool = False
+    tier: Literal["lite", "standard", "premium"] = "premium"
+
+
+class FlaggedItem(BaseModel):
+    """Shape of a single flagged entry in the sweep response."""
+
+    id: uuid.UUID
+    topic: str
+    difficulty_tier: int
+    answer_index: int
+    verifier_answer_index: int | None
+    verifier_status: str
+    verifier_note: str | None
+
+
+class DiagnosticSweepResponse(BaseModel):
+    """Response for POST /admin/diagnostic-items/verify."""
+
+    verified: int
+    agree: int
+    mismatch: int
+    ambiguous: int
+    error: int
+    flagged: list[FlaggedItem]

@@ -357,12 +357,16 @@ async def list_items(
     market_code: str | None = None,
     topic: str | None = None,
     status: str | None = None,
+    verifier: str | None = None,
 ) -> tuple[list[DiagnosticItem], list[dict]]:
     """Return (items, coverage) for the given filters.
 
     ``coverage`` is the count of **approved** items per (topic, difficulty_tier)
     cell within the filtered market (if provided).  The ≥2 target is informational;
     callers decide what to display.
+
+    ``verifier="needs_review"`` restricts to items with verifier_status IN
+    (mismatch, ambiguous).
     """
     q = select(DiagnosticItem)
     if market_code:
@@ -371,6 +375,8 @@ async def list_items(
         q = q.where(DiagnosticItem.topic == topic)
     if status:
         q = q.where(DiagnosticItem.status == status)
+    if verifier == "needs_review":
+        q = q.where(DiagnosticItem.verifier_status.in_(["mismatch", "ambiguous"]))
     q = q.order_by(DiagnosticItem.created_at.desc())
     items = list((await session.scalars(q)).all())
 

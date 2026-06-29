@@ -1,7 +1,7 @@
 """Admin router for diagnostic item management (Task 3).
 
 Mounted under /admin by admin.py (which already enforces get_current_admin).
-The generate endpoint is additionally rate-limited (LLM call).
+The generate and verify-sweep endpoints are additionally rate-limited (LLM calls).
 
 Lifecycle:
     draft  ─► approved  (approve)
@@ -10,13 +10,16 @@ Lifecycle:
 """
 from __future__ import annotations
 
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.rate_limit import limiter
+from app.models.diagnostic import DiagnosticItem
 from app.models.user import User
 from app.routers.admin_auth import get_current_admin
 from app.schemas.diagnostic import (
@@ -24,6 +27,9 @@ from app.schemas.diagnostic import (
     DiagnosticItemPatch,
     DiagnosticItemRead,
     DiagnosticListResponse,
+    DiagnosticSweepRequest,
+    DiagnosticSweepResponse,
+    FlaggedItem,
 )
 from app.services.diagnostic_item_service import (
     approve_item,
@@ -33,9 +39,80 @@ from app.services.diagnostic_item_service import (
     patch_item,
     reject_item,
     retire_item,
+    verify_item,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+# ---------------------------------------------------------------------------
+# POST /admin/diagnostic-items/verify  (sweep)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/diagnostic-items/verify", response_model=DiagnosticSweepResponse)
+@limiter.limit("5/minute")
+async def verify_sweep_diagnostic_items(
+    request: Request,
+    payload: DiagnosticSweepRequest,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+) -> DiagnosticSweepResponse:
+    """Run the independent answer-verifier over matching diagnostic items.
+
+    Selects items using the supplied filters (market_code, topic, status,
+    only_unverified) bounded by ``limit``, runs ``verify_item`` on each
+    (best-effort — one LLM failure sets verifier_status="error" and never
+    aborts the sweep), then commits and returns counts + the list of flagged
+    (mismatch + ambiguous) items.
+
+    This endpoint NEVER changes answer_index or status — advisory only.
+    """
+    q = select(DiagnosticItem)
+    if payload.market_code:
+        q = q.where(DiagnosticItem.market_code == payload.market_code)
+    if payload.topic:
+        q = q.where(DiagnosticItem.topic == payload.topic)
+    if payload.status:
+        q = q.where(DiagnosticItem.status == payload.status)
+    if payload.only_unverified:
+        q = q.where(DiagnosticItem.verifier_status.is_(None))
+    q = q.order_by(DiagnosticItem.created_at.desc()).limit(payload.limit)
+
+    items = list((await session.scalars(q)).all())
+
+    counts: dict[str, int] = {"agree": 0, "mismatch": 0, "ambiguous": 0, "error": 0}
+    flagged: list[FlaggedItem] = []
+
+    for item in items:
+        await verify_item(session, item, tier=payload.tier)
+        vs = item.verifier_status or "error"
+        counts[vs] = counts.get(vs, 0) + 1
+        if vs in ("mismatch", "ambiguous"):
+            flagged.append(
+                FlaggedItem(
+                    id=item.id,
+                    topic=item.topic,
+                    difficulty_tier=item.difficulty_tier,
+                    answer_index=item.answer_index,
+                    verifier_answer_index=item.verifier_answer_index,
+                    verifier_status=vs,
+                    verifier_note=item.verifier_note,
+                )
+            )
+
+    await session.commit()
+
+    return DiagnosticSweepResponse(
+        verified=len(items),
+        agree=counts.get("agree", 0),
+        mismatch=counts.get("mismatch", 0),
+        ambiguous=counts.get("ambiguous", 0),
+        error=counts.get("error", 0),
+        flagged=flagged,
+    )
+
 
 # ---------------------------------------------------------------------------
 # POST /admin/diagnostic-items/generate
@@ -72,12 +149,17 @@ async def list_diagnostic_items(
     market_code: str | None = None,
     topic: str | None = None,
     status: str | None = None,
+    verifier: str | None = None,
     _admin: User = Depends(get_current_admin),
     session: AsyncSession = Depends(get_session),
 ) -> DiagnosticListResponse:
-    """List diagnostic items with optional filters + approved coverage summary."""
+    """List diagnostic items with optional filters + approved coverage summary.
+
+    Optional ``verifier=needs_review`` restricts to items with
+    verifier_status IN (mismatch, ambiguous).
+    """
     items, coverage = await list_items(
-        session, market_code=market_code, topic=topic, status=status
+        session, market_code=market_code, topic=topic, status=status, verifier=verifier
     )
     return DiagnosticListResponse(
         items=[DiagnosticItemRead.model_validate(i) for i in items],
