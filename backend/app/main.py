@@ -27,6 +27,7 @@ from app.routers import collectables_admin as collectables_admin_router
 from app.routers import consent as consent_router
 from app.routers import content as content_router
 from app.routers import cosmetics as cosmetics_router
+from app.routers import diagnostic as diagnostic_router
 from app.routers import feedback as feedback_router
 from app.routers import gamification as gamification_router
 from app.routers import groups as groups_router
@@ -224,6 +225,7 @@ def create_app() -> FastAPI:
     application.include_router(analytics_router.router)
     application.include_router(internal_router.router)
     application.include_router(arcade_router.router)
+    application.include_router(diagnostic_router.router)
 
     return application
 
