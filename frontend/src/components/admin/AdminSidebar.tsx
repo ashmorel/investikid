@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/admin/arcade-words', tKey: 'sidebar.items.arcadeWordBank', icon: '🃏', end: false },
   { to: '/admin/collectables', tKey: 'sidebar.items.collectables', icon: '💎', end: false },
   { to: '/admin/concepts', tKey: 'sidebar.items.concepts', icon: '🏷️', end: false },
+  { to: '/admin/diagnostic-items', tKey: 'sidebar.items.diagnosticItems', icon: '🩺', end: false },
   { to: '/admin/analytics', tKey: 'sidebar.items.analytics', icon: '📈', end: false },
   { to: '/admin/settings', tKey: 'sidebar.items.settings', icon: '⚙️', end: false },
 ];
