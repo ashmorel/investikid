@@ -50,6 +50,7 @@ const mockItems = [
   },
 ];
 
+// Only stocks and savings have any coverage entries — the other 7 topics are completely absent from the array
 const mockCoverage = [
   { topic: 'stocks', difficulty_tier: 1, approved_count: 0 },
   { topic: 'stocks', difficulty_tier: 2, approved_count: 3 },
@@ -157,6 +158,33 @@ describe('DiagnosticItemsAdmin', () => {
     expect(screen.getByText('diagnosticItems.coverageMet:3')).toBeInTheDocument();
     // 1 approved → coverageShort:1
     expect(screen.getByText('diagnosticItems.coverageShort:1')).toBeInTheDocument();
+  });
+
+  it('coverage table renders a 0-count cell for a topic absent from the coverage array', () => {
+    render(<DiagnosticItemsAdmin />);
+    // 'real_estate' has no entries in mockCoverage at all.
+    // The full 9-topic grid must still include a row for it, showing coverageNone for all three tiers.
+    // real_estate appears in select option(s) AND as a table cell — use getAllByText and find the <td>.
+    const realEstateEls = screen.getAllByText('real_estate');
+    const realEstateTd = realEstateEls.find((el) => el.tagName === 'TD');
+    expect(realEstateTd).toBeInTheDocument();
+    // All three tiers default to 0 → the row neighbours are coverageNone cells.
+    // At least one coverageNone must exist for absent topics.
+    const noneCells = screen.getAllByText('diagnosticItems.coverageNone');
+    expect(noneCells.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('approve failure surfaces an error message', async () => {
+    approveMut.mockRejectedValueOnce(new Error('409 Conflict'));
+    render(<DiagnosticItemsAdmin />);
+    // item-1 is draft → has an approve button
+    const approveBtns = screen.getAllByText('diagnosticItems.approve');
+    fireEvent.click(approveBtns[0]);
+    // The component surfaces the error via role="alert" paragraph(s) — may appear once per card
+    await waitFor(() =>
+      expect(screen.getAllByText('diagnosticItems.actionError').length).toBeGreaterThan(0),
+    );
+    expect(screen.getAllByRole('alert').length).toBeGreaterThan(0);
   });
 
   it('has no axe accessibility violations (WCAG 2.2 AA)', async () => {

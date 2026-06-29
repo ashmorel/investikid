@@ -93,6 +93,7 @@ export default function DiagnosticItemsAdmin() {
   const [editingItem, setEditingItem] = useState<DiagnosticItem | null>(null);
   const [editForm, setEditForm] = useState<EditState | null>(null);
   const [saveError, setSaveError] = useState('');
+  const [actionError, setActionError] = useState('');
 
   const { data, isLoading } = useDiagnosticItems(filters);
   const items = data?.items ?? [];
@@ -116,9 +117,8 @@ export default function DiagnosticItemsAdmin() {
     return acc;
   }, {});
 
-  const topicsWithCoverage = TOPICS.filter((topic) =>
-    coverage.some((c) => c.topic === topic),
-  );
+  // Always render the full grid — the backend only returns rows with approved items (GROUP BY omits zeros)
+  const topicsWithCoverage = TOPICS;
 
   async function onGenerate(e: React.FormEvent) {
     e.preventDefault();
@@ -291,8 +291,8 @@ export default function DiagnosticItemsAdmin() {
         </form>
       </FormSection>
 
-      {/* Coverage table */}
-      {topicsWithCoverage.length > 0 && (
+      {/* Coverage table — always show the full 9×3 grid when any coverage data exists */}
+      {coverage.length > 0 && (
         <section aria-labelledby="coverage-heading">
           <h3
             id="coverage-heading"
@@ -357,7 +357,7 @@ export default function DiagnosticItemsAdmin() {
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusChip status={item.status} />
                     <span className="text-xs text-muted-foreground">
-                      {t('diagnosticItems.tier1').replace('1', String(item.difficulty_tier))}
+                      {t(`diagnosticItems.tier${item.difficulty_tier}`)}
                     </span>
                     <span className="ml-auto text-xs text-muted-foreground">
                       {t('diagnosticItems.colSource')}: {item.source}
@@ -400,7 +400,14 @@ export default function DiagnosticItemsAdmin() {
                       <button
                         type="button"
                         className="min-h-[44px] rounded-md bg-green-600 px-3 text-sm font-bold text-white hover:bg-green-700"
-                        onClick={() => approve.mutateAsync(item.id)}
+                        onClick={async () => {
+                          setActionError('');
+                          try {
+                            await approve.mutateAsync(item.id);
+                          } catch {
+                            setActionError(t('diagnosticItems.actionError'));
+                          }
+                        }}
                       >
                         {t('diagnosticItems.approve')}
                       </button>
@@ -409,7 +416,14 @@ export default function DiagnosticItemsAdmin() {
                       <button
                         type="button"
                         className="min-h-[44px] rounded-md bg-red-600 px-3 text-sm font-bold text-white hover:bg-red-700"
-                        onClick={() => reject.mutateAsync(item.id)}
+                        onClick={async () => {
+                          setActionError('');
+                          try {
+                            await reject.mutateAsync(item.id);
+                          } catch {
+                            setActionError(t('diagnosticItems.actionError'));
+                          }
+                        }}
                       >
                         {t('diagnosticItems.reject')}
                       </button>
@@ -418,7 +432,14 @@ export default function DiagnosticItemsAdmin() {
                       <button
                         type="button"
                         className="min-h-[44px] rounded-md border border-line px-3 text-sm font-bold hover:bg-muted"
-                        onClick={() => retire.mutateAsync(item.id)}
+                        onClick={async () => {
+                          setActionError('');
+                          try {
+                            await retire.mutateAsync(item.id);
+                          } catch {
+                            setActionError(t('diagnosticItems.actionError'));
+                          }
+                        }}
                       >
                         {t('diagnosticItems.retire')}
                       </button>
@@ -433,6 +454,10 @@ export default function DiagnosticItemsAdmin() {
                       </button>
                     )}
                   </div>
+
+                  {actionError && (
+                    <p role="alert" className="text-sm text-danger-700">{actionError}</p>
+                  )}
 
                   {/* Inline edit panel (draft only) */}
                   {editingItem?.id === item.id && editForm && (
