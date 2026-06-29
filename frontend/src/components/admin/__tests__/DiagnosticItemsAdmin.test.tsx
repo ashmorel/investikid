@@ -10,6 +10,14 @@ const patchMut = vi.fn().mockResolvedValue({});
 const approveMut = vi.fn().mockResolvedValue({});
 const rejectMut = vi.fn().mockResolvedValue({});
 const retireMut = vi.fn().mockResolvedValue({});
+const verifyMut = vi.fn().mockResolvedValue({
+  verified: 3,
+  agree: 2,
+  mismatch: 1,
+  ambiguous: 0,
+  error: 0,
+  flagged: [],
+});
 
 const mockItems = [
   {
@@ -29,6 +37,10 @@ const mockItems = [
     approved_by: null,
     approved_at: null,
     created_at: '2026-06-28T10:00:00Z',
+    verifier_status: 'mismatch' as const,
+    verifier_answer_index: 2,
+    verifier_note: 'Verifier thinks option C is correct based on context.',
+    verified_at: '2026-06-28T12:00:00Z',
   },
   {
     id: 'item-2',
@@ -47,6 +59,32 @@ const mockItems = [
     approved_by: 'admin@example.com',
     approved_at: '2026-06-28T11:00:00Z',
     created_at: '2026-06-28T10:00:00Z',
+    verifier_status: 'agree' as const,
+    verifier_answer_index: 1,
+    verifier_note: null,
+    verified_at: '2026-06-28T11:30:00Z',
+  },
+  {
+    id: 'item-3',
+    market_code: 'GB',
+    topic: 'savings',
+    concept_id: null,
+    difficulty_tier: 1 as const,
+    question: 'What is compound interest?',
+    choices: ['Simple interest only', 'Interest on interest', 'A bank fee', 'A tax'],
+    answer_index: 1,
+    explanation: 'Compound interest earns interest on previously earned interest.',
+    status: 'draft' as const,
+    source: 'generated',
+    times_shown: 0,
+    times_correct: 0,
+    approved_by: null,
+    approved_at: null,
+    created_at: '2026-06-28T10:00:00Z',
+    verifier_status: null,
+    verifier_answer_index: null,
+    verifier_note: null,
+    verified_at: null,
   },
 ];
 
@@ -57,13 +95,20 @@ const mockCoverage = [
   { topic: 'savings', difficulty_tier: 1, approved_count: 1 },
 ];
 
+// Track last filters passed to useDiagnosticItems
+let lastDiagnosticFilters: Record<string, unknown> = {};
+
 vi.mock('@/api/adminDiagnostic', () => ({
-  useDiagnosticItems: () => ({ data: { items: mockItems, coverage: mockCoverage }, isLoading: false }),
+  useDiagnosticItems: (filters: Record<string, unknown> = {}) => {
+    lastDiagnosticFilters = filters;
+    return { data: { items: mockItems, coverage: mockCoverage }, isLoading: false };
+  },
   useGenerateItems: () => ({ mutateAsync: generateMut, isPending: false }),
   usePatchItem: () => ({ mutateAsync: patchMut, isPending: false }),
   useApproveItem: () => ({ mutateAsync: approveMut, isPending: false }),
   useRejectItem: () => ({ mutateAsync: rejectMut, isPending: false }),
   useRetireItem: () => ({ mutateAsync: retireMut, isPending: false }),
+  useVerifyItems: () => ({ mutateAsync: verifyMut, isPending: false }),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -71,6 +116,11 @@ vi.mock('react-i18next', () => ({
     t: (k: string, o?: Record<string, unknown>) => {
       if (o?.count !== undefined) return `${k}:${o.count}`;
       if (o?.name !== undefined) return `${k}:${o.name}`;
+      if (o?.index !== undefined) return `${k}:${o.index}`;
+      if (o?.note !== undefined) return `${k}:${o.note}`;
+      // verifyResultSummary passes multiple keys — return a string containing all values
+      if (o?.verified !== undefined)
+        return `verified:${o.verified} agree:${o.agree} mismatch:${o.mismatch} ambiguous:${o.ambiguous} error:${o.error}`;
       return k;
     },
   }),
@@ -85,6 +135,8 @@ describe('DiagnosticItemsAdmin', () => {
     approveMut.mockClear();
     rejectMut.mockClear();
     retireMut.mockClear();
+    verifyMut.mockClear();
+    lastDiagnosticFilters = {};
   });
 
   it('renders items with status chips', () => {
@@ -191,6 +243,60 @@ describe('DiagnosticItemsAdmin', () => {
     render(<DiagnosticItemsAdmin />);
     // The status dropdown must NOT contain a 'rejected' option at all
     expect(screen.queryByText('diagnosticItems.statusRejected')).toBeNull();
+  });
+
+  it('mismatch item shows prominent verifier warning with declared vs verifier answer and note', () => {
+    render(<DiagnosticItemsAdmin />);
+    // item-1 has verifier_status=mismatch, declared answer_index=1, verifier_answer_index=2
+    // Should show a warning banner/badge containing these details
+    expect(screen.getByTestId('verifier-warning-item-1')).toBeInTheDocument();
+    // Warning shows declared answer index
+    expect(screen.getByTestId('verifier-warning-item-1')).toHaveTextContent('1');
+    // Warning shows verifier's answer index
+    expect(screen.getByTestId('verifier-warning-item-1')).toHaveTextContent('2');
+    // Warning shows the note
+    expect(screen.getByTestId('verifier-warning-item-1')).toHaveTextContent(
+      'Verifier thinks option C is correct based on context.',
+    );
+  });
+
+  it('agree item shows a subtle verified chip, not a warning', () => {
+    render(<DiagnosticItemsAdmin />);
+    // item-2 has verifier_status=agree — should show verified chip, no warning
+    expect(screen.queryByTestId('verifier-warning-item-2')).not.toBeInTheDocument();
+    expect(screen.getByTestId('verifier-agree-item-2')).toBeInTheDocument();
+  });
+
+  it('unverified item shows neither warning nor agree chip', () => {
+    render(<DiagnosticItemsAdmin />);
+    // item-3 has verifier_status=null — no badge of any kind
+    expect(screen.queryByTestId('verifier-warning-item-3')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('verifier-agree-item-3')).not.toBeInTheDocument();
+  });
+
+  it('"Needs review" filter toggle passes verifier=needs_review to the list hook', async () => {
+    render(<DiagnosticItemsAdmin />);
+    const toggle = screen.getByRole('button', { name: /diagnosticItems.needsReviewFilter/i });
+    fireEvent.click(toggle);
+    await waitFor(() =>
+      expect(lastDiagnosticFilters).toMatchObject({ verifier: 'needs_review' }),
+    );
+  });
+
+  it('"Verify all" button calls the verify mutation and shows returned counts', async () => {
+    render(<DiagnosticItemsAdmin />);
+    const verifyBtn = screen.getByRole('button', { name: /diagnosticItems.verifyAll/i });
+    fireEvent.click(verifyBtn);
+    await waitFor(() => expect(verifyMut).toHaveBeenCalledTimes(1));
+    // After mutation resolves, counts summary should be visible
+    await waitFor(() =>
+      expect(screen.getByTestId('verify-all-result')).toBeInTheDocument(),
+    );
+    const result = screen.getByTestId('verify-all-result');
+    // Shows the verified count (3), agree (2), mismatch (1)
+    expect(result).toHaveTextContent('3');
+    expect(result).toHaveTextContent('2');
+    expect(result).toHaveTextContent('1');
   });
 
   it('has no axe accessibility violations (WCAG 2.2 AA)', async () => {

@@ -3,6 +3,8 @@ import { apiFetch } from './client';
 
 // ── Types ──────────────────────────────────────────────────────────
 
+export type VerifierStatus = 'agree' | 'mismatch' | 'ambiguous' | 'error';
+
 export interface DiagnosticItem {
   id: string;
   market_code: string;
@@ -20,6 +22,10 @@ export interface DiagnosticItem {
   approved_by: string | null;
   approved_at: string | null;
   created_at: string;
+  verifier_status: VerifierStatus | null;
+  verifier_answer_index: number | null;
+  verifier_note: string | null;
+  verified_at: string | null;
 }
 
 export interface CoverageCell {
@@ -53,6 +59,35 @@ export interface DiagnosticFilters {
   market_code?: string;
   topic?: string;
   status?: string;
+  verifier?: 'needs_review' | '';
+}
+
+export interface VerifyParams {
+  market_code?: string;
+  topic?: string;
+  status?: string;
+  limit?: number;
+  only_unverified?: boolean;
+  tier?: 1 | 2 | 3;
+}
+
+export interface VerifyFlaggedItem {
+  id: string;
+  topic: string;
+  difficulty_tier: number;
+  answer_index: number;
+  verifier_answer_index: number | null;
+  verifier_status: VerifierStatus;
+  verifier_note: string | null;
+}
+
+export interface VerifyResult {
+  verified: number;
+  agree: number;
+  mismatch: number;
+  ambiguous: number;
+  error: number;
+  flagged: VerifyFlaggedItem[];
 }
 
 // ── Query keys ──────────────────────────────────────────────────────
@@ -71,6 +106,7 @@ export function useDiagnosticItems(filters: DiagnosticFilters = {}) {
   if (filters.market_code) params.set('market_code', filters.market_code);
   if (filters.topic) params.set('topic', filters.topic);
   if (filters.status) params.set('status', filters.status);
+  if (filters.verifier) params.set('verifier', filters.verifier);
   const qs = params.toString();
   return useQuery({
     queryKey: [...DIAGNOSTIC_KEY, filters],
@@ -78,6 +114,18 @@ export function useDiagnosticItems(filters: DiagnosticFilters = {}) {
       apiFetch<DiagnosticItemsResponse>(
         `/admin/diagnostic-items${qs ? `?${qs}` : ''}`,
       ) as Promise<DiagnosticItemsResponse>,
+  });
+}
+
+export function useVerifyItems() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (body: VerifyParams) =>
+      apiFetch<VerifyResult>('/admin/diagnostic-items/verify', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }) as Promise<VerifyResult>,
+    onSuccess: invalidate,
   });
 }
 

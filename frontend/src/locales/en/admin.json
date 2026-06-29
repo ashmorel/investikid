@@ -389,7 +389,19 @@
     "noItems": "No items match these filters.",
     "tier1": "Tier 1",
     "tier2": "Tier 2",
-    "tier3": "Tier 3"
+    "tier3": "Tier 3",
+    "actionError": "Action failed. Try again.",
+    "needsReviewFilter": "Needs review",
+    "needsReviewFilterActive": "All items",
+    "verifyAll": "Verify all",
+    "verifying": "Verifying…",
+    "verifyError": "Verification failed. Try again.",
+    "verifierWarningTitle": "Verifier disagreement",
+    "verifierDeclared": "Declared: {{index}}",
+    "verifierSuggested": "Verifier: {{index}}",
+    "verifierNote": "Note: {{note}}",
+    "verifierAgree": "Verified ✓",
+    "verifyResultSummary": "Verified: {{verified}} — Agree: {{agree}} — Mismatch: {{mismatch}} — Ambiguous: {{ambiguous}} — Error: {{error}}"
   },
   "sidebar": {
     "title": "InvestiKid Admin",

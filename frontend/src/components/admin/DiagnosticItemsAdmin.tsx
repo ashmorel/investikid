@@ -7,9 +7,11 @@ import {
   useApproveItem,
   useRejectItem,
   useRetireItem,
+  useVerifyItems,
   type DiagnosticItem,
   type DiagnosticItemPatch,
   type DiagnosticFilters,
+  type VerifyResult,
 } from '@/api/adminDiagnostic';
 import { FormSection } from '@/components/admin/FormSection';
 
@@ -41,6 +43,40 @@ function StatusChip({ status }: { status: ItemStatus }) {
   const { t } = useTranslation('admin');
   const key = `diagnosticItems.status${status.charAt(0).toUpperCase()}${status.slice(1)}` as const;
   return <span className={statusChipCls(status)}>{t(key)}</span>;
+}
+
+function VerifierBadge({ item }: { item: DiagnosticItem }) {
+  const { t } = useTranslation('admin');
+  const { verifier_status, verifier_answer_index, verifier_note, answer_index, id } = item;
+
+  if (verifier_status === 'mismatch' || verifier_status === 'ambiguous') {
+    return (
+      <div
+        data-testid={`verifier-warning-${id}`}
+        className="rounded-md border border-amber-400 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+      >
+        <p className="font-bold">{t('diagnosticItems.verifierWarningTitle')}</p>
+        <p>{t('diagnosticItems.verifierDeclared', { index: answer_index })}</p>
+        <p>{t('diagnosticItems.verifierSuggested', { index: verifier_answer_index ?? '—' })}</p>
+        {verifier_note && (
+          <p>{t('diagnosticItems.verifierNote', { note: verifier_note })}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (verifier_status === 'agree') {
+    return (
+      <span
+        data-testid={`verifier-agree-${id}`}
+        className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700"
+      >
+        {t('diagnosticItems.verifierAgree')}
+      </span>
+    );
+  }
+
+  return null;
 }
 
 function coverageCellText(count: number, t: (k: string, o?: Record<string, unknown>) => string): string {
@@ -80,7 +116,11 @@ export default function DiagnosticItemsAdmin() {
     market_code: '',
     topic: '',
     status: '',
+    verifier: '',
   });
+
+  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
+  const [verifyError, setVerifyError] = useState('');
 
   const [genMarket, setGenMarket] = useState('GB');
   const [genTopic, setGenTopic] = useState<string>(TOPICS[0]);
@@ -102,6 +142,7 @@ export default function DiagnosticItemsAdmin() {
   const approve = useApproveItem();
   const reject = useRejectItem();
   const retire = useRetireItem();
+  const verify = useVerifyItems();
 
   // Group items by topic
   const topicGroups = TOPICS.reduce<Record<string, DiagnosticItem[]>>((acc, topic) => {
@@ -164,6 +205,21 @@ export default function DiagnosticItemsAdmin() {
     }
   }
 
+  async function onVerifyAll() {
+    setVerifyError('');
+    setVerifyResult(null);
+    try {
+      const result = await verify.mutateAsync({
+        market_code: filters.market_code || undefined,
+        topic: filters.topic || undefined,
+        status: filters.status || undefined,
+      });
+      setVerifyResult(result);
+    } catch {
+      setVerifyError(t('diagnosticItems.verifyError'));
+    }
+  }
+
   return (
     <div className="max-w-4xl space-y-8">
       <h2 className="text-xl font-semibold text-ink">{t('diagnosticItems.title')}</h2>
@@ -214,7 +270,58 @@ export default function DiagnosticItemsAdmin() {
             ))}
           </select>
         </label>
+
+        <div className="flex items-end gap-2">
+          <button
+            type="button"
+            className={`min-h-[44px] rounded-md border px-3 text-sm font-bold ${
+              filters.verifier === 'needs_review'
+                ? 'border-amber-500 bg-amber-100 text-amber-900 hover:bg-amber-200'
+                : 'border-line hover:bg-muted'
+            }`}
+            onClick={() =>
+              setFilters((f) => ({
+                ...f,
+                verifier: f.verifier === 'needs_review' ? '' : 'needs_review',
+              }))
+            }
+          >
+            {filters.verifier === 'needs_review'
+              ? t('diagnosticItems.needsReviewFilterActive')
+              : t('diagnosticItems.needsReviewFilter')}
+          </button>
+
+          <button
+            type="button"
+            disabled={verify.isPending}
+            className="min-h-[44px] rounded-md border border-line bg-background px-3 text-sm font-bold hover:bg-muted disabled:opacity-50"
+            onClick={onVerifyAll}
+          >
+            {verify.isPending
+              ? t('diagnosticItems.verifying')
+              : t('diagnosticItems.verifyAll')}
+          </button>
+        </div>
       </div>
+
+      {verifyResult && (
+        <div
+          data-testid="verify-all-result"
+          className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900"
+        >
+          {t('diagnosticItems.verifyResultSummary', {
+            verified: verifyResult.verified,
+            agree: verifyResult.agree,
+            mismatch: verifyResult.mismatch,
+            ambiguous: verifyResult.ambiguous,
+            error: verifyResult.error,
+          })}
+        </div>
+      )}
+
+      {verifyError && (
+        <p role="alert" className="text-sm text-danger-700">{verifyError}</p>
+      )}
 
       {/* Generate section */}
       <FormSection title={t('diagnosticItems.generateHeading')}>
@@ -364,6 +471,9 @@ export default function DiagnosticItemsAdmin() {
                       {item.times_shown}/{item.times_correct}
                     </span>
                   </div>
+
+                  {/* Verifier badge / warning */}
+                  <VerifierBadge item={item} />
 
                   {/* Question */}
                   <p className="font-medium text-ink">{item.question}</p>
