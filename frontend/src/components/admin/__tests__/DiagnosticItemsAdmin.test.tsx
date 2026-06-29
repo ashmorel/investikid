@@ -174,17 +174,23 @@ describe('DiagnosticItemsAdmin', () => {
     expect(noneCells.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('approve failure surfaces an error message', async () => {
+  it('approve failure surfaces an error message scoped to the failing card only', async () => {
     approveMut.mockRejectedValueOnce(new Error('409 Conflict'));
     render(<DiagnosticItemsAdmin />);
-    // item-1 is draft → has an approve button
+    // item-1 is draft → has an approve button; item-2 is approved → no approve button
     const approveBtns = screen.getAllByText('diagnosticItems.approve');
     fireEvent.click(approveBtns[0]);
-    // The component surfaces the error via role="alert" paragraph(s) — may appear once per card
+    // The error must appear exactly once (scoped to item-1's card only, not leaked to item-2)
     await waitFor(() =>
-      expect(screen.getAllByText('diagnosticItems.actionError').length).toBeGreaterThan(0),
+      expect(screen.getAllByText('diagnosticItems.actionError').length).toBe(1),
     );
-    expect(screen.getAllByRole('alert').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('alert').length).toBe(1);
+  });
+
+  it('"rejected" is not present as a status filter option', () => {
+    render(<DiagnosticItemsAdmin />);
+    // The status dropdown must NOT contain a 'rejected' option at all
+    expect(screen.queryByText('diagnosticItems.statusRejected')).toBeNull();
   });
 
   it('has no axe accessibility violations (WCAG 2.2 AA)', async () => {

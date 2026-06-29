@@ -103,7 +103,7 @@ def _validate_candidate(raw: object) -> dict | None:
         return None
     if not all(isinstance(c, str) and c.strip() for c in choices):
         return None
-    if not isinstance(answer_index, int) or not (0 <= answer_index <= 3):
+    if not isinstance(answer_index, int) or isinstance(answer_index, bool) or not (0 <= answer_index <= 3):
         return None
 
     return {

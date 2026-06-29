@@ -13,7 +13,7 @@ export interface DiagnosticItem {
   choices: string[];
   answer_index: number;
   explanation: string;
-  status: 'draft' | 'approved' | 'rejected' | 'retired';
+  status: 'draft' | 'approved' | 'retired';
   source: string;
   times_shown: number;
   times_correct: number;

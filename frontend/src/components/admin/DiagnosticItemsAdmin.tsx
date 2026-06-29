@@ -21,7 +21,7 @@ const TOPICS = [
 type Tier = 1 | 2 | 3;
 type ItemStatus = DiagnosticItem['status'];
 
-const STATUS_OPTIONS: ItemStatus[] = ['draft', 'approved', 'rejected', 'retired'];
+const STATUS_OPTIONS: ItemStatus[] = ['draft', 'approved', 'retired'];
 
 const inputCls =
   'rounded-md border border-line bg-background px-3 py-2 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 min-h-[44px]';
@@ -30,8 +30,6 @@ function statusChipCls(status: ItemStatus): string {
   switch (status) {
     case 'approved':
       return 'inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-800';
-    case 'rejected':
-      return 'inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-800';
     case 'retired':
       return 'inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-600';
     default:
@@ -93,7 +91,7 @@ export default function DiagnosticItemsAdmin() {
   const [editingItem, setEditingItem] = useState<DiagnosticItem | null>(null);
   const [editForm, setEditForm] = useState<EditState | null>(null);
   const [saveError, setSaveError] = useState('');
-  const [actionError, setActionError] = useState('');
+  const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useDiagnosticItems(filters);
   const items = data?.items ?? [];
@@ -396,16 +394,16 @@ export default function DiagnosticItemsAdmin() {
 
                   {/* Actions */}
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {(item.status === 'draft' || item.status === 'rejected') && (
+                    {item.status === 'draft' && (
                       <button
                         type="button"
                         className="min-h-[44px] rounded-md bg-green-600 px-3 text-sm font-bold text-white hover:bg-green-700"
                         onClick={async () => {
-                          setActionError('');
+                          setActionErrors((prev) => { const next = { ...prev }; delete next[item.id]; return next; });
                           try {
                             await approve.mutateAsync(item.id);
                           } catch {
-                            setActionError(t('diagnosticItems.actionError'));
+                            setActionErrors((prev) => ({ ...prev, [item.id]: t('diagnosticItems.actionError') }));
                           }
                         }}
                       >
@@ -417,11 +415,11 @@ export default function DiagnosticItemsAdmin() {
                         type="button"
                         className="min-h-[44px] rounded-md bg-red-600 px-3 text-sm font-bold text-white hover:bg-red-700"
                         onClick={async () => {
-                          setActionError('');
+                          setActionErrors((prev) => { const next = { ...prev }; delete next[item.id]; return next; });
                           try {
                             await reject.mutateAsync(item.id);
                           } catch {
-                            setActionError(t('diagnosticItems.actionError'));
+                            setActionErrors((prev) => ({ ...prev, [item.id]: t('diagnosticItems.actionError') }));
                           }
                         }}
                       >
@@ -433,11 +431,11 @@ export default function DiagnosticItemsAdmin() {
                         type="button"
                         className="min-h-[44px] rounded-md border border-line px-3 text-sm font-bold hover:bg-muted"
                         onClick={async () => {
-                          setActionError('');
+                          setActionErrors((prev) => { const next = { ...prev }; delete next[item.id]; return next; });
                           try {
                             await retire.mutateAsync(item.id);
                           } catch {
-                            setActionError(t('diagnosticItems.actionError'));
+                            setActionErrors((prev) => ({ ...prev, [item.id]: t('diagnosticItems.actionError') }));
                           }
                         }}
                       >
@@ -455,8 +453,8 @@ export default function DiagnosticItemsAdmin() {
                     )}
                   </div>
 
-                  {actionError && (
-                    <p role="alert" className="text-sm text-danger-700">{actionError}</p>
+                  {actionErrors[item.id] && (
+                    <p role="alert" className="text-sm text-danger-700">{actionErrors[item.id]}</p>
                   )}
 
                   {/* Inline edit panel (draft only) */}

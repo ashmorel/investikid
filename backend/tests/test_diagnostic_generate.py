@@ -267,6 +267,34 @@ async def test_unresolvable_concept_slug_yields_null(db_session):
     assert results[0].concept_id is None
 
 
+async def test_bool_answer_index_dropped(db_session):
+    """A candidate with answer_index=True (JSON bool) must be dropped by _validate_candidate.
+
+    Python bool is a subclass of int, so ``isinstance(True, int)`` is True.
+    The hardened guard must also reject bools so JSON ``true``/``false`` do not
+    silently coerce to 1/0 and sneak through as valid answer indices.
+    """
+    bad = _mcq(answer_index=True)  # type: ignore[arg-type]  # intentionally wrong type
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(return_value=_llm_response([bad]))
+
+    with (
+        patch(f"{_MODULE}.get_llm_client", return_value=mock_client),
+        patch(f"{_MODULE}.moderate_output", AsyncMock(return_value=_SAFE)) as mock_mod,
+    ):
+        results = await generate_items(
+            db_session,
+            market_code="GB",
+            topic="savings",
+            difficulty_tier=1,
+            count=1,
+        )
+
+    assert results == []
+    # Moderation must NOT be called — the item must be dropped before moderation.
+    mock_mod.assert_not_called()
+
+
 async def test_mixed_valid_invalid_persists_only_valid(db_session):
     """Valid and invalid items in the same batch: only valid ones are persisted."""
     good = _mcq(question="What is diversification?")
