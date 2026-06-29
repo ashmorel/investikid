@@ -127,7 +127,7 @@ def _build_verifier_prompt(item: DiagnosticItem) -> str:
     model must solve the question independently.
     """
     choices_text = "\n".join(
-        f"{i}. {choice}" for i, choice in enumerate(item.choices)
+        f"[{i}] {choice}" for i, choice in enumerate(item.choices)
     )
     prompt = (
         "You are an independent answer checker for InvestiKid, a children's "
@@ -136,10 +136,15 @@ def _build_verifier_prompt(item: DiagnosticItem) -> str:
         "being told which answer is declared correct — solve it yourself from "
         "first principles.\n\n"
         f"Question:\n{item.question}\n\n"
-        f"Choices:\n{choices_text}\n\n"
+        f"Choices (each is labelled with its index in [brackets]):\n{choices_text}\n\n"
+        "The indices are 0-based: the first choice is [0], the second is [1], and "
+        "so on. The answer_index you return MUST be exactly the bracketed [number] "
+        "shown next to the choice you pick — do NOT add or subtract 1, and do NOT "
+        "use a 1-based position.\n\n"
         "Respond with ONLY a JSON object with these keys:\n"
-        '  "answer_index": <int 0-3, your independently chosen best answer>,\n'
-        '  "ambiguous": <bool, true if more than one choice is defensibly correct>,\n'
+        '  "answer_index": <the [bracketed] index of your chosen choice>,\n'
+        '  "ambiguous": <bool, true ONLY if two or more choices are genuinely and '
+        'defensibly correct — not merely because you are unsure>,\n'
         '  "note": <str, one-line reason for your choice>\n'
         "Do not copy or reference any declared correct answer — you have not been "
         "given one."
