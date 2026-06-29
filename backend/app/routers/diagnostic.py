@@ -1,6 +1,7 @@
 """Diagnostic router — child-facing assessment endpoints.
 
-Task 2: POST /diagnostic/start — item selection + session creation.
+Task 2: POST /diagnostic/start  — item selection + session creation.
+Task 3: POST /diagnostic/submit — server-side scoring + checkpoint.
 """
 from __future__ import annotations
 
@@ -11,7 +12,12 @@ from app.core.database import get_session
 from app.core.rate_limit import limiter
 from app.models.user import User
 from app.routers.users import get_current_user
-from app.schemas.diagnostic_session import DiagnosticStartResponse
+from app.schemas.diagnostic_session import (
+    CheckpointTopicOut,
+    DiagnosticStartResponse,
+    DiagnosticSubmitRequest,
+    DiagnosticSubmitResponse,
+)
 from app.services import diagnostic_service
 
 router = APIRouter(prefix="/diagnostic", tags=["diagnostic"])
@@ -34,4 +40,47 @@ async def start_diagnostic(
     return DiagnosticStartResponse(
         session_id=diag_session.id,
         items=items,
+    )
+
+
+@router.post("/submit", response_model=DiagnosticSubmitResponse)
+@limiter.limit("20/hour")
+async def submit_diagnostic(
+    body: DiagnosticSubmitRequest,
+    request: Request,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> DiagnosticSubmitResponse:
+    """Score a diagnostic session and write an immutable MasteryCheckpoint.
+
+    The server scores every item authoritatively — client-sent scores are
+    never trusted.  Returns the checkpoint summary including per-topic
+    breakdowns.  No XP, streak, or coin rewards are issued.
+
+    Errors:
+    - 404 if the session does not exist.
+    - 403 if the session belongs to another user.
+    - 409 if the session has already been completed.
+    """
+    checkpoint = await diagnostic_service.submit_diagnostic(
+        session,
+        user,
+        session_id=body.session_id,
+        answers=body.answers,
+    )
+    await session.commit()
+    # Reload topic rows (flush guarantees they are persisted)
+    await session.refresh(checkpoint, ["topics"])
+    return DiagnosticSubmitResponse(
+        kind=checkpoint.kind,
+        overall_score=checkpoint.overall_score,
+        session_count=checkpoint.session_count,
+        topics=[
+            CheckpointTopicOut(
+                topic=t.topic,
+                correct=t.correct,
+                attempted=t.attempted,
+            )
+            for t in checkpoint.topics
+        ],
     )

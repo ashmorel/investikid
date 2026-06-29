@@ -1,4 +1,4 @@
-"""Pydantic schemas for the diagnostic session start endpoint (Task 2)."""
+"""Pydantic schemas for the diagnostic session endpoints (Tasks 2–3)."""
 from __future__ import annotations
 
 import uuid
@@ -27,3 +27,33 @@ class DiagnosticStartResponse(BaseModel):
 
     session_id: uuid.UUID
     items: list[DiagnosticItemPublic]
+
+
+# ---------------------------------------------------------------------------
+# Task 3 — submit
+# ---------------------------------------------------------------------------
+
+
+class DiagnosticSubmitRequest(BaseModel):
+    """Body for POST /diagnostic/submit."""
+
+    session_id: uuid.UUID
+    # item_id (str) → chosen answer index (int)
+    answers: dict[str, int]
+
+
+class CheckpointTopicOut(BaseModel):
+    """Per-topic breakdown returned with the checkpoint summary."""
+
+    topic: str
+    correct: int
+    attempted: int
+
+
+class DiagnosticSubmitResponse(BaseModel):
+    """Response for POST /diagnostic/submit — immutable checkpoint summary."""
+
+    kind: str
+    overall_score: float | None
+    session_count: int
+    topics: list[CheckpointTopicOut]

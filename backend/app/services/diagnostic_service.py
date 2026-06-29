@@ -1,7 +1,8 @@
-"""Diagnostic session service — item selection + start (Task 2).
+"""Diagnostic session service — item selection + start (Task 2) + scoring (Task 3).
 
 ``start_diagnostic`` selects approved items for a child and opens a
-``DiagnosticSession``.  Selection rules:
+``DiagnosticSession``.  ``submit_diagnostic`` scores the session server-side
+and writes an immutable ``MasteryCheckpoint``.  Selection rules:
 
 1. In-scope topics = {"budgeting", "savings", "risk"} ∪ (user.topic_path
    if set and is one of the 9 recognised topics).
@@ -23,14 +24,17 @@ from __future__ import annotations
 
 import logging
 import uuid
+from datetime import UTC, datetime
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.markets import active_market
 from app.models.diagnostic import DiagnosticItem
-from app.models.mastery import DiagnosticSession
+from app.models.mastery import DiagnosticSession, MasteryCheckpoint, MasteryCheckpointTopic
 from app.models.user import User
+from app.services.skill_profile_service import update_mastery_on_completion
 
 logger = logging.getLogger(__name__)
 
@@ -193,3 +197,128 @@ async def start_diagnostic(
 
     items_out = [_safe_item_dict(i) for i in selected]
     return diag_session, items_out
+
+
+# ---------------------------------------------------------------------------
+# Task 3 — submit_diagnostic
+# ---------------------------------------------------------------------------
+
+
+async def submit_diagnostic(
+    session: AsyncSession,
+    user: User,
+    *,
+    session_id: uuid.UUID,
+    answers: dict[str, int],
+    session_count: int = 0,
+) -> MasteryCheckpoint:
+    """Score a diagnostic session server-side and write an immutable MasteryCheckpoint.
+
+    Raises:
+        HTTPException 404  — session not found.
+        HTTPException 403  — session belongs to a different user.
+        HTTPException 409  — session already completed.
+
+    Scoring rules:
+    - For each item_id in session.item_ids: correct = answers.get(item_id) == item.answer_index.
+    - Unanswered items count as attempted-and-incorrect (denominator = session size).
+    - overall_score = total_correct / total_attempted  (None when attempted == 0).
+    - Empty session (item_ids == []) → kind="skipped", overall_score=None, no topic rows.
+    - Bumps times_correct on each correctly-answered item (calibration).
+    - Calls update_mastery_on_completion for each item (warm-start TopicMastery).
+    - Does NOT touch XP, streak, coins, or any reward/activity paths.
+    """
+    # 1. Load + guard
+    diag_session = await session.get(DiagnosticSession, session_id)
+    if diag_session is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Diagnostic session not found")
+    if diag_session.user_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your diagnostic session")
+    if diag_session.completed_at is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Diagnostic session already completed")
+
+    # 2. Empty session → skipped checkpoint, no scoring
+    if not diag_session.item_ids:
+        checkpoint = MasteryCheckpoint(
+            user_id=user.id,
+            market_code=diag_session.market_code,
+            kind="skipped",
+            session_count=session_count,
+            overall_score=None,
+        )
+        session.add(checkpoint)
+        diag_session.completed_at = datetime.now(UTC)
+        await session.flush()
+        return checkpoint
+
+    # 3. Score per item, tally per topic
+    item_ids: list[str] = diag_session.item_ids
+    # topic → [correct_count, attempted_count]
+    topic_tally: dict[str, list[int]] = {}
+    total_correct = 0
+    total_attempted = 0
+
+    for item_id_str in item_ids:
+        item_uuid = uuid.UUID(item_id_str)
+        item = await session.get(DiagnosticItem, item_uuid)
+        if item is None:
+            # Defensive: item deleted after session was created — count as incorrect
+            topic = "unknown"
+            correct = False
+        else:
+            topic = item.topic
+            correct = answers.get(item_id_str) == item.answer_index
+
+            # 5. Calibration: bump times_correct
+            if correct:
+                item.times_correct += 1
+
+            # 6. Warm-start TopicMastery (diagnostic warm-start, no reward)
+            await update_mastery_on_completion(
+                session,
+                user.id,
+                topic,
+                is_quiz=True,
+                correct=correct,
+            )
+
+        if topic not in topic_tally:
+            topic_tally[topic] = [0, 0]
+        if correct:
+            topic_tally[topic][0] += 1
+            total_correct += 1
+        topic_tally[topic][1] += 1
+        total_attempted += 1
+
+    # 4a. Compute overall_score
+    overall_score: float | None = (
+        total_correct / total_attempted if total_attempted > 0 else None
+    )
+
+    # 4b. Write immutable MasteryCheckpoint
+    checkpoint = MasteryCheckpoint(
+        user_id=user.id,
+        market_code=diag_session.market_code,
+        kind=diag_session.kind,
+        session_count=session_count,
+        overall_score=overall_score,
+    )
+    session.add(checkpoint)
+    await session.flush()  # get checkpoint.id
+
+    # 4c. Write per-topic rows
+    for topic, (correct_count, attempted_count) in topic_tally.items():
+        session.add(
+            MasteryCheckpointTopic(
+                checkpoint_id=checkpoint.id,
+                topic=topic,
+                correct=correct_count,
+                attempted=attempted_count,
+            )
+        )
+
+    # 7. Mark session complete
+    diag_session.completed_at = datetime.now(UTC)
+    await session.flush()
+
+    return checkpoint
