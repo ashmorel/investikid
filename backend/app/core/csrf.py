@@ -46,6 +46,7 @@ _DEFAULT_EXEMPT_PATHS = frozenset({
     "/internal/concepts/backfill",
     "/internal/concepts/classify",
     "/internal/concepts/classify/reset",
+    "/internal/diagnostic-items/verify",
     "/parent/auth/oauth/google",
     "/parent/auth/oauth/apple",
 })

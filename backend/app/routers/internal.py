@@ -279,6 +279,53 @@ async def trigger_concept_classify(
     return result
 
 
+_VERIFY_ALLOWED_TIERS = {"lite", "standard", "premium"}
+_VERIFY_MAX_LIMIT = 100
+
+
+@router.post("/diagnostic-items/verify")
+async def trigger_diagnostic_verify(
+    limit: int = 25,
+    tier: str = "premium",
+    x_cron_secret: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+):
+    """Cron-gated sweep of approved diagnostic items that have not yet been
+    verified (verifier_status IS NULL).  Mirrors the admin sweep endpoint but
+    is accessible without an admin session, guarded by X-Cron-Secret instead.
+
+    Sweeps approved items with verifier_status IS NULL first (drain-safe:
+    re-running the same batch never re-bills already-verified items).
+
+    tier ∈ {lite, standard, premium} (default: premium).
+    limit is capped at 100; default 25.
+    Returns {verified, agree, mismatch, ambiguous, error, flagged: [...]}.
+    """
+    if not settings.cron_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not_configured")
+    if not x_cron_secret or not secrets.compare_digest(x_cron_secret, settings.cron_secret):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    if tier not in _VERIFY_ALLOWED_TIERS:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"tier must be one of {sorted(_VERIFY_ALLOWED_TIERS)}",
+        )
+    effective_limit = max(1, min(limit, _VERIFY_MAX_LIMIT))
+    from app.services.diagnostic_item_service import run_verify_sweep
+
+    result = await run_verify_sweep(
+        session,
+        status="approved",
+        market_code=None,
+        topic=None,
+        limit=effective_limit,
+        only_unverified=True,
+        tier=tier,
+    )
+    await session.commit()
+    return result
+
+
 @router.post("/concepts/backfill")
 async def trigger_concept_backfill(
     x_cron_secret: str | None = Header(default=None),

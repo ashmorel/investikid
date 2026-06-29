@@ -14,12 +14,10 @@ import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.rate_limit import limiter
-from app.models.diagnostic import DiagnosticItem
 from app.models.user import User
 from app.routers.admin_auth import get_current_admin
 from app.schemas.diagnostic import (
@@ -39,7 +37,7 @@ from app.services.diagnostic_item_service import (
     patch_item,
     reject_item,
     retire_item,
-    verify_item,
+    run_verify_sweep,
 )
 
 logger = logging.getLogger(__name__)
@@ -69,48 +67,23 @@ async def verify_sweep_diagnostic_items(
 
     This endpoint NEVER changes answer_index or status — advisory only.
     """
-    q = select(DiagnosticItem)
-    if payload.market_code:
-        q = q.where(DiagnosticItem.market_code == payload.market_code)
-    if payload.topic:
-        q = q.where(DiagnosticItem.topic == payload.topic)
-    if payload.status:
-        q = q.where(DiagnosticItem.status == payload.status)
-    if payload.only_unverified:
-        q = q.where(DiagnosticItem.verifier_status.is_(None))
-    q = q.order_by(DiagnosticItem.created_at.desc()).limit(payload.limit)
-
-    items = list((await session.scalars(q)).all())
-
-    counts: dict[str, int] = {"agree": 0, "mismatch": 0, "ambiguous": 0, "error": 0}
-    flagged: list[FlaggedItem] = []
-
-    for item in items:
-        await verify_item(session, item, tier=payload.tier)
-        vs = item.verifier_status or "error"
-        counts[vs] = counts.get(vs, 0) + 1
-        if vs in ("mismatch", "ambiguous"):
-            flagged.append(
-                FlaggedItem(
-                    id=item.id,
-                    topic=item.topic,
-                    difficulty_tier=item.difficulty_tier,
-                    answer_index=item.answer_index,
-                    verifier_answer_index=item.verifier_answer_index,
-                    verifier_status=vs,
-                    verifier_note=item.verifier_note,
-                )
-            )
-
+    result = await run_verify_sweep(
+        session,
+        status=payload.status,
+        market_code=payload.market_code,
+        topic=payload.topic,
+        limit=payload.limit,
+        only_unverified=payload.only_unverified,
+        tier=payload.tier,
+    )
     await session.commit()
-
     return DiagnosticSweepResponse(
-        verified=len(items),
-        agree=counts.get("agree", 0),
-        mismatch=counts.get("mismatch", 0),
-        ambiguous=counts.get("ambiguous", 0),
-        error=counts.get("error", 0),
-        flagged=flagged,
+        verified=result["verified"],
+        agree=result["agree"],
+        mismatch=result["mismatch"],
+        ambiguous=result["ambiguous"],
+        error=result["error"],
+        flagged=[FlaggedItem(**f) for f in result["flagged"]],
     )
 
 

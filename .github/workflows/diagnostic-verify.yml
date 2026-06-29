@@ -1,0 +1,67 @@
+name: Diagnostic item verifier sweep (LLM, one-off)
+on:
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "LLM model tier for verification"
+        type: choice
+        options: [lite, standard, premium]
+        default: premium
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      BACKEND_URL: ${{ vars.BACKEND_URL || 'https://investikid.up.railway.app' }}
+      TIER: ${{ inputs.tier || 'premium' }}
+    steps:
+      - name: Drain diagnostic item verification
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -uo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET is empty (add it under Actions → Secrets)."; exit 1
+          fi
+          # Sweep approved items with verifier_status IS NULL.
+          # Each batch stamps verifier_* fields so re-runs never re-bill the LLM.
+          # Loop until the backend reports verified == 0 (nothing left), bounded
+          # to 200 iterations. RESILIENT: a transient failure on one batch is
+          # logged and skipped; the drain is idempotent.
+          total_verified=0
+          total_flagged=0
+          fails=0
+          for i in $(seq 1 200); do
+            resp=$(curl -sS -X POST --connect-timeout 15 --max-time 75 \
+              -H "X-Cron-Secret: $CRON_SECRET" \
+              "$BACKEND_URL/internal/diagnostic-items/verify?limit=15&tier=$TIER") \
+              || { echo "batch $i: request failed, continuing"; fails=$((fails+1)); sleep 5; continue; }
+            verified=$(echo "$resp" | jq -r '.verified // empty' 2>/dev/null || true)
+            if [ -z "$verified" ]; then
+              echo "batch $i: unparseable response, continuing: ${resp:0:200}"
+              fails=$((fails+1)); sleep 5; continue
+            fi
+            agree=$(echo "$resp"    | jq -r '.agree    // 0')
+            mismatch=$(echo "$resp" | jq -r '.mismatch // 0')
+            ambiguous=$(echo "$resp"| jq -r '.ambiguous // 0')
+            error=$(echo "$resp"    | jq -r '.error    // 0')
+            flagged_count=$(echo "$resp" | jq '.flagged | length // 0')
+            echo "batch $i: verified=$verified agree=$agree mismatch=$mismatch ambiguous=$ambiguous error=$error flagged=$flagged_count"
+            if [ "$flagged_count" -gt 0 ]; then
+              echo "  flagged items:"
+              echo "$resp" | jq -r '.flagged[] | "    id=\(.id) topic=\(.topic) tier=\(.difficulty_tier) declared=\(.answer_index) verifier=\(.verifier_answer_index) status=\(.verifier_status) note=\(.verifier_note)"'
+            fi
+            total_verified=$((total_verified + verified))
+            total_flagged=$((total_flagged + flagged_count))
+            if [ "$verified" -eq 0 ]; then
+              echo "Drain complete — no unverified approved items remain."
+              break
+            fi
+            sleep 2
+          done
+          echo "::notice::Batches with transient failures (skipped): $fails"
+          echo "::notice::Diagnostic verification finished. Total verified this run: $total_verified, total flagged: $total_flagged"

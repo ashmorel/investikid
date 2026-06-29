@@ -219,6 +219,73 @@ async def verify_item(
         item.verified_at = now
 
 
+async def run_verify_sweep(
+    session: AsyncSession,
+    *,
+    status: str | None = None,
+    market_code: str | None = None,
+    topic: str | None = None,
+    limit: int,
+    only_unverified: bool,
+    tier: str,
+) -> dict:
+    """Run the independent answer-verifier sweep over matching DiagnosticItems.
+
+    Selects items using the supplied filters, bounded by ``limit``.  Runs
+    ``verify_item`` on each item best-effort (one failure sets
+    verifier_status="error" and never aborts the sweep), then flushes all
+    changes and returns a summary dict:
+
+        {verified, agree, mismatch, ambiguous, error, flagged: [...]}
+
+    This function is ADVISORY — it never changes answer_index or status.
+    The caller is responsible for ``session.commit()``.
+    """
+    from sqlalchemy import select
+
+    q = select(DiagnosticItem)
+    if market_code:
+        q = q.where(DiagnosticItem.market_code == market_code)
+    if topic:
+        q = q.where(DiagnosticItem.topic == topic)
+    if status:
+        q = q.where(DiagnosticItem.status == status)
+    if only_unverified:
+        q = q.where(DiagnosticItem.verifier_status.is_(None))
+    q = q.order_by(DiagnosticItem.created_at.desc()).limit(limit)
+
+    items = list((await session.scalars(q)).all())
+
+    counts: dict[str, int] = {"agree": 0, "mismatch": 0, "ambiguous": 0, "error": 0}
+    flagged: list[dict] = []
+
+    for item in items:
+        await verify_item(session, item, tier=tier)
+        vs = item.verifier_status or "error"
+        counts[vs] = counts.get(vs, 0) + 1
+        if vs in ("mismatch", "ambiguous"):
+            flagged.append(
+                {
+                    "id": str(item.id),
+                    "topic": item.topic,
+                    "difficulty_tier": item.difficulty_tier,
+                    "answer_index": item.answer_index,
+                    "verifier_answer_index": item.verifier_answer_index,
+                    "verifier_status": vs,
+                    "verifier_note": item.verifier_note,
+                }
+            )
+
+    return {
+        "verified": len(items),
+        "agree": counts.get("agree", 0),
+        "mismatch": counts.get("mismatch", 0),
+        "ambiguous": counts.get("ambiguous", 0),
+        "error": counts.get("error", 0),
+        "flagged": flagged,
+    }
+
+
 async def _fetch_concept_slugs(session: AsyncSession, topic: str) -> list[str]:
     """Return concept slugs for the given topic, ordered by order_index."""
     rows = (
