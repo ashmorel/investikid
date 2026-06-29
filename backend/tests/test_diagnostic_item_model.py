@@ -146,3 +146,37 @@ async def test_diagnostic_item_approved_fields_can_be_set(db_session):
     fetched = await db_session.get(DiagnosticItem, item.id)
     assert fetched.approved_by == approver_id
     assert fetched.approved_at is not None
+
+
+async def test_verifier_fields_default_none(db_session):
+    """New DiagnosticItem has all four verifier fields defaulting to None."""
+    item = _item(market_code="GB", topic="investing")
+    db_session.add(item)
+    await db_session.flush()
+    fetched = await db_session.get(DiagnosticItem, item.id)
+    assert fetched.verifier_status is None
+    assert fetched.verifier_answer_index is None
+    assert fetched.verifier_note is None
+    assert fetched.verified_at is None
+
+
+async def test_verifier_fields_persist_when_set(db_session):
+    """Verifier fields round-trip through the DB correctly."""
+    from datetime import UTC, datetime
+
+    verified_at = datetime.now(UTC)
+    item = _item(
+        market_code="US",
+        topic="savings",
+        verifier_status="mismatch",
+        verifier_answer_index=2,
+        verifier_note="The verifier disagrees with the authored answer.",
+        verified_at=verified_at,
+    )
+    db_session.add(item)
+    await db_session.flush()
+    fetched = await db_session.get(DiagnosticItem, item.id)
+    assert fetched.verifier_status == "mismatch"
+    assert fetched.verifier_answer_index == 2
+    assert fetched.verifier_note == "The verifier disagrees with the authored answer."
+    assert fetched.verified_at is not None

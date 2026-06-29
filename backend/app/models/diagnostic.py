@@ -58,6 +58,14 @@ class DiagnosticItem(Base):
     approved_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Verifier columns — populated by the independent answer-verifier (Task 1).
+    # NULL means unverified; status values: agree / mismatch / ambiguous / error.
+    verifier_status: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    verifier_answer_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    verifier_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
