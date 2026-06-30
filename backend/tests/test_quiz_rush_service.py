@@ -175,3 +175,24 @@ async def test_build_session_no_weak_concepts_unchanged(db_session):
     lesson_ids = {it["lesson_id"] for it in items}
     assert str(completed_lesson.id) in lesson_ids
     assert str(unrelated_lesson.id) in lesson_ids
+
+
+async def test_build_session_weak_concept_with_no_matching_lessons(db_session):
+    """A weak concept with no lessons in the pool degrades to the no-weak path (no crash)."""
+    from app.models.concept import Concept
+    from app.models.skill_profile import ConceptMastery
+
+    user, completed_lesson, unrelated_lesson = await _seed_quiz_session(db_session)
+    # A weak concept that NO seeded lesson is tagged with.
+    orphan = Concept(topic="saving", slug="orphan-c", name="Orphan", difficulty_tier=1, order_index=9)
+    db_session.add(orphan)
+    await db_session.flush()
+    db_session.add(ConceptMastery(
+        user_id=user.id, concept_id=orphan.id, attempts=4, correct=1, mastery_score=0.25,
+    ))
+    await db_session.flush()
+
+    items = await build_session(db_session, user, limit=50)
+    lesson_ids = {it["lesson_id"] for it in items}
+    assert str(completed_lesson.id) in lesson_ids
+    assert str(unrelated_lesson.id) in lesson_ids
