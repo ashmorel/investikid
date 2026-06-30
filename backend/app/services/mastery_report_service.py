@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import Level, LevelMastery, Module
 from app.models.user import User
+from app.services.diagnostic_service import compute_evidence
 from app.services.digest_service import _next_recommendation, _weak_topic
 
 MAX_OBJECTIVES = 8
@@ -67,6 +68,33 @@ async def build_mastery_report(
         ) or 0
 
         recommendation, _module = await _next_recommendation(session, child)
+
+        # --- growth block (Task 2) ---
+        evidence = await compute_evidence(session, child.id)
+        latest = evidence.get("latest")
+        baseline = evidence.get("baseline")
+        latest_topics: list[dict] = (latest or {}).get("topics") or []
+        baseline_topics_list: list[dict] = (baseline or {}).get("topics") or []
+
+        # focus_topic = lowest-scoring topic from latest checkpoint; fall back to baseline
+        focus_topic: str | None = None
+        score_source = latest_topics or baseline_topics_list
+        if score_source:
+            scored = [(t["score"], t["topic"]) for t in score_source if t.get("score") is not None]
+            if scored:
+                scored.sort()
+                focus_topic = scored[0][1]
+
+        growth: dict[str, Any] = {
+            "has_baseline": evidence["has_baseline"],
+            "overall_delta": evidence.get("overall_delta"),
+            "baseline_overall": (baseline or {}).get("overall_score"),
+            "latest_overall": (latest or {}).get("overall_score"),
+            "session_count": evidence.get("session_count"),
+            "topic_deltas": evidence.get("topic_deltas", []),
+            "focus_topic": focus_topic,
+        }
+
         entries.append(
             {
                 "user_id": str(child.id),
@@ -77,6 +105,7 @@ async def build_mastery_report(
                 "standards": standards,
                 "weak_topic": await _weak_topic(session, child),
                 "next_recommendation": recommendation,
+                "growth": growth,
             }
         )
         household_count += len(rows)

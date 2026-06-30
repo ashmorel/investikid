@@ -116,6 +116,23 @@ class IdentityOut(BaseModel):
     parent_email: str
 
 
+class TopicDelta(BaseModel):
+    topic: str
+    baseline_score: float | None
+    latest_score: float | None
+    delta: float | None
+
+
+class GrowthBlock(BaseModel):
+    has_baseline: bool
+    overall_delta: float | None
+    baseline_overall: float | None
+    latest_overall: float | None
+    session_count: int | None
+    topic_deltas: list[TopicDelta]
+    focus_topic: str | None
+
+
 class MasteryReportChildOut(BaseModel):
     user_id: str
     username: str
@@ -125,6 +142,7 @@ class MasteryReportChildOut(BaseModel):
     standards: list[dict]
     weak_topic: str | None = None
     next_recommendation: dict | None = None
+    growth: GrowthBlock | None = None
 
 
 class MasteryReportOut(BaseModel):
