@@ -26,6 +26,7 @@ import { EventStrip } from '@/components/child/home/EventStrip';
 import ArcadeHomeCard from '@/components/child/home/ArcadeHomeCard';
 import ArcadeDailyCard from '@/components/child/home/ArcadeDailyCard';
 import FeaturedDropCard from '@/components/child/home/FeaturedDropCard';
+import ProgressCheckCard from '@/components/child/home/ProgressCheckCard';
 
 export default function Home() {
   const { t } = useTranslation('home');
@@ -116,6 +117,7 @@ export default function Home() {
       </div>
 
       <StreakReminderNudge />
+      <ProgressCheckCard />
 
       {marketComingSoon ? (
         <div className="mt-4">

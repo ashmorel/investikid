@@ -18,6 +18,21 @@
     "subExplorer": "Great start — we'll build on this as you learn.",
     "subInvestor": "Good baseline. We'll tailor your learning from here.",
     "topicChipAriaLabel": "Topic: {{topic}}",
-    "cta": "Let's go!"
+    "cta": "Let's go!",
+
+    "progress_heading_explorer": "Here's how much you've grown! 🌱",
+    "progress_heading_investor": "Here's how much you've grown.",
+    "progress_subExplorer": "Brilliant — your knowledge is levelling up!",
+    "progress_subInvestor": "Solid progress. We'll keep refining your learning from here.",
+    "progress_cta": "Keep going!"
+  },
+
+  "progressCheck": {
+    "cardTitle": "Progress check",
+    "cardBody_explorer": "You've been learning for a while — want to see how much you've grown?",
+    "cardBody_investor": "Time for a quick progress check. See how far you've come.",
+    "cardCta": "Take the check",
+    "cardDismiss": "Later",
+    "cardAriaLabel": "Progress check available"
   }
 }

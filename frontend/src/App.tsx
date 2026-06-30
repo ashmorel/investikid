@@ -82,6 +82,22 @@ function OnboardingDiagnosticRoute() {
   );
 }
 
+function ProgressCheckRoute() {
+  const nav = useNavigate();
+  const queryClient = useQueryClient();
+  function handleComplete() {
+    // Invalidate both the recheck status (milestone consumed) and evidence.
+    void queryClient.invalidateQueries({ queryKey: ['diagnostic', 'recheck'] });
+    void queryClient.invalidateQueries({ queryKey: ['diagnostic', 'evidence'] });
+    nav('/home', { replace: true });
+  }
+  return (
+    <Suspense fallback={null}>
+      <OnboardingDiagnostic kind="progress" onComplete={handleComplete} />
+    </Suspense>
+  );
+}
+
 export default function App() {
   return (
     <LiveRegion>
@@ -97,6 +113,7 @@ export default function App() {
         <Route path="/try" element={<Suspense fallback={null}><Try /></Suspense>} />
         <Route path="/pending-consent" element={<PendingConsent />} />
         <Route path="/onboarding/diagnostic" element={<OnboardingDiagnosticRoute />} />
+        <Route path="/progress-check" element={<ProgressCheckRoute />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />

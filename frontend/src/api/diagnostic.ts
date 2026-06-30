@@ -3,6 +3,8 @@ import { apiFetch } from './client';
 
 // ── Types ──────────────────────────────────────────────────────────
 
+export type DiagnosticKind = 'baseline' | 'progress';
+
 export interface DiagnosticSessionItem {
   id: string;
   topic: string;
@@ -36,6 +38,13 @@ export interface DiagnosticEvidence {
   topics: DiagnosticTopicResult[];
 }
 
+export interface RecheckStatus {
+  due: boolean;
+  milestone: number | null;
+  active_days: number;
+  completed_checks: number;
+}
+
 export interface SubmitDiagnosticArgs {
   session_id: string;
   answers?: Record<string, number>;
@@ -44,8 +53,11 @@ export interface SubmitDiagnosticArgs {
 
 // ── Client functions ───────────────────────────────────────────────
 
-export function startDiagnostic(): Promise<DiagnosticSession | null> {
-  return apiFetch<DiagnosticSession>('/diagnostic/start', { method: 'POST' });
+export function startDiagnostic(kind: DiagnosticKind = 'baseline'): Promise<DiagnosticSession | null> {
+  return apiFetch<DiagnosticSession>('/diagnostic/start', {
+    method: 'POST',
+    body: JSON.stringify({ kind }),
+  });
 }
 
 export function submitDiagnostic(body: SubmitDiagnosticArgs): Promise<DiagnosticResult | null> {
@@ -55,12 +67,21 @@ export function submitDiagnostic(body: SubmitDiagnosticArgs): Promise<Diagnostic
   });
 }
 
-// ── Query hook ─────────────────────────────────────────────────────
+// ── Query hooks ────────────────────────────────────────────────────
 
 export function useEvidence() {
   return useQuery({
     queryKey: ['diagnostic', 'evidence'],
     queryFn: () => apiFetch<DiagnosticEvidence>('/diagnostic/evidence'),
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useRecheckStatus() {
+  return useQuery({
+    queryKey: ['diagnostic', 'recheck'],
+    queryFn: () => apiFetch<RecheckStatus>('/diagnostic/recheck-status'),
     retry: false,
     staleTime: 5 * 60_000,
   });

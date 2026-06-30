@@ -8,6 +8,7 @@ vi.mock('@/api/diagnostic', () => ({
   startDiagnostic: vi.fn(),
   submitDiagnostic: vi.fn(),
   useEvidence: vi.fn(),
+  useRecheckStatus: vi.fn(),
 }));
 
 // Mock useAgeTier so we get a deterministic tier in tests
@@ -226,5 +227,56 @@ describe('OnboardingDiagnostic — error paths (no lockout)', () => {
     fireEvent.click(screen.getByRole('button', { name: /skip for now/i }));
 
     await waitFor(() => expect(onComplete).toHaveBeenCalled());
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────
+// New: kind='progress' prop tests
+// ─────────────────────────────────────────────────────────────────
+
+describe('OnboardingDiagnostic — kind=progress', () => {
+  beforeEach(() => {
+    mockStart.mockResolvedValue({ session_id: SESSION_ID, items: ITEMS });
+    mockSubmit.mockResolvedValue({ ...SUBMIT_RESULT, kind: 'progress' });
+  });
+
+  it('calls startDiagnostic with kind="progress" when kind prop is progress', async () => {
+    render(
+      <MemoryRouter>
+        <OnboardingDiagnostic kind="progress" onComplete={vi.fn()} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('What is a savings account?');
+    expect(mockStart).toHaveBeenCalledWith('progress');
+  });
+
+  it('shows the progress results copy (not the baseline copy) on completion', async () => {
+    render(
+      <MemoryRouter>
+        <OnboardingDiagnostic kind="progress" onComplete={vi.fn()} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('What is a savings account?');
+    fireEvent.click(screen.getByRole('radio', { name: /a place to store money/i }));
+    fireEvent.click(screen.getByRole('button', { name: /check answer/i }));
+    await screen.findByText('What does diversification mean?');
+    fireEvent.click(screen.getByRole('radio', { name: /spreading money across many investments/i }));
+    fireEvent.click(screen.getByRole('button', { name: /finish/i }));
+
+    // Should show the "grown" copy (from diagnostic.json results.progress_heading_explorer)
+    await screen.findByText(/how much you've grown/i);
+    // Should NOT show the baseline "already know" copy
+    expect(screen.queryByText(/what you already know/i)).toBeNull();
+  });
+
+  it('baseline (default kind) still calls startDiagnostic with no argument / "baseline"', async () => {
+    render(
+      <MemoryRouter>
+        <OnboardingDiagnostic onComplete={vi.fn()} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('What is a savings account?');
+    // Called with 'baseline' (or without kind — mock should be called once)
+    expect(mockStart).toHaveBeenCalledWith('baseline');
   });
 });

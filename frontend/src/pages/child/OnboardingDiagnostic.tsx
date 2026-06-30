@@ -6,6 +6,7 @@ import { useAgeTier } from '@/lib/ageTier';
 import {
   startDiagnostic,
   submitDiagnostic,
+  type DiagnosticKind,
   type DiagnosticSessionItem,
   type DiagnosticTopicResult,
 } from '@/api/diagnostic';
@@ -13,6 +14,7 @@ import {
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 type Props = {
+  kind?: DiagnosticKind;
   onComplete: () => void;
 };
 
@@ -22,7 +24,7 @@ type Phase =
   | { kind: 'results'; topics: DiagnosticTopicResult[] }
   | { kind: 'done' };
 
-export default function OnboardingDiagnostic({ onComplete }: Props) {
+export default function OnboardingDiagnostic({ kind = 'baseline', onComplete }: Props) {
   const { t } = useTranslation('diagnostic');
   const tier = useAgeTier();
 
@@ -31,7 +33,7 @@ export default function OnboardingDiagnostic({ onComplete }: Props) {
   useEffect(() => {
     let cancelled = false;
 
-    startDiagnostic()
+    startDiagnostic(kind)
       .then(async (session) => {
         if (cancelled) return;
         if (!session) {
@@ -62,7 +64,7 @@ export default function OnboardingDiagnostic({ onComplete }: Props) {
       cancelled = true;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [kind]);
 
   async function handleSkip(sessionId: string) {
     try {
@@ -99,8 +101,14 @@ export default function OnboardingDiagnostic({ onComplete }: Props) {
 
   // ── Results ─────────────────────────────────────────────────────
   if (phase.kind === 'results') {
-    const headingKey = tier === 'investor' ? 'results.heading_investor' : 'results.heading_explorer';
-    const subKey = tier === 'investor' ? 'results.subInvestor' : 'results.subExplorer';
+    const isProgress = kind === 'progress';
+    const headingKey = isProgress
+      ? (tier === 'investor' ? 'results.progress_heading_investor' : 'results.progress_heading_explorer')
+      : (tier === 'investor' ? 'results.heading_investor' : 'results.heading_explorer');
+    const subKey = isProgress
+      ? (tier === 'investor' ? 'results.progress_subInvestor' : 'results.progress_subExplorer')
+      : (tier === 'investor' ? 'results.subInvestor' : 'results.subExplorer');
+    const ctaKey = isProgress ? 'results.progress_cta' : 'results.cta';
     return (
       <div className="mx-auto max-w-xl px-4 py-10">
         <div className="rounded-3xl bg-white p-6 shadow-lg shadow-brand-600/10 text-center space-y-4">
@@ -109,7 +117,7 @@ export default function OnboardingDiagnostic({ onComplete }: Props) {
           <div
             className="flex flex-wrap justify-center gap-2 pt-2"
             role="list"
-            aria-label={t('results.heading_explorer')}
+            aria-label={t(headingKey)}
           >
             {phase.topics.map((topic) => (
               <span
@@ -123,7 +131,7 @@ export default function OnboardingDiagnostic({ onComplete }: Props) {
             ))}
           </div>
           <GradientButton full onClick={onComplete}>
-            {t('results.cta')}
+            {t(ctaKey)}
           </GradientButton>
         </div>
       </div>
