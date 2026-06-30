@@ -353,21 +353,51 @@ export default function DiagnosticItemsAdmin() {
 
       {/* Generate section */}
       <FormSection title={t('diagnosticItems.generateHeading')}>
-        <form onSubmit={onGenerate} className="flex flex-wrap gap-3 items-end">
-          <label className="flex flex-col gap-1 text-sm">
-            {t('diagnosticItems.marketLabel')}
-            <select
-              className={inputCls}
-              value={genMarket}
-              onChange={(e) => setGenMarket(e.target.value)}
-              required
-            >
-              {markets.map((m) => (
-                <option key={m.code} value={m.code}>{m.code} — {m.name}</option>
-              ))}
-            </select>
-          </label>
+        <form onSubmit={onGenerate} className="space-y-4">
+          {/* Short controls — aligned in a tidy row */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <label className="flex flex-col gap-1 text-sm">
+              {t('diagnosticItems.marketLabel')}
+              <select
+                className={`${inputCls} w-full`}
+                value={genMarket}
+                onChange={(e) => setGenMarket(e.target.value)}
+                required
+              >
+                {markets.map((m) => (
+                  <option key={m.code} value={m.code}>{m.code} — {m.name}</option>
+                ))}
+              </select>
+            </label>
 
+            <label className="flex flex-col gap-1 text-sm">
+              {t('diagnosticItems.generateTierLabel')}
+              <select
+                className={`${inputCls} w-full`}
+                value={genTier}
+                onChange={(e) => setGenTier(Number(e.target.value) as Tier)}
+              >
+                <option value={1}>{t('diagnosticItems.tier1')}</option>
+                <option value={2}>{t('diagnosticItems.tier2')}</option>
+                <option value={3}>{t('diagnosticItems.tier3')}</option>
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-1 text-sm">
+              {t('diagnosticItems.generateCountLabel')}
+              <input
+                type="number"
+                min={1}
+                max={20}
+                className={`${inputCls} w-full`}
+                value={genCount}
+                onChange={(e) => setGenCount(Number(e.target.value))}
+                required
+              />
+            </label>
+          </div>
+
+          {/* Topics — full-width multi-select on its own row */}
           <label className="flex flex-col gap-1 text-sm">
             <span className="flex items-center justify-between gap-2">
               {t('diagnosticItems.generateTopicLabel')}
@@ -384,7 +414,7 @@ export default function DiagnosticItemsAdmin() {
             <select
               multiple
               size={Math.min(TOPICS.length, 6)}
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={genTopics}
               onChange={(e) => setGenTopics(Array.from(e.target.selectedOptions, (o) => o.value))}
             >
@@ -395,38 +425,12 @@ export default function DiagnosticItemsAdmin() {
             <span className="text-xs text-muted-foreground">{t('diagnosticItems.generateTopicsHint')}</span>
           </label>
 
-          <label className="flex flex-col gap-1 text-sm">
-            {t('diagnosticItems.generateTierLabel')}
-            <select
-              className={inputCls}
-              value={genTier}
-              onChange={(e) => setGenTier(Number(e.target.value) as Tier)}
-            >
-              <option value={1}>{t('diagnosticItems.tier1')}</option>
-              <option value={2}>{t('diagnosticItems.tier2')}</option>
-              <option value={3}>{t('diagnosticItems.tier3')}</option>
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm">
-            {t('diagnosticItems.generateCountLabel')}
-            <input
-              type="number"
-              min={1}
-              max={20}
-              className={inputCls}
-              value={genCount}
-              onChange={(e) => setGenCount(Number(e.target.value))}
-              required
-            />
-          </label>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-sm opacity-0" aria-hidden="true">.</span>
+          {/* Generate */}
+          <div className="flex flex-col gap-2">
             <button
               type="submit"
               disabled={generate.isPending || genProgress !== null}
-              className="min-h-[44px] rounded-md bg-brand-600 px-4 font-bold text-white hover:bg-brand-700 disabled:opacity-50"
+              className="min-h-[44px] w-full rounded-md bg-brand-600 px-4 font-bold text-white hover:bg-brand-700 disabled:opacity-50 sm:w-auto sm:self-start"
             >
               {genProgress
                 ? t('diagnosticItems.generatingProgress', { done: genProgress.done, total: genProgress.total })
@@ -434,11 +438,10 @@ export default function DiagnosticItemsAdmin() {
                   ? t('diagnosticItems.generating')
                   : t('diagnosticItems.generateButton')}
             </button>
+            {genError && (
+              <p role="alert" className="text-sm text-danger-700">{genError}</p>
+            )}
           </div>
-
-          {genError && (
-            <p role="alert" className="w-full text-sm text-danger-700">{genError}</p>
-          )}
         </form>
       </FormSection>
 
