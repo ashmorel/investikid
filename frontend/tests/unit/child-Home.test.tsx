@@ -40,19 +40,17 @@ const EMPTY_RECS = {
 beforeEach(() => vi.restoreAllMocks());
 
 describe('Home', () => {
-  it('shows the combined stats card with progress values and no modules grid', async () => {
+  it('shows the browse-all link and no inline modules grid (B1: stats live in the hero)', async () => {
     mockJsonRoute({
       '/users/me/progress': { xp: 320, level: 4, streak_count: 5, streak_freezes: 0, last_activity_date: '2026-05-02' },
       '/recommendations': EMPTY_RECS,
     });
     renderHome();
-    expect(await screen.findByText(/Level 4/i)).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /your progress/i })).toBeInTheDocument();
-    expect(screen.getByText(/5-day streak/i)).toBeInTheDocument();
-    // 320 XP → 20 into the current level
-    expect(screen.getByText(/20 \/ 100 XP/i)).toBeInTheDocument();
+    // B1 focused Home: the standalone StatsCard ("your progress") is gone — the
+    // daily goal + streak now live in HomeHero (mocked null here). Structure stays.
+    expect(await screen.findByRole('link', { name: /browse all modules/i })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /your progress/i })).toBeNull();
     expect(screen.queryByText(/Your modules/i)).toBeNull();
-    expect(screen.getByRole('link', { name: /browse all modules/i })).toBeInTheDocument();
   });
 
   it('shows a review shortcut chip when concepts are due', async () => {
