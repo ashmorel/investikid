@@ -8,6 +8,9 @@ Lifecycle:
     draft  ─► retired   (reject — kept for audit, never served)
     approved ─► retired (retire — e.g. non-discriminating item)
     approved ─► draft   (unpublish — to fix & re-approve)
+
+Plus an in-place flag action that does NOT change status:
+    approved (flagged) ─► approved (clear-verifier-flag — dismiss a false positive)
 """
 from __future__ import annotations
 
@@ -32,6 +35,7 @@ from app.schemas.diagnostic import (
 )
 from app.services.diagnostic_item_service import (
     approve_item,
+    clear_verifier_flag,
     generate_items,
     get_item,
     list_items,
@@ -274,5 +278,37 @@ async def unpublish_diagnostic_item(
             detail=f"Cannot unpublish item with status '{item.status}'; must be approved",
         )
     item = await unpublish_item(session, item)
+    await session.commit()
+    return DiagnosticItemRead.model_validate(item)
+
+
+# ---------------------------------------------------------------------------
+# POST /admin/diagnostic-items/{id}/clear-verifier-flag
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/diagnostic-items/{item_id}/clear-verifier-flag",
+    response_model=DiagnosticItemRead,
+)
+async def clear_diagnostic_verifier_flag(
+    item_id: uuid.UUID,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+) -> DiagnosticItemRead:
+    """Dismiss an advisory verifier flag on an approved item judged correct.
+
+    Clears the verifier_* fields in place — the item stays approved/published and
+    its answer is untouched — so a false-positive flag drops out of needs_review.
+    """
+    item = await get_item(session, item_id)
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+    if item.status != "approved":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot clear flag on item with status '{item.status}'; must be approved",
+        )
+    item = await clear_verifier_flag(session, item)
     await session.commit()
     return DiagnosticItemRead.model_validate(item)

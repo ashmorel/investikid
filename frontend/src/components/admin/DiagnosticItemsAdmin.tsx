@@ -8,6 +8,7 @@ import {
   useRejectItem,
   useRetireItem,
   useUnpublishItem,
+  useClearVerifierFlag,
   useVerifyItems,
   type DiagnosticItem,
   type DiagnosticItemPatch,
@@ -144,6 +145,7 @@ export default function DiagnosticItemsAdmin() {
   const reject = useRejectItem();
   const retire = useRetireItem();
   const unpublish = useUnpublishItem();
+  const clearFlag = useClearVerifierFlag();
   const verify = useVerifyItems();
 
   // Group items by topic
@@ -458,6 +460,7 @@ export default function DiagnosticItemsAdmin() {
               {group.map((item) => (
                 <div
                   key={item.id}
+                  data-testid={`diagnostic-item-${item.id}`}
                   className="rounded-lg border border-line bg-card p-4 space-y-2"
                 >
                   {/* Header row */}
@@ -570,6 +573,24 @@ export default function DiagnosticItemsAdmin() {
                         {t('diagnosticItems.unpublishToEdit')}
                       </button>
                     )}
+                    {item.status === 'approved' &&
+                      (item.verifier_status === 'mismatch' ||
+                        item.verifier_status === 'ambiguous') && (
+                        <button
+                          type="button"
+                          className="min-h-[44px] rounded-md border border-green-500 px-3 text-sm font-bold text-green-800 hover:bg-green-50"
+                          onClick={async () => {
+                            setActionErrors((prev) => { const next = { ...prev }; delete next[item.id]; return next; });
+                            try {
+                              await clearFlag.mutateAsync(item.id);
+                            } catch {
+                              setActionErrors((prev) => ({ ...prev, [item.id]: t('diagnosticItems.actionError') }));
+                            }
+                          }}
+                        >
+                          {t('diagnosticItems.keepPublished')}
+                        </button>
+                      )}
                     {item.status === 'draft' && (
                       <button
                         type="button"

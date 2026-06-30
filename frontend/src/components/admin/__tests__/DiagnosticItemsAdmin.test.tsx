@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import DiagnosticItemsAdmin from '../DiagnosticItemsAdmin';
 
@@ -11,6 +11,7 @@ const approveMut = vi.fn().mockResolvedValue({});
 const rejectMut = vi.fn().mockResolvedValue({});
 const retireMut = vi.fn().mockResolvedValue({});
 const unpublishMut = vi.fn().mockResolvedValue({});
+const clearFlagMut = vi.fn().mockResolvedValue({});
 const verifyMut = vi.fn().mockResolvedValue({
   verified: 3,
   agree: 2,
@@ -109,6 +110,29 @@ const mockItems = [
     verifier_note: null,
     verified_at: null,
   },
+  {
+    // approved AND verifier-flagged (mismatch) — the false-positive case
+    id: 'item-5',
+    market_code: 'GB',
+    topic: 'stocks',
+    concept_id: null,
+    difficulty_tier: 1 as const,
+    question: 'What is a dividend?',
+    choices: ['A company debt', 'A share of profits paid to shareholders', 'A tax', 'A type of bond'],
+    answer_index: 1,
+    explanation: 'A dividend is a portion of profits paid to shareholders.',
+    status: 'approved' as const,
+    source: 'generated',
+    times_shown: 5,
+    times_correct: 4,
+    approved_by: 'admin@example.com',
+    approved_at: '2026-06-28T11:00:00Z',
+    created_at: '2026-06-28T10:00:00Z',
+    verifier_status: 'mismatch' as const,
+    verifier_answer_index: 0,
+    verifier_note: 'verifier picked a different answer',
+    verified_at: '2026-06-28T11:30:00Z',
+  },
 ];
 
 // Only stocks and savings have any coverage entries — the other 7 topics are completely absent from the array
@@ -132,6 +156,7 @@ vi.mock('@/api/adminDiagnostic', () => ({
   useRejectItem: () => ({ mutateAsync: rejectMut, isPending: false }),
   useRetireItem: () => ({ mutateAsync: retireMut, isPending: false }),
   useUnpublishItem: () => ({ mutateAsync: unpublishMut, isPending: false }),
+  useClearVerifierFlag: () => ({ mutateAsync: clearFlagMut, isPending: false }),
   useVerifyItems: () => ({ mutateAsync: verifyMut, isPending: false }),
 }));
 
@@ -160,6 +185,7 @@ describe('DiagnosticItemsAdmin', () => {
     rejectMut.mockClear();
     retireMut.mockClear();
     unpublishMut.mockClear();
+    clearFlagMut.mockClear();
     verifyMut.mockClear();
     lastDiagnosticFilters = {};
   });
@@ -326,28 +352,63 @@ describe('DiagnosticItemsAdmin', () => {
 
   it('"Unpublish to edit" button appears on approved items and calls the unpublish mutation', async () => {
     render(<DiagnosticItemsAdmin />);
-    // item-2 is approved — button must be present
-    const unpublishBtn = screen.getByRole('button', { name: 'diagnosticItems.unpublishToEdit' });
+    // item-2 is approved — scope to its card so we click the right one
+    const card = screen.getByTestId('diagnostic-item-item-2');
+    const unpublishBtn = within(card).getByRole('button', { name: 'diagnosticItems.unpublishToEdit' });
     expect(unpublishBtn).toBeInTheDocument();
     fireEvent.click(unpublishBtn);
     await waitFor(() => expect(unpublishMut).toHaveBeenCalledTimes(1));
     expect(unpublishMut.mock.calls[0][0]).toBe('item-2');
   });
 
-  it('"Unpublish to edit" button is NOT shown on draft items', () => {
+  it('"Unpublish to edit" button shows on every approved item, never on draft/retired', () => {
     render(<DiagnosticItemsAdmin />);
-    // There are two draft items (item-1, item-3); none should show unpublish
-    // We check via role+name — only approved items should have it
+    // Two approved items (item-2, item-5); two drafts (item-1, item-3); one retired (item-4)
     const unpublishBtns = screen.queryAllByRole('button', { name: 'diagnosticItems.unpublishToEdit' });
-    // Only one button (for item-2 approved); draft items must not have it
-    expect(unpublishBtns).toHaveLength(1);
+    expect(unpublishBtns).toHaveLength(2);
+    // and not within a draft or retired card
+    expect(
+      within(screen.getByTestId('diagnostic-item-item-1')).queryByRole('button', {
+        name: 'diagnosticItems.unpublishToEdit',
+      }),
+    ).toBeNull();
+    expect(
+      within(screen.getByTestId('diagnostic-item-item-4')).queryByRole('button', {
+        name: 'diagnosticItems.unpublishToEdit',
+      }),
+    ).toBeNull();
   });
 
-  it('"Unpublish to edit" button is NOT shown on retired items', () => {
+  // ── "Looks correct — keep published" (clear false-positive verifier flag) ──
+
+  it('"keep published" shows only on approved + flagged items and calls clearFlag', async () => {
     render(<DiagnosticItemsAdmin />);
-    // item-4 is retired — ensure unpublish button count matches only approved count (1)
-    const unpublishBtns = screen.queryAllByRole('button', { name: 'diagnosticItems.unpublishToEdit' });
-    expect(unpublishBtns).toHaveLength(1);
+    // item-5 is approved + verifier_status=mismatch → the only one that should show it
+    const all = screen.queryAllByRole('button', { name: 'diagnosticItems.keepPublished' });
+    expect(all).toHaveLength(1);
+
+    const card = screen.getByTestId('diagnostic-item-item-5');
+    const keepBtn = within(card).getByRole('button', { name: 'diagnosticItems.keepPublished' });
+    fireEvent.click(keepBtn);
+    await waitFor(() => expect(clearFlagMut).toHaveBeenCalledTimes(1));
+    expect(clearFlagMut.mock.calls[0][0]).toBe('item-5');
+  });
+
+  it('"keep published" is NOT shown on an approved item with no flag (item-2 = agree)', () => {
+    render(<DiagnosticItemsAdmin />);
+    const card = screen.getByTestId('diagnostic-item-item-2');
+    expect(
+      within(card).queryByRole('button', { name: 'diagnosticItems.keepPublished' }),
+    ).toBeNull();
+  });
+
+  it('"keep published" is NOT shown on a draft flagged item (item-1 = draft+mismatch)', () => {
+    render(<DiagnosticItemsAdmin />);
+    // item-1 is draft with a mismatch flag — drafts clear the flag by editing, not "keep"
+    const card = screen.getByTestId('diagnostic-item-item-1');
+    expect(
+      within(card).queryByRole('button', { name: 'diagnosticItems.keepPublished' }),
+    ).toBeNull();
   });
 
   it('has no axe accessibility violations (WCAG 2.2 AA)', async () => {
