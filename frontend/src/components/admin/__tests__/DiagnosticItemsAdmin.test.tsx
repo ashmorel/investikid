@@ -10,6 +10,7 @@ const patchMut = vi.fn().mockResolvedValue({});
 const approveMut = vi.fn().mockResolvedValue({});
 const rejectMut = vi.fn().mockResolvedValue({});
 const retireMut = vi.fn().mockResolvedValue({});
+const unpublishMut = vi.fn().mockResolvedValue({});
 const verifyMut = vi.fn().mockResolvedValue({
   verified: 3,
   agree: 2,
@@ -86,6 +87,28 @@ const mockItems = [
     verifier_note: null,
     verified_at: null,
   },
+  {
+    id: 'item-4',
+    market_code: 'GB',
+    topic: 'savings',
+    concept_id: null,
+    difficulty_tier: 2 as const,
+    question: 'What is an ISA?',
+    choices: ['A type of insurance', 'An Individual Savings Account', 'A loan product', 'A pension scheme'],
+    answer_index: 1,
+    explanation: 'An ISA is a tax-free savings wrapper.',
+    status: 'retired' as const,
+    source: 'generated',
+    times_shown: 50,
+    times_correct: 30,
+    approved_by: 'admin@example.com',
+    approved_at: '2026-06-01T10:00:00Z',
+    created_at: '2026-06-01T09:00:00Z',
+    verifier_status: null,
+    verifier_answer_index: null,
+    verifier_note: null,
+    verified_at: null,
+  },
 ];
 
 // Only stocks and savings have any coverage entries — the other 7 topics are completely absent from the array
@@ -108,6 +131,7 @@ vi.mock('@/api/adminDiagnostic', () => ({
   useApproveItem: () => ({ mutateAsync: approveMut, isPending: false }),
   useRejectItem: () => ({ mutateAsync: rejectMut, isPending: false }),
   useRetireItem: () => ({ mutateAsync: retireMut, isPending: false }),
+  useUnpublishItem: () => ({ mutateAsync: unpublishMut, isPending: false }),
   useVerifyItems: () => ({ mutateAsync: verifyMut, isPending: false }),
 }));
 
@@ -135,6 +159,7 @@ describe('DiagnosticItemsAdmin', () => {
     approveMut.mockClear();
     rejectMut.mockClear();
     retireMut.mockClear();
+    unpublishMut.mockClear();
     verifyMut.mockClear();
     lastDiagnosticFilters = {};
   });
@@ -297,6 +322,32 @@ describe('DiagnosticItemsAdmin', () => {
     expect(result).toHaveTextContent('3');
     expect(result).toHaveTextContent('2');
     expect(result).toHaveTextContent('1');
+  });
+
+  it('"Unpublish to edit" button appears on approved items and calls the unpublish mutation', async () => {
+    render(<DiagnosticItemsAdmin />);
+    // item-2 is approved — button must be present
+    const unpublishBtn = screen.getByRole('button', { name: 'diagnosticItems.unpublishToEdit' });
+    expect(unpublishBtn).toBeInTheDocument();
+    fireEvent.click(unpublishBtn);
+    await waitFor(() => expect(unpublishMut).toHaveBeenCalledTimes(1));
+    expect(unpublishMut.mock.calls[0][0]).toBe('item-2');
+  });
+
+  it('"Unpublish to edit" button is NOT shown on draft items', () => {
+    render(<DiagnosticItemsAdmin />);
+    // There are two draft items (item-1, item-3); none should show unpublish
+    // We check via role+name — only approved items should have it
+    const unpublishBtns = screen.queryAllByRole('button', { name: 'diagnosticItems.unpublishToEdit' });
+    // Only one button (for item-2 approved); draft items must not have it
+    expect(unpublishBtns).toHaveLength(1);
+  });
+
+  it('"Unpublish to edit" button is NOT shown on retired items', () => {
+    render(<DiagnosticItemsAdmin />);
+    // item-4 is retired — ensure unpublish button count matches only approved count (1)
+    const unpublishBtns = screen.queryAllByRole('button', { name: 'diagnosticItems.unpublishToEdit' });
+    expect(unpublishBtns).toHaveLength(1);
   });
 
   it('has no axe accessibility violations (WCAG 2.2 AA)', async () => {

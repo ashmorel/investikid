@@ -44,6 +44,28 @@ There are currently **zero approved items**, so every child gets a graceful *ski
 
 ---
 
+## Answer-verifier review (catch wrong/ambiguous answers)
+
+An automated **blind verifier** (the `diagnostic-verify` workflow, tier `premium`) re-solves each
+item from scratch and flags any whose stored answer it disagrees with. It's **advisory** — it
+catches genuine mistakes *and* throws some false positives (it can be wrong itself), so **you
+adjudicate**.
+
+1. Run the **`diagnostic-verify`** workflow (Actions), then open the **"Needs review"** filter on
+   `/admin/diagnostic-items`. Each flagged item shows the verifier's note + its proposed answer.
+2. For each flagged item, decide:
+   - **False positive** (the stored answer is right) → leave it; it stays approved. (A later sweep
+     re-checks; you can also just clear it by re-saving with no change.)
+   - **Genuinely wrong** → fix it in place with **Unpublish to edit** (next paragraph).
+
+**Fix-in-place path (Unpublish → fix → Approve).** Flagged items are *approved*, and editing is
+draft-only, so to correct one: click **Unpublish to edit** (approved → draft), fix the answer (or
+question/choices/explanation), then **Approve** again. Editing the content **clears the stale
+verifier flag automatically**, so the corrected item drops out of "Needs review." (Use **Retire**
+only if the item is unsalvageable — that removes it from the bank entirely.)
+
+---
+
 ## Supporting (optional, not blocking)
 
 - **Concept tagging tail:** ~89 lessons are untagged (the model found no clear concept, or

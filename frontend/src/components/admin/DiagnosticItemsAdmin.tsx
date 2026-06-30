@@ -7,6 +7,7 @@ import {
   useApproveItem,
   useRejectItem,
   useRetireItem,
+  useUnpublishItem,
   useVerifyItems,
   type DiagnosticItem,
   type DiagnosticItemPatch,
@@ -142,6 +143,7 @@ export default function DiagnosticItemsAdmin() {
   const approve = useApproveItem();
   const reject = useRejectItem();
   const retire = useRetireItem();
+  const unpublish = useUnpublishItem();
   const verify = useVerifyItems();
 
   // Group items by topic
@@ -550,6 +552,22 @@ export default function DiagnosticItemsAdmin() {
                         }}
                       >
                         {t('diagnosticItems.retire')}
+                      </button>
+                    )}
+                    {item.status === 'approved' && (
+                      <button
+                        type="button"
+                        className="min-h-[44px] rounded-md border border-amber-400 px-3 text-sm font-bold text-amber-800 hover:bg-amber-50"
+                        onClick={async () => {
+                          setActionErrors((prev) => { const next = { ...prev }; delete next[item.id]; return next; });
+                          try {
+                            await unpublish.mutateAsync(item.id);
+                          } catch {
+                            setActionErrors((prev) => ({ ...prev, [item.id]: t('diagnosticItems.actionError') }));
+                          }
+                        }}
+                      >
+                        {t('diagnosticItems.unpublishToEdit')}
                       </button>
                     )}
                     {item.status === 'draft' && (

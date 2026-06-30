@@ -179,3 +179,12 @@ export function useRetireItem() {
     onSuccess: invalidate,
   });
 }
+
+export function useUnpublishItem() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<DiagnosticItem>(`/admin/diagnostic-items/${id}/unpublish`, { method: 'POST' }),
+    onSuccess: invalidate,
+  });
+}

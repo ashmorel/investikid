@@ -401,7 +401,8 @@
     "verifierSuggested": "Verifier: {{index}}",
     "verifierNote": "Note: {{note}}",
     "verifierAgree": "Verified ✓",
-    "verifyResultSummary": "Verified: {{verified}} — Agree: {{agree}} — Mismatch: {{mismatch}} — Ambiguous: {{ambiguous}} — Error: {{error}}"
+    "verifyResultSummary": "Verified: {{verified}} — Agree: {{agree}} — Mismatch: {{mismatch}} — Ambiguous: {{ambiguous}} — Error: {{error}}",
+    "unpublishToEdit": "Unpublish to edit"
   },
   "sidebar": {
     "title": "InvestiKid Admin",

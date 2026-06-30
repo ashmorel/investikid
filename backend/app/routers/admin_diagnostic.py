@@ -7,6 +7,7 @@ Lifecycle:
     draft  ─► approved  (approve)
     draft  ─► retired   (reject — kept for audit, never served)
     approved ─► retired (retire — e.g. non-discriminating item)
+    approved ─► draft   (unpublish — to fix & re-approve)
 """
 from __future__ import annotations
 
@@ -38,6 +39,7 @@ from app.services.diagnostic_item_service import (
     reject_item,
     retire_item,
     run_verify_sweep,
+    unpublish_item,
 )
 
 logger = logging.getLogger(__name__)
@@ -247,5 +249,30 @@ async def retire_diagnostic_item(
             detail=f"Cannot retire item with status '{item.status}'; must be approved",
         )
     item = await retire_item(session, item)
+    await session.commit()
+    return DiagnosticItemRead.model_validate(item)
+
+
+# ---------------------------------------------------------------------------
+# POST /admin/diagnostic-items/{id}/unpublish
+# ---------------------------------------------------------------------------
+
+
+@router.post("/diagnostic-items/{item_id}/unpublish", response_model=DiagnosticItemRead)
+async def unpublish_diagnostic_item(
+    item_id: uuid.UUID,
+    _admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+) -> DiagnosticItemRead:
+    """Transition an approved item back to draft so it can be corrected and re-approved."""
+    item = await get_item(session, item_id)
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+    if item.status != "approved":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot unpublish item with status '{item.status}'; must be approved",
+        )
+    item = await unpublish_item(session, item)
     await session.commit()
     return DiagnosticItemRead.model_validate(item)
