@@ -569,3 +569,22 @@ async def unpublish_item(
     item.approved_at = None
     await session.flush()
     return item
+
+
+async def clear_verifier_flag(
+    session: AsyncSession,
+    item: DiagnosticItem,
+) -> DiagnosticItem:
+    """Clear an advisory verifier flag in place, leaving the item published.
+
+    For the false-positive case: the operator has reviewed a flagged *approved*
+    item and judged it correct, so the flag is dismissed (drops out of the
+    needs_review filter) WITHOUT changing the item's status, approval, or answer.
+    Idempotent — clearing an already-unflagged item is a harmless no-op.
+    """
+    item.verifier_status = None
+    item.verifier_answer_index = None
+    item.verifier_note = None
+    item.verified_at = None
+    await session.flush()
+    return item

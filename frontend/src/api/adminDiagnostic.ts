@@ -188,3 +188,14 @@ export function useUnpublishItem() {
     onSuccess: invalidate,
   });
 }
+
+export function useClearVerifierFlag() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<DiagnosticItem>(`/admin/diagnostic-items/${id}/clear-verifier-flag`, {
+        method: 'POST',
+      }),
+    onSuccess: invalidate,
+  });
+}
