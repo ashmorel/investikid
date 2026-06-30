@@ -118,6 +118,10 @@ class UserProgressOut(BaseModel):
     xp_today: int = 0
     goal_met: bool = False
     virtual_coins: int = 0
+    # B6 — streak emotional beats:
+    next_freeze_in: int = 0  # days of streak until the next freeze is earned
+    streak_repair_available: bool = False  # a just-lapsed streak can be repaired with coins
+    streak_repair_cost: int = 0  # flat coin cost to repair
 
 
 class DailyGoalUpdate(BaseModel):

@@ -20,9 +20,22 @@ from app.schemas.user import (
     UserProfile,
     UserProgressOut,
 )
+from app.services.content_service import repair_eligibility
 from app.services.export_service import build_user_export
+from app.services.streak_config import STREAK_MILESTONE, STREAK_REPAIR_COST
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+def _next_freeze_in(streak_count: int) -> int:
+    """Days of streak remaining until the next freeze is earned.
+
+    A freeze is granted each time the streak hits a multiple of STREAK_MILESTONE.
+    When ``streak_count`` is itself on a multiple (and > 0) this yields a full
+    STREAK_MILESTONE — i.e. the next freeze is a whole cycle away — which is correct.
+    """
+    remainder = streak_count % STREAK_MILESTONE
+    return STREAK_MILESTONE - remainder if remainder else STREAK_MILESTONE
 
 
 async def get_current_user(
@@ -109,9 +122,15 @@ async def get_progress(
 ):
     progress = await session.get(UserProgress, current_user.id)
     if progress is None:
-        return UserProgressOut(xp=0, level=1, streak_count=0, streak_freezes=0, last_activity_date=None)
+        return UserProgressOut(
+            xp=0, level=1, streak_count=0, streak_freezes=0, last_activity_date=None,
+            next_freeze_in=_next_freeze_in(0),
+            streak_repair_available=False,
+            streak_repair_cost=STREAK_REPAIR_COST,
+        )
     today = today_utc()
     xp_today = progress.xp_today if progress.xp_today_date == today else 0
+    repair = repair_eligibility(progress, today)
     return UserProgressOut(
         xp=progress.xp,
         level=progress.level,
@@ -122,6 +141,9 @@ async def get_progress(
         xp_today=xp_today,
         goal_met=xp_today >= progress.daily_goal_xp,
         virtual_coins=progress.virtual_coins or 0,
+        next_freeze_in=_next_freeze_in(progress.streak_count),
+        streak_repair_available=repair.eligible,
+        streak_repair_cost=repair.cost,
     )
 
 
