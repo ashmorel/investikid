@@ -20,7 +20,11 @@ vi.mock('@/api/ai', () => ({
   useRecommendations: () => ({ data: { review_summary: { due_count: 0 } } }),
   useHomeGreeting: () => ({ data: undefined }),
 }));
-vi.mock('@/hooks/useProgress', () => ({ useProgress: () => ({ data: { streak_count: 0 } }) }));
+vi.mock('@/hooks/useProgress', () => ({
+  useProgress: () => ({
+    data: { streak_count: 0, xp_today: 10, daily_goal_xp: 30, last_activity_date: null, next_freeze_in: 0 },
+  }),
+}));
 
 function wrap(ui: React.ReactNode) { return <MemoryRouter>{ui}</MemoryRouter>; }
 
@@ -31,6 +35,17 @@ describe('HomeHero', () => {
     expect(screen.getByText('What is a Stock?')).toBeInTheDocument();
     const cta = screen.getByRole('link', { name: /start/i });
     expect(cta).toHaveAttribute('href', '/lessons/m1/l1/q1');
+  });
+
+  it('renders the slim daily-goal strip with goal text and a progressbar', () => {
+    render(wrap(<HomeHero />));
+    expect(screen.getByText(/today: 10 \/ 30 xp/i)).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: /daily goal progress/i })).toBeInTheDocument();
+  });
+
+  it('does not show the streak pill when streak_count is 0', () => {
+    render(wrap(<HomeHero />));
+    expect(screen.queryByText(/day streak/i)).not.toBeInTheDocument();
   });
 
   it('renders the explorer-size Penny and a warm, emoji greeting', () => {

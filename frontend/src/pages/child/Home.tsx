@@ -8,7 +8,6 @@ import HomeHero from '@/components/child/HomeHero';
 import { MarketChip } from '@/components/child/MarketChip';
 import { ComingSoonMarket } from '@/components/child/ComingSoonMarket';
 import { useMarkets, useMarketProgress } from '@/hooks/useMarkets';
-import { StatsCard } from '@/components/child/StatsCard';
 import StreakReminderNudge from '@/components/child/StreakReminderNudge';
 import { QuickLinksRow } from '@/components/child/home/QuickLinksRow';
 import { ReviseCard } from '@/components/child/home/ReviseCard';
@@ -65,9 +64,6 @@ export default function Home() {
     return () => clearTimeout(id);
   }, [me?.content_region, me?.country_code, queryClient]);
 
-  const level = progress?.level ?? 1;
-  const xp = progress?.xp ?? 0;
-
   // The active market: backend marks it with is_selected; fall back to the
   // user's active_market_code. When it has no content yet, swap the lesson /
   // module surfaces for a friendly coming-soon panel (GB default is unaffected).
@@ -83,7 +79,8 @@ export default function Home() {
   const marketLocked = activeMarket != null && activeMarket.locked;
 
   // Additive per-market indicator: the active market's XP, alongside (not
-  // replacing) the global level/streak/coins shown in StatsCard.
+  // replacing) the global level/streak/coins (now surfaced in the hero strip
+  // and on the Stats tab).
   const activeMarketCode = activeMarket?.code ?? me?.active_market_code ?? 'GB';
   const activeMarketXp =
     marketProgress?.markets?.find((m) => m.market_code === activeMarketCode)?.xp ?? 0;
@@ -104,19 +101,6 @@ export default function Home() {
         />
       </div>
       {!marketComingSoon && <HomeHero />}
-
-      <div className="mt-3">
-        <StatsCard
-          xp={xp}
-          level={level}
-          streakCount={progress?.streak_count ?? 0}
-          streakFreezes={progress?.streak_freezes ?? 0}
-          lastActivityDate={progress?.last_activity_date ?? null}
-          dailyGoalXp={progress?.daily_goal_xp ?? 30}
-          xpToday={progress?.xp_today ?? 0}
-          nextFreezeIn={progress?.next_freeze_in}
-        />
-      </div>
 
       <StreakReminderNudge />
       <StreakRepairCard />

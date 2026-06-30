@@ -11,7 +11,9 @@
     "startHere": "Start here",
     "continueCta": "Continue",
     "startLessonCta": "Start lesson",
-    "nextLesson": "Your next lesson"
+    "nextLesson": "Your next lesson",
+    "streakPill": "{{count}}-day streak",
+    "keepsYourStreak": "Keeps your streak going"
   },
   "stats": {
     "ariaLabel": "Your progress",

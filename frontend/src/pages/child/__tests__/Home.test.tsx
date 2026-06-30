@@ -71,7 +71,8 @@ describe('Home composition (m3)', () => {
   it('renders sections in hierarchy order and no modules grid', () => {
     renderHome();
     expect(screen.getByRole('heading', { name: /your learning home/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /your progress/i })).toBeInTheDocument(); // StatsCard
+    // StatsCard removed from Home (B1) — goal/streak/freeze now live in the hero.
+    expect(screen.queryByRole('group', { name: /your progress/i })).toBeNull();
     expect(screen.getByRole('navigation', { name: /shortcuts/i })).toBeInTheDocument(); // QuickLinksRow
     expect(screen.queryByText(/your modules/i)).toBeNull(); // grid gone
     expect(screen.getByRole('link', { name: /browse all modules/i })).toBeInTheDocument();
