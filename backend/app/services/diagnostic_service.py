@@ -386,8 +386,12 @@ def _topics_from_checkpoint(checkpoint: MasteryCheckpoint) -> dict[str, float | 
     return result
 
 
-async def get_evidence(session: AsyncSession, user: User) -> dict:
-    """Return a read-only evidence dict comparing baseline vs latest progress checkpoint.
+async def compute_evidence(session: AsyncSession, user_id: uuid.UUID) -> dict:
+    """Aggregate diagnostic evidence for *user_id* (no auth object required).
+
+    Returns a read-only evidence dict comparing baseline vs latest progress
+    checkpoint.  This is the canonical implementation; ``get_evidence``
+    delegates here.
 
     States:
     - No baseline  → {has_baseline: false, ...nulls}
@@ -399,7 +403,7 @@ async def get_evidence(session: AsyncSession, user: User) -> dict:
     rows = (
         await session.scalars(
             select(MasteryCheckpoint)
-            .where(MasteryCheckpoint.user_id == user.id)
+            .where(MasteryCheckpoint.user_id == user_id)
             .order_by(MasteryCheckpoint.taken_at.asc())
         )
     ).all()
@@ -502,3 +506,15 @@ async def get_evidence(session: AsyncSession, user: User) -> dict:
         "topic_deltas": topic_deltas,
         "session_count": latest_cp.session_count,
     }
+
+
+async def get_evidence(session: AsyncSession, user: User) -> dict:
+    """Return a read-only evidence dict comparing baseline vs latest progress checkpoint.
+
+    States:
+    - No baseline  → {has_baseline: false, ...nulls}
+    - Skipped      → {has_baseline: true, baseline_skipped: true, baseline: null, ...nulls}
+    - Baseline only → baseline present, latest/delta null/empty
+    - Baseline + progress → full comparison with deltas
+    """
+    return await compute_evidence(session, user.id)

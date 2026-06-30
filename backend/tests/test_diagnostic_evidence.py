@@ -9,6 +9,8 @@ Coverage:
 - skipped baseline → has_baseline true, baseline_skipped true, no scores
 - unknown-topic row is excluded from evidence output
 - unauth → 401
+- compute_evidence(session, user_id) returns correct dict for each state (Task 1)
+- get_evidence(session, user) delegates to compute_evidence (Task 1)
 """
 from __future__ import annotations
 
@@ -284,3 +286,155 @@ async def test_evidence_unauthenticated(client, db_session):
 
     resp = await client.get("/diagnostic/evidence")
     assert resp.status_code == 401, resp.text
+
+
+# ---------------------------------------------------------------------------
+# Task 1 — compute_evidence(session, user_id) direct tests
+# ---------------------------------------------------------------------------
+
+
+async def test_compute_evidence_no_baseline(client, db_session):
+    """compute_evidence with no checkpoints → has_baseline=false."""
+    from app.services.diagnostic_service import compute_evidence
+
+    user = await _register_and_login(client, db_session, suffix="_ce_nocp")
+
+    result = await compute_evidence(db_session, user.id)
+
+    assert result["has_baseline"] is False
+    assert result["baseline"] is None
+    assert result["latest"] is None
+    assert result["overall_delta"] is None
+    assert result["topic_deltas"] == []
+    assert result["session_count"] is None
+
+
+async def test_compute_evidence_skipped(client, db_session):
+    """compute_evidence with a skipped baseline → baseline_skipped=true."""
+    from app.services.diagnostic_service import compute_evidence
+
+    user = await _register_and_login(client, db_session, suffix="_ce_sk")
+
+    await _make_checkpoint(db_session, user, kind="skipped", overall_score=None, session_count=0)
+
+    result = await compute_evidence(db_session, user.id)
+
+    assert result["has_baseline"] is True
+    assert result["baseline_skipped"] is True
+    assert result["baseline"] is None
+    assert result["latest"] is None
+    assert result["overall_delta"] is None
+    assert result["topic_deltas"] == []
+
+
+async def test_compute_evidence_baseline_only(client, db_session):
+    """compute_evidence with baseline only → baseline present, latest null."""
+    from app.services.diagnostic_service import compute_evidence
+
+    user = await _register_and_login(client, db_session, suffix="_ce_bo")
+
+    await _make_checkpoint(
+        db_session,
+        user,
+        kind="baseline",
+        overall_score=0.6,
+        session_count=5,
+        topics=[("savings", 3, 5)],
+    )
+
+    result = await compute_evidence(db_session, user.id)
+
+    assert result["has_baseline"] is True
+    assert result["baseline_skipped"] is False
+    assert result["baseline"]["overall_score"] == pytest.approx(0.6)
+    assert result["latest"] is None
+    assert result["overall_delta"] is None
+    assert result["topic_deltas"] == []
+    topics = {t["topic"]: t for t in result["baseline"]["topics"]}
+    assert "savings" in topics
+    assert topics["savings"]["score"] == pytest.approx(3 / 5)
+
+
+async def test_compute_evidence_baseline_plus_progress(client, db_session):
+    """compute_evidence with baseline + progress → correct deltas."""
+    from datetime import timedelta
+
+    from app.services.diagnostic_service import compute_evidence
+
+    user = await _register_and_login(client, db_session, suffix="_ce_bp")
+
+    base_time = datetime(2026, 2, 1, tzinfo=UTC)
+    prog_time = base_time + timedelta(days=30)
+
+    await _make_checkpoint(
+        db_session,
+        user,
+        kind="baseline",
+        overall_score=0.4,
+        session_count=5,
+        taken_at=base_time,
+        topics=[("budgeting", 2, 5)],
+    )
+    await _make_checkpoint(
+        db_session,
+        user,
+        kind="progress",
+        overall_score=0.8,
+        session_count=10,
+        taken_at=prog_time,
+        topics=[("budgeting", 4, 5)],
+    )
+
+    result = await compute_evidence(db_session, user.id)
+
+    assert result["has_baseline"] is True
+    assert result["baseline_skipped"] is False
+    assert result["baseline"]["overall_score"] == pytest.approx(0.4)
+    assert result["latest"]["overall_score"] == pytest.approx(0.8)
+    assert result["overall_delta"] == pytest.approx(0.4)
+    assert result["session_count"] == 10
+
+    deltas = {d["topic"]: d for d in result["topic_deltas"]}
+    assert "budgeting" in deltas
+    assert deltas["budgeting"]["delta"] == pytest.approx(4 / 5 - 2 / 5)
+
+
+# ---------------------------------------------------------------------------
+# Task 1 — get_evidence delegates to compute_evidence (byte-identical output)
+# ---------------------------------------------------------------------------
+
+
+async def test_get_evidence_delegates_to_compute_evidence(client, db_session):
+    """get_evidence(session, user) and compute_evidence(session, user.id) return the same dict."""
+    from datetime import timedelta
+
+    from app.services.diagnostic_service import compute_evidence, get_evidence
+
+    user = await _register_and_login(client, db_session, suffix="_ce_del")
+
+    base_time = datetime(2026, 3, 1, tzinfo=UTC)
+    prog_time = base_time + timedelta(days=14)
+
+    await _make_checkpoint(
+        db_session,
+        user,
+        kind="baseline",
+        overall_score=0.5,
+        session_count=4,
+        taken_at=base_time,
+        topics=[("risk", 2, 4)],
+    )
+    await _make_checkpoint(
+        db_session,
+        user,
+        kind="progress",
+        overall_score=0.75,
+        session_count=8,
+        taken_at=prog_time,
+        topics=[("risk", 3, 4)],
+    )
+
+    result_via_get = await get_evidence(db_session, user)
+    result_via_compute = await compute_evidence(db_session, user.id)
+
+    assert result_via_get == result_via_compute
