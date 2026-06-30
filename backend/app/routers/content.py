@@ -37,6 +37,7 @@ from app.services.content_serialize import (
     serialize_modules,
 )
 from app.services.content_service import (
+    compute_streak_milestone,
     derive_lesson_title,
     get_accessible_module,
     grant_module_completion_cash,
@@ -373,9 +374,13 @@ async def complete_lesson(
 
     today = today_utc()
     event = await get_active_event(session)
+    prev_streak = progress.streak_count
     xp_awarded, already, daily_goal_met, granted_collectables = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today,
         amount=boosted_xp(lesson.xp_reward, event),
+    )
+    streak_milestone_reached = compute_streak_milestone(
+        prev_streak, progress.streak_count, already=already
     )
 
     await product_analytics_service.record(
@@ -391,8 +396,10 @@ async def complete_lesson(
         },
     )
 
+    level_mastered = False
     if lesson_level_id is not None:
-        await record_mastery_if_earned(session, current_user.id, lesson_level_id)
+        mastery = await record_mastery_if_earned(session, current_user.id, lesson_level_id)
+        level_mastered = mastery is not None
 
     if not already:
         await update_challenge_progress(
@@ -452,6 +459,8 @@ async def complete_lesson(
         streak_freezes=progress.streak_freezes,
         practice_available=practice_available,
         daily_goal_met=daily_goal_met,
+        streak_milestone_reached=streak_milestone_reached,
+        level_mastered=level_mastered,
         reward=reward,
         granted_collectables=granted_collectables,
     )

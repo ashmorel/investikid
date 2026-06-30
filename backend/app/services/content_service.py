@@ -137,6 +137,21 @@ def _grant_milestone(streak: int, freezes: int) -> int:
     return freezes
 
 
+def compute_streak_milestone(prev_streak: int, new_streak: int, *, already: bool) -> int | None:
+    """Return the streak value if THIS completion just advanced it to a milestone.
+
+    A milestone is "newly reached" only when the streak actually grew on this completion
+    (``new_streak > prev_streak``) and landed on a multiple of ``STREAK_MILESTONE``. A
+    same-day repeat (streak unchanged) or an already-completed replay returns None — so the
+    in-app-review prompt fires once per milestone, not on every same-day lesson.
+    """
+    if already:
+        return None
+    if new_streak > prev_streak and new_streak % STREAK_MILESTONE == 0:
+        return new_streak
+    return None
+
+
 def streak_after_activity(
     last: date | None, current: int, freezes: int, today: date
 ) -> tuple[int, date, int]:
