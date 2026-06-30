@@ -8,10 +8,14 @@
 """
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pytest
 from sqlalchemy import select
 
+from app.core.time import today_utc
 from app.models.content import Lesson, Level, LevelMastery, Module
+from app.models.user import User, UserProgress
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
@@ -82,6 +86,34 @@ async def test_level_mastered_true_on_final_lesson(client, db_session):
         select(LevelMastery).where(LevelMastery.level_id == lv.id)
     )).all()
     assert len(rows) == 1
+
+
+async def test_streak_milestone_reached_end_to_end(client, db_session):
+    """Drive the streak from 6 → 7 through the real endpoint and assert the signal.
+
+    Locks the prev_streak snapshot-vs-mutation ordering against future refactors of
+    _award_completion (the subtlest part of the change).
+    """
+    await _login(client, "b5-streak@example.com", "b5streak")
+    _, _, lessons = await _level_with_lessons(db_session)
+
+    user = await db_session.scalar(select(User).where(User.email == "b5-streak@example.com"))
+    # Seed a 6-day streak whose last activity was yesterday (gap == 1 → increments to 7).
+    progress = await db_session.scalar(
+        select(UserProgress).where(UserProgress.user_id == user.id)
+    )
+    if progress is None:
+        progress = UserProgress(user_id=user.id)
+        db_session.add(progress)
+    progress.streak_count = 6
+    progress.last_activity_date = today_utc() - timedelta(days=1)
+    await db_session.flush()
+
+    r = await client.post(f"/lessons/{lessons[0].id}/complete", json={"score": 0.9})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["streak_count"] == 7
+    assert body["streak_milestone_reached"] == 7
 
 
 async def test_replay_does_not_remaster(client, db_session):

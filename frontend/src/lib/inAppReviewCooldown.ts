@@ -2,7 +2,9 @@
 // We pick the *moment* to ask for a rating; the OS also throttles independently.
 
 const LAST_ASKED = 'ik:iar:lastAsked'; // epoch ms of the last time we asked
-const BOOTS = 'ik:iar:boots'; // app-open counter — used to skip the very first session
+// Monotonic app-open counter (never reset). bootCount < 2 means "this install's first
+// session" — used to skip asking a brand-new user. Not a per-session value.
+const BOOTS = 'ik:iar:boots';
 
 /** 60 days — ask at most once per this window. */
 export const COOLDOWN_MS = 60 * 24 * 60 * 60 * 1000;
