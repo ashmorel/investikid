@@ -2,6 +2,10 @@
 
 **Date:** 2026-06-30 · **Owner from here:** 👤 you (archive/upload) + ⚙️ operator (store/content)
 
+> ✅ **Build 20/7 UPLOADED 2026-06-30** (iOS archived → App Store Connect; signed Android AAB → Play Internal testing).
+>
+> ⏭️ **Pending native-visible change since 20/7** (rides the *next* build, NOT urgent): onboarding-diagnostic copy fix (`7260450f`) — clearer no-pressure-baseline framing on the first question + "Check answer" button relabelled "Next". **Live on web now**; reaches devices on the next `cap sync` + archive.
+
 ## ✅ What I already did (prep complete)
 - `npm run build` (fresh prod web) + `npx cap sync ios` + `npx cap sync android` — the native
   projects now bundle **all the deferred Theme-A web work**: the **onboarding diagnostic** (A3),
