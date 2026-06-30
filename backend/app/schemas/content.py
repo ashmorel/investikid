@@ -94,6 +94,7 @@ class LessonCompletionResult(BaseModel):
     level: int
     streak_count: int
     streak_freezes: int = 0
+    freeze_used: bool = False  # True only when THIS completion consumed a freeze to save the streak
     practice_available: bool = False
     daily_goal_met: bool = False  # True only when THIS completion crossed the daily goal
     # Delight signals for the in-app-review prompt (B5) — only set on THIS completion:

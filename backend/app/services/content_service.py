@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Sequence
 from datetime import date
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,9 @@ from app.services.streak_config import (
     STREAK_FREEZE_CAP,
     STREAK_FREEZE_GAP,
     STREAK_MILESTONE,
+    STREAK_REPAIR_COST,
+    STREAK_REPAIR_MAX_GAP,
+    STREAK_REPAIR_MIN_STREAK,
 )
 
 if TYPE_CHECKING:
@@ -180,6 +183,52 @@ def streak_after_activity(
         new = current + 1
         return new, today, _grant_milestone(new, freezes - 1)
     return 1, today, freezes
+
+
+def freeze_will_be_consumed(last: date | None, freezes: int, today: date) -> bool:
+    """True iff completing an activity ``today`` would consume a held freeze to
+    save the streak — i.e. exactly one missed day (gap == STREAK_FREEZE_GAP) with
+    at least one freeze in hand. Pure; mirrors the freeze branch of
+    ``streak_after_activity`` so the client gets an explicit celebration signal.
+    """
+    if last is None or last == today:
+        return False
+    return (today - last).days == STREAK_FREEZE_GAP and freezes > 0
+
+
+class RepairEligibility(NamedTuple):
+    eligible: bool
+    restorable_streak: int  # the streak that would be preserved on repair (0 when not eligible)
+    cost: int               # coin cost (always STREAK_REPAIR_COST, for client display)
+
+
+def repair_eligibility(progress, today: date) -> RepairEligibility:
+    """Decide whether a coin-funded streak repair is offered for ``progress``.
+
+    Eligible when the streak has *just* lapsed and is worth saving:
+    - ``last_activity_date`` is set;
+    - the day-gap is in ``2..STREAK_REPAIR_MAX_GAP`` (i.e. {2, 3}) — gap 1 is still
+      alive, gap >= 4 is too late;
+    - the streak WOULD reset on the next activity — i.e. it is NOT auto-saved by a
+      held freeze (a single held freeze only covers a gap of exactly STREAK_FREEZE_GAP);
+    - the would-reset streak is at least STREAK_REPAIR_MIN_STREAK days.
+
+    Pure: reads only ``last_activity_date``, ``streak_count``, ``streak_freezes``.
+    """
+    last = progress.last_activity_date
+    streak = progress.streak_count
+    cost = STREAK_REPAIR_COST
+    if last is None:
+        return RepairEligibility(False, 0, cost)
+    gap = (today - last).days
+    if not (STREAK_FREEZE_GAP <= gap <= STREAK_REPAIR_MAX_GAP):
+        return RepairEligibility(False, 0, cost)
+    # Auto-saved by a held freeze (gap == FREEZE_GAP and a freeze in hand) → no repair needed.
+    if gap == STREAK_FREEZE_GAP and progress.streak_freezes > 0:
+        return RepairEligibility(False, 0, cost)
+    if streak < STREAK_REPAIR_MIN_STREAK:
+        return RepairEligibility(False, 0, cost)
+    return RepairEligibility(True, streak, cost)
 
 
 def record_daily_activity(progress, today_local: date) -> bool:

@@ -27,6 +27,7 @@ import ArcadeHomeCard from '@/components/child/home/ArcadeHomeCard';
 import ArcadeDailyCard from '@/components/child/home/ArcadeDailyCard';
 import FeaturedDropCard from '@/components/child/home/FeaturedDropCard';
 import ProgressCheckCard from '@/components/child/home/ProgressCheckCard';
+import StreakRepairCard from '@/components/child/home/StreakRepairCard';
 
 export default function Home() {
   const { t } = useTranslation('home');
@@ -113,10 +114,12 @@ export default function Home() {
           lastActivityDate={progress?.last_activity_date ?? null}
           dailyGoalXp={progress?.daily_goal_xp ?? 30}
           xpToday={progress?.xp_today ?? 0}
+          nextFreezeIn={progress?.next_freeze_in}
         />
       </div>
 
       <StreakReminderNudge />
+      <StreakRepairCard />
       <ProgressCheckCard />
 
       {marketComingSoon ? (

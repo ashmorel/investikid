@@ -27,7 +27,21 @@
     "goalMet": "Goal met! ⭐",
     "goalMetSimple": "Goal met",
     "dailyGoalAriaLabel": "Daily goal progress",
-    "xpProgress": "{{xpInLevel}} / {{xpForNext}} XP · {{toGo}} XP to Level {{nextLevel}}"
+    "xpProgress": "{{xpInLevel}} / {{xpForNext}} XP · {{toGo}} XP to Level {{nextLevel}}",
+    "nextFreezeIn_one": "Next freeze in {{count}} day",
+    "nextFreezeIn_other": "Next freeze in {{count}} days"
+  },
+  "streakRepair": {
+    "ariaLabel": "Streak repair offer",
+    "title": "Rescue your streak! 🔥",
+    "body_one": "Your streak lapsed — spend {{count}} coin to bring it back.",
+    "body_other": "Your streak lapsed — spend {{count}} coins to bring it back.",
+    "confirm": "Restore my streak",
+    "dismiss": "No thanks",
+    "successTitle": "Streak restored! 🔥",
+    "successBody": "Your streak is back — keep it going today.",
+    "notEnoughCoins": "You don't have enough coins to restore your streak yet.",
+    "error": "Couldn't restore your streak. Please try again."
   },
   "quickLinks": {
     "heading": "While you're here",

@@ -11,6 +11,9 @@
 >    or first level mastery; ≤once/60 days, never first session). **Needs `npx cap sync`** at the
 >    next build so the `@capacitor-community/in-app-review` pod/Gradle dep installs (it's in
 >    package.json; inert until synced). No version-bump action beyond the usual.
+> 3. **B6 streak beats** — "Streak saved!" toast on freeze use, freeze countdown on StatsCard, and a
+>    coin-funded streak-repair card. **Already live on web**; reaches devices on the next build (no
+>    extra native dep beyond B5's).
 >
 > The next native build should `npm run build && npx cap sync ios && npx cap sync android`, bump
 > iOS `CURRENT_PROJECT_VERSION` 20→21 + Android `versionCode` 7→8, then archive/upload — carrying

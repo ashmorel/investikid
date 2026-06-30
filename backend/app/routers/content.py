@@ -39,6 +39,7 @@ from app.services.content_serialize import (
 from app.services.content_service import (
     compute_streak_milestone,
     derive_lesson_title,
+    freeze_will_be_consumed,
     get_accessible_module,
     grant_module_completion_cash,
     record_daily_activity,
@@ -375,6 +376,8 @@ async def complete_lesson(
     today = today_utc()
     event = await get_active_event(session)
     prev_streak = progress.streak_count
+    prev_last = progress.last_activity_date
+    prev_freezes = progress.streak_freezes
     xp_awarded, already, daily_goal_met, granted_collectables = await _award_completion(
         session, current_user.id, progress, lesson, payload.score, today,
         amount=boosted_xp(lesson.xp_reward, event),
@@ -382,6 +385,7 @@ async def complete_lesson(
     streak_milestone_reached = compute_streak_milestone(
         prev_streak, progress.streak_count, already=already
     )
+    freeze_used = (not already) and freeze_will_be_consumed(prev_last, prev_freezes, today)
 
     await product_analytics_service.record(
         session,
@@ -457,6 +461,7 @@ async def complete_lesson(
         xp_awarded=xp_awarded, already_completed=already,
         total_xp=progress.xp, level=progress.level, streak_count=progress.streak_count,
         streak_freezes=progress.streak_freezes,
+        freeze_used=freeze_used,
         practice_available=practice_available,
         daily_goal_met=daily_goal_met,
         streak_milestone_reached=streak_milestone_reached,

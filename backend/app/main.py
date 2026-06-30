@@ -39,6 +39,7 @@ from app.routers import parent_auth as parent_auth_router
 from app.routers import premium as premium_router
 from app.routers import revise as revise_router
 from app.routers import simulator as simulator_router
+from app.routers import streak as streak_router
 from app.routers import users as users_router
 from app.routers import video_curation as video_curation_router
 from app.services.alerting import on_all_providers_down, on_provider_degraded
@@ -201,6 +202,7 @@ def create_app() -> FastAPI:
     application.include_router(users_router.router)
     application.include_router(markets_router.router)
     application.include_router(content_router.router)
+    application.include_router(streak_router.router)
     application.include_router(cosmetics_router.router)
     application.include_router(collectables_router.router)
     application.include_router(consent_router.router)
