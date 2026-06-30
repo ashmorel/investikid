@@ -53,16 +53,22 @@ adjudicate**.
 
 1. Run the **`diagnostic-verify`** workflow (Actions), then open the **"Needs review"** filter on
    `/admin/diagnostic-items`. Each flagged item shows the verifier's note + its proposed answer.
-2. For each flagged item, decide:
-   - **False positive** (the stored answer is right) → leave it; it stays approved. (A later sweep
-     re-checks; you can also just clear it by re-saving with no change.)
-   - **Genuinely wrong** → fix it in place with **Unpublish to edit** (next paragraph).
+2. For each flagged item, decide — one click each:
+   - **False positive** (the stored answer is right) → click **"Looks correct — keep published."**
+     This clears the advisory flag **in place** — the item stays **approved and live**, its answer
+     untouched — and it drops out of "Needs review." Nothing breaks if you instead just leave it
+     flagged: a flagged item is still served; the flag is only a review marker.
+   - **Genuinely wrong** → fix it with **Unpublish to edit** (next paragraph).
 
-**Fix-in-place path (Unpublish → fix → Approve).** Flagged items are *approved*, and editing is
-draft-only, so to correct one: click **Unpublish to edit** (approved → draft), fix the answer (or
+**Fix-in-place path (Unpublish → fix → Approve).** To *correct* a flagged item: editing is
+draft-only, so click **Unpublish to edit** (approved → draft), fix the answer (or
 question/choices/explanation), then **Approve** again. Editing the content **clears the stale
 verifier flag automatically**, so the corrected item drops out of "Needs review." (Use **Retire**
 only if the item is unsalvageable — that removes it from the bank entirely.)
+
+> **Two buttons, two cases:** *"Looks correct — keep published"* = false positive, keep it live and
+> dismiss the flag. *"Unpublish to edit"* = genuinely wrong, take it down to fix. Both leave the
+> "Needs review" list emptier; work it to zero before beta.
 
 ---
 
