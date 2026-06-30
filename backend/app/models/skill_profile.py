@@ -42,6 +42,33 @@ class TopicMastery(Base):
     )
 
 
+class ConceptMastery(Base):
+    __tablename__ = "concept_mastery"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "concept_id", name="uq_concept_mastery_user_concept"
+        ),
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    concept_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("concepts.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    correct: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    mastery_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
 class WeakConcept(Base):
     __tablename__ = "weak_concepts"
 

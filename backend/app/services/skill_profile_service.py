@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.skill_profile import TopicMastery, WeakConcept
+from app.models.skill_profile import ConceptMastery, TopicMastery, WeakConcept
 
 
 async def update_mastery_on_completion(
@@ -47,6 +47,39 @@ async def update_mastery_on_completion(
             if mastery.quizzes_attempted > 0
             else 0.0
         )
+
+
+async def record_concept_attempt(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    concept_id: uuid.UUID,
+    *,
+    correct: bool,
+) -> None:
+    """Upsert a ConceptMastery row after a per-concept quiz attempt.
+
+    Increments ``attempts`` each call; increments ``correct`` only when the
+    answer was right; recomputes ``mastery_score = correct / attempts``.
+    """
+    row = await session.get(ConceptMastery, (user_id, concept_id))
+    now = datetime.now(UTC)
+
+    if row is None:
+        row = ConceptMastery(
+            user_id=user_id,
+            concept_id=concept_id,
+            attempts=0,
+            correct=0,
+            mastery_score=0.0,
+            last_attempt_at=now,
+        )
+        session.add(row)
+
+    row.attempts += 1
+    if correct:
+        row.correct += 1
+    row.mastery_score = row.correct / row.attempts if row.attempts > 0 else 0.0
+    row.last_attempt_at = now
 
 
 async def record_weak_concept(
