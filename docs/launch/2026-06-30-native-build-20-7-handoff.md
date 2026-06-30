@@ -4,7 +4,17 @@
 
 > ✅ **Build 20/7 UPLOADED 2026-06-30** (iOS archived → App Store Connect; signed Android AAB → Play Internal testing).
 >
-> ⏭️ **Pending native-visible change since 20/7** (rides the *next* build, NOT urgent): onboarding-diagnostic copy fix (`7260450f`) — clearer no-pressure-baseline framing on the first question + "Check answer" button relabelled "Next". **Live on web now**; reaches devices on the next `cap sync` + archive.
+> ⏭️ **Pending native-visible changes since 20/7** (ride the *next* build, NOT urgent):
+> 1. Onboarding-diagnostic copy fix (`7260450f`) — clearer no-pressure-baseline framing + "Check
+>    answer" → "Next". Live on web now.
+> 2. **B5 ratings flywheel** — fires the native OS review prompt at a delight moment (7-day streak
+>    or first level mastery; ≤once/60 days, never first session). **Needs `npx cap sync`** at the
+>    next build so the `@capacitor-community/in-app-review` pod/Gradle dep installs (it's in
+>    package.json; inert until synced). No version-bump action beyond the usual.
+>
+> The next native build should `npm run build && npx cap sync ios && npx cap sync android`, bump
+> iOS `CURRENT_PROJECT_VERSION` 20→21 + Android `versionCode` 7→8, then archive/upload — carrying
+> both of the above (plus B6 when it lands).
 
 ## ✅ What I already did (prep complete)
 - `npm run build` (fresh prod web) + `npx cap sync ios` + `npx cap sync android` — the native

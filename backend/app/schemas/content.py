@@ -96,6 +96,9 @@ class LessonCompletionResult(BaseModel):
     streak_freezes: int = 0
     practice_available: bool = False
     daily_goal_met: bool = False  # True only when THIS completion crossed the daily goal
+    # Delight signals for the in-app-review prompt (B5) — only set on THIS completion:
+    streak_milestone_reached: int | None = None  # the streak value when it just hit a multiple of 7
+    level_mastered: bool = False  # True when this completion mastered a level for the first time
     reward: RewardGrantOut = RewardGrantOut()
     granted_collectables: list[str] = []
 

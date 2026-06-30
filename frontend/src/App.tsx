@@ -1,5 +1,6 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { markSessionSeen } from '@/lib/inAppReviewCooldown';
 import { useQueryClient } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { Shell } from '@/components/child/Shell';
@@ -100,6 +101,11 @@ function ProgressCheckRoute() {
 }
 
 export default function App() {
+  // Count this app open — the in-app-review gate uses it to skip the first session.
+  useEffect(() => {
+    markSessionSeen();
+  }, []);
+
   return (
     <LiveRegion>
       <BiometricGate>
