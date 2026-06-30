@@ -493,6 +493,9 @@ async def patch_item(
     written.  This means an explicitly-provided ``concept_id=null`` clears the
     field, while an omitted ``concept_id`` leaves the existing value untouched.
     """
+    _content_fields = {"question", "choices", "answer_index", "explanation", "concept_id"}
+    content_changed = bool(fields_set & _content_fields)
+
     if "question" in fields_set and question is not None:
         item.question = question
     if "choices" in fields_set and choices is not None:
@@ -506,6 +509,14 @@ async def patch_item(
     if "concept_id" in fields_set:
         # concept_id may be explicitly null (to clear it) — assign regardless.
         item.concept_id = concept_id
+
+    if content_changed:
+        # Any content edit invalidates the prior independent verification.
+        item.verifier_status = None
+        item.verifier_answer_index = None
+        item.verifier_note = None
+        item.verified_at = None
+
     await session.flush()
     return item
 
@@ -540,5 +551,21 @@ async def retire_item(
 ) -> DiagnosticItem:
     """Transition approved → retired."""
     item.status = "retired"
+    await session.flush()
+    return item
+
+
+async def unpublish_item(
+    session: AsyncSession,
+    item: DiagnosticItem,
+) -> DiagnosticItem:
+    """Transition approved → draft (to fix and re-approve).
+
+    Clears approved_by and approved_at; verifier_* fields are left as-is
+    and will be cleared when the operator edits a content field via patch_item.
+    """
+    item.status = "draft"
+    item.approved_by = None
+    item.approved_at = None
     await session.flush()
     return item
