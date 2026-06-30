@@ -41,7 +41,8 @@
       "objectivesHeading": "You'll learn to…",
       "start": "Start →",
       "alreadyHaveAccount": "Already have an account?",
-      "backToLogin": "Back to log in"
+      "backToLogin": "Back to log in",
+      "howWeMeasure": "How we measure learning"
     },
     "lesson": {
       "srHeading": "Try a lesson — {{moduleTitle}}",
@@ -268,6 +269,45 @@
       "inProgress": "In progress"
     },
     "masteredDate": "Mastered {{date}}"
+  },
+  "evidence": {
+    "pageTitle": "How InvestiKid measures learning",
+    "pageSubtitle": "Our approach to mastery, curriculum standards, content safety, and children's privacy.",
+    "howWeMeasure": {
+      "heading": "How we measure mastery",
+      "diagnosticHeading": "Day-one diagnostic",
+      "diagnosticBody": "Every child starts with a short diagnostic that captures a baseline across our financial-literacy concept taxonomy — topics like saving, spending, budgeting, investing, and risk. No score is shown to the child; it simply calibrates where to begin.",
+      "progressChecksHeading": "Progress checks",
+      "progressChecksBody": "After every few learning sessions the app re-measures the same concepts. These short checks let us track movement — whether a concept is emerging, developing, or consolidated — without putting pressure on the learner.",
+      "taxonomyHeading": "Concept taxonomy",
+      "taxonomyBody": "Every lesson, question, and scenario is tagged to a specific concept in our taxonomy. This means a child's strengths and gaps are always visible at the topic level, not just as a raw score."
+    },
+    "standards": {
+      "heading": "Standards alignment",
+      "body": "Our curriculum is aligned to recognised financial-education frameworks, including the UK Money and Pensions Service (MaPS) financial capability framework and the US Common Core State Standards (CCSS) for financial literacy. Every module carries the relevant framework tags so parents and educators can see exactly which competencies a lesson develops.",
+      "note": "Framework alignment is reviewed with each new curriculum release."
+    },
+    "safety": {
+      "heading": "Safety",
+      "aiModerationHeading": "AI content moderation",
+      "aiModerationBody": "All AI-generated content passes through an automated moderation layer before it reaches a child. Lessons, feedback, and coaching suggestions are checked for age-appropriateness, accuracy, and tone.",
+      "curatedHeading": "Human-curated content",
+      "curatedBody": "Video and article lessons are curated by the editorial team before publication. Anything flagged by moderation or the curation queue is withheld until reviewed.",
+      "designedForKidsHeading": "Designed for children",
+      "designedForKidsBody": "InvestiKid is built as a kids' product end-to-end — no advertising, no social feeds, no exposure to external content outside curated educational materials."
+    },
+    "privacy": {
+      "heading": "Privacy",
+      "consentHeading": "Parent consent",
+      "consentBody": "Children below the age of digital consent in their country require a parent or guardian to approve their account before they can use the app. Consent is recorded and auditable.",
+      "minimisationHeading": "Data minimisation",
+      "minimisationBody": "We collect only what is necessary to run the app: a username, date of birth, country, and learning progress. We do not collect home addresses, phone numbers, photos, or financial information.",
+      "noExposureHeading": "No public exposure of children's data",
+      "noExposureBody": "A child's progress and personal details are visible only to them and their linked parent or guardian. Leaderboard features are opt-in and require explicit parent consent, off by default.",
+      "learnMore": "Read the full privacy notice",
+      "learnMoreHref": "/privacy"
+    },
+    "backToTry": "Try a free lesson"
   },
   "privacyNotice": {
     "meta": "Version {{version}} · Written for learners aged 8 and above",

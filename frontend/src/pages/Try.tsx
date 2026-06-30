@@ -100,6 +100,9 @@ export default function Try() {
         <p className="mt-4 text-center text-sm text-gray-600">
           {t('try.intro.alreadyHaveAccount')}{' '}<Link to="/login" className="font-medium underline">{t('try.intro.backToLogin')}</Link>
         </p>
+        <p className="mt-2 text-center text-xs text-gray-500">
+          <Link to="/how-we-measure" className="underline hover:text-gray-700">{t('try.intro.howWeMeasure')}</Link>
+        </p>
       </main>
     );
   }

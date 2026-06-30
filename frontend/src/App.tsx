@@ -34,6 +34,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import Privacy from '@/pages/Privacy';
 import DeleteAccount from '@/pages/DeleteAccount';
 const Try = lazy(() => import('@/pages/Try'));
+const LearningEvidence = lazy(() => import('@/pages/LearningEvidence'));
 const OnboardingDiagnostic = lazy(() => import('@/pages/child/OnboardingDiagnostic'));
 import ResetPassword from '@/pages/ResetPassword';
 import VerifyEmail from '@/pages/VerifyEmail';
@@ -111,6 +112,7 @@ export default function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/delete-account" element={<DeleteAccount />} />
         <Route path="/try" element={<Suspense fallback={null}><Try /></Suspense>} />
+        <Route path="/how-we-measure" element={<Suspense fallback={null}><LearningEvidence /></Suspense>} />
         <Route path="/pending-consent" element={<PendingConsent />} />
         <Route path="/onboarding/diagnostic" element={<OnboardingDiagnosticRoute />} />
         <Route path="/progress-check" element={<ProgressCheckRoute />} />
