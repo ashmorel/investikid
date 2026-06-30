@@ -88,6 +88,15 @@ class CategorisedRecommendations(BaseModel):
     review_summary: ReviewSummary
 
 
+class ConceptStrength(BaseModel):
+    concept_id: uuid.UUID
+    slug: str
+    name: str
+    mastery_score: float
+    status: str
+    attempts: int
+
+
 class TopicStrength(BaseModel):
     topic: str
     mastery_score: float
@@ -95,6 +104,7 @@ class TopicStrength(BaseModel):
     weak_count: int
     due_for_review: int
     total_concepts: int
+    concepts: list[ConceptStrength] = []
 
 
 class StrengthsAndGaps(BaseModel):

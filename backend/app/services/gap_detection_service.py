@@ -1,24 +1,30 @@
 """Per-topic strengths and gaps analysis — read-only service."""
 import uuid
+from collections import defaultdict
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.skill_profile import SpacedRepetitionItem, TopicMastery, WeakConcept
-from app.schemas.ai import StrengthsAndGaps, TopicStrength
+from app.models.concept import Concept
+from app.models.skill_profile import ConceptMastery, SpacedRepetitionItem, TopicMastery, WeakConcept
+from app.schemas.ai import ConceptStrength, StrengthsAndGaps, TopicStrength
 
 _STRONG_THRESHOLD = 0.8
 _STATUS_ORDER = {"needs_practice": 0, "strong": 1, "new": 2}
 
 
-def _classify_topic(mastery_score: float | None) -> str:
-    """Classify a topic based on mastery score."""
+def _classify(mastery_score: float | None) -> str:
+    """Classify a topic or concept based on mastery score."""
     if mastery_score is None:
         return "new"
     if mastery_score >= _STRONG_THRESHOLD:
         return "strong"
     return "needs_practice"
+
+
+# Backward-compat alias kept so existing callers/tests continue to work.
+_classify_topic = _classify
 
 
 def _compute_overall_mastery(scores: list[float]) -> float:
@@ -45,6 +51,27 @@ async def get_strengths_and_gaps(
         )
     ).all()
     mastery_by_topic = {tm.topic: tm for tm in mastery_rows}
+
+    # Load per-concept mastery (attempted only) joined to Concept for topic/slug/name
+    concept_rows_result = await session.execute(
+        select(ConceptMastery, Concept)
+        .join(Concept, Concept.id == ConceptMastery.concept_id)
+        .where(
+            ConceptMastery.user_id == user_id,
+            ConceptMastery.attempts > 0,
+        )
+    )
+    concepts_by_topic: dict[str, list[ConceptStrength]] = defaultdict(list)
+    for cm, concept in concept_rows_result.all():
+        cs = ConceptStrength(
+            concept_id=concept.id,
+            slug=concept.slug,
+            name=concept.name,
+            mastery_score=cm.mastery_score,
+            status=_classify(cm.mastery_score),
+            attempts=cm.attempts,
+        )
+        concepts_by_topic[concept.topic].append(cs)
 
     # Load weak concept counts per topic (unresolved only)
     # TODO(C2b): filter WeakConcept by the child's active market once multi-market is user-visible
@@ -86,10 +113,16 @@ async def get_strengths_and_gaps(
     for topic in all_topics:
         mastery = mastery_by_topic.get(topic)
         score = mastery.mastery_score if mastery else None
-        status = _classify_topic(score)
+        status = _classify(score)
 
         if score is not None:
             mastery_scores.append(score)
+
+        # Sort concepts needs_practice-first (mirrors topic sort order)
+        topic_concepts = sorted(
+            concepts_by_topic.get(topic, []),
+            key=lambda c: _STATUS_ORDER.get(c.status, 99),
+        )
 
         topic_list.append({
             "topic": topic,
@@ -98,6 +131,7 @@ async def get_strengths_and_gaps(
             "weak_count": weak_counts.get(topic, 0),
             "due_for_review": due_counts.get(topic, 0),
             "total_concepts": total_concepts.get(topic, 0),
+            "concepts": topic_concepts,
         })
 
     sorted_topics = _sort_topics(topic_list)
