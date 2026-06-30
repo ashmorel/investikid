@@ -163,8 +163,23 @@ export default function OnboardingDiagnostic({ kind = 'baseline', onComplete }: 
       }
     }
 
+    const isProgress = kind === 'progress';
+
     return (
       <div className="mx-auto max-w-xl px-4 py-6 space-y-4">
+        {/* Intro framing — shown on the first question so the child understands
+            this is a no-pressure baseline, not a graded test */}
+        {idx === 0 && (
+          <div className="rounded-3xl bg-brand-50 p-4 text-center">
+            <h1 className="text-base font-extrabold text-ink">
+              {t(isProgress ? 'quiz.introTitle_progress' : 'quiz.introTitle')}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t(isProgress ? 'quiz.introBody_progress' : 'quiz.introBody')}
+            </p>
+          </div>
+        )}
+
         {/* Progress */}
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span aria-live="polite">
@@ -206,7 +221,7 @@ export default function OnboardingDiagnostic({ kind = 'baseline', onComplete }: 
             disabled={selected === null}
             onClick={goNext}
           >
-            {isLast ? t('quiz.finish') : t('quiz.checkAnswer')}
+            {isLast ? t('quiz.finish') : t('quiz.next')}
           </GradientButton>
         </div>
       </div>

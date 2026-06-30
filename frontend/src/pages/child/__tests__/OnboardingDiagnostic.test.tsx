@@ -77,6 +77,23 @@ describe('OnboardingDiagnostic — items present', () => {
     expect(screen.getByText('A place to store money')).toBeInTheDocument();
   });
 
+  it('frames the first question as a no-pressure baseline (not a graded test)', async () => {
+    renderPage();
+    await screen.findByText('What is a savings account?');
+    // Intro framing is present on the first question
+    expect(screen.getByText(/let's see what you already know/i)).toBeInTheDocument();
+    expect(screen.getByText(/isn't a test/i)).toBeInTheDocument();
+  });
+
+  it('hides the intro framing after the first question', async () => {
+    renderPage();
+    await screen.findByText('What is a savings account?');
+    fireEvent.click(screen.getByRole('radio', { name: /a place to store money/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await screen.findByText('What does diversification mean?');
+    expect(screen.queryByText(/let's see what you already know/i)).toBeNull();
+  });
+
   it('is accessible while showing the first question (axe)', async () => {
     const { container } = renderPage();
     await screen.findByText('What is a savings account?');
@@ -104,8 +121,8 @@ describe('OnboardingDiagnostic — items present', () => {
     await screen.findByText('What is a savings account?');
     fireEvent.click(screen.getByRole('radio', { name: /a place to store money/i }));
 
-    // Click Check answer
-    fireEvent.click(screen.getByRole('button', { name: /check answer/i }));
+    // Advance to the next question
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
     // Q2: select the second choice (index 1)
     await screen.findByText('What does diversification mean?');
@@ -126,7 +143,7 @@ describe('OnboardingDiagnostic — items present', () => {
     renderPage();
     await screen.findByText('What is a savings account?');
     fireEvent.click(screen.getByRole('radio', { name: /a place to store money/i }));
-    fireEvent.click(screen.getByRole('button', { name: /check answer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await screen.findByText('What does diversification mean?');
     fireEvent.click(screen.getByRole('radio', { name: /spreading money across many investments/i }));
     fireEvent.click(screen.getByRole('button', { name: /finish/i }));
@@ -142,7 +159,7 @@ describe('OnboardingDiagnostic — items present', () => {
     const { container } = renderPage();
     await screen.findByText('What is a savings account?');
     fireEvent.click(screen.getByRole('radio', { name: /a place to store money/i }));
-    fireEvent.click(screen.getByRole('button', { name: /check answer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await screen.findByText('What does diversification mean?');
     fireEvent.click(screen.getByRole('radio', { name: /spreading money across many investments/i }));
     fireEvent.click(screen.getByRole('button', { name: /finish/i }));
@@ -155,7 +172,7 @@ describe('OnboardingDiagnostic — items present', () => {
     renderPage(onComplete);
     await screen.findByText('What is a savings account?');
     fireEvent.click(screen.getByRole('radio', { name: /a place to store money/i }));
-    fireEvent.click(screen.getByRole('button', { name: /check answer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await screen.findByText('What does diversification mean?');
     fireEvent.click(screen.getByRole('radio', { name: /spreading money across many investments/i }));
     fireEvent.click(screen.getByRole('button', { name: /finish/i }));
@@ -250,6 +267,17 @@ describe('OnboardingDiagnostic — kind=progress', () => {
     expect(mockStart).toHaveBeenCalledWith('progress');
   });
 
+  it('frames the first question with the progress (not baseline) intro copy', async () => {
+    render(
+      <MemoryRouter>
+        <OnboardingDiagnostic kind="progress" onComplete={vi.fn()} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('What is a savings account?');
+    expect(screen.getByText(/how far you've come/i)).toBeInTheDocument();
+    expect(screen.queryByText(/let's see what you already know/i)).toBeNull();
+  });
+
   it('shows the progress results copy (not the baseline copy) on completion', async () => {
     render(
       <MemoryRouter>
@@ -258,7 +286,7 @@ describe('OnboardingDiagnostic — kind=progress', () => {
     );
     await screen.findByText('What is a savings account?');
     fireEvent.click(screen.getByRole('radio', { name: /a place to store money/i }));
-    fireEvent.click(screen.getByRole('button', { name: /check answer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await screen.findByText('What does diversification mean?');
     fireEvent.click(screen.getByRole('radio', { name: /spreading money across many investments/i }));
     fireEvent.click(screen.getByRole('button', { name: /finish/i }));

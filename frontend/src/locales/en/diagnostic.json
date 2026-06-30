@@ -1,12 +1,13 @@
 {
   "loading": "Getting your questions ready…",
-  "welcome": "Welcome to InvestiKid!",
-  "welcomeSub": "Let's see what you already know.",
 
   "quiz": {
+    "introTitle": "Let's see what you already know",
+    "introBody": "This isn't a test — there's no pass or fail. Answer what you can and skip anything you're unsure about. It just helps us find the best place for you to start.",
+    "introTitle_progress": "Let's see how far you've come",
+    "introBody_progress": "No pass or fail here either — just answer what you can. It shows us how much you've learned since you started.",
     "progress": "{{current}} of {{total}}",
     "answerChoicesLabel": "Answer choices",
-    "checkAnswer": "Check answer",
     "next": "Next",
     "finish": "Finish",
     "skip": "Skip for now"
