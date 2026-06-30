@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import sys
 import uuid
 from datetime import UTC, datetime
@@ -108,15 +109,40 @@ def _build_system_prompt(
     return with_generation_framing(prompt)
 
 
-def _validate_candidate(raw: object, *, market_code: str | None = None) -> dict | None:
+# ISO codes of the markets' currencies — used to detect a cross-currency leak.
+_CURRENCY_CODES = {"GBP", "USD", "EUR", "AUD", "CAD", "HKD", "SGD"}
+
+
+def _currency_leak(text: str, *, market_code: str | None, currency_code: str | None) -> bool:
+    """True if ``text`` references a currency that isn't the market's own.
+
+    Defence-in-depth alongside the market-grounded prompt. The ``£`` symbol and the
+    ``GBP`` code are GBP-only (checked even without a known currency). Other ISO
+    codes are matched on a WORD BOUNDARY so they don't false-trigger inside ordinary
+    words (e.g. AUD in "fraud", CAD in "decade", EUR in "Europe").
+    """
+    own = (currency_code or "").upper()
+    upper = text.upper()
+    is_gbp_market = own == "GBP" or (not own and (market_code or "").upper() == "GB")
+    if not is_gbp_market and ("£" in text or re.search(r"\bGBP\b", upper)):
+        return True
+    if own:
+        for code in _CURRENCY_CODES - {own, "GBP"}:
+            if re.search(rf"\b{code}\b", upper):
+                return True
+    return False
+
+
+def _validate_candidate(
+    raw: object, *, market_code: str | None = None, currency_code: str | None = None,
+) -> dict | None:
     """Return the candidate dict if structurally valid, else None.
 
     Valid means:
     - Is a dict with non-empty string ``question`` and ``explanation``.
     - ``choices`` is a list of exactly 4 non-empty strings.
     - ``answer_index`` is an int in [0, 3].
-    - For a non-GB market, contains no ``£``/``GBP`` (a UK-currency leak — defence
-      in depth alongside the market-grounded prompt).
+    - References no currency other than the market's own (see ``_currency_leak``).
     """
     if not isinstance(raw, dict):
         return None
@@ -136,12 +162,13 @@ def _validate_candidate(raw: object, *, market_code: str | None = None) -> dict 
     if not isinstance(answer_index, int) or isinstance(answer_index, bool) or not (0 <= answer_index <= 3):
         return None
 
-    # UK-currency leak guard: £/GBP must only appear in GB items.
-    if market_code and market_code.upper() != "GB":
-        blob = " ".join([question, explanation, *choices]).upper()
-        if "£" in blob or "GBP" in blob:
-            logger.debug("diagnostic_item_service: dropping UK-currency-leak candidate for market=%s", market_code)
-            return None
+    # Currency-leak guard (defence in depth — the prompt grounds the currency).
+    if (market_code or currency_code) and _currency_leak(
+        " ".join([question, explanation, *choices]),
+        market_code=market_code, currency_code=currency_code,
+    ):
+        logger.debug("diagnostic_item_service: dropping currency-leak candidate for market=%s", market_code)
+        return None
 
     return {
         "question": question.strip(),
@@ -395,7 +422,11 @@ async def generate_items(
     persisted: list[DiagnosticItem] = []
     for raw_candidate in candidates:
         try:
-            candidate = _validate_candidate(raw_candidate, market_code=market_code)
+            candidate = _validate_candidate(
+                raw_candidate,
+                market_code=market_code,
+                currency_code=market.currency_code if market else None,
+            )
             if candidate is None:
                 logger.debug(
                     "diagnostic_item_service: dropping malformed/off-market candidate: %r",

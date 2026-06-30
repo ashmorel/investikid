@@ -77,6 +77,29 @@ def test_validate_no_market_code_skips_guard():
     assert _validate_candidate(_candidate("A £5 note."), market_code=None) is not None
 
 
+# --- cross-currency guard (word-boundary, all markets) ----------------------
+
+
+def test_validate_rejects_foreign_currency_code():
+    # HK (HKD) item leaking another market's code → dropped
+    assert _validate_candidate(_candidate("You earn 50 USD."), market_code="HK", currency_code="HKD") is None
+    assert _validate_candidate(_candidate("Costs 10 EUR."), market_code="HK", currency_code="HKD") is None
+    # Ireland (EUR) leaking USD → dropped
+    assert _validate_candidate(_candidate("Save 20 USD."), market_code="IE", currency_code="EUR") is None
+
+
+def test_validate_allows_own_currency_code():
+    assert _validate_candidate(_candidate("You have 50 HKD / HK$50."), market_code="HK", currency_code="HKD") is not None
+    assert _validate_candidate(_candidate("Costs 10 EUR."), market_code="IE", currency_code="EUR") is not None
+    assert _validate_candidate(_candidate("Save 20 USD."), market_code="US", currency_code="USD") is not None
+
+
+def test_validate_word_boundary_no_false_positives():
+    # "AUD" in fraud, "CAD" in decade, "EUR" in Europe must NOT trip the guard
+    for word in ("Avoiding fraud is smart.", "Over a decade of saving.", "Banks across Europe."):
+        assert _validate_candidate(_candidate(word), market_code="HK", currency_code="HKD") is not None
+
+
 # --- every market grounds in its real currency ------------------------------
 
 
