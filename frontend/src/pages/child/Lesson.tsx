@@ -8,6 +8,7 @@ import type { Me } from '@/api/auth';
 import { scopeFromMe } from '@/lib/offline/scope';
 import { cacheFirst } from '@/lib/offline/useOfflineContent';
 import * as offlineStore from '@/lib/offline/contentStore';
+import { maybeRequestReview, reviewSignalForCompletion } from '@/lib/inAppReview';
 import { CardLesson } from '@/components/child/lesson/CardLesson';
 import { QuizLesson } from '@/components/child/lesson/QuizLesson';
 import { ScenarioLesson } from '@/components/child/lesson/ScenarioLesson';
@@ -106,6 +107,12 @@ export default function Lesson() {
               names: result.granted_collectables.join(', '),
             }),
           });
+        }
+        // B5: at a delight moment, maybe ask for an app-store review (native-only,
+        // cooldown-gated, fire-and-forget — never blocks the lesson flow).
+        const reviewSignal = reviewSignalForCompletion(result);
+        if (reviewSignal) {
+          void maybeRequestReview(reviewSignal);
         }
       }
     },

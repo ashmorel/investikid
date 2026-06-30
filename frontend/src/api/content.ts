@@ -94,6 +94,8 @@ export type LessonCompletionResult = {
   streak_freezes: number;
   practice_available: boolean;
   daily_goal_met?: boolean;
+  streak_milestone_reached?: number | null;
+  level_mastered?: boolean;
   reward: RewardGrant;
   granted_collectables?: string[];
 };

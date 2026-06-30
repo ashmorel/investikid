@@ -7,6 +7,22 @@ import { shouldAskForReview, recordReviewAsked } from './inAppReviewCooldown';
 export type ReviewSignal = 'streak' | 'mastery';
 
 /**
+ * Decide which delight signal (if any) a lesson completion warrants. Pure + testable.
+ * A streak milestone wins over a mastery if both happen on the same completion; an
+ * already-completed replay never triggers.
+ */
+export function reviewSignalForCompletion(result: {
+  already_completed: boolean;
+  streak_milestone_reached?: number | null;
+  level_mastered?: boolean;
+}): ReviewSignal | null {
+  if (result.already_completed) return null;
+  if (result.streak_milestone_reached) return 'streak';
+  if (result.level_mastered) return 'mastery';
+  return null;
+}
+
+/**
  * Ask for an app-store review IF the moment is right. Native-only, cooldown-gated, and
  * never throws into the calling flow (a lesson-completion handler).
  *
