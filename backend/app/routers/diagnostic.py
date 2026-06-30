@@ -88,6 +88,22 @@ async def submit_diagnostic(
     )
 
 
+@router.get("/recheck-status")
+async def get_recheck_status(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Return the re-check-due signal for the authenticated child.
+
+    Response:
+      due            — true when the next milestone is reached and unchecked
+      milestone      — the next active-days milestone (5/15/30), or null when all done
+      active_days    — the child's total active-days count from UserProgress
+      completed_checks — number of completed progress checkpoints
+    """
+    return await diagnostic_service.recheck_status(session, user)
+
+
 @router.get("/evidence")
 async def get_evidence(
     user: User = Depends(get_current_user),

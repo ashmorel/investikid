@@ -27,16 +27,18 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.markets import active_market
 from app.models.diagnostic import DiagnosticItem
 from app.models.mastery import DiagnosticSession, MasteryCheckpoint, MasteryCheckpointTopic
-from app.models.user import User
+from app.models.user import User, UserProgress
 from app.services.skill_profile_service import update_mastery_on_completion
 
 logger = logging.getLogger(__name__)
+
+MILESTONES: tuple[int, ...] = (5, 15, 30)
 
 _BASE_TOPICS = frozenset({"budgeting", "savings", "risk"})
 _ALL_VALID_TOPICS = frozenset(
@@ -130,6 +132,41 @@ def _select_for_topic(
         selected += _spread(seen_fallback, remaining)
 
     return selected
+
+
+async def recheck_status(session: AsyncSession, user: User) -> dict:
+    """Return the re-check-due signal for *user*.
+
+    completed_checks: count of the user's kind='progress' MasteryCheckpoints.
+    active_days: from the user's UserProgress row (0 if no row exists).
+    due: True when completed_checks < len(MILESTONES) AND
+         active_days >= MILESTONES[completed_checks].
+    milestone: MILESTONES[completed_checks] when not exhausted, else None.
+    """
+    # Count kind='progress' checkpoints for this user
+    completed_checks: int = (
+        await session.scalar(
+            select(func.count()).where(
+                MasteryCheckpoint.user_id == user.id,
+                MasteryCheckpoint.kind == "progress",
+            )
+        )
+    ) or 0
+
+    # Load active_days (0 when no progress row)
+    progress = await session.get(UserProgress, user.id)
+    active_days: int = progress.active_days if progress is not None else 0
+
+    exhausted = completed_checks >= len(MILESTONES)
+    milestone: int | None = MILESTONES[completed_checks] if not exhausted else None
+    due: bool = (not exhausted) and (active_days >= MILESTONES[completed_checks])
+
+    return {
+        "due": due,
+        "milestone": milestone,
+        "active_days": active_days,
+        "completed_checks": completed_checks,
+    }
 
 
 async def start_diagnostic(
@@ -298,11 +335,18 @@ async def submit_diagnostic(
     )
 
     # 4b. Write immutable MasteryCheckpoint
+    # For progress sessions: session_count is authoritative from the server-side
+    # active_days — never trust the client value.
+    authoritative_session_count = session_count
+    if diag_session.kind == "progress":
+        progress_row = await session.get(UserProgress, user.id)
+        authoritative_session_count = progress_row.active_days if progress_row is not None else 0
+
     checkpoint = MasteryCheckpoint(
         user_id=user.id,
         market_code=diag_session.market_code,
         kind=diag_session.kind,
-        session_count=session_count,
+        session_count=authoritative_session_count,
         overall_score=overall_score,
     )
     session.add(checkpoint)
