@@ -15,6 +15,7 @@ from app.models.user import User
 from app.routers.users import get_current_user
 from app.schemas.diagnostic_session import (
     CheckpointTopicOut,
+    DiagnosticStartRequest,
     DiagnosticStartResponse,
     DiagnosticSubmitRequest,
     DiagnosticSubmitResponse,
@@ -28,6 +29,7 @@ router = APIRouter(prefix="/diagnostic", tags=["diagnostic"])
 @limiter.limit("20/hour")
 async def start_diagnostic(
     request: Request,
+    body: DiagnosticStartRequest | None = None,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> DiagnosticStartResponse:
@@ -35,8 +37,15 @@ async def start_diagnostic(
 
     Returns the session id and the item list (no answer_index, no
     explanation).  On empty bank returns session with items=[].
+
+    ``kind`` (baseline | progress) is taken from the request body and
+    validated to those two values; it defaults to ``"baseline"`` when no body
+    is sent (the onboarding flow).
     """
-    diag_session, items = await diagnostic_service.start_diagnostic(session, user)
+    kind = body.kind if body is not None else "baseline"
+    diag_session, items = await diagnostic_service.start_diagnostic(
+        session, user, kind=kind
+    )
     await session.commit()
     return DiagnosticStartResponse(
         session_id=diag_session.id,

@@ -8,6 +8,10 @@ Coverage:
 - times_shown bumped for every selected item; DiagnosticSession row created
 - unseen-first: prior completed session's item ids are de-prioritised
 - empty path: zero approved items → session with item_ids=[], no error
+- kind wiring: {"kind":"progress"} → session.kind=="progress" in DB
+- kind default: no body → session.kind=="baseline" (existing behaviour preserved)
+- kind validation: {"kind":"garbage"} → 422
+- full integration: start progress session via endpoint, submit, assert checkpoint.kind=="progress" + session_count==active_days
 - topic_path: a 4th topic beyond the 3 defaults is included when set
 - unauth (plain client) → 401 / 403
 """
@@ -350,4 +354,136 @@ async def test_abandoned_session_items_remain_eligible(client, db_session):
     )
     assert str(item_d.id) not in budgeting_returned, (
         "item_d (in completed session) should be de-prioritised when unseen items exist"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Kind wiring: {"kind":"progress"} → DiagnosticSession.kind=="progress"
+# ---------------------------------------------------------------------------
+
+
+async def test_start_with_kind_progress_stores_progress(client, db_session):
+    """POST /diagnostic/start with {"kind":"progress"} must create a session with kind='progress'."""
+    user = await _register_and_login(client, db_session, suffix="_kprog")
+
+    for topic in ("budgeting", "savings", "risk"):
+        await _seed_item(db_session, topic=topic, difficulty_tier=1)
+
+    resp = await client.post("/diagnostic/start", json={"kind": "progress"})
+    assert resp.status_code == 200, resp.text
+
+    session_id = uuid.UUID(resp.json()["session_id"])
+    diag_session = await db_session.get(DiagnosticSession, session_id)
+    assert diag_session is not None
+    assert diag_session.kind == "progress", (
+        f"Expected kind='progress' but got kind='{diag_session.kind}' — "
+        "the router is not passing kind to start_diagnostic"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Kind default: no body → session.kind=="baseline" (existing behaviour)
+# ---------------------------------------------------------------------------
+
+
+async def test_start_no_body_defaults_to_baseline(client, db_session):
+    """POST /diagnostic/start with no body → session.kind=='baseline' (backward compat)."""
+    user = await _register_and_login(client, db_session, suffix="_kbase")
+
+    for topic in ("budgeting", "savings", "risk"):
+        await _seed_item(db_session, topic=topic, difficulty_tier=1)
+
+    resp = await client.post("/diagnostic/start")
+    assert resp.status_code == 200, resp.text
+
+    session_id = uuid.UUID(resp.json()["session_id"])
+    diag_session = await db_session.get(DiagnosticSession, session_id)
+    assert diag_session is not None
+    assert diag_session.kind == "baseline"
+
+
+# ---------------------------------------------------------------------------
+# Kind validation: {"kind":"garbage"} → 422
+# ---------------------------------------------------------------------------
+
+
+async def test_start_invalid_kind_returns_422(client, db_session):
+    """POST /diagnostic/start with {"kind":"garbage"} → 422 (server rejects invalid kinds)."""
+    await _register_and_login(client, db_session, suffix="_kinv")
+
+    resp = await client.post("/diagnostic/start", json={"kind": "garbage"})
+    assert resp.status_code == 422, (
+        f"Expected 422 for invalid kind, got {resp.status_code} — "
+        "the router must validate kind to the allowed Literal values"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Full integration: start via endpoint, submit, assert checkpoint kind + session_count
+# ---------------------------------------------------------------------------
+
+
+async def test_progress_kind_integration_checkpoint(client, db_session):
+    """Full integration: start a progress session via endpoint → submit → assert
+    MasteryCheckpoint.kind=='progress' and session_count==active_days.
+    """
+    from sqlalchemy import select
+
+    from app.models.mastery import MasteryCheckpoint
+    from app.models.user import UserProgress
+
+    user = await _register_and_login(client, db_session, suffix="_kint")
+
+    # Set active_days = 8 on the user's progress row
+    progress = await db_session.get(UserProgress, user.id)
+    if progress is None:
+        progress = UserProgress(user_id=user.id, active_days=8)
+        db_session.add(progress)
+    else:
+        progress.active_days = 8
+    await db_session.flush()
+
+    # Seed at least one approved item per required topic so the bank isn't empty
+    item_bud = await _seed_item(db_session, topic="budgeting", difficulty_tier=1)
+    await _seed_item(db_session, topic="savings", difficulty_tier=1)
+    await _seed_item(db_session, topic="risk", difficulty_tier=1)
+
+    # Start a PROGRESS session via the endpoint
+    start_resp = await client.post("/diagnostic/start", json={"kind": "progress"})
+    assert start_resp.status_code == 200, start_resp.text
+    start_data = start_resp.json()
+    session_id = start_data["session_id"]
+
+    # Verify the session in the DB is kind='progress'
+    diag_session = await db_session.get(DiagnosticSession, uuid.UUID(session_id))
+    assert diag_session is not None
+    assert diag_session.kind == "progress", (
+        f"Session kind should be 'progress' but was '{diag_session.kind}'"
+    )
+
+    # Build answers dict: answer the first item correctly (answer_index=0), skip the rest
+    items = start_data["items"]
+    answers: dict[str, int] = {}
+    if items:
+        answers[items[0]["id"]] = 0  # item_bud has answer_index=0
+
+    # Submit the session
+    submit_resp = await client.post(
+        "/diagnostic/submit",
+        json={"session_id": session_id, "answers": answers},
+    )
+    assert submit_resp.status_code == 200, submit_resp.text
+
+    # Assert the resulting checkpoint
+    checkpoint = await db_session.scalar(
+        select(MasteryCheckpoint).where(
+            MasteryCheckpoint.user_id == user.id,
+            MasteryCheckpoint.kind == "progress",
+        )
+    )
+    assert checkpoint is not None, (
+        "No 'progress' MasteryCheckpoint found — kind was not propagated to the session"
+    )
+    assert checkpoint.session_count == 8, (
+        f"Expected session_count==8 (active_days) but got {checkpoint.session_count}"
     )

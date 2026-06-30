@@ -2,8 +2,20 @@
 from __future__ import annotations
 
 import uuid
+from typing import Literal
 
 from pydantic import BaseModel
+
+
+class DiagnosticStartRequest(BaseModel):
+    """Body for POST /diagnostic/start.
+
+    ``kind`` is validated server-side to the two allowed values so a client
+    can never inject an arbitrary checkpoint kind. Optional/defaults to
+    ``"baseline"`` so the onboarding (baseline) flow works without a body.
+    """
+
+    kind: Literal["baseline", "progress"] = "baseline"
 
 
 class DiagnosticItemPublic(BaseModel):
