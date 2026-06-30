@@ -123,7 +123,7 @@ export default function HomeHero() {
 
         {streakCount > 0 && (
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-100 px-2.5 py-1 text-sm font-bold text-brand-700">
-            <span aria-hidden="true">🔥</span>
+            {cfg.chipEmoji && <span aria-hidden="true">🔥</span>}
             {t('hero.streakPill', { count: streakCount })}
           </span>
         )}

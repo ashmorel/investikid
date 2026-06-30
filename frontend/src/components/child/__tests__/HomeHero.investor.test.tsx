@@ -34,4 +34,15 @@ describe('HomeHero investor tier', () => {
     render(wrap(<HomeHero />));
     expect(screen.getByLabelText('Investor mode')).toBeInTheDocument();
   });
+
+  it('streak pill is emoji-free for an investor', async () => {
+    vi.resetModules();
+    vi.doMock('@/hooks/useProgress', () => ({ useProgress: () => ({ data: { streak_count: 6 } }) }));
+    const { default: HomeHeroWithStreak } = await import('../HomeHero');
+    const { container } = render(wrap(<HomeHeroWithStreak />));
+    // the pill text renders ("6-day streak") but with no flame emoji for investor
+    expect(container.textContent).toMatch(/streak/i);
+    expect(/\p{Extended_Pictographic}/u.test(container.textContent ?? '')).toBe(false);
+    vi.doUnmock('@/hooks/useProgress');
+  });
 });

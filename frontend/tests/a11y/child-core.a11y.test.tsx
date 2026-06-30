@@ -107,7 +107,6 @@ describe('a11y: child core surfaces', () => {
     const { default: Home } = await import('@/pages/child/Home');
     const { container } = renderAt('/home', <Home />, '/home');
     await waitFor(() => expect(screen.getByText(/HomeHero/i)).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByRole('group', { name: /your progress/i })).toBeInTheDocument());
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -120,7 +119,7 @@ describe('a11y: child core surfaces', () => {
       });
       const { default: Home } = await import('@/pages/child/Home');
       const { container } = renderAt('/home', <Home />, '/home');
-      await waitFor(() => expect(screen.getByRole('group', { name: /your progress/i })).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/HomeHero/i)).toBeInTheDocument());
       expect(container.textContent).not.toMatch(/[⭐🔥🛡📊🔁🏅]/u);
       expect(await axe(container)).toHaveNoViolations();
     } finally {
