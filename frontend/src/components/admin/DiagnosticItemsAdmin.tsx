@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import { marketApi } from '@/api/market';
 import {
   useDiagnosticItems,
   useGenerateItems,
@@ -124,6 +126,9 @@ export default function DiagnosticItemsAdmin() {
   const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
   const [verifyError, setVerifyError] = useState('');
 
+  const marketsQ = useQuery({ queryKey: ['markets'], queryFn: () => marketApi.list() });
+  const markets = marketsQ.data ?? [];
+
   const [genMarket, setGenMarket] = useState('GB');
   const [genTopic, setGenTopic] = useState<string>(TOPICS[0]);
   const [genTier, setGenTier] = useState<Tier>(1);
@@ -236,13 +241,16 @@ export default function DiagnosticItemsAdmin() {
       <div className="flex flex-wrap gap-3">
         <label className="flex flex-col gap-1 text-sm">
           {t('diagnosticItems.marketLabel')}
-          <input
-            type="text"
+          <select
             className={inputCls}
             value={filters.market_code ?? ''}
             onChange={(e) => setFilters((f) => ({ ...f, market_code: e.target.value }))}
-            placeholder="e.g. GB"
-          />
+          >
+            <option value="">{t('diagnosticItems.allMarkets')}</option>
+            {markets.map((m) => (
+              <option key={m.code} value={m.code}>{m.code} — {m.name}</option>
+            ))}
+          </select>
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
@@ -332,14 +340,16 @@ export default function DiagnosticItemsAdmin() {
         <form onSubmit={onGenerate} className="flex flex-wrap gap-3 items-end">
           <label className="flex flex-col gap-1 text-sm">
             {t('diagnosticItems.marketLabel')}
-            <input
-              type="text"
+            <select
               className={inputCls}
               value={genMarket}
               onChange={(e) => setGenMarket(e.target.value)}
-              placeholder="GB"
               required
-            />
+            >
+              {markets.map((m) => (
+                <option key={m.code} value={m.code}>{m.code} — {m.name}</option>
+              ))}
+            </select>
           </label>
 
           <label className="flex flex-col gap-1 text-sm">

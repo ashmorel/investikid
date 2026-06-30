@@ -1,6 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { axe } from 'vitest-axe';
+
+// Markets come from a real useQuery in the component; mock it + the market api so the
+// dropdowns populate without a QueryClientProvider. vi.hoisted keeps MARKETS available
+// to the hoisted vi.mock factories.
+const MARKETS = vi.hoisted(() => [
+  { code: 'GB', name: 'United Kingdom', currency_code: 'GBP' },
+  { code: 'US', name: 'United States', currency_code: 'USD' },
+  { code: 'HK', name: 'Hong Kong', currency_code: 'HKD' },
+]);
+vi.mock('@/api/market', () => ({ marketApi: { list: vi.fn().mockResolvedValue(MARKETS) } }));
+vi.mock('@tanstack/react-query', () => ({ useQuery: () => ({ data: MARKETS, isLoading: false }) }));
+
 import DiagnosticItemsAdmin from '../DiagnosticItemsAdmin';
 
 // ── Mock API hooks ────────────────────────────────────────────────────────────
@@ -197,6 +209,16 @@ describe('DiagnosticItemsAdmin', () => {
     // Status chips — draft and approved (may also appear in the filter select options)
     expect(screen.getAllByText('diagnosticItems.statusDraft').length).toBeGreaterThan(0);
     expect(screen.getAllByText('diagnosticItems.statusApproved').length).toBeGreaterThan(0);
+  });
+
+  it('market fields are dropdowns sourced from the markets list, not free text', () => {
+    render(<DiagnosticItemsAdmin />);
+    // No free-text market input remains (the old placeholder is gone)
+    expect(screen.queryByPlaceholderText(/e\.g\. GB/i)).toBeNull();
+    // Options come from the live markets list (present in both the filter + generate selects)
+    expect(screen.getAllByRole('option', { name: /GB — United Kingdom/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('option', { name: /US — United States/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('option', { name: /HK — Hong Kong/ }).length).toBeGreaterThan(0);
   });
 
   it('highlights the correct answer distinctly from incorrect choices', () => {
