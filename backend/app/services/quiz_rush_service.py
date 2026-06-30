@@ -6,9 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.markets import active_market
 from app.models.content import Lesson, LessonCompletion, Module
+from app.models.skill_profile import ConceptMastery
 from app.models.user import User
 
 COLD_START_MIN = 10
+# A concept the child has attempted but scores below this (correct/attempts) is a
+# gap. Quiz Rush prioritises lessons on these concepts so play reinforces weaknesses
+# instead of serving random trivia — the arcade-subordination rule (B3).
+WEAK_CONCEPT_THRESHOLD = 0.6
 
 
 def _shuffle(seq: list) -> list:
@@ -71,7 +76,29 @@ async def build_session(session: AsyncSession, user: User, *, limit: int = 20) -
             )
         )).all()
 
-    return [_to_item(le) for le in _shuffle(list(pool))[:limit]]
+    # Reinforce gaps: surface lessons on the child's weak concepts first, then fill
+    # the rest with the remaining pool (both shuffled for variety).
+    weak_ids = await _weak_concept_ids(session, user.id)
+    if weak_ids:
+        weak = [le for le in pool if le.concept_id in weak_ids]
+        rest = [le for le in pool if le.concept_id not in weak_ids]
+        ordered = _shuffle(weak) + _shuffle(rest)
+    else:
+        ordered = _shuffle(list(pool))
+
+    return [_to_item(le) for le in ordered[:limit]]
+
+
+async def _weak_concept_ids(session: AsyncSession, user_id) -> set:
+    """Concepts the child has attempted but not yet mastered (a gap to reinforce)."""
+    rows = await session.scalars(
+        select(ConceptMastery.concept_id).where(
+            ConceptMastery.user_id == user_id,
+            ConceptMastery.attempts > 0,
+            ConceptMastery.mastery_score < WEAK_CONCEPT_THRESHOLD,
+        )
+    )
+    return set(rows.all())
 
 
 def score_submission(session_items: list[dict], answers: list[dict]) -> dict:
