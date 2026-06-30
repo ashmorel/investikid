@@ -364,7 +364,7 @@ async def test_abandoned_session_items_remain_eligible(client, db_session):
 
 async def test_start_with_kind_progress_stores_progress(client, db_session):
     """POST /diagnostic/start with {"kind":"progress"} must create a session with kind='progress'."""
-    user = await _register_and_login(client, db_session, suffix="_kprog")
+    await _register_and_login(client, db_session, suffix="_kprog")
 
     for topic in ("budgeting", "savings", "risk"):
         await _seed_item(db_session, topic=topic, difficulty_tier=1)
@@ -388,7 +388,7 @@ async def test_start_with_kind_progress_stores_progress(client, db_session):
 
 async def test_start_no_body_defaults_to_baseline(client, db_session):
     """POST /diagnostic/start with no body → session.kind=='baseline' (backward compat)."""
-    user = await _register_and_login(client, db_session, suffix="_kbase")
+    await _register_and_login(client, db_session, suffix="_kbase")
 
     for topic in ("budgeting", "savings", "risk"):
         await _seed_item(db_session, topic=topic, difficulty_tier=1)
@@ -444,7 +444,7 @@ async def test_progress_kind_integration_checkpoint(client, db_session):
     await db_session.flush()
 
     # Seed at least one approved item per required topic so the bank isn't empty
-    item_bud = await _seed_item(db_session, topic="budgeting", difficulty_tier=1)
+    await _seed_item(db_session, topic="budgeting", difficulty_tier=1)
     await _seed_item(db_session, topic="savings", difficulty_tier=1)
     await _seed_item(db_session, topic="risk", difficulty_tier=1)
 
