@@ -273,7 +273,10 @@
     "filterAll": "All",
     "filterNeedsPractice": "Needs practice",
     "filterStrong": "Strong",
-    "filterNew": "New"
+    "filterNew": "New",
+    "conceptsSection": "Concepts",
+    "expandConcepts": "Show concepts",
+    "collapseConcepts": "Hide concepts"
   },
 
   "level": {

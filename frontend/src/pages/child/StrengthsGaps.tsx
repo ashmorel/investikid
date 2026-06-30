@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useStrengths, type TopicStrength } from '@/api/ai';
+import { useStrengths, type TopicStrength, type ConceptStrength } from '@/api/ai';
 
 type Filter = 'all' | 'needs_practice' | 'strong' | 'new';
 
@@ -63,12 +63,27 @@ function MasteryRing({ value }: { value: number }) {
   );
 }
 
+function ConceptPill({ concept }: { concept: ConceptStrength }) {
+  const s = STATUS[concept.status] ?? STATUS.new;
+  return (
+    <div className="flex items-center justify-between gap-2 py-1">
+      <span className="text-sm text-ink">{concept.name}</span>
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${s.pill}`}>
+        {s.emoji} {s.label}
+      </span>
+    </div>
+  );
+}
+
 function TopicCard({ topic }: { topic: TopicStrength }) {
   const { t } = useTranslation('child');
   const s = STATUS[topic.status] ?? STATUS.new;
   const pct = Math.round(topic.mastery_score * 100);
   const isNew = topic.status === 'new';
   const name = topic.topic.replace(/_/g, ' ');
+  const hasConcepts = (topic.concepts ?? []).length > 0;
+  const [open, setOpen] = useState(false);
+  const drilldownId = `concepts-${topic.topic}`;
 
   return (
     <div className="flex overflow-hidden rounded-2xl border border-brand-200 bg-card shadow-sm">
@@ -115,6 +130,31 @@ function TopicCard({ topic }: { topic: TopicStrength }) {
             </>
           )}
         </div>
+
+        {hasConcepts && (
+          <div className="mt-3">
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls={drilldownId}
+              onClick={() => setOpen((v) => !v)}
+              className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg px-2 text-xs font-bold text-brand-700 hover:bg-brand-50"
+            >
+              <span>{t('strengths.conceptsSection')}</span>
+              <span aria-hidden="true">{open ? '▲' : '▼'}</span>
+              <span className="sr-only">
+                {open ? t('strengths.collapseConcepts') : t('strengths.expandConcepts')}
+              </span>
+            </button>
+            {open && (
+              <div id={drilldownId} className="mt-1 divide-y divide-brand-100 px-2">
+                {(topic.concepts ?? []).map((c) => (
+                  <ConceptPill key={c.concept_id} concept={c} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -48,6 +48,15 @@ export type CategorisedRecommendations = {
 
 // --- Strengths & Gaps ---
 
+export type ConceptStrength = {
+  concept_id: string;
+  slug: string;
+  name: string;
+  mastery_score: number;
+  status: 'strong' | 'needs_practice' | 'new';
+  attempts: number;
+};
+
 export type TopicStrength = {
   topic: string;
   mastery_score: number;
@@ -55,6 +64,7 @@ export type TopicStrength = {
   weak_count: number;
   due_for_review: number;
   total_concepts: number;
+  concepts: ConceptStrength[];
 };
 
 export type StrengthsAndGaps = {
