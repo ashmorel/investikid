@@ -32,6 +32,20 @@ describe('StatsCard', () => {
     render(<StatsCard {...props} streakFreezes={0} />);
     expect(screen.queryByLabelText(/streak freeze/)).toBeNull();
   });
+  it('shows "next freeze in N days" when nextFreezeIn is given on an active streak', () => {
+    render(<StatsCard {...props} nextFreezeIn={3} />);
+    expect(screen.getByText(/next freeze in 3 days/i)).toBeInTheDocument();
+  });
+  it('omits the next-freeze hint when nextFreezeIn is zero / undefined', () => {
+    const { rerender } = render(<StatsCard {...props} />);
+    expect(screen.queryByText(/next freeze in/i)).toBeNull();
+    rerender(<StatsCard {...props} nextFreezeIn={0} />);
+    expect(screen.queryByText(/next freeze in/i)).toBeNull();
+  });
+  it('omits the next-freeze hint when the streak is inactive', () => {
+    render(<StatsCard {...props} lastActivityDate="2026-06-01" nextFreezeIn={3} />);
+    expect(screen.queryByText(/next freeze in/i)).toBeNull();
+  });
   it('investor tier renders without emoji', () => {
     mockTier = 'investor';
     const { container } = render(<StatsCard {...props} />);

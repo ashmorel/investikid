@@ -11,12 +11,13 @@ type Props = {
   lastActivityDate: string | null;
   dailyGoalXp?: number;
   xpToday?: number;
+  nextFreezeIn?: number;
   today?: Date;
 };
 
 const XP_FOR_NEXT = 100;
 
-export function StatsCard({ xp, level, streakCount, streakFreezes, lastActivityDate, dailyGoalXp = 30, xpToday = 0, today }: Props) {
+export function StatsCard({ xp, level, streakCount, streakFreezes, lastActivityDate, dailyGoalXp = 30, xpToday = 0, nextFreezeIn, today }: Props) {
   const { t } = useTranslation('home');
   const tier = useAgeTier();
   const emoji = tierConfig[tier].chipEmoji;
@@ -55,6 +56,13 @@ export function StatsCard({ xp, level, streakCount, streakFreezes, lastActivityD
           )}
         </span>
       </div>
+
+      {/* Next-freeze countdown hint — only when the streak is alive and a freeze is on the way */}
+      {active && typeof nextFreezeIn === 'number' && nextFreezeIn > 0 && (
+        <p className="mt-1 text-right text-[11px] font-semibold text-muted-foreground">
+          {t('stats.nextFreezeIn', { count: nextFreezeIn })}
+        </p>
+      )}
 
       {/* Daily goal bar — the actionable element */}
       <div className="mt-2 flex items-center justify-between gap-2">

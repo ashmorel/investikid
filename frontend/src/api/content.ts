@@ -98,6 +98,7 @@ export type LessonCompletionResult = {
   level_mastered?: boolean;
   reward: RewardGrant;
   granted_collectables?: string[];
+  freeze_used?: boolean;
 };
 
 export type Progress = {
@@ -110,6 +111,9 @@ export type Progress = {
   xp_today: number;
   goal_met: boolean;
   virtual_coins: number;
+  next_freeze_in: number;
+  streak_repair_available: boolean;
+  streak_repair_cost: number;
 };
 
 export type DailyGoalSize = 10 | 30 | 50;
