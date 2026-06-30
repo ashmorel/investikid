@@ -245,6 +245,19 @@ describe('DiagnosticItemsAdmin', () => {
     expect(call.count).toBeGreaterThan(0);
   });
 
+  it('generates once per selected topic when several are picked (multi-select)', async () => {
+    render(<DiagnosticItemsAdmin />);
+    // The multi-select topic field is the only role=listbox
+    const listbox = screen.getByRole('listbox');
+    const options = within(listbox).getAllByRole('option') as HTMLOptionElement[];
+    options.forEach((o, i) => { o.selected = i < 3; }); // pick the first 3 topics
+    fireEvent.change(listbox);
+    fireEvent.click(screen.getByText('diagnosticItems.generateButton'));
+    await waitFor(() => expect(generateMut).toHaveBeenCalledTimes(3));
+    const topics = generateMut.mock.calls.map((c) => (c[0] as { topic: string }).topic);
+    expect(new Set(topics).size).toBe(3); // three distinct topics, one request each
+  });
+
   it('approve button calls approve mutation', async () => {
     render(<DiagnosticItemsAdmin />);
     // item-1 is draft → should have an approve button

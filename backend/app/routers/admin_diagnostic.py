@@ -99,14 +99,19 @@ async def verify_sweep_diagnostic_items(
 
 
 @router.post("/diagnostic-items/generate", response_model=list[DiagnosticItemRead])
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def generate_diagnostic_items(
     request: Request,
     payload: DiagnosticGenerateRequest,
     _admin: User = Depends(get_current_admin),
     session: AsyncSession = Depends(get_session),
 ) -> list[DiagnosticItemRead]:
-    """Generate draft diagnostic items via the LLM."""
+    """Generate draft diagnostic items via the LLM.
+
+    Admin-gated. The limit is 20/min (not 5) so an operator can bulk-generate
+    several topics for a market/tier in one go — the admin UI fires one request
+    per selected topic (kept per-topic so each stays well under the gateway timeout).
+    """
     items = await generate_items(
         session,
         market_code=payload.market_code,

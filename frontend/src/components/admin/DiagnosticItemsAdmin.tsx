@@ -130,10 +130,11 @@ export default function DiagnosticItemsAdmin() {
   const markets = marketsQ.data ?? [];
 
   const [genMarket, setGenMarket] = useState('GB');
-  const [genTopic, setGenTopic] = useState<string>(TOPICS[0]);
+  const [genTopics, setGenTopics] = useState<string[]>([TOPICS[0]]);
   const [genTier, setGenTier] = useState<Tier>(1);
   const [genCount, setGenCount] = useState(5);
   const [genError, setGenError] = useState('');
+  const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
 
   const [editingItem, setEditingItem] = useState<DiagnosticItem | null>(null);
   const [editForm, setEditForm] = useState<EditState | null>(null);
@@ -171,15 +172,30 @@ export default function DiagnosticItemsAdmin() {
   async function onGenerate(e: React.FormEvent) {
     e.preventDefault();
     setGenError('');
-    try {
-      await generate.mutateAsync({
-        market_code: genMarket,
-        topic: genTopic,
-        difficulty_tier: genTier,
-        count: genCount,
-      });
-    } catch {
-      setGenError(t('diagnosticItems.generateError'));
+    if (genTopics.length === 0) {
+      setGenError(t('diagnosticItems.generateNoTopics'));
+      return;
+    }
+    // One request per topic (each stays well under the gateway timeout); run them
+    // sequentially with progress so an operator can bulk-fill a market/tier in one go.
+    const failed: string[] = [];
+    setGenProgress({ done: 0, total: genTopics.length });
+    for (let i = 0; i < genTopics.length; i++) {
+      try {
+        await generate.mutateAsync({
+          market_code: genMarket,
+          topic: genTopics[i],
+          difficulty_tier: genTier,
+          count: genCount,
+        });
+      } catch {
+        failed.push(genTopics[i]);
+      }
+      setGenProgress({ done: i + 1, total: genTopics.length });
+    }
+    setGenProgress(null);
+    if (failed.length > 0) {
+      setGenError(t('diagnosticItems.generateErrorTopics', { topics: failed.join(', ') }));
     }
   }
 
@@ -353,16 +369,30 @@ export default function DiagnosticItemsAdmin() {
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
-            {t('diagnosticItems.generateTopicLabel')}
+            <span className="flex items-center justify-between gap-2">
+              {t('diagnosticItems.generateTopicLabel')}
+              <button
+                type="button"
+                className="text-xs font-semibold text-brand-700 underline"
+                onClick={() => setGenTopics((cur) => (cur.length === TOPICS.length ? [TOPICS[0]] : [...TOPICS]))}
+              >
+                {genTopics.length === TOPICS.length
+                  ? t('diagnosticItems.generateClearTopics')
+                  : t('diagnosticItems.generateAllTopics')}
+              </button>
+            </span>
             <select
+              multiple
+              size={Math.min(TOPICS.length, 6)}
               className={inputCls}
-              value={genTopic}
-              onChange={(e) => setGenTopic(e.target.value)}
+              value={genTopics}
+              onChange={(e) => setGenTopics(Array.from(e.target.selectedOptions, (o) => o.value))}
             >
               {TOPICS.map((tp) => (
                 <option key={tp} value={tp}>{tp}</option>
               ))}
             </select>
+            <span className="text-xs text-muted-foreground">{t('diagnosticItems.generateTopicsHint')}</span>
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
@@ -395,12 +425,14 @@ export default function DiagnosticItemsAdmin() {
             <span className="text-sm opacity-0" aria-hidden="true">.</span>
             <button
               type="submit"
-              disabled={generate.isPending}
+              disabled={generate.isPending || genProgress !== null}
               className="min-h-[44px] rounded-md bg-brand-600 px-4 font-bold text-white hover:bg-brand-700 disabled:opacity-50"
             >
-              {generate.isPending
-                ? t('diagnosticItems.generating')
-                : t('diagnosticItems.generateButton')}
+              {genProgress
+                ? t('diagnosticItems.generatingProgress', { done: genProgress.done, total: genProgress.total })
+                : generate.isPending
+                  ? t('diagnosticItems.generating')
+                  : t('diagnosticItems.generateButton')}
             </button>
           </div>
 
