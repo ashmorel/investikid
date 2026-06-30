@@ -14,6 +14,9 @@
 > 3. **B6 streak beats** — "Streak saved!" toast on freeze use, freeze countdown on StatsCard, and a
 >    coin-funded streak-repair card. **Already live on web**; reaches devices on the next build (no
 >    extra native dep beyond B5's).
+> 4. **B1 focused Home** — Home redesigned around one dominant lesson hero (goal + streak + freeze
+>    countdown folded in); secondary content demoted. **Already live on web**; reaches devices on the
+>    next build (no native dep).
 >
 > The next native build should `npm run build && npx cap sync ios && npx cap sync android`, bump
 > iOS `CURRENT_PROJECT_VERSION` 20→21 + Android `versionCode` 7→8, then archive/upload — carrying
