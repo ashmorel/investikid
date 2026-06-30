@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { parentApi, type MasteryReportChild } from '@/api/parent';
+import { parentApi, type GrowthBlock, type MasteryReportChild } from '@/api/parent';
 import { ParentZoneHeading } from '@/components/parent/ParentSection';
 
 /**
@@ -111,6 +111,105 @@ function ChildMastery({ child, multi }: { child: MasteryReportChild; multi: bool
           {t('masteryReport.worthALook', { topic: child.weak_topic.replace(/_/g, ' '), nextLabel })}
         </p>
       )}
+      {child.growth != null && (
+        <GrowthSection growth={child.growth} username={child.username} />
+      )}
     </div>
+  );
+}
+
+// Max topic rows to show (top positive deltas first)
+const MAX_TOPIC_ROWS = 3;
+
+function GrowthSection({ growth, username }: { growth: GrowthBlock; username: string }) {
+  const { t } = useTranslation('parent');
+
+  if (!growth.has_baseline) {
+    return (
+      <div
+        className="mt-3 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3"
+        aria-label={t('masteryReport.growth.sectionAriaLabel', { username })}
+      >
+        <p className="text-sm text-muted-foreground">
+          {t('masteryReport.growth.baselineCaptured', { username })}
+        </p>
+      </div>
+    );
+  }
+
+  if (growth.overall_delta == null) return null;
+
+  const deltaPct = Math.round(Math.abs(growth.overall_delta) * 100);
+  const direction = growth.overall_delta > 0 ? '+' : growth.overall_delta < 0 ? '−' : '';
+  const deltaLabel = `${direction}${deltaPct}%`;
+  const deltaColour =
+    growth.overall_delta > 0
+      ? 'text-success-700'
+      : growth.overall_delta < 0
+      ? 'text-destructive'
+      : 'text-muted-foreground';
+
+  const topTopics = [...growth.topic_deltas]
+    .filter((td) => td.delta != null)
+    .sort((a, b) => (b.delta ?? 0) - (a.delta ?? 0))
+    .slice(0, MAX_TOPIC_ROWS);
+
+  const focusTopic = growth.focus_topic;
+
+  return (
+    <section
+      className="mt-3 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3"
+      aria-label={t('masteryReport.growth.sectionAriaLabel', { username })}
+    >
+      {/* Overall delta — lead value */}
+      <p className={`text-2xl font-extrabold leading-none ${deltaColour}`} aria-live="polite">
+        {deltaLabel}
+      </p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {t('masteryReport.growth.overallDelta', { direction, pct: deltaPct })}
+      </p>
+
+      {/* Topic deltas */}
+      {topTopics.length > 0 && (
+        <ul
+          className="mt-2 space-y-1"
+          aria-label={t('masteryReport.growth.topicDeltaAriaLabel')}
+        >
+          {topTopics.map((td) => {
+            const tSign = (td.delta ?? 0) >= 0 ? '↑' : '↓';
+            const tColour = (td.delta ?? 0) >= 0 ? 'text-success-700' : 'text-destructive';
+            const baseline = td.baseline_score != null ? Math.round(td.baseline_score * 100) : null;
+            const latest = td.latest_score != null ? Math.round(td.latest_score * 100) : null;
+            return (
+              <li key={td.topic} className="flex items-center gap-1.5 text-sm">
+                <span className={`font-semibold ${tColour}`} aria-hidden="true">{tSign}</span>
+                <span>
+                  {baseline != null && latest != null
+                    ? t('masteryReport.growth.topicRow', { topic: td.topic, baseline, latest })
+                    : td.topic}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* Focus topic */}
+      {focusTopic && (
+        <p className="mt-2 text-sm font-semibold text-brand-800">
+          {t('masteryReport.growth.focusTopic', { topic: focusTopic })}
+        </p>
+      )}
+
+      {/* Conversation prompt */}
+      {focusTopic && (
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t('masteryReport.growth.conversationPrompt', {
+            username,
+            topic: focusTopic,
+          })}
+        </p>
+      )}
+    </section>
   );
 }

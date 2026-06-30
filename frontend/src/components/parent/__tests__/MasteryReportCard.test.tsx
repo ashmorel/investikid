@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
-import type { MasteryReport } from '@/api/parent';
+import type { MasteryReport, GrowthBlock } from '@/api/parent';
 import { MasteryReportCard } from '../MasteryReportCard';
 
 let report: MasteryReport;
@@ -25,6 +25,20 @@ const childBase = {
   standards: [{ framework: 'MaPS', code: 'MM-1' }],
   weak_topic: 'budgeting',
   next_recommendation: { module_title: 'Budgeting Basics', level_title: 'Level 1' },
+  growth: null,
+};
+
+const growthWithBaseline: GrowthBlock = {
+  has_baseline: true,
+  overall_delta: 0.18,
+  baseline_overall: 0.42,
+  latest_overall: 0.60,
+  session_count: 5,
+  topic_deltas: [
+    { topic: 'Saving', baseline_score: 0.5, latest_score: 0.75, delta: 0.25 },
+    { topic: 'Investing', baseline_score: 0.3, latest_score: 0.45, delta: 0.15 },
+  ],
+  focus_topic: 'Budgeting',
 };
 
 describe('MasteryReportCard', () => {
@@ -67,6 +81,69 @@ describe('MasteryReportCard', () => {
     report = { window_days: 30, household_mastered_count: 2, children: [childBase] };
     const { container } = renderCard();
     await screen.findByText(/maya mastered/i);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  // ── Growth block tests ────────────────────────────────────────────────
+
+  it('shows growth delta, topic deltas, focus topic and conversation prompt when has_baseline is true', async () => {
+    report = {
+      window_days: 30, household_mastered_count: 2,
+      children: [{ ...childBase, growth: growthWithBaseline }],
+    };
+    renderCard();
+    await screen.findByText(/maya mastered/i);
+    // Overall delta shown as percentage (appears in the big number AND the subtitle)
+    expect(screen.getAllByText(/\+18%/).length).toBeGreaterThan(0);
+    // Topic delta rows
+    expect(screen.getAllByText(/Saving/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Investing/).length).toBeGreaterThan(0);
+    // Focus topic — appears in the focus line and the conversation prompt
+    expect(screen.getAllByText(/Budgeting/).length).toBeGreaterThan(0);
+    // Conversation prompt contains "ask"
+    expect(screen.getByText(/ask maya what they found most surprising/i)).toBeInTheDocument();
+  });
+
+  it('shows gentle baseline state when has_baseline is false', async () => {
+    const noBaseline: GrowthBlock = {
+      has_baseline: false,
+      overall_delta: null,
+      baseline_overall: null,
+      latest_overall: null,
+      session_count: null,
+      topic_deltas: [],
+      focus_topic: null,
+    };
+    report = {
+      window_days: 30, household_mastered_count: 0,
+      children: [{ ...childBase, mastered_count: 0, objectives: [], growth: noBaseline }],
+    };
+    renderCard();
+    await screen.findAllByText(/maya/i);
+    // Gentle "check back" message rendered
+    expect(screen.getByText(/baseline captured/i)).toBeInTheDocument();
+    // No delta percentage shown
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  it('renders fine and shows no growth section when growth is null', async () => {
+    report = {
+      window_days: 30, household_mastered_count: 2,
+      children: [{ ...childBase, growth: null }],
+    };
+    renderCard();
+    await screen.findByText(/maya mastered/i);
+    expect(screen.queryByText(/baseline captured/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  it('has no axe violations with a growth child rendered', async () => {
+    report = {
+      window_days: 30, household_mastered_count: 2,
+      children: [{ ...childBase, growth: growthWithBaseline }],
+    };
+    const { container } = renderCard();
+    await screen.findAllByText(/\+18%/);
     expect(await axe(container)).toHaveNoViolations();
   });
 });

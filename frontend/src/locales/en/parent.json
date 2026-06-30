@@ -252,7 +252,16 @@
     "noMasteriesNone": "No new masteries yet.",
     "multiChildStats": "{{username}} · {{count}} this month ({{total}} all-time)",
     "alignedTo": "Aligned to {{frameworks}}",
-    "worthALook": "Worth a look: {{topic}} — try {{nextLabel}} together."
+    "worthALook": "Worth a look: {{topic}} — try {{nextLabel}} together.",
+    "growth": {
+      "sectionAriaLabel": "Learning growth for {{username}}",
+      "overallDelta": "Overall score {{direction}}{{pct}}% since starting",
+      "topicDeltaAriaLabel": "Topic progress",
+      "topicRow": "{{topic}}: {{baseline}}% → {{latest}}%",
+      "focusTopic": "Worth a chat: {{topic}}",
+      "conversationPrompt": "Ask {{username}} what they found most surprising about {{topic}} — kids learn fastest when they explain it back to you.",
+      "baselineCaptured": "Baseline captured — check back after a few sessions to see {{username}}'s growth."
+    }
   },
   "childAnalytics": {
     "noActivity": "No activity yet",

@@ -151,6 +151,23 @@ export const parentApi = {
 
 
 // ── Mastery report (M6) ────────────────────────────────────────────
+export type TopicDelta = {
+  topic: string;
+  baseline_score: number | null;
+  latest_score: number | null;
+  delta: number | null;
+};
+
+export type GrowthBlock = {
+  has_baseline: boolean;
+  overall_delta: number | null;
+  baseline_overall: number | null;
+  latest_overall: number | null;
+  session_count: number | null;
+  topic_deltas: TopicDelta[];
+  focus_topic: string | null;
+};
+
 export type MasteryReportChild = {
   user_id: string;
   username: string;
@@ -160,6 +177,7 @@ export type MasteryReportChild = {
   standards: { framework?: string; code?: string }[];
   weak_topic: string | null;
   next_recommendation: { module_title?: string; level_title?: string | null; reason?: string | null } | null;
+  growth: GrowthBlock | null;
 };
 
 export type MasteryReport = {
