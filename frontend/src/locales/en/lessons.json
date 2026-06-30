@@ -51,6 +51,10 @@
     "collectableEarned": {
       "title": "You earned a collectable! 🎉",
       "description": "Check the Limited section in Penny's Shop to see your new item."
+    },
+    "streakSaved": {
+      "title": "Streak saved! 🔥",
+      "description": "You missed a day, so a streak freeze stepped in to keep your streak alive."
     }
   },
 

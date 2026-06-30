@@ -98,6 +98,14 @@ export default function Lesson() {
         const marketName = (markets ?? []).find((m) => m.is_selected)?.name ?? '';
         const msg = formatRewardToast(tMarkets, result.reward, marketName);
         if (msg) toast({ description: msg });
+        // B6: celebrate when a held freeze just saved the streak (missed a day,
+        // but the streak survived). Reward toast first, then the emotional beat.
+        if (result.freeze_used) {
+          toast({
+            title: t('lesson.streakSaved.title'),
+            description: t('lesson.streakSaved.description'),
+          });
+        }
         // Toast any newly earned limited collectables.
         if (result.granted_collectables && result.granted_collectables.length > 0) {
           qc.invalidateQueries({ queryKey: ['collectables'] });
