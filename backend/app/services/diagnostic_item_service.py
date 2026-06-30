@@ -30,6 +30,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.concept import Concept
 from app.models.diagnostic import DiagnosticItem
+from app.models.market import Market
+from app.models.market_brief import MarketBrief
 from app.services.admin_content_generation_service import _market_english
 from app.services.concept_mapper import resolve_slug_global
 from app.services.guardrails import with_generation_framing
@@ -53,9 +55,30 @@ def _build_system_prompt(
     difficulty_tier: int,
     count: int,
     concept_slugs: list[str],
+    market_name: str | None = None,
+    currency_code: str | None = None,
+    brief: dict | None = None,
 ) -> str:
     english = _market_english(market_code)
     difficulty = _DIFFICULTY_LABEL.get(difficulty_tier, "intermediate")
+
+    # Market grounding — without this the model defaults to UK pounds/products.
+    place = market_name or market_code
+    currency = currency_code or market_code
+    market_block = (
+        f"\n\nMARKET: these questions are for children in {place}. "
+        f"Use {currency} for ALL money amounts, with realistic local figures. "
+        f"NEVER use another market's currency (no £/GBP or $/USD unless {currency} IS that), "
+        f"and NEVER reference another market's products, schemes, or regulators "
+        f"(e.g. UK ISAs, Premium Bonds, FSCS, the FCA, US 401(k)/IRA) unless they "
+        f"genuinely exist in {place}. Keep scenarios locally plausible."
+    )
+    if brief:
+        market_block += (
+            f"\nGround examples in these verified local facts (use the market's real "
+            f"products, regulators and currency): {json.dumps(brief, ensure_ascii=False)}"
+        )
+
     slug_hint = ""
     if concept_slugs:
         slug_hint = (
@@ -67,7 +90,7 @@ def _build_system_prompt(
         f"You write calibrated multiple-choice diagnostic questions for InvestiKid, "
         f"a personal-finance learning app for children aged 8-16. "
         f"Write {count} questions on the topic \"{topic}\" at {difficulty} level. "
-        f"Use {english}. "
+        f"Use {english}.{market_block} "
         f"Each question must test genuine financial understanding, use a fresh concrete "
         f"scenario with varied character names (rotate genders, backgrounds, situations), "
         f"and include exactly 4 answer choices. "
@@ -85,13 +108,15 @@ def _build_system_prompt(
     return with_generation_framing(prompt)
 
 
-def _validate_candidate(raw: object) -> dict | None:
+def _validate_candidate(raw: object, *, market_code: str | None = None) -> dict | None:
     """Return the candidate dict if structurally valid, else None.
 
     Valid means:
     - Is a dict with non-empty string ``question`` and ``explanation``.
     - ``choices`` is a list of exactly 4 non-empty strings.
     - ``answer_index`` is an int in [0, 3].
+    - For a non-GB market, contains no ``£``/``GBP`` (a UK-currency leak — defence
+      in depth alongside the market-grounded prompt).
     """
     if not isinstance(raw, dict):
         return None
@@ -110,6 +135,13 @@ def _validate_candidate(raw: object) -> dict | None:
         return None
     if not isinstance(answer_index, int) or isinstance(answer_index, bool) or not (0 <= answer_index <= 3):
         return None
+
+    # UK-currency leak guard: £/GBP must only appear in GB items.
+    if market_code and market_code.upper() != "GB":
+        blob = " ".join([question, explanation, *choices]).upper()
+        if "£" in blob or "GBP" in blob:
+            logger.debug("diagnostic_item_service: dropping UK-currency-leak candidate for market=%s", market_code)
+            return None
 
     return {
         "question": question.strip(),
@@ -324,12 +356,22 @@ async def generate_items(
     Best-effort: a single bad/erroring candidate never aborts the batch.
     """
     concept_slugs = await _fetch_concept_slugs(session, topic)
+    market = await session.get(Market, market_code)
+    brief_row = (await session.scalars(
+        select(MarketBrief).where(
+            MarketBrief.market_code == market_code,
+            MarketBrief.status == "verified",
+        )
+    )).first()
     system = _build_system_prompt(
         market_code=market_code,
         topic=topic,
         difficulty_tier=difficulty_tier,
         count=count,
         concept_slugs=concept_slugs,
+        market_name=market.name if market else None,
+        currency_code=market.currency_code if market else None,
+        brief=brief_row.brief_json if brief_row else None,
     )
     client = get_llm_client(tier)
     try:
@@ -353,10 +395,10 @@ async def generate_items(
     persisted: list[DiagnosticItem] = []
     for raw_candidate in candidates:
         try:
-            candidate = _validate_candidate(raw_candidate)
+            candidate = _validate_candidate(raw_candidate, market_code=market_code)
             if candidate is None:
                 logger.debug(
-                    "diagnostic_item_service: dropping malformed candidate: %r",
+                    "diagnostic_item_service: dropping malformed/off-market candidate: %r",
                     raw_candidate,
                 )
                 continue
