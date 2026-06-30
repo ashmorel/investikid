@@ -12,6 +12,7 @@ vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast }) }));
 import { useProgress } from '@/hooks/useProgress';
 import { useRepairStreak } from '@/api/streak';
 import type { Progress } from '@/api/content';
+import { ApiError } from '@/api/client';
 import StreakRepairCard from '../StreakRepairCard';
 
 const mockUseProgress = useProgress as unknown as ReturnType<typeof vi.fn>;
@@ -97,6 +98,34 @@ describe('StreakRepairCard — available', () => {
     await waitFor(() =>
       expect(toast).toHaveBeenCalledWith(
         expect.objectContaining({ title: expect.stringMatching(/restored/i) }),
+      ),
+    );
+  });
+
+  it('shows the not-enough-coins message when the repair errors with that code', async () => {
+    mockMutation({
+      mutate: ((_: void, opts?: { onError?: (e: unknown) => void }) =>
+        opts?.onError?.(new ApiError(409, 'not_enough_coins', 'not_enough_coins'))) as never,
+    });
+    render(<StreakRepairCard />);
+    fireEvent.click(screen.getByRole('button', { name: /restore my streak/i }));
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        expect.objectContaining({ description: expect.stringMatching(/enough coins/i) }),
+      ),
+    );
+  });
+
+  it('shows the generic error message on a non-coin error', async () => {
+    mockMutation({
+      mutate: ((_: void, opts?: { onError?: (e: unknown) => void }) =>
+        opts?.onError?.(new ApiError(500, 'boom'))) as never,
+    });
+    render(<StreakRepairCard />);
+    fireEvent.click(screen.getByRole('button', { name: /restore my streak/i }));
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        expect.objectContaining({ description: expect.stringMatching(/couldn't restore/i) }),
       ),
     );
   });

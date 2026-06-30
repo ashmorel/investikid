@@ -102,7 +102,7 @@ async def test_repair_insufficient_coins(client, db_session):
 
     r = await client.post("/streak/repair")
     assert r.status_code == 409
-    assert r.json()["detail"] == "not_enough_coins"
+    assert r.json()["detail"]["code"] == "not_enough_coins"
 
 
 async def test_repair_not_eligible(client, db_session):
@@ -115,7 +115,7 @@ async def test_repair_not_eligible(client, db_session):
 
     r = await client.post("/streak/repair")
     assert r.status_code == 409
-    assert r.json()["detail"] == "streak_not_repairable"
+    assert r.json()["detail"]["code"] == "streak_not_repairable"
 
 
 async def test_repair_second_call_is_conflict(client, db_session):
@@ -131,7 +131,7 @@ async def test_repair_second_call_is_conflict(client, db_session):
     assert first.status_code == 200
     second = await client.post("/streak/repair")
     assert second.status_code == 409
-    assert second.json()["detail"] == "streak_not_repairable"
+    assert second.json()["detail"]["code"] == "streak_not_repairable"
 
 
 async def test_repair_requires_auth(client):
