@@ -2,7 +2,16 @@
 default to UK pounds. Pure unit tests for the prompt builder + the currency guard."""
 from __future__ import annotations
 
+import pytest
+
 from app.services.diagnostic_item_service import _build_system_prompt, _validate_candidate
+
+# The 10 markets and the currency each must ground in. Mirrors app/seed/markets.py;
+# this is the contract the prompt depends on (Use {currency_code} …).
+_EXPECTED_CURRENCIES = {
+    "GB": "GBP", "US": "USD", "AU": "AUD", "CA": "CAD", "IE": "EUR",
+    "ES": "EUR", "FR": "EUR", "DE": "EUR", "HK": "HKD", "SG": "SGD",
+}
 
 
 def _candidate(question: str) -> dict:
@@ -66,3 +75,24 @@ def test_validate_allows_local_currency_in_non_gb():
 
 def test_validate_no_market_code_skips_guard():
     assert _validate_candidate(_candidate("A £5 note."), market_code=None) is not None
+
+
+# --- every market grounds in its real currency ------------------------------
+
+
+def test_market_seed_currencies_match_contract():
+    """Guard the source of truth: a seed typo would silently mis-ground a market."""
+    from app.seed.markets import MARKETS
+
+    seeded = {m["code"]: m["currency_code"] for m in MARKETS}
+    assert seeded == _EXPECTED_CURRENCIES
+
+
+@pytest.mark.parametrize("code,currency", sorted(_EXPECTED_CURRENCIES.items()))
+def test_prompt_grounds_each_market_currency(code, currency):
+    p = _build_system_prompt(
+        market_code=code, topic="saving", difficulty_tier=1, count=2,
+        concept_slugs=[], market_name=code, currency_code=currency,
+    )
+    assert f"Use {currency} for ALL money amounts" in p
+    assert "NEVER use another market's currency" in p
