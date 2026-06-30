@@ -181,6 +181,7 @@ def record_daily_activity(progress, today_local: date) -> bool:
     progress.streak_count = new_streak
     progress.last_activity_date = new_last
     progress.streak_freezes = new_freezes
+    progress.active_days = (progress.active_days or 0) + 1
     return True
 
 
