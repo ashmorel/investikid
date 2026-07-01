@@ -1,4 +1,5 @@
 import json
+import re
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -27,10 +28,25 @@ US_BRIEF = {
     "notes": "Dollars and cents.",
 }
 
+_SOURCE_ID_RE = re.compile(r'source_lesson_id "([0-9a-fA-F-]{36})"')
+
+
+async def _fake_batch_complete(*, system_prompt, messages, **kwargs):
+    """Echo back one adapted card per source_lesson_id found in the batched
+    prompt, so these module-batch tests (which don't care about batching
+    specifics) keep working unchanged against the grouped/batched
+    generate_market_level_lessons implementation."""
+    ids = _SOURCE_ID_RE.findall(system_prompt)
+    items = [
+        {"source_lesson_id": src_id, "title": "Saving up", "body": "A plan for your dollars."}
+        for src_id in ids
+    ]
+    return json.dumps(items)
+
 
 def _llm_patches():
     mock_client = AsyncMock()
-    mock_client.complete = AsyncMock(return_value=US_CARD)
+    mock_client.complete = AsyncMock(side_effect=_fake_batch_complete)
     return mock_client, patch(
         "app.services.admin_content_generation_service.get_llm_client",
         return_value=mock_client,
