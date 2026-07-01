@@ -279,7 +279,7 @@ async def trigger_concept_classify(
     return result
 
 
-_VERIFY_ALLOWED_TIERS = {"lite", "standard", "premium"}
+_VERIFY_ALLOWED_TIERS = {"lite", "standard", "premium", "authoring"}
 _VERIFY_MAX_LIMIT = 100
 
 
@@ -297,7 +297,8 @@ async def trigger_diagnostic_verify(
     Sweeps approved items with verifier_status IS NULL first (drain-safe:
     re-running the same batch never re-bills already-verified items).
 
-    tier ∈ {lite, standard, premium} (default: premium).
+    tier ∈ {lite, standard, premium, authoring} (default: premium; "authoring"
+    uses the best-quality Opus model, falling back to premium when unconfigured).
     limit is capped at 100; default 25.
     Returns {verified, agree, mismatch, ambiguous, error, flagged: [...]}.
     """

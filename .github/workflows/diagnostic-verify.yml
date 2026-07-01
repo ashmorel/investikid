@@ -5,7 +5,7 @@ on:
       tier:
         description: "LLM model tier for verification"
         type: choice
-        options: [lite, standard, premium]
+        options: [lite, standard, premium, authoring]
         default: premium
 
 permissions:
