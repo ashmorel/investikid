@@ -212,13 +212,14 @@ def _build_verifier_prompt(item: DiagnosticItem) -> str:
         "first principles.\n\n"
         f"Question:\n{item.question}\n\n"
         f"Choices (each is labelled with its index in [brackets]):\n{choices_text}\n\n"
-        "The indices are 0-based: the first choice is [0], the second is [1], and "
-        "so on. For answer_index return ONLY the plain integer shown inside the "
-        "brackets next to the choice you pick (e.g. if you pick the choice labelled "
-        "[2], return 2) — a bare 0-based integer, NOT the brackets, NOT a string, and "
-        "NOT a 1-based position.\n\n"
+        "Once you have solved it, report the choice you picked in TWO ways that must "
+        "agree: (a) answer_text — copy the FULL text of that choice word-for-word "
+        "(without the [n] label); and (b) answer_index — its 0-based bracket number "
+        "(the first choice is [0], the second [1], and so on). We rely on answer_text, "
+        "so make sure it is the exact wording of the choice you mean.\n\n"
         "Respond with ONLY a JSON object with these keys:\n"
-        '  "answer_index": <bare 0-based integer, e.g. 2>,\n'
+        '  "answer_text": "<the exact text of the choice you pick, copied word-for-word>",\n'
+        '  "answer_index": <its bare 0-based integer, e.g. 2>,\n'
         '  "ambiguous": <bool, true ONLY if two or more choices are genuinely and '
         'defensibly correct — not merely because you are unsure>,\n'
         '  "note": <str, one-line reason for your choice>\n'
@@ -246,6 +247,40 @@ def _coerce_answer_index(v: object) -> int:
         if s.lstrip("-").isdigit():
             return int(s)
     raise ValueError(f"answer_index missing or invalid: {v!r}")
+
+
+def _norm_choice(s: object) -> str:
+    """Normalise a choice/answer string for matching: strip a leading [n] label,
+    collapse whitespace, lowercase."""
+    text = re.sub(r"^\s*\[\d+\]\s*", "", str(s))
+    return " ".join(text.strip().lower().split())
+
+
+def _match_choice_text(choices: list, answer_text: object) -> int | None:
+    """Resolve the index of the choice the verifier QUOTED, if unambiguous.
+
+    Models reason correctly but frequently mis-number the 0-based index, so we
+    prefer matching the verbatim choice text they return. Exact (normalised)
+    match wins; otherwise a UNIQUE containment match; else None (ambiguous → let
+    the caller fall back to the numeric index).
+    """
+    if not isinstance(answer_text, str) or not answer_text.strip():
+        return None
+    target = _norm_choice(answer_text)
+    normed = [_norm_choice(c) for c in choices]
+    if target in normed:
+        return normed.index(target)
+    hits = [i for i, c in enumerate(normed) if c and (c == target or c in target or target in c)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def _resolve_verifier_index(item: DiagnosticItem, result: dict) -> int:
+    """The verifier's chosen index, preferring its QUOTED answer_text (robust to
+    index-counting errors) and falling back to the numeric answer_index."""
+    matched = _match_choice_text(list(item.choices or []), result.get("answer_text"))
+    if matched is not None:
+        return matched
+    return _coerce_answer_index(result.get("answer_index"))
 
 
 def _apply_verifier_error(item: DiagnosticItem, *, now: datetime, exc: BaseException | None = None) -> None:
@@ -314,7 +349,7 @@ async def verify_item(
             system_prompt=system,
             messages=[{"role": "user", "content": "Solve this question independently."}],
             temperature=0.0,
-            max_tokens=200,
+            max_tokens=300,
             response_format="json",
         )
         parsed = json.loads(raw)
@@ -326,7 +361,7 @@ async def verify_item(
                     parsed = v
                     break
 
-        verifier_index = _coerce_answer_index(parsed.get("answer_index"))
+        verifier_index = _resolve_verifier_index(item, parsed)
         ambiguous = bool(parsed.get("ambiguous", False))
         note = str(parsed.get("note", ""))
 
@@ -374,15 +409,16 @@ def _build_batch_verifier_prompt(items: list[DiagnosticItem]) -> str:
         "the single best answer WITHOUT being told which answer is declared "
         "correct — solve it yourself from first principles.\n\n"
         f"Items:\n\n{items_text}\n\n"
-        "The indices are 0-based: the first choice is [0], the second is [1], and "
-        "so on. For each item's answer_index return ONLY the plain integer shown "
-        "inside the brackets next to the choice you pick (e.g. if you pick the "
-        "choice labelled [2], return 2) — a bare 0-based integer, NOT the brackets, "
-        "NOT a string, and NOT a 1-based position.\n\n"
+        "For EACH item, report the choice you picked in TWO ways that must agree: "
+        "(a) answer_text — copy the FULL text of that choice word-for-word (without "
+        "the [n] label); and (b) answer_index — its 0-based bracket number (the first "
+        "choice is [0], the second [1], and so on). We rely on answer_text, so make "
+        "sure it is the exact wording of the choice you mean.\n\n"
         "Respond with ONLY a JSON object with a single key \"results\", whose value "
         "is an array with ONE entry per item above, each matching exactly:\n"
         '  {"id": <the item id, as a string, copied exactly>, '
-        '"answer_index": <bare 0-based integer, e.g. 2>, '
+        '"answer_text": "<the exact text of the choice you pick, word-for-word>", '
+        '"answer_index": <its bare 0-based integer, e.g. 2>, '
         '"ambiguous": <bool, true ONLY if two or more choices are genuinely and '
         'defensibly correct — not merely because you are unsure>, '
         '"note": <str, one-line reason for your choice>}\n'
@@ -420,7 +456,7 @@ async def _verify_batch(
             system_prompt=system,
             messages=[{"role": "user", "content": "Solve these questions independently."}],
             temperature=0.0,
-            max_tokens=200 * len(batch),
+            max_tokens=320 * len(batch),
             response_format="json",
         )
         parsed = json.loads(raw)
@@ -451,7 +487,7 @@ async def _verify_batch(
             _apply_verifier_error(item, now=now, exc=ValueError(f"missing result for id={item.id}"))
             continue
         try:
-            verifier_index = _coerce_answer_index(result.get("answer_index"))
+            verifier_index = _resolve_verifier_index(item, result)
             ambiguous = bool(result.get("ambiguous", False))
             note = str(result.get("note", ""))
             _apply_verifier_result(
