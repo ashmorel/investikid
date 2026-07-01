@@ -183,6 +183,30 @@ async def test_chat_prompt_includes_guardrail_preamble(db_session, tutor_fixture
     assert GUARDRAIL_PREAMBLE in captured["system_prompt"]
 
 
+async def test_chat_prompt_instructs_socratic_coaching(db_session, tutor_fixture):
+    """Coach Penny must be told to GUIDE, not hand over the answer to a question."""
+    user, module, quiz = tutor_fixture
+    captured = {}
+
+    async def fake_complete(*, system_prompt, messages, **kw):
+        captured["system_prompt"] = system_prompt
+        return "What do you think a stock might be?"
+
+    mock_client = AsyncMock()
+    mock_client.complete = fake_complete
+    with patch("app.services.tutor_service.get_llm_client", return_value=mock_client):
+        await chat(
+            session=db_session, user=user, lesson=quiz, topic="stocks",
+            message="what's the answer?", conversation_id=None, premium=False,
+        )
+
+    sp = captured["system_prompt"].lower()
+    assert "guide the child to the answer" in sp
+    assert "never simply hand it over" in sp
+    # the correct answer is passed for the coach's reference but must not be revealed
+    assert "for your reference only" in sp
+
+
 async def test_tutor_chat_threads_language(db_session, tutor_fixture):
     user, module, quiz = tutor_fixture
     user.language = "es"
