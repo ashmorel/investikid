@@ -38,6 +38,16 @@ def test_prompt_grounds_market_and_currency():
     assert "ISAs" in p or "Premium Bonds" in p  # UK-residue products called out
 
 
+def test_prompt_demands_answer_consistency():
+    # Guards against wrong-answer items (marked answer must match the explanation)
+    p = _build_system_prompt(
+        market_code="GB", topic="budgeting", difficulty_tier=2, count=3,
+        concept_slugs=[], market_name="United Kingdom", currency_code="GBP",
+    )
+    assert "answer_index MUST point to the genuinely correct choice" in p
+    assert "exactly ONE defensible correct answer" in p
+
+
 def test_prompt_includes_brief_facts_when_present():
     p = _build_system_prompt(
         market_code="HK", topic="saving", difficulty_tier=1, count=2,

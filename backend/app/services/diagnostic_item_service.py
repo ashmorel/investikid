@@ -100,6 +100,13 @@ def _build_system_prompt(
         f'{{\"question\": str, \"choices\": [str, str, str, str], '
         f'\"answer_index\": int (0-3), \"explanation\": str, \"concept_slug\"?: str}}'
         f"{slug_hint}"
+        f"\n\nACCURACY (critical): solve each question yourself BEFORE writing the options. "
+        f"The answer_index MUST point to the genuinely correct choice, and the explanation's "
+        f"reasoning and every calculation MUST lead to that exact choice — re-check the "
+        f"arithmetic. Do NOT write ambiguous or under-specified questions: each must have "
+        f"exactly ONE defensible correct answer, with the other three clearly wrong. For any "
+        f"money maths (break-even, profit, interest, budgeting), state the numbers so the "
+        f"single correct answer is unambiguous, and make the distractors plausible but wrong."
         f"\n\nSTYLE: Keep language clear and direct, pitched at ages 12-15. "
         f"Never give personalised financial advice. "
         f"Explanations must be 1-2 sentences (max ~35 words). "
