@@ -555,11 +555,8 @@ async def test_mixed_scenario_invariant_across_multiple_batches(db_session):
         )
 
     # 10 lessons with usable text → 2 mini-batches (8 + 2).
-    text_lessons = [
+    for i in range(10):
         await _make_lesson(db_session, module=module, question=f"Mixed scenario lesson {i}?")
-        for i in range(10)
-    ]
-    dropped = text_lessons[0]
 
     call_count = {"n": 0}
 
@@ -567,11 +564,15 @@ async def test_mixed_scenario_invariant_across_multiple_batches(db_session):
         call_count["n"] += 1
         if call_count["n"] == 2:
             raise RuntimeError("simulated failure for second mini-batch")
+        # Drop the FIRST lesson in THIS (first) mini-batch's prompt, so exactly one
+        # lesson is unmatched here regardless of the random UUID sort order that
+        # decides which lessons land in which mini-batch.
         lesson_ids = _extract_lesson_ids(system_prompt)
+        to_drop = lesson_ids[0]
         results = [
             {"lesson_id": lid, "concept_slug": "compound-interest"}
             for lid in lesson_ids
-            if lid != str(dropped.id)
+            if lid != to_drop
         ]
         return json.dumps({"results": results})
 
