@@ -374,7 +374,8 @@ async def test_market_generation_batch_llm_error_skips_only_that_batch(db_sessio
         nonlocal call_count
         idx = call_count
         call_count += 1
-        if idx == 0:
+        # First mini-batch fails BOTH attempts (the retry) so it stays skipped.
+        if idx < 2:
             raise RuntimeError("LLM call failed")
         # Second batch (2 remaining lessons) succeeds.
         batch = gb_lessons[5:7]
@@ -395,9 +396,50 @@ async def test_market_generation_batch_llm_error_skips_only_that_batch(db_sessio
             db_session, us_level, source_level=gb_level, brief=us_brief,
         )
 
-    assert mock_client.complete.await_count == 2
+    # 2 attempts for batch 1 (both raise) + 1 for batch 2 = 3 calls.
+    assert mock_client.complete.await_count == 3
     # First batch (5 lessons) fully skipped; second batch (2 lessons) created.
     assert result.skipped == 5
+    assert len(result.created) == 2
+
+
+async def test_market_generation_batch_retries_once_on_transient_failure(db_session):
+    """A single transient batch failure is retried, so the mini-batch's lessons are
+    still created rather than skipped (mirrors _generate_one's 2-attempt retry)."""
+    gb_level, gb_lessons = await _seed_gb_level_with_n_lessons(db_session, n=2, lesson_type="quiz",
+                                                               order_index=908)
+    us_level = await _seed_us_level(db_session)
+    us_brief = MarketBrief(market_code="US", brief_json=US_BRIEF, status="verified")
+    db_session.add(us_brief)
+    await db_session.flush()
+
+    call_count = 0
+
+    async def fake_complete(*, system_prompt, messages, **kwargs):
+        nonlocal call_count
+        idx = call_count
+        call_count += 1
+        if idx == 0:
+            raise RuntimeError("transient blip")
+        items = [
+            {"source_lesson_id": str(lesson.id), "question": f"Adapted {i}",
+             "choices": ["x", "y"], "answer_index": 0, "explanation": "Adapted."}
+            for i, lesson in enumerate(gb_lessons)
+        ]
+        return json.dumps(items)
+
+    mock_client = AsyncMock()
+    mock_client.complete = AsyncMock(side_effect=fake_complete)
+    with patch("app.services.admin_content_generation_service.get_llm_client",
+               return_value=mock_client), \
+         patch("app.services.admin_content_generation_service.moderate_output",
+               AsyncMock(return_value=ModerationResult(safe=True, category=None, text="x"))):
+        result = await generate_market_level_lessons(
+            db_session, us_level, source_level=gb_level, brief=us_brief,
+        )
+
+    assert mock_client.complete.await_count == 2  # one failure + one retry that succeeds
+    assert result.skipped == 0
     assert len(result.created) == 2
 
 

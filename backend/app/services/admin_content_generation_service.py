@@ -409,21 +409,28 @@ async def _generate_batch(
     client = get_llm_client("authoring")
     system = _batch_system_prompt(lesson_type, module, level, brief=brief, items=items)
     user = f"Adapt these {len(batch)} {lesson_type} lessons."
-    try:
-        raw = await client.complete(
-            system_prompt=system,
-            messages=[{"role": "user", "content": user}],
-            temperature=0.4, max_tokens=700 * len(batch), response_format="json",
-        )
-        candidates = extract_json_list(json.loads(raw))
-    except Exception:  # noqa: BLE001 — the whole mini-batch's LLM call/parse must
-        # never abort other mini-batches; log so a real outage is still visible.
-        logger.warning(
-            "market lesson-adaptation batch failed for level %s type=%s (n=%d)",
-            level.id, lesson_type, len(batch), exc_info=True,
-        )
-        result.skipped += len(batch)
-        return result
+    # Retry once on a whole-batch call/parse failure (mirrors _generate_one's 2
+    # attempts) so a single transient bad completion doesn't skip up to `len(batch)`
+    # lessons. A second failure skips the whole mini-batch (never aborts others).
+    candidates = None
+    for attempt in range(2):
+        try:
+            raw = await client.complete(
+                system_prompt=system,
+                messages=[{"role": "user", "content": user}],
+                temperature=0.4, max_tokens=700 * len(batch), response_format="json",
+            )
+            candidates = extract_json_list(json.loads(raw))
+            break
+        except Exception:  # noqa: BLE001 — the whole mini-batch's LLM call/parse must
+            # never abort other mini-batches; log so a real outage is still visible.
+            logger.warning(
+                "market lesson-adaptation batch failed for level %s type=%s (n=%d, attempt=%d)",
+                level.id, lesson_type, len(batch), attempt + 1, exc_info=True,
+            )
+            if attempt == 1:
+                result.skipped += len(batch)
+                return result
     by_id = {str(src.id): src for src in batch}
     for candidate in candidates:
         if not isinstance(candidate, dict):
