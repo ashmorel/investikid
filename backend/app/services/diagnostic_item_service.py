@@ -8,9 +8,18 @@ as DiagnosticItem rows with status="draft", source="generated".
 The function is *best-effort per item*: a single bad or erroring candidate
 never aborts the whole batch.
 
-``verify_item`` runs an independent blind solve of each item's question via the
-premium LLM (never shown the declared answer) and sets the verifier_* fields.
-It is best-effort — any failure sets verifier_status="error" and never raises.
+``verify_item`` runs an independent blind solve of a single item's question via
+the premium LLM (never shown the declared answer) and sets the verifier_*
+fields. It is best-effort — any failure sets verifier_status="error" and never
+raises.
+
+``run_verify_sweep`` verifies many items at once by chunking them into
+mini-batches (``_VERIFY_BATCH_SIZE``) and making ONE LLM call per mini-batch
+(via ``_verify_batch``), instead of one call per item — this keeps large sweeps
+(e.g. the cron-driven drain of thousands of items) well under provider rate
+limits. It is best-effort at two granularities: a malformed/missing per-item
+result only errors that item, and a whole mini-batch call failing only errors
+that mini-batch's items — either way the sweep never aborts.
 
 ``list_items`` queries with optional filters plus a coverage summary.
 ``get_item`` fetches a single item by id.
@@ -239,6 +248,46 @@ def _coerce_answer_index(v: object) -> int:
     raise ValueError(f"answer_index missing or invalid: {v!r}")
 
 
+def _apply_verifier_error(item: DiagnosticItem, *, now: datetime, exc: BaseException | None = None) -> None:
+    """Set an item's verifier_* fields to the standard error outcome.
+
+    Shared by both the single-item and batch verification paths so the
+    error shape is identical regardless of which one caught the failure.
+    """
+    item.verifier_status = "error"
+    item.verifier_answer_index = None
+    try:
+        if exc is not None:
+            item.verifier_note = f"error: {type(exc).__name__}: {exc}"[:200]
+        else:
+            item.verifier_note = "error: unknown"
+    except Exception:
+        item.verifier_note = "error: unknown"
+    item.verified_at = now
+
+
+def _apply_verifier_result(
+    item: DiagnosticItem, *, verifier_index: int, ambiguous: bool, note: str, now: datetime,
+) -> None:
+    """Apply a successfully-parsed verifier result to an item's verifier_* fields.
+
+    Shared status logic used by both the single-item and batch verification paths:
+      "ambiguous" — model flagged more than one defensible answer.
+      "agree"     — model's pick matches declared answer_index (and not ambiguous).
+      "mismatch"  — model's pick differs from declared answer_index (and not ambiguous).
+    """
+    item.verifier_answer_index = verifier_index
+    item.verifier_note = note
+    item.verified_at = now
+
+    if ambiguous:
+        item.verifier_status = "ambiguous"
+    elif verifier_index == item.answer_index:
+        item.verifier_status = "agree"
+    else:
+        item.verifier_status = "mismatch"
+
+
 async def verify_item(
     session: AsyncSession,
     item: DiagnosticItem,
@@ -281,31 +330,139 @@ async def verify_item(
         ambiguous = bool(parsed.get("ambiguous", False))
         note = str(parsed.get("note", ""))
 
-        item.verifier_answer_index = verifier_index
-        item.verifier_note = note
-        item.verified_at = now
-
-        if ambiguous:
-            item.verifier_status = "ambiguous"
-        elif verifier_index == item.answer_index:
-            item.verifier_status = "agree"
-        else:
-            item.verifier_status = "mismatch"
+        _apply_verifier_result(
+            item, verifier_index=verifier_index, ambiguous=ambiguous, note=note, now=now,
+        )
 
     except Exception:
         logger.exception(
             "diagnostic_item_service: verifier failed for item question=%r",
             getattr(item, "question", "?")[:80],
         )
-        item.verifier_status = "error"
-        item.verifier_answer_index = None
-        # Store a short error hint — don't include the full traceback
+        _apply_verifier_error(item, now=now, exc=sys.exc_info()[1])
+
+
+# Number of items grouped into a single LLM call by the batched verifier
+# (``run_verify_sweep``). Keeps the sweep well under provider rate limits at
+# volume (e.g. the 3,000-item/run cron) while bounding prompt size per call.
+_VERIFY_BATCH_SIZE = 8
+
+
+def _build_batch_verifier_prompt(items: list[DiagnosticItem]) -> str:
+    """Build a BLIND verifier prompt covering multiple items in one call.
+
+    Mirrors ``_build_verifier_prompt``'s per-item shape (question + [bracketed]
+    0-based choices, explicit bracket-index instructions) but lists every item
+    in the batch, each tagged with its id so results can be matched back up.
+    """
+    blocks = []
+    for item in items:
+        choices_text = "\n".join(
+            f"[{i}] {choice}" for i, choice in enumerate(item.choices)
+        )
+        blocks.append(
+            f"Item id: {item.id}\n"
+            f"Question:\n{item.question}\n\n"
+            f"Choices (each is labelled with its index in [brackets]):\n{choices_text}"
+        )
+    items_text = "\n\n---\n\n".join(blocks)
+
+    prompt = (
+        "You are an independent answer checker for InvestiKid, a children's "
+        "personal-finance app. You will be given several multiple-choice "
+        "questions, each with an id and its answer choices. For EACH item, pick "
+        "the single best answer WITHOUT being told which answer is declared "
+        "correct — solve it yourself from first principles.\n\n"
+        f"Items:\n\n{items_text}\n\n"
+        "The indices are 0-based: the first choice is [0], the second is [1], and "
+        "so on. For each item's answer_index return ONLY the plain integer shown "
+        "inside the brackets next to the choice you pick (e.g. if you pick the "
+        "choice labelled [2], return 2) — a bare 0-based integer, NOT the brackets, "
+        "NOT a string, and NOT a 1-based position.\n\n"
+        "Respond with ONLY a JSON object with a single key \"results\", whose value "
+        "is an array with ONE entry per item above, each matching exactly:\n"
+        '  {"id": <the item id, as a string, copied exactly>, '
+        '"answer_index": <bare 0-based integer, e.g. 2>, '
+        '"ambiguous": <bool, true ONLY if two or more choices are genuinely and '
+        'defensibly correct — not merely because you are unsure>, '
+        '"note": <str, one-line reason for your choice>}\n'
+        "Include an entry for every item id listed above, using the exact same id "
+        "string. Do not copy or reference any declared correct answer — you have "
+        "not been given one for any item."
+    )
+    return with_generation_framing(prompt)
+
+
+async def _verify_batch(
+    session: AsyncSession,
+    batch: list[DiagnosticItem],
+    *,
+    tier: str,
+) -> None:
+    """Verify a mini-batch of items with ONE LLM call.
+
+    Mutates each item's verifier_* fields in-place (does NOT flush). Best-effort
+    at two granularities:
+      - If the whole LLM call/parse fails, every item in ``batch`` gets
+        verifier_status="error" (same as today's per-item catch-all, now at
+        mini-batch granularity).
+      - If an individual item's id is missing or malformed in the response,
+        only THAT item gets verifier_status="error"; batch-mates are unaffected.
+
+    Never modifies answer_index or status — advisory only, same invariant as
+    ``verify_item``.
+    """
+    now = datetime.now(UTC)
+    try:
+        system = _build_batch_verifier_prompt(batch)
+        client = get_llm_client(tier)
+        raw = await client.complete(
+            system_prompt=system,
+            messages=[{"role": "user", "content": "Solve these questions independently."}],
+            temperature=0.0,
+            max_tokens=200 * len(batch),
+            response_format="json",
+        )
+        parsed = json.loads(raw)
+        results = extract_json_list(parsed)
+
+        by_id: dict[str, dict] = {}
+        for result in results:
+            if isinstance(result, dict) and isinstance(result.get("id"), str):
+                by_id[result["id"]] = result
+
+    except Exception:
+        logger.exception(
+            "diagnostic_item_service: batch verifier failed for %d item(s)",
+            len(batch),
+        )
+        exc = sys.exc_info()[1]
+        for item in batch:
+            _apply_verifier_error(item, now=now, exc=exc)
+        return
+
+    for item in batch:
+        result = by_id.get(str(item.id))
+        if result is None:
+            logger.warning(
+                "diagnostic_item_service: batch verifier response missing id=%s",
+                item.id,
+            )
+            _apply_verifier_error(item, now=now, exc=ValueError(f"missing result for id={item.id}"))
+            continue
         try:
-            exc = sys.exc_info()[1]
-            item.verifier_note = f"error: {type(exc).__name__}: {exc}"[:200]
+            verifier_index = _coerce_answer_index(result.get("answer_index"))
+            ambiguous = bool(result.get("ambiguous", False))
+            note = str(result.get("note", ""))
+            _apply_verifier_result(
+                item, verifier_index=verifier_index, ambiguous=ambiguous, note=note, now=now,
+            )
         except Exception:
-            item.verifier_note = "error: unknown"
-        item.verified_at = now
+            logger.exception(
+                "diagnostic_item_service: batch verifier result malformed for id=%s",
+                item.id,
+            )
+            _apply_verifier_error(item, now=now, exc=sys.exc_info()[1])
 
 
 async def run_verify_sweep(
@@ -320,10 +477,14 @@ async def run_verify_sweep(
 ) -> dict:
     """Run the independent answer-verifier sweep over matching DiagnosticItems.
 
-    Selects items using the supplied filters, bounded by ``limit``.  Runs
-    ``verify_item`` on each item best-effort (one failure sets
-    verifier_status="error" and never aborts the sweep), then flushes all
-    changes and returns a summary dict:
+    Selects items using the supplied filters, bounded by ``limit``.  Chunks the
+    selected items into mini-batches of ``_VERIFY_BATCH_SIZE`` and makes ONE LLM
+    call per mini-batch (instead of one call per item) to stay well under
+    provider rate limits at volume, via ``_verify_batch``. Best-effort at both
+    granularities: a single item's malformed/missing result only errors that
+    item, and a whole mini-batch call failing only errors that mini-batch —
+    either way, other items/batches are unaffected and the sweep never aborts.
+    Flushes all changes and returns a summary dict:
 
         {verified, agree, mismatch, ambiguous, error, flagged: [...]}
 
@@ -348,22 +509,24 @@ async def run_verify_sweep(
     counts: dict[str, int] = {"agree": 0, "mismatch": 0, "ambiguous": 0, "error": 0}
     flagged: list[dict] = []
 
-    for item in items:
-        await verify_item(session, item, tier=tier)
-        vs = item.verifier_status or "error"
-        counts[vs] = counts.get(vs, 0) + 1
-        if vs in ("mismatch", "ambiguous"):
-            flagged.append(
-                {
-                    "id": str(item.id),
-                    "topic": item.topic,
-                    "difficulty_tier": item.difficulty_tier,
-                    "answer_index": item.answer_index,
-                    "verifier_answer_index": item.verifier_answer_index,
-                    "verifier_status": vs,
-                    "verifier_note": item.verifier_note,
-                }
-            )
+    for start in range(0, len(items), _VERIFY_BATCH_SIZE):
+        batch = items[start : start + _VERIFY_BATCH_SIZE]
+        await _verify_batch(session, batch, tier=tier)
+        for item in batch:
+            vs = item.verifier_status or "error"
+            counts[vs] = counts.get(vs, 0) + 1
+            if vs in ("mismatch", "ambiguous"):
+                flagged.append(
+                    {
+                        "id": str(item.id),
+                        "topic": item.topic,
+                        "difficulty_tier": item.difficulty_tier,
+                        "answer_index": item.answer_index,
+                        "verifier_answer_index": item.verifier_answer_index,
+                        "verifier_status": vs,
+                        "verifier_note": item.verifier_note,
+                    }
+                )
 
     return {
         "verified": len(items),
