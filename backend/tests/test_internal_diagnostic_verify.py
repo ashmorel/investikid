@@ -30,6 +30,13 @@ def _verifier_response(answer_index: int, ambiguous: bool = False, note: str = "
     return json.dumps({"answer_index": answer_index, "ambiguous": ambiguous, "note": note})
 
 
+def _batch_verifier_response(item_id, answer_index: int, ambiguous: bool = False, note: str = "ok") -> str:
+    """A single-item batch verifier response — mocks the mini-batch LLM call shape."""
+    return json.dumps(
+        {"results": [{"id": str(item_id), "answer_index": answer_index, "ambiguous": ambiguous, "note": note}]}
+    )
+
+
 async def _seed(db_session, **kwargs) -> DiagnosticItem:
     defaults = dict(
         market_code="US",
@@ -134,7 +141,7 @@ async def test_sweep_returns_flagged_mismatch(client, db_session, monkeypatch):
 
     mock_client = AsyncMock()
     # Verifier picks index 3 → mismatch with declared 0
-    mock_client.complete = AsyncMock(return_value=_verifier_response(answer_index=3))
+    mock_client.complete = AsyncMock(return_value=_batch_verifier_response(item.id, answer_index=3))
 
     with patch(f"{_MODULE}.get_llm_client", return_value=mock_client):
         r = await client.post(

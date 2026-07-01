@@ -39,6 +39,13 @@ def _verifier_response(answer_index: int, ambiguous: bool = False, note: str = "
     return json.dumps({"answer_index": answer_index, "ambiguous": ambiguous, "note": note})
 
 
+def _batch_verifier_response(item_id, answer_index: int, ambiguous: bool = False, note: str = "ok") -> str:
+    """A single-item batch verifier response — mocks the mini-batch LLM call shape."""
+    return json.dumps(
+        {"results": [{"id": str(item_id), "answer_index": answer_index, "ambiguous": ambiguous, "note": note}]}
+    )
+
+
 async def _seed(db_session, **kwargs) -> DiagnosticItem:
     defaults = dict(
         market_code="US",
@@ -117,7 +124,7 @@ async def test_sweep_mismatch_item_appears_in_flagged(admin_client, db_session):
 
     mock_client = AsyncMock()
     # Verifier picks a different answer → mismatch
-    mock_client.complete = AsyncMock(return_value=_verifier_response(answer_index=3))
+    mock_client.complete = AsyncMock(return_value=_batch_verifier_response(item.id, answer_index=3))
 
     with patch(f"{_MODULE}.get_llm_client", return_value=mock_client):
         resp = await admin_client.post(
@@ -158,7 +165,7 @@ async def test_sweep_ambiguous_item_appears_in_flagged(admin_client, db_session)
 
     mock_client = AsyncMock()
     mock_client.complete = AsyncMock(
-        return_value=_verifier_response(answer_index=1, ambiguous=True, note="two valid answers")
+        return_value=_batch_verifier_response(item.id, answer_index=1, ambiguous=True, note="two valid answers")
     )
 
     with patch(f"{_MODULE}.get_llm_client", return_value=mock_client):
@@ -348,12 +355,20 @@ async def test_sweep_valid_tiers_accepted(admin_client, db_session):
 
 
 async def test_sweep_verifier_error_does_not_abort_sweep(admin_client, db_session):
-    """If one item's verifier throws, the sweep continues and reports error count."""
+    """If a mini-batch's verifier call throws, the sweep continues (other mini-batch
+    sweeps unaffected) and reports the error count for that mini-batch's items.
+
+    With batched verification, items sharing a mini-batch (<=8 items) share a
+    single LLM call — so a call failure errors the whole mini-batch, not just one
+    item. This is exercised across TWO separate sweep calls (two distinct topics,
+    each with a single item, so each is its own mini-batch) to prove one
+    mini-batch failing doesn't aborts the other sweep's outcome.
+    """
     await _seed(
-        db_session, status="approved", topic="best_effort_topic", market_code="US"
+        db_session, status="approved", topic="best_effort_topic_a", market_code="US"
     )
-    await _seed(
-        db_session, status="approved", topic="best_effort_topic", market_code="US"
+    item_b = await _seed(
+        db_session, status="approved", topic="best_effort_topic_b", market_code="US"
     )
 
     call_count = [0]
@@ -362,23 +377,30 @@ async def test_sweep_verifier_error_does_not_abort_sweep(admin_client, db_sessio
         call_count[0] += 1
         if call_count[0] == 1:
             raise RuntimeError("LLM exploded")
-        return _verifier_response(answer_index=0)
+        return _batch_verifier_response(item_b.id, answer_index=0)
 
     mock_client = AsyncMock()
     mock_client.complete = flaky_complete
 
     with patch(f"{_MODULE}.get_llm_client", return_value=mock_client):
-        resp = await admin_client.post(
+        resp_a = await admin_client.post(
             _VERIFY_URL,
-            json={"market_code": "US", "topic": "best_effort_topic", "limit": 10},
+            json={"market_code": "US", "topic": "best_effort_topic_a", "limit": 10},
+        )
+        resp_b = await admin_client.post(
+            _VERIFY_URL,
+            json={"market_code": "US", "topic": "best_effort_topic_b", "limit": 10},
         )
 
-    assert resp.status_code == 200
-    data = resp.json()
-    # Both items were processed (best-effort; one errored, one succeeded)
-    assert data["verified"] == 2
-    assert data["error"] == 1
-    assert data["agree"] == 1
+    assert resp_a.status_code == 200
+    assert resp_b.status_code == 200
+    data_a = resp_a.json()
+    data_b = resp_b.json()
+    # Both items were processed (best-effort; one mini-batch errored, the other agreed)
+    assert data_a["verified"] == 1
+    assert data_b["verified"] == 1
+    assert data_a["error"] == 1
+    assert data_b["agree"] == 1
 
 
 # ---------------------------------------------------------------------------
