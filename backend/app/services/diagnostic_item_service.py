@@ -204,11 +204,12 @@ def _build_verifier_prompt(item: DiagnosticItem) -> str:
         f"Question:\n{item.question}\n\n"
         f"Choices (each is labelled with its index in [brackets]):\n{choices_text}\n\n"
         "The indices are 0-based: the first choice is [0], the second is [1], and "
-        "so on. The answer_index you return MUST be exactly the bracketed [number] "
-        "shown next to the choice you pick — do NOT add or subtract 1, and do NOT "
-        "use a 1-based position.\n\n"
+        "so on. For answer_index return ONLY the plain integer shown inside the "
+        "brackets next to the choice you pick (e.g. if you pick the choice labelled "
+        "[2], return 2) — a bare 0-based integer, NOT the brackets, NOT a string, and "
+        "NOT a 1-based position.\n\n"
         "Respond with ONLY a JSON object with these keys:\n"
-        '  "answer_index": <the [bracketed] index of your chosen choice>,\n'
+        '  "answer_index": <bare 0-based integer, e.g. 2>,\n'
         '  "ambiguous": <bool, true ONLY if two or more choices are genuinely and '
         'defensibly correct — not merely because you are unsure>,\n'
         '  "note": <str, one-line reason for your choice>\n'
@@ -216,6 +217,26 @@ def _build_verifier_prompt(item: DiagnosticItem) -> str:
         "given one."
     )
     return with_generation_framing(prompt)
+
+
+def _coerce_answer_index(v: object) -> int:
+    """Coerce a verifier ``answer_index`` to a plain int.
+
+    Tolerates a model that echoes the bracketed form it was shown — ``[1]`` (a
+    single-element list), ``"[1]"`` / ``"1"`` (a string) — instead of a bare int.
+    Raises ValueError for anything else (so it lands as verifier_status="error").
+    """
+    if isinstance(v, bool):
+        raise ValueError(f"answer_index missing or invalid: {v!r}")
+    if isinstance(v, int):
+        return v
+    if isinstance(v, list) and len(v) == 1:
+        return _coerce_answer_index(v[0])
+    if isinstance(v, str):
+        s = v.strip().strip("[]").strip()
+        if s.lstrip("-").isdigit():
+            return int(s)
+    raise ValueError(f"answer_index missing or invalid: {v!r}")
 
 
 async def verify_item(
@@ -256,12 +277,9 @@ async def verify_item(
                     parsed = v
                     break
 
-        verifier_index = parsed.get("answer_index")
+        verifier_index = _coerce_answer_index(parsed.get("answer_index"))
         ambiguous = bool(parsed.get("ambiguous", False))
         note = str(parsed.get("note", ""))
-
-        if not isinstance(verifier_index, int) or isinstance(verifier_index, bool):
-            raise ValueError(f"answer_index missing or invalid: {verifier_index!r}")
 
         item.verifier_answer_index = verifier_index
         item.verifier_note = note

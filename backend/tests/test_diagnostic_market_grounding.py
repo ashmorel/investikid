@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from app.services.diagnostic_item_service import _build_system_prompt, _validate_candidate
+from app.services.diagnostic_item_service import (
+    _build_system_prompt,
+    _coerce_answer_index,
+    _validate_candidate,
+)
 
 # The 10 markets and the currency each must ground in. Mirrors app/seed/markets.py;
 # this is the contract the prompt depends on (Use {currency_code} …).
@@ -85,6 +89,26 @@ def test_validate_allows_local_currency_in_non_gb():
 
 def test_validate_no_market_code_skips_guard():
     assert _validate_candidate(_candidate("A £5 note."), market_code=None) is not None
+
+
+# --- verifier answer_index coercion (Opus echoed the bracketed form) --------
+
+
+def test_coerce_answer_index_accepts_plain_int():
+    assert _coerce_answer_index(2) == 2
+
+
+def test_coerce_answer_index_tolerates_bracketed_forms():
+    assert _coerce_answer_index([1]) == 1        # single-element list
+    assert _coerce_answer_index("[1]") == 1      # bracketed string
+    assert _coerce_answer_index(" [ 2 ] ") == 2  # padded
+    assert _coerce_answer_index("3") == 3        # plain string
+
+
+def test_coerce_answer_index_rejects_junk():
+    for bad in (None, True, "two", [1, 2], {}, "[]"):
+        with pytest.raises(ValueError):
+            _coerce_answer_index(bad)
 
 
 # --- cross-currency guard (word-boundary, all markets) ----------------------
