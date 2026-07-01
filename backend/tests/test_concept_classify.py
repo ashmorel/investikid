@@ -21,6 +21,7 @@ Covers:
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from unittest.mock import AsyncMock, patch
 
@@ -90,11 +91,37 @@ async def _make_lesson(
     return lesson
 
 
+_UUID_RE = re.compile(
+    r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+)
+
+
+def _extract_lesson_ids(prompt_text: str) -> list[str]:
+    """Pull UUID lesson ids out of a prompt string (test-only helper)."""
+    return _UUID_RE.findall(prompt_text)
+
+
 def _mock_llm(slug_response: str | None) -> AsyncMock:
-    """Return a mock LLM client whose complete() returns the given slug as JSON."""
+    """Return a mock LLM client whose complete() replies, for EVERY lesson id
+    found in the mini-batch prompt (system_prompt now carries the lesson list),
+    with the same ``slug_response`` — i.e. "the LLM picks this slug for every
+    lesson in the batch". Mirrors the pre-batching per-lesson mock's intent
+    while matching the new {"results": [...]} batch response contract.
+    """
     mock_client = AsyncMock()
-    payload = json.dumps({"concept_slug": slug_response})
-    mock_client.complete = AsyncMock(return_value=payload)
+
+    async def _complete(*, system_prompt, messages, **kwargs):
+        lesson_ids = _extract_lesson_ids(system_prompt)
+        return json.dumps(
+            {
+                "results": [
+                    {"lesson_id": lid, "concept_slug": slug_response}
+                    for lid in lesson_ids
+                ]
+            }
+        )
+
+    mock_client.complete = AsyncMock(side_effect=_complete)
     return mock_client
 
 
@@ -358,6 +385,214 @@ async def test_sum_invariant(db_session):
     )
     assert total == result["lessons_seen"], (
         f"sum invariant violated: {result}"
+    )
+
+
+# ── mini-batch tests ────────────────────────────────────────────────────────────
+
+
+def _mock_llm_batch(handler) -> AsyncMock:
+    """Return a mock LLM client whose complete() delegates to ``handler(system_prompt,
+    messages, **kwargs)`` and returns whatever JSON string it produces (or raises).
+    """
+    mock_client = AsyncMock()
+
+    async def _complete(*, system_prompt, messages, **kwargs):
+        return handler(system_prompt, messages, **kwargs)
+
+    mock_client.complete = AsyncMock(side_effect=_complete)
+    return mock_client
+
+
+def _batch_response_all_tagged(slug: str):
+    """Build a handler that replies with concept_slug=``slug`` for every lesson id
+    embedded (as a UUID) in the system prompt's lesson list."""
+
+    def handler(system_prompt, messages, **kwargs):
+        lesson_ids = _extract_lesson_ids(system_prompt)
+        return json.dumps(
+            {"results": [{"lesson_id": lid, "concept_slug": slug} for lid in lesson_ids]}
+        )
+
+    return handler
+
+
+async def test_batches_of_8_not_one_call_per_lesson(db_session):
+    """17 usable-text lessons → ceil(17/8) == 3 LLM calls, NOT 17."""
+    await _seed(db_session)
+    module = await _make_module(db_session, topic="savings")
+    for i in range(17):
+        await _make_lesson(db_session, module=module, question=f"Batch call-count lesson {i}?")
+
+    mock_client = _mock_llm_batch(_batch_response_all_tagged("compound-interest"))
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result = await classify_untagged_lessons(db_session, limit=17)
+
+    assert result["lessons_seen"] == 17
+    assert mock_client.complete.call_count == 3, (
+        f"expected ceil(17/8)=3 LLM calls, got {mock_client.complete.call_count}"
+    )
+    assert result["lessons_tagged"] == 17
+
+
+async def test_missing_lesson_id_in_batch_response_is_unmatched_batchmates_unaffected(
+    db_session,
+):
+    """One lesson's id missing from the mini-batch response → only that lesson is
+    unmatched; its batch-mates are still tagged and stamped."""
+    await _seed(db_session)
+    module = await _make_module(db_session, topic="savings")
+    lessons = [
+        await _make_lesson(db_session, module=module, question=f"Missing-id lesson {i}?")
+        for i in range(3)
+    ]
+    dropped = lessons[1]
+
+    def handler(system_prompt, messages, **kwargs):
+        lesson_ids = _extract_lesson_ids(system_prompt)
+        results = [
+            {"lesson_id": lid, "concept_slug": "compound-interest"}
+            for lid in lesson_ids
+            if lid != str(dropped.id)
+        ]
+        return json.dumps({"results": results})
+
+    mock_client = _mock_llm_batch(handler)
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result = await classify_untagged_lessons(db_session, limit=10)
+
+    for lesson in lessons:
+        await db_session.refresh(lesson)
+        assert lesson.concept_classified_at is not None, "every lesson in the batch must be stamped"
+
+    assert dropped.concept_id is None, "dropped lesson must be unmatched, not tagged"
+    others = [lsn for lsn in lessons if lsn.id != dropped.id]
+    for lesson in others:
+        assert lesson.concept_id is not None, "batch-mates of a dropped lesson must still be tagged"
+
+    assert result["lessons_unmatched"] == 1
+    assert result["lessons_tagged"] == 2
+    assert (
+        result["lessons_tagged"]
+        + result["lessons_unmatched"]
+        + result["lessons_skipped"]
+        + result["lessons_errored"]
+        == result["lessons_seen"]
+    )
+
+
+async def test_mini_batch_llm_error_only_errors_that_batch(db_session):
+    """A mini-batch whose LLM call raises → only THAT mini-batch's lessons are
+    lessons_errored (stamped); lessons in other mini-batches are unaffected."""
+    await _seed(db_session)
+    module = await _make_module(db_session, topic="savings")
+    # 9 lessons with text → 2 mini-batches of size 8 and 1 (batch size = 8).
+    lessons = [
+        await _make_lesson(db_session, module=module, question=f"Error batch lesson {i}?")
+        for i in range(9)
+    ]
+
+    call_count = {"n": 0}
+
+    def handler(system_prompt, messages, **kwargs):
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            raise RuntimeError("simulated provider outage for this mini-batch")
+        lesson_ids = _extract_lesson_ids(system_prompt)
+        return json.dumps(
+            {
+                "results": [
+                    {"lesson_id": lid, "concept_slug": "compound-interest"}
+                    for lid in lesson_ids
+                ]
+            }
+        )
+
+    mock_client = _mock_llm_batch(handler)
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result = await classify_untagged_lessons(db_session, limit=10)
+
+    assert mock_client.complete.call_count == 2
+    assert result["lessons_errored"] == 8, "first mini-batch (8 lessons) must all error"
+    assert result["lessons_tagged"] == 1, "second mini-batch (1 lesson) must be unaffected"
+
+    for lesson in lessons:
+        await db_session.refresh(lesson)
+        assert lesson.concept_classified_at is not None, (
+            "every lesson, including errored ones, must be stamped"
+        )
+
+    assert (
+        result["lessons_tagged"]
+        + result["lessons_unmatched"]
+        + result["lessons_skipped"]
+        + result["lessons_errored"]
+        == result["lessons_seen"]
+    )
+
+
+async def test_mixed_scenario_invariant_across_multiple_batches(db_session):
+    """Mixed pre-LLM skips + tagged + unmatched + errored across multiple
+    mini-batches still satisfies tagged+unmatched+skipped+errored == seen."""
+    await _seed(db_session)
+    module = await _make_module(db_session, topic="savings")
+
+    # 2 pre-LLM skips (no usable text).
+    for _ in range(2):
+        await _make_lesson(
+            db_session,
+            module=module,
+            content_json={"answer_index": 0, "explanation": "x"},
+        )
+
+    # 10 lessons with usable text → 2 mini-batches (8 + 2).
+    text_lessons = [
+        await _make_lesson(db_session, module=module, question=f"Mixed scenario lesson {i}?")
+        for i in range(10)
+    ]
+    dropped = text_lessons[0]
+
+    call_count = {"n": 0}
+
+    def handler(system_prompt, messages, **kwargs):
+        call_count["n"] += 1
+        if call_count["n"] == 2:
+            raise RuntimeError("simulated failure for second mini-batch")
+        lesson_ids = _extract_lesson_ids(system_prompt)
+        results = [
+            {"lesson_id": lid, "concept_slug": "compound-interest"}
+            for lid in lesson_ids
+            if lid != str(dropped.id)
+        ]
+        return json.dumps({"results": results})
+
+    mock_client = _mock_llm_batch(handler)
+    with patch(
+        "app.services.concept_classify_service.get_llm_client",
+        return_value=mock_client,
+    ):
+        result = await classify_untagged_lessons(db_session, limit=20)
+
+    assert result["lessons_seen"] == 12
+    assert result["lessons_skipped"] == 2
+    assert result["lessons_unmatched"] == 1  # dropped lesson in first mini-batch
+    assert result["lessons_errored"] == 2  # second mini-batch (2 lessons) all errored
+    assert result["lessons_tagged"] == 7  # remaining 7 in first mini-batch
+    assert (
+        result["lessons_tagged"]
+        + result["lessons_unmatched"]
+        + result["lessons_skipped"]
+        + result["lessons_errored"]
+        == result["lessons_seen"]
     )
 
 

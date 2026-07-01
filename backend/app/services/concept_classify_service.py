@@ -43,6 +43,7 @@ from app.services.llm_client import get_llm_client
 logger = logging.getLogger(__name__)
 
 _MAX_LIMIT = 500
+_BATCH_SIZE = 8
 
 
 def _lesson_text(lesson: Lesson) -> str | None:
@@ -72,26 +73,69 @@ async def _fetch_all_concepts(session: AsyncSession) -> list[dict]:
     ]
 
 
-def _build_prompt(lesson_text: str, concepts: list[dict]) -> str:
-    """Build the classification system prompt, wrapped in generation framing."""
+def _build_batch_prompt(lessons: list[tuple[Lesson, str]], concepts: list[dict]) -> str:
+    """Build a mini-batch classification system prompt for MULTIPLE lessons at
+    once, wrapped in generation framing.
+
+    ``lessons`` is a list of (Lesson, lesson_text) pairs. The model is asked to
+    return one result per lesson, keyed by the lesson's real id (a UUID string)
+    so that responses can never be misaligned by position.
+    """
     candidate_lines = "\n".join(
         f'  - slug="{c["slug"]}" name="{c["name"]}" [topic: {c["topic"]}]'
         + (f' ({c["blurb"]})' if c["blurb"] else "")
         for c in concepts
     )
+    lesson_lines = "\n".join(
+        f'  - lesson_id="{lesson.id}": {text}' for lesson, text in lessons
+    )
     system = (
         "You are a financial-education content tagger. "
-        "Your job is to assign a lesson to exactly one concept from a fixed taxonomy list. "
-        "You MUST return a JSON object with a single key 'concept_slug' whose value is "
-        "the slug of the best-matching concept from the list below, "
-        "or null if no concept clearly fits.\n\n"
+        "Your job is to assign EACH lesson below to exactly one concept from a "
+        "fixed taxonomy list. "
+        "You MUST return a JSON object with a single key 'results' whose value is "
+        "a JSON array with ONE entry per lesson below. "
+        "Each entry MUST be an object with exactly two keys: "
+        "'lesson_id' (the exact lesson_id string given below, unchanged) and "
+        "'concept_slug' (the slug of the best-matching concept from the list below, "
+        "or null if no concept clearly fits).\n\n"
         f"Full taxonomy concepts (grouped by topic):\n{candidate_lines}\n\n"
+        f"Lessons to classify:\n{lesson_lines}\n\n"
         "Rules:\n"
         "- Only use slugs from the list above — never invent a new slug.\n"
-        "- If no concept is a clear match, return {\"concept_slug\": null}.\n"
+        "- If no concept is a clear match for a lesson, use concept_slug: null for it.\n"
+        "- You MUST include EVERY lesson_id given above exactly once in 'results'.\n"
         "- Return ONLY the JSON object, no other text."
     )
     return with_generation_framing(system)
+
+
+def _parse_batch_response(raw: str) -> dict[str, str | None]:
+    """Parse a mini-batch LLM response into {lesson_id: concept_slug_or_None}.
+
+    Returns an empty dict on any parse failure — callers treat that as "every
+    lesson in this mini-batch is unmatched" (not an error), matching a
+    malformed-but-present response. A raised exception (network/provider
+    failure) is handled separately by the caller as a mini-batch error.
+    """
+    picks: dict[str, str | None] = {}
+    try:
+        parsed = json.loads(raw)
+        results = parsed.get("results") if isinstance(parsed, dict) else None
+        if not isinstance(results, list):
+            return {}
+        for entry in results:
+            if not isinstance(entry, dict):
+                continue
+            lesson_id = entry.get("lesson_id")
+            if not isinstance(lesson_id, str) or not lesson_id.strip():
+                continue
+            val = entry.get("concept_slug")
+            pick = val.strip() if isinstance(val, str) and val.strip() else None
+            picks[lesson_id.strip()] = pick
+    except (json.JSONDecodeError, ValueError, AttributeError, TypeError):
+        return {}
+    return picks
 
 
 async def classify_untagged_lessons(
@@ -160,36 +204,49 @@ async def classify_untagged_lessons(
 
     client = get_llm_client(tier)
 
+    # Split into lessons with usable text (go through the LLM in mini-batches)
+    # and lessons without (skipped straight away, exactly as before).
+    classifiable: list[tuple[Lesson, str]] = []
     for lesson in lesson_rows:
-        try:
-            text = _lesson_text(lesson)
-            if not text:
-                lesson.concept_classified_at = now
-                lessons_skipped += 1
-                continue
+        text = _lesson_text(lesson)
+        if not text:
+            lesson.concept_classified_at = now
+            lessons_skipped += 1
+            continue
+        classifiable.append((lesson, text))
 
-            system_prompt = _build_prompt(text, all_concepts)
-            user_msg = f"Lesson text: {text}"
+    # Chunk classifiable lessons into mini-batches of _BATCH_SIZE and make ONE
+    # LLM call per mini-batch (not one per lesson).
+    for start in range(0, len(classifiable), _BATCH_SIZE):
+        mini_batch = classifiable[start : start + _BATCH_SIZE]
+
+        try:
+            system_prompt = _build_batch_prompt(mini_batch, all_concepts)
+            user_msg = "Classify the lessons listed in the system prompt."
 
             raw = await client.complete(
                 system_prompt=system_prompt,
                 messages=[{"role": "user", "content": user_msg}],
                 temperature=0.0,
-                max_tokens=60,
+                max_tokens=60 * len(mini_batch),
                 response_format="json",
             )
+        except Exception:  # noqa: BLE001 — one bad mini-batch must not abort the run
+            logger.exception(
+                "concept_classify_batch_error lesson_ids=%s — continuing",
+                [str(lesson.id) for lesson, _ in mini_batch],
+            )
+            for lesson, _ in mini_batch:
+                lesson.concept_classified_at = now
+                lessons_errored += 1
+            continue
 
-            # Parse the response.
-            pick: str | None = None
-            try:
-                parsed = json.loads(raw)
-                if isinstance(parsed, dict):
-                    val = parsed.get("concept_slug")
-                    pick = val.strip() if isinstance(val, str) and val.strip() else None
-            except (json.JSONDecodeError, ValueError, AttributeError):
-                pick = None
+        picks = _parse_batch_response(raw)
 
-            # Validate globally — only a real taxonomy match is ever written.
+        for lesson, _text in mini_batch:
+            pick = picks.get(str(lesson.id))
+            # Missing entry (key absent from response) behaves like an
+            # explicit abstain — resolve_slug_global(None) is always None.
             concept_id = await resolve_slug_global(session, pick)
 
             # Stamp as attempted regardless of outcome.
@@ -206,13 +263,6 @@ async def classify_untagged_lessons(
                     pick,
                 )
                 lessons_unmatched += 1
-
-        except Exception:  # noqa: BLE001 — one bad lesson must not abort the batch
-            logger.exception(
-                "concept_classify_error lesson=%s — continuing",
-                lesson.id,
-            )
-            lessons_errored += 1
 
     await session.flush()
 
