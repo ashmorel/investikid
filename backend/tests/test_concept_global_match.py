@@ -18,6 +18,7 @@ Covers:
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from unittest.mock import AsyncMock, patch
 
@@ -100,10 +101,25 @@ async def _make_lesson(
     return lesson
 
 
+_UUID_RE = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.IGNORECASE
+)
+
+
 def _mock_llm(slug_response: str | None) -> AsyncMock:
+    """Mock the LLM client for the BATCHED classify contract: for every lesson id
+    found in the mini-batch prompt, return the same ``slug_response`` under the
+    ``{"results": [{"lesson_id", "concept_slug"}, ...]}`` shape.
+    """
     mock_client = AsyncMock()
-    payload = json.dumps({"concept_slug": slug_response})
-    mock_client.complete = AsyncMock(return_value=payload)
+
+    async def _complete(*, system_prompt, messages, **kwargs):
+        lesson_ids = _UUID_RE.findall(system_prompt)
+        return json.dumps(
+            {"results": [{"lesson_id": lid, "concept_slug": slug_response} for lid in lesson_ids]}
+        )
+
+    mock_client.complete = AsyncMock(side_effect=_complete)
     return mock_client
 
 
