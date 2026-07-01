@@ -14,6 +14,7 @@ from app.models.lesson_draft import LessonDraft
 from app.schemas.admin import validate_lesson_content_json
 from app.services import llm_usage
 from app.services.llm_client import get_llm_client, get_model_name
+from app.services.llm_json import extract_json_list
 from app.services.moderation import moderate_output
 
 logger = logging.getLogger(__name__)
@@ -149,6 +150,57 @@ def _system_prompt(
     return prompt
 
 
+# Mini-batch size for grouped market-adaptation generation: each type-group of
+# source lessons is chunked into batches of this size, one LLM call per batch
+# (instead of one call per lesson) -- see generate_market_level_lessons.
+_MARKET_ADAPT_BATCH_SIZE = 5
+
+
+def _batch_system_prompt(
+    lesson_type: str,
+    module: Module,
+    level: Level,
+    *,
+    brief: dict,
+    items: list[tuple[str, str]],
+) -> str:
+    """Batched variant of the ``brief`` + ``source_text`` branch of ``_system_prompt``:
+    adapts MULTIPLE GB source lessons of the SAME ``lesson_type`` into the target
+    market in a single call, each grounded in its own source lesson's text but all
+    sharing the same market ``brief``. ``items`` is a list of (source_lesson_id,
+    source_text) pairs -- one per lesson to adapt in this mini-batch.
+    """
+    age = f"ages {module.min_age}-{module.max_age}" if module.min_age else "children 8-16"
+    sources_block = "\n".join(
+        f'- source_lesson_id "{lesson_id}": {source_text}'
+        for lesson_id, source_text in items
+    )
+    item_schema = _SCHEMA_HINT[lesson_type][:-1] + ', "source_lesson_id": str}'
+    prompt = (
+        f"You adapt {len(items)} financial-education {lesson_type} lessons for {age} on the "
+        f"topic '{module.topic}' (module '{module.title}', '{level.title}') from GB (United "
+        f"Kingdom) source lessons into the target market '{module.market_code}', using these "
+        f"verified market facts shared by ALL of them: {json.dumps(brief, ensure_ascii=False)}. "
+        f"Replace UK products, regulators, currency and examples with the market's real "
+        f"equivalents from the facts above (e.g. ISA → the local tax-advantaged account, "
+        f"FCA → the local regulator, £ → the local currency). Keep each lesson's learning "
+        f"objective, structure and age level identical to its own source. Do not copy "
+        f"GB-specific names, regulators or currency. Keep it simple, encouraging, factual, and "
+        f"age-appropriate; never give personalised financial advice. Use a fresh, concrete "
+        f"everyday scenario per lesson with a varied character name (rotate genders, "
+        f"backgrounds and situations across the lessons — do NOT reuse the same character "
+        f"across them).\n\n"
+        f"Here are the {len(items)} GB source lessons to adapt, each tagged with its own "
+        f"source_lesson_id:\n{sources_block}\n\n"
+        f"Respond with ONLY a JSON array of exactly {len(items)} objects, one per source "
+        f"lesson above (any order), each matching exactly: {item_schema} -- the "
+        f"'source_lesson_id' in each object MUST exactly match the source_lesson_id it was "
+        f"adapted from, so the results can be correlated back to their source."
+        f"{_CONCISION_RULES}"
+    )
+    return prompt
+
+
 def _concat_text(parsed: dict) -> str:
     parts: list[str] = []
     for key in ("title", "body", "question", "explanation", "prompt"):
@@ -177,6 +229,38 @@ async def _fetch_all_concept_slugs(session: AsyncSession) -> list[str]:
     return list(rows)
 
 
+async def _persist_draft_from_parsed(session, *, level, lesson_type: str, concept: str,
+                                     parsed: dict) -> LessonDraft:
+    """Validate (already done by caller) + moderate a single parsed LLM lesson dict,
+    then persist it as a LessonDraft. Shared by the single-lesson (_generate_one) and
+    batched (_generate_batch) generation paths so every persisted draft gets the SAME
+    per-item moderation + audit-log treatment, one lesson at a time.
+    """
+    # Extract the concept_slug the LLM emitted (may be absent or invalid — stored
+    # as-is; resolved to concept_id at approval time via the concept mapper).
+    emitted_slug = parsed.pop("concept_slug", None)
+    if isinstance(emitted_slug, str):
+        emitted_slug = emitted_slug.strip() or None
+    else:
+        emitted_slug = None
+    mod = await moderate_output(_concat_text(parsed), surface="lesson")
+    draft = LessonDraft(
+        level_id=level.id, type=lesson_type, content_json=parsed, concept=concept,
+        model_used=get_model_name("authoring"),
+        moderation_safe=mod.safe, moderation_category=mod.category,
+        concept_slug=emitted_slug,
+    )
+    session.add(draft)
+    if not mod.safe:
+        session.add(AuditLog(
+            user_id=None,
+            event_type="moderation_block",
+            metadata_json={"surface": "lesson", "category": mod.category},
+        ))
+    await session.flush()
+    return draft
+
+
 @llm_usage.surface("admin_content_gen")
 async def _generate_one(session, *, level, module, concept: str, lesson_type: str,
                         brief: dict | None = None, source_text: str | None = None,
@@ -202,29 +286,9 @@ async def _generate_one(session, *, level, module, concept: str, lesson_type: st
             parsed = None
             if attempt == 1:
                 return None
-    # Extract the concept_slug the LLM emitted (may be absent or invalid — stored
-    # as-is; resolved to concept_id at approval time via the concept mapper).
-    emitted_slug = parsed.pop("concept_slug", None)
-    if isinstance(emitted_slug, str):
-        emitted_slug = emitted_slug.strip() or None
-    else:
-        emitted_slug = None
-    mod = await moderate_output(_concat_text(parsed), surface="lesson")
-    draft = LessonDraft(
-        level_id=level.id, type=lesson_type, content_json=parsed, concept=concept,
-        model_used=get_model_name("authoring"),
-        moderation_safe=mod.safe, moderation_category=mod.category,
-        concept_slug=emitted_slug,
+    return await _persist_draft_from_parsed(
+        session, level=level, lesson_type=lesson_type, concept=concept, parsed=parsed,
     )
-    session.add(draft)
-    if not mod.safe:
-        session.add(AuditLog(
-            user_id=None,
-            event_type="moderation_block",
-            metadata_json={"surface": "lesson", "category": mod.category},
-        ))
-    await session.flush()
-    return draft
 
 
 async def regenerate_draft(session: AsyncSession, draft: LessonDraft) -> LessonDraft | None:
@@ -324,18 +388,97 @@ def _lesson_concept(lesson: Lesson) -> str:
     return lesson.type
 
 
+@llm_usage.surface("admin_content_gen")
+async def _generate_batch(
+    session, *, level, module, brief: dict, lesson_type: str, batch: list[Lesson],
+) -> GenerationResult:
+    """Adapt one mini-batch of SAME-type source lessons into the target market with
+    ONE LLM call, expecting a JSON array of ``len(batch)`` adapted-lesson objects
+    each tagged with its source lesson's id for correlation.
+
+    Resilience:
+    - If the whole call throws or the response can't be parsed at all, every
+      lesson in ``batch`` counts as skipped.
+    - Each extracted item is independently validated + moderated (via
+      ``_persist_draft_from_parsed``, the same per-item path ``_generate_one``
+      uses); a missing/malformed/invalid item skips only that one lesson without
+      losing its batch-mates.
+    """
+    result = GenerationResult()
+    items = [(str(src.id), _concat_text(src.content_json or {})) for src in batch]
+    client = get_llm_client("authoring")
+    system = _batch_system_prompt(lesson_type, module, level, brief=brief, items=items)
+    user = f"Adapt these {len(batch)} {lesson_type} lessons."
+    # Retry once on a whole-batch call/parse failure (mirrors _generate_one's 2
+    # attempts) so a single transient bad completion doesn't skip up to `len(batch)`
+    # lessons. A second failure skips the whole mini-batch (never aborts others).
+    candidates = None
+    for attempt in range(2):
+        try:
+            raw = await client.complete(
+                system_prompt=system,
+                messages=[{"role": "user", "content": user}],
+                temperature=0.4, max_tokens=700 * len(batch), response_format="json",
+            )
+            candidates = extract_json_list(json.loads(raw))
+            break
+        except Exception:  # noqa: BLE001 — the whole mini-batch's LLM call/parse must
+            # never abort other mini-batches; log so a real outage is still visible.
+            logger.warning(
+                "market lesson-adaptation batch failed for level %s type=%s (n=%d, attempt=%d)",
+                level.id, lesson_type, len(batch), attempt + 1, exc_info=True,
+            )
+            if attempt == 1:
+                result.skipped += len(batch)
+                return result
+    by_id = {str(src.id): src for src in batch}
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        src_id = candidate.get("source_lesson_id")
+        src = by_id.pop(src_id, None) if isinstance(src_id, str) else None
+        if src is None:
+            continue  # unmatched/duplicate id — ignore rather than mis-attribute
+        parsed = {k: v for k, v in candidate.items() if k != "source_lesson_id"}
+        try:
+            validate_lesson_content_json(lesson_type, parsed)
+        except (ValueError, TypeError):
+            result.skipped += 1
+            continue
+        draft = await _persist_draft_from_parsed(
+            session, level=level, lesson_type=lesson_type,
+            concept=_lesson_concept(src), parsed=parsed,
+        )
+        result.created.append(draft)
+    # Any source lesson left in `by_id` had no valid matching entry in the response.
+    result.skipped += len(by_id)
+    return result
+
+
+def _chunked(items: list, size: int) -> list[list]:
+    return [items[i:i + size] for i in range(0, len(items), size)]
+
+
 async def generate_market_level_lessons(session: AsyncSession, target_level, *,
                                         source_level, brief) -> GenerationResult:
     """Adapt every lesson under ``source_level`` (GB) into ``target_level``'s market.
 
     Each generated draft is grounded in the verified ``brief`` and the GB lesson's
     text. The caller is responsible for passing a verified brief.
+
+    LLM-generatable source lessons are grouped by ``type`` (each type has its own
+    output schema) then chunked into mini-batches of ``_MARKET_ADAPT_BATCH_SIZE``;
+    ONE LLM call adapts an entire mini-batch, instead of one call per lesson. Every
+    _generate_one call this replaces was already fully independent (grounded only
+    in its own source lesson + the shared brief), so batching changes nothing about
+    what's asked for -- only how many calls it takes.
     """
     target_module = await session.get(Module, target_level.module_id)
     source_lessons = (await session.scalars(
         select(Lesson).where(Lesson.level_id == source_level.id).order_by(Lesson.order_index)
     )).all()
     result = GenerationResult()
+    by_type: dict[str, list[Lesson]] = {}
     for src in source_lessons:
         # Only card/quiz/scenario are LLM-generatable. A GB level can also hold a
         # `video` lesson (curated YouTube) — skip those rather than crash trying
@@ -343,19 +486,16 @@ async def generate_market_level_lessons(session: AsyncSession, target_level, *,
         if src.type not in _SCHEMA_HINT:
             result.skipped += 1
             continue
-        draft = await _generate_one(
-            session,
-            level=target_level,
-            module=target_module,
-            concept=_lesson_concept(src),
-            lesson_type=src.type,
-            brief=brief.brief_json,
-            source_text=_concat_text(src.content_json or {}),
-        )
-        if draft is None:
-            result.skipped += 1
-        else:
-            result.created.append(draft)
+        by_type.setdefault(src.type, []).append(src)
+
+    for lesson_type, lessons in by_type.items():
+        for batch in _chunked(lessons, _MARKET_ADAPT_BATCH_SIZE):
+            batch_result = await _generate_batch(
+                session, level=target_level, module=target_module,
+                brief=brief.brief_json, lesson_type=lesson_type, batch=batch,
+            )
+            result.created.extend(batch_result.created)
+            result.skipped += batch_result.skipped
     await session.commit()
     return result
 
